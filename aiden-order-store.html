@@ -138,6 +138,16 @@ img { max-width:100%; display:block; }
 .btn-preorder:hover { background:var(--brand); color:#FFF; }
 .btn-preorder svg { width:16px; height:16px; }
 
+/* Closed banner */
+.closed-banner {
+  display:none; background:#FFF8E1; border:1px solid #FFB300;
+  color:#E65100; padding:12px 16px; border-radius:var(--radius-sm);
+  font-size:13px; font-weight:600; margin-bottom:8px;
+  align-items:center; gap:8px; line-height:1.5;
+}
+.closed-banner.show { display:flex; }
+.closed-banner svg { width:18px; height:18px; flex-shrink:0; }
+
 /* Delivery alert */
 .delivery-alert {
   display:none; background:#FFF0F0; border:1px solid var(--danger);
@@ -747,6 +757,10 @@ img { max-width:100%; display:block; }
 
 <!-- ===== INFO BAR ===== -->
 <div class="info-bar">
+  <div class="closed-banner" id="closedBanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span id="closedBannerText">現在営業時間外です。メニューの閲覧は可能ですが、注文は営業時間内にお願いいたします。</span>
+  </div>
   <div class="delivery-alert" id="deliveryAlert">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span>配達サービスエリア外です</span>
@@ -1042,6 +1056,7 @@ let userAddress = ''; // entered address text
 let userLat = null;
 let userLng = null;
 let isOutOfDeliveryArea = false;
+let isStoreClosed = false; // true if outside business hours
 
 let CATEGORIES = [
   { id:'popular', name:'人気の商品', emoji:'🔥', desc:'' },
@@ -1388,7 +1403,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.opacity = '0.4';
   document.body.style.pointerEvents = 'none';
 
+  // store_id パラメータまたは sessionStorage がない場合はリダイレクト判定
+  var urlParams = new URLSearchParams(window.location.search);
+  var hasStoreParam = urlParams.has('store_id') || urlParams.has('sid');
+  var hasSessionStore = false;
+  try { hasSessionStore = !!sessionStorage.getItem('aiden_selected_store'); } catch(e) {}
+
   await loadFromSupabase();
+
+  // Supabase からデータが取得できなかった場合リダイレクト
+  if (ITEMS.length === 0 && !hasSessionStore && !hasStoreParam) {
+    window.location.href = './aiden-order.html';
+    return;
+  }
 
   // Service subscription check: verify this store supports the current order mode
   if (STORE_DATA._enabledServices) {
@@ -1398,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.style.opacity = '';
       document.body.style.pointerEvents = '';
       document.title = STORE_DATA.storeName + ' | AIden モバイルオーダー';
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + STORE_DATA.storeName + ' では現在「' + (orderMode === 'delivery' ? 'デリバリー' : orderMode === 'takeout' ? 'お持ち帰り' : '店内注文') + '」サービスをご利用いただけません。</p><a href="./aiden-store.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + STORE_DATA.storeName + ' では現在「' + (orderMode === 'delivery' ? 'デリバリー' : orderMode === 'takeout' ? 'お持ち帰り' : '店内注文') + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
       return;
     }
   }
@@ -1406,11 +1433,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.opacity = '';
   document.body.style.pointerEvents = '';
 
+  // 営業時間チェック
+  checkBusinessHours();
+
   initStoreData();
   renderTabs();
   renderMenu();
   restoreCartFromCheckout();
   updateCartUI();
+
+  // 営業時間外の場合、バナー表示＋注文ボタン無効化
+  if (isStoreClosed) {
+    applyClosedMode();
+  }
+
   if(!STORE_DATA.storeRequestEnabled) {
     document.getElementById('orderRequest').style.display = 'none';
   }
@@ -1920,6 +1956,7 @@ function changeProdQty(delta) {
 // CART
 // ===================================================================
 function addToCart() {
+  if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
   if(!currentProduct) return;
   if(!validateRequiredOptions()) return; // block if required options not met
   const unitPrice = currentProduct.price + calcOptionPrice();
@@ -1939,6 +1976,7 @@ function addToCart() {
 }
 
 function quickAdd(itemId) {
+  if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   // If item has options, open product modal instead
@@ -2323,6 +2361,75 @@ function confirmAddress() {
   }
 }
 
+// ===================================================================
+// BUSINESS HOURS CHECK
+// ===================================================================
+function checkBusinessHours() {
+  var now = new Date();
+  var dayIndex = now.getDay();
+  var DAYS = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  var todayName = DAYS[dayIndex];
+  var hours = (orderMode === 'delivery') ? STORE_DATA.deliveryHours : STORE_DATA.hours;
+  var todayHours = hours.filter(function(h) { return h.day === todayName; });
+
+  if (todayHours.length === 0) {
+    isStoreClosed = true;
+    return;
+  }
+
+  var nowMinutes = now.getHours() * 60 + now.getMinutes();
+  var withinAny = todayHours.some(function(h) {
+    var parts = h.time.split(/[–\-]/);
+    if (parts.length < 2) return false;
+    var openParts = parts[0].trim().split(':');
+    var closeParts = parts[1].trim().split(':');
+    var openMin = parseInt(openParts[0]) * 60 + parseInt(openParts[1]);
+    var closeMin = parseInt(closeParts[0]) * 60 + parseInt(closeParts[1]);
+    return nowMinutes >= openMin && nowMinutes < closeMin;
+  });
+
+  isStoreClosed = !withinAny;
+}
+
+function applyClosedMode() {
+  var banner = document.getElementById('closedBanner');
+  if (banner) banner.classList.add('show');
+
+  var statusEl = document.getElementById('infoBarStatus');
+  if (statusEl) {
+    statusEl.classList.remove('open');
+    statusEl.classList.add('closed');
+  }
+
+  var now = new Date();
+  var DAYS = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  var hours = (orderMode === 'delivery') ? STORE_DATA.deliveryHours : STORE_DATA.hours;
+
+  for (var d = 0; d <= 7; d++) {
+    var checkDay = (now.getDay() + d) % 7;
+    var dayName = DAYS[checkDay];
+    var dayHours = hours.filter(function(h) { return h.day === dayName; });
+    for (var i = 0; i < dayHours.length; i++) {
+      var parts = dayHours[i].time.split(/[–\-]/);
+      if (parts.length < 2) continue;
+      var openParts = parts[0].trim().split(':');
+      var openMin = parseInt(openParts[0]) * 60 + parseInt(openParts[1]);
+      if (d === 0 && openMin > now.getHours() * 60 + now.getMinutes()) {
+        document.getElementById('infoBarStatusText').textContent = '本日 ' + parts[0].trim() + ' に開店';
+        return;
+      }
+      if (d === 1) {
+        document.getElementById('infoBarStatusText').textContent = '明日の' + parts[0].trim() + 'に開店';
+        return;
+      }
+      if (d > 1) {
+        document.getElementById('infoBarStatusText').textContent = dayName + ' ' + parts[0].trim() + ' に開店';
+        return;
+      }
+    }
+  }
+}
+
 function checkDeliveryZone() {
   if(!userLat || !userLng) return;
   const dist = haversineKm(userLat, userLng, STORE_DATA.lat, STORE_DATA.lng);
@@ -2373,6 +2480,11 @@ document.addEventListener('keydown', e => {
 // CHECKOUT NAVIGATION
 // ===================================================================
 function goToCheckout() {
+  // Block checkout if store is closed
+  if(isStoreClosed) {
+    alert('現在営業時間外です。営業時間内にご注文ください。');
+    return;
+  }
   // Block checkout if out of delivery area and in delivery mode
   if(orderMode === 'delivery' && isOutOfDeliveryArea) {
     alert('配達サービスエリア外のため、デリバリー注文はできません。お持ち帰りに切り替えてください。');
