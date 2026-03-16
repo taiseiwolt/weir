@@ -1281,14 +1281,21 @@ let prodOptionState = {};
 // ===================================================================
 async function loadFromSupabase() {
   try {
+    // === Resolve store identifier from URL params ===
+    var _urlParams = new URLSearchParams(window.location.search);
+    var _storeIdParam = _urlParams.get('store_id') || _urlParams.get('sid');
+
     // === Try API first, fall back to direct Supabase ===
     let storeData, menuData;
     let useApi = !!API_BASE;
 
     if (useApi) {
       try {
+        var apiPath = _storeIdParam
+          ? '/api/restaurants/stores?id=' + encodeURIComponent(_storeIdParam)
+          : '/api/restaurants/stores/' + STORE_SLUG;
         [storeData, menuData] = await Promise.all([
-          apiFetch('/api/restaurants/stores/' + STORE_SLUG),
+          apiFetch(apiPath),
           null, // store_id needed first
         ]);
       } catch(e) { useApi = false; }
@@ -1357,7 +1364,13 @@ async function loadFromSupabase() {
     }
 
     // === Fallback: Direct Supabase ===
-    const { data: storeRows } = await sb.from('stores').select('*, brands(id, name)').eq('slug', STORE_SLUG).single();
+    var _sbQuery = sb.from('stores').select('*, brands(id, name)');
+    if (_storeIdParam) {
+      _sbQuery = _sbQuery.eq('id', _storeIdParam);
+    } else {
+      _sbQuery = _sbQuery.eq('slug', STORE_SLUG);
+    }
+    const { data: storeRows } = await _sbQuery.single();
     if (!storeRows) return;
 
     const { data: hoursRows } = await sb.from('store_hours').select('*').eq('store_id', storeRows.id).order('day_of_week');
@@ -1403,11 +1416,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.opacity = '0.4';
   document.body.style.pointerEvents = 'none';
 
-  // store_id パラメータまたは sessionStorage がない場合はリダイレクト判定
+  // store_id パラメータまたは sessionStorage がない場合は即座にリダイレクト
   var urlParams = new URLSearchParams(window.location.search);
   var hasStoreParam = urlParams.has('store_id') || urlParams.has('sid');
   var hasSessionStore = false;
   try { hasSessionStore = !!sessionStorage.getItem('aiden_selected_store'); } catch(e) {}
+  if (!hasStoreParam && !hasSessionStore) {
+    window.location.href = './aiden-order.html';
+    return;
+  }
 
   await loadFromSupabase();
 
@@ -1418,7 +1435,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Service subscription check: verify this store supports the current order mode
-  if (STORE_DATA._enabledServices) {
+  // Only block if _enabledServices has entries (empty array = no restrictions)
+  if (STORE_DATA._enabledServices && STORE_DATA._enabledServices.length > 0) {
     const modeMap = { delivery: 'mo_delivery', takeout: 'mo_takeout', dinein: 'mo_dinein', dine: 'mo_dinein' };
     const requiredKey = modeMap[orderMode];
     if (requiredKey && !STORE_DATA._enabledServices.includes(requiredKey)) {
