@@ -2575,13 +2575,13 @@ content.innerHTML = `
 
   <div class="card">
     <div class="card-title">🎯 ポイント制度</div>
-    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">ポイント制度を有効にする</span><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">ポイント制度を有効にする</span><label class="toggle"><input type="checkbox" id="ptEnabled" checked><span class="slider"></span></label></div>
     <div class="form-grid">
-      <div class="form-group"><label>ポイント付与率</label><div style="display:flex;gap:8px;align-items:center"><input type="number" value="100" style="width:80px"> 円につき <input type="number" value="1" style="width:60px"> ポイント</div></div>
-      <div class="form-group"><label>ポイント利用レート</label><div style="display:flex;gap:8px;align-items:center"><input type="number" value="1" style="width:60px"> ポイント ＝ <input type="number" value="1" style="width:60px"> 円</div></div>
-      <div class="form-group"><label>ポイント有効期限（月）</label><input type="number" value="12" min="1"></div>
+      <div class="form-group"><label>ポイント付与率</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="ptEarnUnit" value="100" style="width:80px"> 円につき <input type="number" id="ptEarnPoint" value="1" style="width:60px"> ポイント</div></div>
+      <div class="form-group"><label>ポイント利用レート</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="ptUsePoint" value="1" style="width:60px"> ポイント ＝ <input type="number" id="ptUseYen" value="1" style="width:60px"> 円</div></div>
+      <div class="form-group"><label>ポイント有効期限（月）</label><input type="number" id="ptExpiry" value="12" min="1"></div>
     </div>
-    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
+    <div class="btn-group"><button class="btn btn-primary" onclick="savePointSettings()">💾 保存</button></div>
   </div>
 </div>
 
@@ -2592,7 +2592,7 @@ content.innerHTML = `
   <div class="page-subtitle">会員ランクの条件と特典を設定します（法人単位）</div>
 
   <div class="card">
-    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">会員ランク制度を有効にする</span><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">会員ランク制度を有効にする</span><label class="toggle"><input type="checkbox" id="rankEnabled" checked><span class="slider"></span></label></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openRankModal()">＋ ランク追加</button></div>
     <table class="data-table" id="rankTable">
       <thead><tr><th>ランク名</th><th>条件</th><th>特典</th><th>対象人数</th><th>操作</th></tr></thead>
@@ -3415,14 +3415,15 @@ content.innerHTML = `
   <div class="page-subtitle">口コミ投稿に対するポイント付与を設定します（ブランド単位）</div>
 
   <div class="card">
-    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">口コミポイント機能を有効にする</span><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+    <div class="toggle-row" style="border:none;padding-bottom:16px"><span class="label" style="font-weight:700;font-size:14px">口コミポイント機能を有効にする</span><label class="toggle"><input type="checkbox" id="rvPtEnabled" checked><span class="slider"></span></label></div>
     <div class="form-grid">
-      <div class="form-group"><label>口コミ投稿時の付与ポイント</label><div style="display:flex;gap:8px;align-items:center"><input type="number" value="50" style="width:80px"> ポイント / 1件</div></div>
-      <div class="form-group"><label>月あたり付与上限（1人）</label><div style="display:flex;gap:8px;align-items:center"><input type="number" value="3" style="width:60px"> 回 / 月</div></div>
-      <div class="form-group"><label>承認方式</label><select><option>自動承認</option><option>手動承認</option></select></div>
-      <div class="form-group"><label>Google口コミ連携</label><input type="text" value="ChIJxxxxxxxxxxxxxx" placeholder="Google Place ID"></div>
+      <div class="form-group"><label>口コミ投稿時の付与ポイント</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="rvPtPerReview" value="50" style="width:80px"> ポイント / 1件</div></div>
+      <div class="form-group"><label>月あたり付与上限（1人）</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="rvPtMonthlyLimit" value="3" style="width:60px"> 回 / 月</div></div>
+      <div class="form-group"><label>投稿リンク有効期限</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="rvPtLinkExpiry" value="7" style="width:60px" min="1"> 日間</div></div>
+      <div class="form-group"><label>承認方式</label><select id="rvPtApproval"><option value="auto">自動承認</option><option value="manual">手動承認</option></select></div>
+      <div class="form-group"><label>Google口コミ連携</label><input type="text" id="rvPtGoogleId" value="" placeholder="Google Place ID"></div>
     </div>
-    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
+    <div class="btn-group"><button class="btn btn-primary" onclick="saveReviewPointSettings()">💾 保存</button></div>
   </div>
 </div>
 
@@ -10052,14 +10053,39 @@ setTimeout(function(){ renderMemberTable(); updateCrmSegCount(); }, 200);
 </script>
 
 <script>
-// ===== RANK MANAGEMENT =====
-var RANKS = [
-  {icon:'💎',name:'プラチナ',condCount:5,condSpend:100000,multi:3,bday:'',other:'毎月デザート1品無料',isDefault:false,members:48},
-  {icon:'🥇',name:'ゴールド',condCount:3,condSpend:50000,multi:2,bday:'10',other:'',isDefault:false,members:312},
-  {icon:'🥈',name:'シルバー',condCount:1,condSpend:0,multi:1.5,bday:'',other:'',isDefault:false,members:891},
-  {icon:'',name:'レギュラー',condCount:0,condSpend:0,multi:1,bday:'',other:'',isDefault:true,members:1596},
-];
+// ===== RANK MANAGEMENT (Supabase連携) =====
+var RANKS = [];
 var _selectedRankIcon = '';
+
+async function loadRankSettings() {
+  try {
+    const { data, error } = await sb.from('rank_settings').select('*').eq('brand_id', BRAND_ID).order('sort_order');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      RANKS = data.map(function(r) {
+        return {
+          _id: r.id,
+          icon: r.icon || '',
+          name: r.rank_name,
+          condCount: r.cond_monthly_count || 0,
+          condSpend: r.cond_total_spend || 0,
+          multi: parseFloat(r.benefit_point_multi) || 1,
+          bday: r.benefit_birthday || '',
+          other: r.benefit_other || '',
+          isDefault: r.is_default,
+          sortOrder: r.sort_order,
+          members: 0
+        };
+      });
+      // 各ランクの対象人数を取得
+      const { data: members } = await sb.from('members').select('current_rank_id');
+      if (members) {
+        RANKS.forEach(function(r) { r.members = members.filter(function(m) { return m.current_rank_id === r._id; }).length; });
+      }
+    }
+  } catch(e) { console.warn('Rank settings load error:', e); }
+  renderRankTable();
+}
 
 function renderRankTable() {
   var tbody = document.getElementById('rankTableBody');
@@ -10068,7 +10094,7 @@ function renderRankTable() {
     var cond = r.isDefault ? '—（デフォルト）' : buildCondText(r);
     var benefits = buildBenefitText(r);
     var nameHtml = (r.icon ? r.icon + ' ' : '') + '<span style="font-weight:' + (r.isDefault ? '400' : '700') + '">' + r.name + '</span>';
-    return '<tr><td>' + nameHtml + '</td><td>' + cond + '</td><td>' + benefits + '</td><td>' + r.members.toLocaleString() + '名</td><td><button class="btn btn-secondary btn-sm" onclick="openRankModal(' + i + ')">編集</button></td></tr>';
+    return '<tr><td>' + nameHtml + '</td><td>' + cond + '</td><td>' + benefits + '</td><td>' + r.members.toLocaleString() + '名</td><td><button class="btn btn-secondary btn-sm" onclick="openRankModal(' + i + ')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e94560" onclick="deleteRank(' + i + ')">削除</button></td></tr>';
   }).join('');
 }
 
@@ -10100,7 +10126,6 @@ function openRankModal(index) {
   document.getElementById('rankModalTitle').textContent = isEdit ? 'ランク編集' : 'ランク追加';
   document.getElementById('rankEditIndex').value = isEdit ? index : '';
 
-  // Reset
   document.querySelectorAll('.rankIconOpt').forEach(function(o) { o.style.borderColor = 'transparent'; o.style.background = ''; });
   _selectedRankIcon = '';
   document.getElementById('rankName').value = '';
@@ -10127,36 +10152,138 @@ function openRankModal(index) {
   modal.style.display = 'flex';
 }
 
-function saveRank() {
+async function saveRank() {
   var name = document.getElementById('rankName').value.trim();
   if(!name) { alert('ランク名を入力してください'); return; }
   var indexStr = document.getElementById('rankEditIndex').value;
   var isEdit = indexStr !== '';
 
-  var data = {
+  var row = {
+    brand_id: BRAND_ID,
+    rank_name: name,
     icon: _selectedRankIcon,
-    name: name,
-    condCount: parseInt(document.getElementById('rankCondCount').value) || 0,
-    condSpend: parseInt(document.getElementById('rankCondSpend').value) || 0,
-    multi: parseFloat(document.getElementById('rankBenefitMulti').value) || 1,
-    bday: document.getElementById('rankBenefitBday').value,
-    other: document.getElementById('rankBenefitOther').value.trim(),
-    isDefault: document.getElementById('rankIsDefault').checked,
-    members: isEdit ? RANKS[parseInt(indexStr)].members : 0
+    cond_monthly_count: parseInt(document.getElementById('rankCondCount').value) || 0,
+    cond_total_spend: parseInt(document.getElementById('rankCondSpend').value) || 0,
+    benefit_point_multi: parseFloat(document.getElementById('rankBenefitMulti').value) || 1,
+    benefit_birthday: document.getElementById('rankBenefitBday').value,
+    benefit_other: document.getElementById('rankBenefitOther').value.trim(),
+    is_default: document.getElementById('rankIsDefault').checked,
+    sort_order: isEdit ? RANKS[parseInt(indexStr)].sortOrder : RANKS.length,
+    updated_at: new Date().toISOString()
   };
 
-  if(isEdit) {
-    RANKS[parseInt(indexStr)] = data;
-  } else {
-    RANKS.push(data);
+  try {
+    if(isEdit) {
+      var existingId = RANKS[parseInt(indexStr)]._id;
+      const { error } = await sb.from('rank_settings').update(row).eq('id', existingId);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('rank_settings').insert(row);
+      if(error) throw error;
+    }
+    await loadRankSettings();
+    document.getElementById('rankEditModal').style.display = 'none';
+    showToast('ランク設定を保存しました');
+  } catch(e) {
+    alert('保存エラー: ' + e.message);
   }
-
-  renderRankTable();
-  document.getElementById('rankEditModal').style.display = 'none';
-  showToast('ランク設定を保存しました');
 }
 
-setTimeout(function(){ renderRankTable(); }, 200);
+async function deleteRank(index) {
+  var r = RANKS[index];
+  if(!confirm('「' + r.name + '」を削除しますか？')) return;
+  try {
+    const { error } = await sb.from('rank_settings').delete().eq('id', r._id);
+    if(error) throw error;
+    await loadRankSettings();
+    showToast('ランクを削除しました');
+  } catch(e) { alert('削除エラー: ' + e.message); }
+}
+
+// ===== POINT SETTINGS (Supabase連携) =====
+async function loadPointSettings() {
+  try {
+    const { data, error } = await sb.from('point_settings').select('*').eq('brand_id', BRAND_ID).single();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (data) {
+      document.getElementById('ptEnabled').checked = data.enabled;
+      document.getElementById('ptEarnUnit').value = data.earn_rate_unit;
+      document.getElementById('ptEarnPoint').value = data.earn_rate_point;
+      document.getElementById('ptUsePoint').value = data.use_rate_point;
+      document.getElementById('ptUseYen').value = data.use_rate_yen;
+      document.getElementById('ptExpiry').value = data.expiry_months;
+    }
+  } catch(e) { console.warn('Point settings load error:', e); }
+}
+
+async function savePointSettings() {
+  var row = {
+    brand_id: BRAND_ID,
+    enabled: document.getElementById('ptEnabled').checked,
+    earn_rate_unit: parseInt(document.getElementById('ptEarnUnit').value) || 100,
+    earn_rate_point: parseInt(document.getElementById('ptEarnPoint').value) || 1,
+    use_rate_point: parseInt(document.getElementById('ptUsePoint').value) || 1,
+    use_rate_yen: parseInt(document.getElementById('ptUseYen').value) || 1,
+    expiry_months: parseInt(document.getElementById('ptExpiry').value) || 12,
+    updated_at: new Date().toISOString()
+  };
+  try {
+    const { data: existing } = await sb.from('point_settings').select('id').eq('brand_id', BRAND_ID).single();
+    if (existing) {
+      const { error } = await sb.from('point_settings').update(row).eq('id', existing.id);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('point_settings').insert(row);
+      if(error) throw error;
+    }
+    showToast('ポイント設定を保存しました');
+  } catch(e) { alert('保存エラー: ' + e.message); }
+}
+
+// ===== REVIEW POINT SETTINGS (Supabase連携) =====
+async function loadReviewPointSettings() {
+  try {
+    const { data, error } = await sb.from('review_point_settings').select('*').eq('brand_id', BRAND_ID).single();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (data) {
+      document.getElementById('rvPtEnabled').checked = data.enabled;
+      document.getElementById('rvPtPerReview').value = data.points_per_review;
+      document.getElementById('rvPtMonthlyLimit').value = data.monthly_limit;
+      document.getElementById('rvPtLinkExpiry').value = data.review_link_expiry_days;
+      document.getElementById('rvPtApproval').value = data.approval_mode;
+      document.getElementById('rvPtGoogleId').value = data.google_place_id || '';
+    }
+  } catch(e) { console.warn('Review point settings load error:', e); }
+}
+
+async function saveReviewPointSettings() {
+  var row = {
+    brand_id: BRAND_ID,
+    enabled: document.getElementById('rvPtEnabled').checked,
+    points_per_review: parseInt(document.getElementById('rvPtPerReview').value) || 50,
+    monthly_limit: parseInt(document.getElementById('rvPtMonthlyLimit').value) || 3,
+    review_link_expiry_days: parseInt(document.getElementById('rvPtLinkExpiry').value) || 7,
+    approval_mode: document.getElementById('rvPtApproval').value,
+    google_place_id: document.getElementById('rvPtGoogleId').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  try {
+    const { data: existing } = await sb.from('review_point_settings').select('id').eq('brand_id', BRAND_ID).single();
+    if (existing) {
+      const { error } = await sb.from('review_point_settings').update(row).eq('id', existing.id);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('review_point_settings').insert(row);
+      if(error) throw error;
+    }
+    showToast('口コミポイント設定を保存しました');
+  } catch(e) { alert('保存エラー: ' + e.message); }
+}
+
+// ===== 初期ロード =====
+setTimeout(async function(){
+  await Promise.all([loadPointSettings(), loadRankSettings(), loadReviewPointSettings()]);
+}, 200);
 </script>
 
 <script>

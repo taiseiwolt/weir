@@ -939,6 +939,7 @@ async function loadCheckoutData() {
       // 3. Load coupons from Supabase
       const brandId = storeRow.brands?.id;
       if (brandId) {
+        CHECKOUT_DATA.brandId = brandId;
         const { data: coupons } = await sb.from('coupons').select('*').eq('brand_id', brandId).eq('is_active', true);
         if (coupons && coupons.length > 0) {
           CHECKOUT_DATA.availableCoupons = coupons.map(c => ({
@@ -957,6 +958,15 @@ async function loadCheckoutData() {
       const { data: heroMedia } = await sb.from('media').select('url').eq('entity_type', 'store').eq('entity_id', storeRow.id).eq('media_type', 'store_hero').limit(1);
       if (heroMedia && heroMedia.length > 0) {
         CHECKOUT_DATA.heroImg = heroMedia[0].url;
+      }
+
+      // 5. Load point_settings for this brand
+      if (brandId) {
+        const { data: ptSettings } = await sb.from('point_settings').select('*').eq('brand_id', brandId).single();
+        if (ptSettings) {
+          CHECKOUT_DATA.pointSettings = ptSettings;
+          CHECKOUT_DATA.pointEnabled = ptSettings.enabled;
+        }
       }
     }
   } catch(e) { /* ignored */ }
@@ -1863,9 +1873,9 @@ async function placeOrder() {
       }
 
       // ポイント消費トランザクションを記録
+      const memberId = sessionStorage.getItem('aiden_member_id');
       if (appliedPoints > 0) {
         try {
-          const memberId = sessionStorage.getItem('aiden_member_id');
           if (memberId) {
             await sb.from('point_transactions').insert({
               member_id: memberId,
@@ -1879,11 +1889,107 @@ async function placeOrder() {
         } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
       }
 
+      // ===== ポイント付与（point_settings に基づく）=====
+      let earnedPoints = 0;
+      if (memberId && CHECKOUT_DATA.pointSettings && CHECKOUT_DATA.pointSettings.enabled) {
+        try {
+          const ps = CHECKOUT_DATA.pointSettings;
+          // AIden手数料はポイント割引前の注文総額ベース → ポイント付与も割引前の subtotal ベース
+          const baseAmount = CHECKOUT_DATA.subtotal || totalAmount;
+          earnedPoints = Math.floor(baseAmount / ps.earn_rate_unit) * ps.earn_rate_point;
+
+          // ランク別ポイント倍率を適用
+          if (CHECKOUT_DATA.memberRankMulti && CHECKOUT_DATA.memberRankMulti > 1) {
+            earnedPoints = Math.floor(earnedPoints * CHECKOUT_DATA.memberRankMulti);
+          }
+
+          if (earnedPoints > 0) {
+            // 有効期限を計算
+            const expiresAt = new Date();
+            expiresAt.setMonth(expiresAt.getMonth() + (ps.expiry_months || 12));
+
+            // 現在の残高を計算
+            const currentBalance = (CHECKOUT_DATA.userPoints || 0) - appliedPoints;
+
+            await sb.from('point_transactions').insert({
+              member_id: memberId,
+              brand_id: CHECKOUT_DATA.brandId,
+              amount: earnedPoints,
+              balance_after: currentBalance + earnedPoints,
+              source: 'normal',
+              reason: '注文獲得（' + data.payment_intent_id + '）',
+              order_id: null,
+              expires_at: expiresAt.toISOString()
+            });
+          }
+        } catch(ptErr) { console.warn('Point earn record skipped:', ptErr); }
+      }
+
+      // ===== ランク判定・更新 =====
+      if (memberId && CHECKOUT_DATA.brandId) {
+        try {
+          // members の total_spend と monthly_order_count を更新
+          const { data: memberRow } = await sb.from('members').select('id, total_spend, monthly_order_count').eq('id', memberId).single();
+          if (memberRow) {
+            const newTotalSpend = (memberRow.total_spend || 0) + (CHECKOUT_DATA.subtotal || totalAmount);
+            const newMonthlyCount = (memberRow.monthly_order_count || 0) + 1;
+
+            await sb.from('members').update({
+              total_spend: newTotalSpend,
+              monthly_order_count: newMonthlyCount
+            }).eq('id', memberId);
+
+            // rank_settings を取得して条件マッチングで最上位ランクを判定
+            const { data: ranks } = await sb.from('rank_settings')
+              .select('*')
+              .eq('brand_id', CHECKOUT_DATA.brandId)
+              .order('sort_order', { ascending: true });
+
+            if (ranks && ranks.length > 0) {
+              let bestRank = ranks.find(r => r.is_default) || ranks[ranks.length - 1];
+              for (const rank of ranks) {
+                if (rank.is_default) continue;
+                const meetCount = !rank.cond_monthly_count || newMonthlyCount >= rank.cond_monthly_count;
+                const meetSpend = !rank.cond_total_spend || newTotalSpend >= rank.cond_total_spend;
+                if (meetCount && meetSpend) {
+                  bestRank = rank;
+                  break; // sort_order 昇順 = 最上位が先
+                }
+              }
+              await sb.from('members').update({ current_rank_id: bestRank.id }).eq('id', memberId);
+            }
+          }
+        } catch(rankErr) { console.warn('Rank update skipped:', rankErr); }
+      }
+
+      // ===== 口コミトークン生成 =====
+      if (memberId && CHECKOUT_DATA.brandId) {
+        try {
+          const { data: rvSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', CHECKOUT_DATA.brandId).single();
+          if (rvSettings && rvSettings.enabled) {
+            const token = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+            const tokenExpires = new Date();
+            tokenExpires.setDate(tokenExpires.getDate() + (rvSettings.review_link_expiry_days || 7));
+
+            await sb.from('review_tokens').insert({
+              order_id: data.payment_intent_id,
+              member_id: memberId,
+              brand_id: CHECKOUT_DATA.brandId,
+              token: token,
+              expires_at: tokenExpires.toISOString()
+            });
+            // トークンURLは領収書メールに含める（Edge Function側で処理）
+            CHECKOUT_DATA.reviewToken = token;
+          }
+        } catch(rvErr) { console.warn('Review token generation skipped:', rvErr); }
+      }
+
       alert('✅ 注文が完了しました！\n\n' +
         '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
         '決済方法: ' + pm.name + '\n' +
         '合計: ¥' + totalAmount.toLocaleString() + '\n' +
         'PaymentIntent: ' + data.payment_intent_id + '\n' +
+        (earnedPoints > 0 ? 'ポイント獲得: +' + earnedPoints + 'pt\n' : '') +
         (appliedPoints > 0 ? 'ポイント使用: ' + appliedPoints + 'pt（AIden原資: ' + (CHECKOUT_DATA.aidenPointsUsed||0) + 'pt / 通常: ' + (CHECKOUT_DATA.normalPointsUsed||0) + 'pt）\n' : '') +
         '\n（注文追跡ページへ遷移します）');
 
@@ -2102,6 +2208,18 @@ async function onAuthSuccess(user, displayName) {
   loadSavedAddresses();
   updatePriceSummary();
   validateForm();
+
+  // ランク倍率をロード
+  try {
+    const mid = sessionStorage.getItem('aiden_member_id');
+    if (mid) {
+      const { data: mem } = await sb.from('members').select('current_rank_id').eq('id', mid).single();
+      if (mem && mem.current_rank_id) {
+        const { data: rank } = await sb.from('rank_settings').select('benefit_point_multi').eq('id', mem.current_rank_id).single();
+        if (rank) CHECKOUT_DATA.memberRankMulti = parseFloat(rank.benefit_point_multi) || 1;
+      }
+    }
+  } catch(e) { /* ignored */ }
 }
 
 // --- UI Update ---
