@@ -135,6 +135,22 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .location-address svg { width:18px; height:18px; color:var(--brand); flex-shrink:0; }
 .location-address-text { font-size:14px; flex:1; }
 .location-address-edit { font-size:12px; color:var(--brand); font-weight:600; }
+
+/* 保存済み住所カード */
+.saved-addr-item {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border:1px solid var(--border); border-radius:var(--radius-sm);
+  margin-bottom:8px; cursor:pointer; transition:all .2s; font-size:13px;
+}
+.saved-addr-item:hover { border-color:var(--brand); background:var(--brand-lighter,#FFF5F5); }
+.saved-addr-item.selected { border-color:var(--brand); background:var(--brand-light); }
+.saved-addr-label { font-weight:600; font-size:12px; color:var(--brand); white-space:nowrap; }
+.saved-addr-text { flex:1; color:var(--text); }
+.saved-addr-default { font-size:10px; color:var(--success); font-weight:600; }
+.saved-addr-radio { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; position:relative; }
+.saved-addr-item.selected .saved-addr-radio { border-color:var(--brand); }
+.saved-addr-item.selected .saved-addr-radio::after { content:''; position:absolute; top:3px; left:3px; width:8px; height:8px; border-radius:50%; background:var(--brand); }
+
 .location-toggle {
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 14px; border:1px solid var(--border-light);
@@ -414,150 +430,8 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .section:nth-child(3) { animation-delay:.1s; }
 .section:nth-child(4) { animation-delay:.15s; }
 .section:nth-child(5) { animation-delay:.2s; }
-
-/* ===== AUTH MODAL OVERLAY ===== */
-.auth-overlay {
-  display:none; position:fixed; inset:0; z-index:9999;
-  background:rgba(0,0,0,.55); backdrop-filter:blur(4px);
-  align-items:center; justify-content:center; padding:16px;
-}
-.auth-overlay.show { display:flex; }
-.auth-modal {
-  background:#FFF; border-radius:16px; width:100%; max-width:420px;
-  max-height:90vh; overflow-y:auto; position:relative;
-  box-shadow:0 24px 64px rgba(0,0,0,.25); animation:authSlideUp .3s ease;
-}
-@keyframes authSlideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-.auth-modal-close {
-  position:absolute; top:12px; right:12px; width:32px; height:32px;
-  border-radius:50%; background:rgba(0,0,0,.06); display:flex;
-  align-items:center; justify-content:center; font-size:18px;
-  color:var(--text-mid); cursor:pointer; z-index:1; transition:background .2s;
-}
-.auth-modal-close:hover { background:rgba(0,0,0,.12); }
-.auth-modal-body { padding:32px 28px 28px; }
-
-/* Auth Choice Screen */
-.auth-choice-title { text-align:center; font-size:18px; font-weight:800; margin-bottom:4px; }
-.auth-choice-sub { text-align:center; font-size:13px; color:var(--text-light); margin-bottom:20px; }
-.auth-benefits {
-  display:flex; justify-content:center; gap:16px; margin-bottom:24px;
-}
-.auth-benefit {
-  width:72px; height:72px; border-radius:16px; display:flex;
-  align-items:center; justify-content:center; font-size:32px;
-}
-.auth-benefit.coupon { background:#FFF8E1; }
-.auth-benefit.point { background:#E8F5E9; }
-.auth-benefit.pay { background:#E3F2FD; }
-.auth-btn {
-  display:block; width:100%; padding:14px; border-radius:12px;
-  font-size:15px; font-weight:700; text-align:center; margin-bottom:10px;
-  transition:opacity .2s;
-}
-.auth-btn:hover { opacity:.88; text-decoration:none; }
-.auth-btn-register { background:#F5A623; color:#FFF; }
-.auth-btn-line { background:#06C755; color:#FFF; display:flex; align-items:center; justify-content:center; gap:8px; }
-.auth-btn-line svg { width:22px; height:22px; }
-.auth-btn-login { background:transparent; border:2px solid var(--border); color:var(--text); }
-.auth-btn-guest {
-  display:block; text-align:center; font-size:13px; color:var(--text-light);
-  margin-top:12px; cursor:pointer;
-}
-.auth-btn-guest:hover { color:var(--text); text-decoration:underline; }
-
-/* Auth Form Screens (Register, Login, Guest) */
-.auth-screen { display:none; }
-.auth-screen.active { display:block; }
-.auth-form-title { font-size:18px; font-weight:800; margin-bottom:4px; }
-.auth-form-sub { font-size:13px; color:var(--text-light); margin-bottom:20px; }
-.auth-form-group { margin-bottom:14px; }
-.auth-form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-mid); margin-bottom:4px; }
-.auth-form-group label .req { color:var(--danger); margin-left:2px; }
-.auth-form-group .form-input { width:100%; }
-.auth-form-row { display:flex; gap:10px; }
-.auth-form-row .auth-form-group { flex:1; }
-.auth-form-section-label {
-  font-size:12px; font-weight:600; color:var(--text-light); margin:20px 0 10px;
-  padding-top:16px; border-top:1px solid var(--border-light);
-}
-.auth-form-hint { font-size:11px; color:var(--text-light); margin-top:2px; }
-.auth-gender-group { display:flex; gap:8px; }
-.auth-gender-btn {
-  flex:1; padding:8px; border:1px solid var(--border); border-radius:var(--radius-sm);
-  font-size:13px; font-weight:600; text-align:center; cursor:pointer; transition:all .2s;
-  background:#FFF; color:var(--text-mid);
-}
-.auth-gender-btn.active { border-color:var(--brand); background:var(--brand-lighter); color:var(--brand); }
-.auth-terms-check { display:flex; align-items:flex-start; gap:8px; margin:16px 0; }
-.auth-terms-check input { margin-top:3px; flex-shrink:0; }
-.auth-terms-check label { font-size:12px; color:var(--text-mid); line-height:1.5; }
-.auth-terms-check a { color:var(--brand); }
-.auth-submit {
-  width:100%; padding:14px; border-radius:12px; font-size:15px; font-weight:700;
-  background:var(--brand); color:#FFF; transition:opacity .2s;
-}
-.auth-submit:hover { opacity:.88; }
-.auth-submit:disabled { background:#CCC; cursor:default; opacity:1; }
-.auth-back {
-  display:flex; align-items:center; gap:4px; font-size:13px; color:var(--text-mid);
-  cursor:pointer; margin-bottom:16px;
-}
-.auth-back:hover { color:var(--text); }
-.auth-error { background:#FFF0F0; color:var(--danger); padding:10px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; margin-bottom:12px; display:none; }
-.auth-error.show { display:block; }
-.auth-success { background:#E8F5E9; color:#2a7a2a; padding:10px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; margin-bottom:12px; display:none; }
-.auth-success.show { display:block; }
-
-/* Guest form dynamic fields */
-.guest-field-delivery { display:none; }
-.guest-field-pickup { display:none; }
-
-/* ===== STRIPE ELEMENTS ===== */
-.stripe-card-element {
-  padding:12px 14px; border:1px solid var(--border);
-  border-radius:var(--radius-sm); background:#FFF; transition:border-color .2s;
-}
-.stripe-card-element.StripeElement--focus { border-color:var(--brand); }
-.stripe-card-element.StripeElement--invalid { border-color:var(--danger); }
-.stripe-card-error { color:var(--danger); font-size:12px; margin-top:6px; min-height:18px; }
-.saved-cards { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
-.saved-card {
-  display:flex; align-items:center; gap:12px; padding:12px 14px;
-  border:1px solid var(--border); border-radius:var(--radius-sm);
-  cursor:pointer; transition:all .2s;
-}
-.saved-card:hover { border-color:#BBB; }
-.saved-card.active { border-color:var(--brand); background:var(--brand-lighter); }
-.saved-card-radio {
-  width:18px; height:18px; border:2px solid var(--border); border-radius:50%;
-  flex-shrink:0; position:relative;
-}
-.saved-card.active .saved-card-radio { border-color:var(--brand); }
-.saved-card.active .saved-card-radio::after {
-  content:''; position:absolute; width:8px; height:8px;
-  top:3px; left:3px; background:var(--brand); border-radius:50%;
-}
-.saved-card-info { flex:1; }
-.saved-card-brand { font-size:13px; font-weight:600; text-transform:uppercase; }
-.saved-card-last4 { font-size:12px; color:var(--text-light); }
-.new-card-option { margin-top:4px; }
-.save-card-check { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--text-mid); }
-.save-card-check input { flex-shrink:0; }
-.stripe-processing {
-  display:none; align-items:center; justify-content:center; gap:8px;
-  padding:16px; font-size:14px; color:var(--text-mid);
-}
-.stripe-processing.show { display:flex; }
-.stripe-spinner {
-  width:20px; height:20px; border:3px solid var(--border);
-  border-top-color:var(--brand); border-radius:50%;
-  animation:spin-stripe .6s linear infinite;
-}
-@keyframes spin-stripe { to{transform:rotate(360deg)} }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -568,7 +442,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <span class="header-title">注文の最終確認</span>
   </div>
   <div class="header-right">
-    <button class="btn-signin" onclick="showAuthModal()">サインイン</button>
+    <button class="btn-signin">サインイン</button>
   </div>
 </header>
 
@@ -630,11 +504,21 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         場所
       </div>
       <div class="section-alert" id="alertLocation">お届け先情報の入力を完了してください</div>
+      <!-- 保存済み住所一覧 -->
+      <div id="savedAddressList" style="display:none;margin-bottom:12px"></div>
+
       <div class="location-address" onclick="editAddress()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span class="location-address-text" id="locationText">配達先住所を入力してください</span>
         <span class="location-address-edit">変更</span>
       </div>
+
+      <!-- この住所を保存する -->
+      <label id="saveAddressCheck" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-mid);cursor:pointer;margin-bottom:12px;padding:0 4px">
+        <input type="checkbox" id="chkSaveAddress" style="width:18px;height:18px;accent-color:var(--brand);cursor:pointer">
+        この住所を保存する
+      </label>
+
       <div class="location-toggle">
         <div class="location-toggle-text">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -820,24 +704,14 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 
 <script>
 // ===================================================================
-// API CONFIG
+// CONFIG - passed from previous page (aiden-order-store)
 // ===================================================================
-const API_BASE = 'https://aiden-demo.vercel.app'; // Vercel production domain
-const STRIPE_PUBLIC_KEY = ''; // Set to pk_live_... or pk_test_... in production
-const STORE_SLUG = 'sumibite-shibuya';
-
-async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('aiden_token');
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_BASE + path, { ...options, headers });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-// Supabase fallback
+// ===================================================================
+// SUPABASE CONFIG
+// ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const STORE_SLUG   = 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================================================================
@@ -882,10 +756,10 @@ let CHECKOUT_DATA = {
 };
 
 // ===================================================================
-// STORE DATA LOADER (API first, Supabase fallback)
+// SUPABASE + sessionStorage LOADER
 // ===================================================================
 async function loadCheckoutData() {
-  // 1. sessionStorageからカートデータ取得
+  // 1. sessionStorageからカートデータ取得（store画面から渡される）
   try {
     const saved = sessionStorage.getItem('aiden_checkout_data');
     if (saved) {
@@ -894,54 +768,98 @@ async function loadCheckoutData() {
     }
   } catch(e) { /* ignored */ }
 
-  // 2. 店舗設定を取得（API → Supabase fallback）
+  // 2. Supabaseから店舗設定を取得して上書き
   try {
-    let storeRow = null;
-
-    if (API_BASE) {
-      try {
-        storeRow = await apiFetch('/api/restaurants/stores/' + STORE_SLUG);
-      } catch(e) { /* fall through to Supabase */ }
-    }
-
-    if (!storeRow) {
-      const { data } = await sb.from('stores').select('*, brands(id, name)').eq('slug', STORE_SLUG).single();
-      storeRow = data;
-    }
+    const { data: storeRow } = await sb
+      .from('stores')
+      .select('*, brands(id, name, corp_id)')
+      .eq('slug', STORE_SLUG)
+      .single();
 
     if (storeRow) {
-      CHECKOUT_DATA.storeName = storeRow.name || CHECKOUT_DATA.storeName;
-      CHECKOUT_DATA.brandName = storeRow.brands?.name || CHECKOUT_DATA.brandName;
-      CHECKOUT_DATA.storeId = storeRow.id;
+      CHECKOUT_DATA.storeName  = storeRow.name || CHECKOUT_DATA.storeName;
+      CHECKOUT_DATA.brandName  = storeRow.brands?.name || CHECKOUT_DATA.brandName;
+      CHECKOUT_DATA.storeId    = storeRow.id;
+
+      // Delivery settings from store
       if (storeRow.delivery_fee !== null && storeRow.delivery_fee !== undefined) CHECKOUT_DATA.deliveryFee = storeRow.delivery_fee;
       if (storeRow.delivery_time_min !== null) CHECKOUT_DATA.deliveryTimeMin = storeRow.delivery_time_min;
       if (storeRow.delivery_time_max !== null) CHECKOUT_DATA.deliveryTimeMax = storeRow.delivery_time_max;
       if (storeRow.free_delivery_threshold !== null) CHECKOUT_DATA.freeDeliveryThreshold = storeRow.free_delivery_threshold;
       if (storeRow.prep_time_minutes !== null) CHECKOUT_DATA.prepTimeMinutes = storeRow.prep_time_minutes;
 
-      // Hero image
-      if (storeRow.media) {
-        const heroMedia = storeRow.media.find(m => m.media_type === 'store_hero');
-        if (heroMedia) CHECKOUT_DATA.heroImg = heroMedia.url;
-      } else {
-        const { data: heroMedia } = await sb.from('media').select('url').eq('entity_type', 'store').eq('entity_id', storeRow.id).eq('media_type', 'store_hero').limit(1);
-        if (heroMedia && heroMedia.length > 0) CHECKOUT_DATA.heroImg = heroMedia[0].url;
+      // 2b. 法人の stripe_account_id を取得（Stripe Connect 決済用）
+      const corpId = storeRow.brands?.corp_id;
+      if (corpId) {
+        const { data: corpRow } = await sb.from('corps').select('stripe_account_id').eq('id', corpId).single();
+        if (corpRow && corpRow.stripe_account_id) {
+          CHECKOUT_DATA.stripeAccountId = corpRow.stripe_account_id;
+        }
       }
 
-      // Coupons
-      const brandId = storeRow.brands?.id || storeRow.brand_id;
+      // 3. Load coupons from Supabase
+      const brandId = storeRow.brands?.id;
       if (brandId) {
         const { data: coupons } = await sb.from('coupons').select('*').eq('brand_id', brandId).eq('is_active', true);
         if (coupons && coupons.length > 0) {
           CHECKOUT_DATA.availableCoupons = coupons.map(c => ({
-            id: c.id, code: c.code, name: c.name,
-            discount: c.discount_value, type: c.discount_type,
-            expires: c.expires_at, minOrder: c.min_order_amount || 0
+            id: c.id,
+            code: c.code,
+            name: c.name,
+            discount: c.discount_value,
+            type: c.discount_type,
+            expires: c.expires_at,
+            minOrder: c.min_order_amount || 0
           }));
         }
       }
+
+      // 4. Load store hero image
+      const { data: heroMedia } = await sb.from('media').select('url').eq('entity_type', 'store').eq('entity_id', storeRow.id).eq('media_type', 'store_hero').limit(1);
+      if (heroMedia && heroMedia.length > 0) {
+        CHECKOUT_DATA.heroImg = heroMedia[0].url;
+      }
     }
   } catch(e) { /* ignored */ }
+
+  // 5. Load point transactions for FIFO consumption
+  try {
+    const memberId = sessionStorage.getItem('aiden_member_id');
+    if (memberId) {
+      // 獲得トランザクションを created_at 昇順で取得（FIFO: 古い順）
+      const { data: earnTxns } = await sb
+        .from('point_transactions')
+        .select('id, amount, source, created_at, expires_at')
+        .eq('member_id', memberId)
+        .gt('amount', 0)
+        .order('created_at', { ascending: true });
+
+      // 消費トランザクションの合計を取得
+      const { data: spendTxns } = await sb
+        .from('point_transactions')
+        .select('amount')
+        .eq('member_id', memberId)
+        .lt('amount', 0);
+
+      if (earnTxns && earnTxns.length > 0) {
+        // FIFO で消費済み分を差し引いて remaining_balance を計算
+        let totalSpent = (spendTxns || []).reduce((s, t) => s + Math.abs(t.amount), 0);
+        const now = new Date();
+        CHECKOUT_DATA.pointTransactions = earnTxns
+          .filter(t => !t.expires_at || new Date(t.expires_at) > now)
+          .map(t => {
+            const consume = Math.min(t.amount, totalSpent);
+            totalSpent -= consume;
+            return { ...t, remaining_balance: t.amount - consume };
+          })
+          .filter(t => t.remaining_balance > 0);
+
+        // Supabase からの残高で userPoints を更新
+        const actualBalance = CHECKOUT_DATA.pointTransactions.reduce((s, t) => s + t.remaining_balance, 0);
+        if (actualBalance > 0) CHECKOUT_DATA.userPoints = actualBalance;
+      }
+    }
+  } catch(e) { console.warn('Point transactions load skipped:', e); }
 }
 
 // ===================================================================
@@ -953,14 +871,6 @@ let selectedPayment = null;
 let selectedCouponMode = 'code';
 let appliedCoupon = null;
 
-// Stripe state
-let stripeInstance = null;
-let stripeCardElement = null;
-let stripeCardComplete = false;
-let savedCards = [];
-let selectedSavedCardId = null; // null = new card
-let useNewCard = true;
-
 // ===================================================================
 // INIT
 // ===================================================================
@@ -969,21 +879,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.style.pointerEvents = 'none';
 
   await loadCheckoutData();
-  mode = CHECKOUT_DATA.orderMode || 'delivery';
-
-  // Guard: redirect if cart is empty (direct access without items)
-  if (!CHECKOUT_DATA.cartItems || CHECKOUT_DATA.cartItems.length === 0) {
-    document.body.style.opacity = '';
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">\uD83D\uDED2</div><h2 style="margin-bottom:8px">カートに商品がありません</h2><p style="color:#636e72;font-size:14px">メニューから商品を選んでください。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">注文ページへ戻る</a></div></div>';
-    return;
-  }
+  mode = CHECKOUT_DATA.orderMode || 'delivery'; // sessionStorageから取得した値を反映
 
   document.body.style.opacity = '';
   document.body.style.pointerEvents = '';
 
   initPage();
   initDatePickers();
-  initStripe();
   renderPaymentMethods();
   renderCouponList();
   renderOrderItems();
@@ -991,8 +893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updatePriceSummary();
   switchMode(mode);
   validateForm();
-  // Load saved cards if member is logged in
-  if (currentUser && currentUser.member_id) loadSavedCards();
+  loadSavedAddresses();
 });
 
 function initPage() {
@@ -1215,29 +1116,29 @@ function recalcSubtotal() {
 // ===================================================================
 // PAYMENT METHODS
 // ===================================================================
-function initStripe() {
-  if (STRIPE_PUBLIC_KEY) {
-    stripeInstance = Stripe(STRIPE_PUBLIC_KEY);
-  }
-}
-
 function renderPaymentMethods() {
   const el = document.getElementById('paymentMethods');
-  el.innerHTML = CHECKOUT_DATA.paymentMethods.map((pm) => {
+  el.innerHTML = CHECKOUT_DATA.paymentMethods.map((pm, i) => {
     const iconsHtml = pm.icons.map(ic => `<span class="payment-icon-text">${ic}</span>`).join('');
     const cardForm = pm.id === 'card' ? `
       <div class="card-form" id="cardForm" style="display:none">
-        <div id="savedCardsContainer"></div>
-        <div id="newCardSection">
-          <div class="form-group" style="margin-bottom:8px">
-            <label>カード情報</label>
-            <div class="stripe-card-element" id="stripeCardElement"></div>
-            <div class="stripe-card-error" id="stripeCardError"></div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>カード番号</label>
+          <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNumber(this);validateForm()">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>有効期限</label>
+            <input type="text" class="form-input" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this);validateForm()">
           </div>
-          <div class="save-card-check" id="saveCardCheck" style="display:none">
-            <input type="checkbox" id="saveCardToggle" checked>
-            <label for="saveCardToggle">このカードを次回以降も使用する</label>
+          <div class="form-group">
+            <label>セキュリティコード</label>
+            <input type="text" class="form-input" id="cardCvc" placeholder="CVC/CVV" maxlength="4" oninput="validateForm()">
           </div>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>カード名義</label>
+          <input type="text" class="form-input" id="cardHolder" placeholder="カード名義（ローマ字）" oninput="validateForm()">
         </div>
         <div class="card-secure-note">
           🔒 クレジットカードはStripeによって安全に処理されます。3Dセキュア認証に対応しています。お客様の情報はPCI DSS準拠の環境で保護されます。
@@ -1257,115 +1158,6 @@ function renderPaymentMethods() {
   }).join('');
 }
 
-// ===================================================================
-// STRIPE ELEMENTS MOUNT
-// ===================================================================
-function mountStripeElement() {
-  if (!stripeInstance || stripeCardElement) return;
-  const elements = stripeInstance.elements();
-  stripeCardElement = elements.create('card', {
-    style: {
-      base: {
-        fontSize: '14px',
-        fontFamily: "'Noto Sans JP', sans-serif",
-        color: '#1A1A2E',
-        '::placeholder': { color: '#888' },
-      },
-      invalid: { color: '#E74C3C' },
-    },
-    hidePostalCode: true,
-  });
-  const container = document.getElementById('stripeCardElement');
-  if (container) {
-    stripeCardElement.mount(container);
-    stripeCardElement.on('change', (event) => {
-      stripeCardComplete = event.complete;
-      const errEl = document.getElementById('stripeCardError');
-      errEl.textContent = event.error ? event.error.message : '';
-      validateForm();
-    });
-  }
-}
-
-// ===================================================================
-// SAVED CARDS (Member only)
-// ===================================================================
-async function loadSavedCards() {
-  if (!currentUser || !currentUser.member_id || !API_BASE) return;
-  try {
-    const data = await apiFetch('/api/members/' + currentUser.member_id + '/card');
-    savedCards = data.cards || [];
-    renderSavedCards();
-  } catch(e) { /* ignored - no saved cards */ }
-}
-
-function renderSavedCards() {
-  const container = document.getElementById('savedCardsContainer');
-  if (!container || savedCards.length === 0) {
-    // Show save card checkbox for logged-in members
-    if (currentUser && !isGuest) {
-      const check = document.getElementById('saveCardCheck');
-      if (check) check.style.display = '';
-    }
-    return;
-  }
-
-  const brandIcons = { visa:'VISA', mastercard:'Master', amex:'AMEX', jcb:'JCB', discover:'Discover', diners:'Diners' };
-  let html = '<div class="saved-cards">';
-  savedCards.forEach((card, i) => {
-    const brandLabel = brandIcons[card.brand] || card.brand;
-    html += `
-      <div class="saved-card${i===0?' active':''}" onclick="selectSavedCard('${card.id}',this)">
-        <div class="saved-card-radio"></div>
-        <div class="saved-card-info">
-          <span class="saved-card-brand">${brandLabel}</span>
-          <span class="saved-card-last4">**** ${card.last4}　${String(card.exp_month).padStart(2,'0')}/${String(card.exp_year).slice(-2)}</span>
-        </div>
-      </div>`;
-  });
-  html += `
-    <div class="saved-card new-card-option${savedCards.length===0?' active':''}" onclick="selectNewCard(this)">
-      <div class="saved-card-radio"></div>
-      <div class="saved-card-info">
-        <span class="saved-card-brand">+ 新しいカードを使う</span>
-      </div>
-    </div>
-  </div>`;
-  container.innerHTML = html;
-
-  // Default to first saved card
-  if (savedCards.length > 0) {
-    selectedSavedCardId = savedCards[0].id;
-    useNewCard = false;
-    document.getElementById('newCardSection').style.display = 'none';
-  }
-  validateForm();
-}
-
-function selectSavedCard(cardId, el) {
-  selectedSavedCardId = cardId;
-  useNewCard = false;
-  document.querySelectorAll('#savedCardsContainer .saved-card').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('newCardSection').style.display = 'none';
-  validateForm();
-}
-
-function selectNewCard(el) {
-  selectedSavedCardId = null;
-  useNewCard = true;
-  document.querySelectorAll('#savedCardsContainer .saved-card').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('newCardSection').style.display = '';
-  mountStripeElement();
-  // Show save checkbox for members
-  if (currentUser && !isGuest) {
-    const check = document.getElementById('saveCardCheck');
-    if (check) check.style.display = '';
-  }
-  validateForm();
-}
-
 function selectPayment(id, el) {
   selectedPayment = id;
   document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('active'));
@@ -1373,13 +1165,21 @@ function selectPayment(id, el) {
 
   // Show card form only for card
   const cardForm = document.getElementById('cardForm');
-  if(cardForm) {
-    cardForm.style.display = id==='card' ? '' : 'none';
-    if (id === 'card' && useNewCard) mountStripeElement();
-  }
+  if(cardForm) cardForm.style.display = id==='card' ? '' : 'none';
 
   // Update order button
   validateForm();
+}
+
+function formatCardNumber(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,16);
+  el.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,4);
+  if(v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2);
+  el.value = v;
 }
 
 // ===================================================================
@@ -1481,6 +1281,25 @@ function updatePriceSummary() {
   let pointDiscount = Math.min(appliedPoints, subtotal + delivery + surcharge - couponDiscount);
   if(pointDiscount < 0) pointDiscount = 0;
 
+  // FIFO ポイント消費: source 別の内訳を計算（古いポイントから消費）
+  let _fifoRemaining = pointDiscount;
+  let _aidenPointsUsed = 0, _normalPointsUsed = 0;
+  if(CHECKOUT_DATA.pointTransactions && CHECKOUT_DATA.pointTransactions.length > 0) {
+    for(var _i = 0; _i < CHECKOUT_DATA.pointTransactions.length; _i++) {
+      if(_fifoRemaining <= 0) break;
+      var _txn = CHECKOUT_DATA.pointTransactions[_i];
+      var _consume = Math.min(_txn.remaining_balance, _fifoRemaining);
+      if(_txn.source === 'aiden_compensation') _aidenPointsUsed += _consume;
+      else _normalPointsUsed += _consume;
+      _fifoRemaining -= _consume;
+    }
+  } else {
+    // フォールバック（トランザクション未ロード時は全て通常ポイント扱い）
+    _normalPointsUsed = pointDiscount;
+  }
+  CHECKOUT_DATA.aidenPointsUsed = _aidenPointsUsed;
+  CHECKOUT_DATA.normalPointsUsed = _normalPointsUsed;
+
   const total = Math.max(0, subtotal + delivery + surcharge - couponDiscount - pointDiscount);
 
   document.getElementById('priceSubtotal').textContent = '¥' + subtotal.toLocaleString();
@@ -1542,8 +1361,97 @@ function editAddress() {
     CHECKOUT_DATA.userAddress = addr.trim();
     document.getElementById('locationText').textContent = addr.trim();
     document.getElementById('alertLocation').classList.remove('show');
+    // 保存済み住所の選択を解除
+    document.querySelectorAll('.saved-addr-item').forEach(el => el.classList.remove('selected'));
     validateForm();
   }
+}
+
+// ===================================================================
+// SAVED ADDRESSES (member_addresses テーブル)
+// ===================================================================
+let savedAddresses = [];
+
+async function loadSavedAddresses() {
+  try {
+    // member_id は仮に sessionStorage から取得（認証実装後に差し替え）
+    const memberId = sessionStorage.getItem('aiden_member_id');
+    if (!memberId) return;
+
+    const { data, error } = await sb
+      .from('member_addresses')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) return;
+    savedAddresses = data;
+    renderSavedAddresses();
+  } catch(e) { /* 静かに終了 */ }
+}
+
+function renderSavedAddresses() {
+  const container = document.getElementById('savedAddressList');
+  if (!savedAddresses.length) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  container.innerHTML = '<div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px">📋 保存済み住所</div>'
+    + savedAddresses.map((a, i) => {
+      const fullAddr = (a.prefecture || '') + (a.city || '') + (a.address_line || '');
+      const defaultBadge = a.is_default ? '<span class="saved-addr-default">デフォルト</span>' : '';
+      return '<div class="saved-addr-item" onclick="selectSavedAddress(' + i + ')" data-idx="' + i + '">'
+        + '<div class="saved-addr-radio"></div>'
+        + '<div style="flex:1">'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+        + '<span class="saved-addr-label">' + escapeHtml(a.label || '住所' + (i+1)) + '</span>'
+        + defaultBadge
+        + '</div>'
+        + '<div class="saved-addr-text">〒' + escapeHtml(a.postal_code || '') + ' ' + escapeHtml(fullAddr) + '</div>'
+        + '</div></div>';
+    }).join('');
+}
+
+function selectSavedAddress(idx) {
+  const a = savedAddresses[idx];
+  if (!a) return;
+  const fullAddr = (a.prefecture || '') + (a.city || '') + (a.address_line || '');
+  CHECKOUT_DATA.userAddress = fullAddr;
+  document.getElementById('locationText').textContent = fullAddr;
+  document.getElementById('alertLocation').classList.remove('show');
+  // 選択状態のUI更新
+  document.querySelectorAll('.saved-addr-item').forEach(el => el.classList.remove('selected'));
+  document.querySelector('.saved-addr-item[data-idx="' + idx + '"]').classList.add('selected');
+  // 保存済み住所を選択した場合は保存チェックを外す
+  document.getElementById('chkSaveAddress').checked = false;
+  validateForm();
+}
+
+async function saveAddressIfChecked() {
+  if (!document.getElementById('chkSaveAddress').checked) return;
+  const memberId = sessionStorage.getItem('aiden_member_id');
+  if (!memberId) return;
+  const addr = CHECKOUT_DATA.userAddress;
+  if (!addr) return;
+
+  // 簡易的に住所をパース（都道府県・市区町村・残り）
+  const prefMatch = addr.match(/^(.{2,3}[都道府県])/);
+  const prefecture = prefMatch ? prefMatch[1] : '';
+  const rest = prefMatch ? addr.slice(prefecture.length) : addr;
+  const cityMatch = rest.match(/^(.+?[市区町村郡])/);
+  const city = cityMatch ? cityMatch[1] : '';
+  const addressLine = cityMatch ? rest.slice(city.length) : rest;
+
+  try {
+    await sb.from('member_addresses').insert({
+      member_id: memberId,
+      label: '配達先',
+      postal_code: '',
+      prefecture: prefecture,
+      city: city,
+      address_line: addressLine || addr,
+      is_default: savedAddresses.length === 0
+    });
+  } catch(e) { /* 静かに終了 */ }
 }
 
 // ===================================================================
@@ -1608,12 +1516,12 @@ function checkAllValid(showAlerts) {
   if(!selectedPayment) { valid = false; errors.push('お支払い方法'); }
   if(showAlerts) document.getElementById('alertPayment').classList.toggle('show', !selectedPayment);
   if(selectedPayment === 'card') {
-    if (useNewCard) {
-      // Stripe Elements validation
-      if (!stripeCardComplete) valid = false;
-    } else {
-      // Saved card must be selected
-      if (!selectedSavedCardId) valid = false;
+    const cn = document.getElementById('cardNumber').value.replace(/\s/g,'');
+    const ce = document.getElementById('cardExpiry').value;
+    const cc = document.getElementById('cardCvc').value;
+    const ch = document.getElementById('cardHolder').value.trim();
+    if(!cn || cn.length < 14 || !ce || ce.length < 5 || !cc || cc.length < 3 || !ch) {
+      valid = false;
     }
   }
 
@@ -1722,357 +1630,12 @@ function clearPoints() {
   recalcSubtotal();
 }
 
-// ===================================================================
-// AUTH STATE
-// ===================================================================
-let currentUser = null; // { member_id, email, first_name, last_name, ... }
-let authToken = null;
-let isGuest = false;
-let guestInfo = null;
-
-// Check for existing session on load (including LINE callback redirect)
-function initAuthState() {
-  // Handle LINE login callback (token in URL fragment)
-  if (window.location.hash && window.location.hash.length > 1) {
-    try {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      if (params.get('access_token')) {
-        authToken = params.get('access_token');
-        currentUser = JSON.parse(params.get('member'));
-        localStorage.setItem('aiden_token', authToken);
-        localStorage.setItem('aiden_member', params.get('member'));
-        if (params.get('refresh_token')) {
-          localStorage.setItem('aiden_refresh_token', params.get('refresh_token'));
-        }
-        // Clean URL fragment
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-        updateAuthUI();
-        prefillCustomerInfo();
-        loadSavedCards();
-
-        // If new LINE user, show additional info form
-        if (params.get('is_new_user') === 'true') {
-          setTimeout(() => showAuthScreen('lineExtra'), 500);
-        }
-        return;
-      }
-      if (params.get('error')) {
-        console.error('LINE login error:', params.get('error'));
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-    } catch(e) { /* ignored */ }
-  }
-
-  // Check localStorage for existing session
-  try {
-    const saved = localStorage.getItem('aiden_token');
-    const savedMember = localStorage.getItem('aiden_member');
-    if (saved && savedMember) {
-      authToken = saved;
-      currentUser = JSON.parse(savedMember);
-      updateAuthUI();
-    }
-  } catch(e) { /* ignored */ }
-}
-
-function updateAuthUI() {
-  const btn = document.querySelector('.btn-signin');
-  if (currentUser) {
-    btn.textContent = currentUser.last_name + ' ' + currentUser.first_name;
-    btn.onclick = null;
-  }
-}
-
-// ===================================================================
-// AUTH MODAL CONTROL
-// ===================================================================
-function showAuthModal() {
-  document.getElementById('authOverlay').classList.add('show');
-  document.body.style.overflow = 'hidden';
-  showAuthScreen('choice');
-}
-
-function hideAuthModal() {
-  document.getElementById('authOverlay').classList.remove('show');
-  document.body.style.overflow = '';
-  // Clear errors
-  document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('show'));
-}
-
-function showAuthScreen(screenId) {
-  document.querySelectorAll('.auth-screen').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById('authScreen_' + screenId);
-  if (target) target.classList.add('active');
-}
-
-// ===================================================================
-// REGISTER
-// ===================================================================
-let registerGender = null;
-
-function setRegisterGender(g) {
-  registerGender = g;
-  document.querySelectorAll('#authScreen_register .auth-gender-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.gender === g);
-  });
-}
-
-async function submitRegister() {
-  const btn = document.getElementById('btnRegisterSubmit');
-  const errEl = document.getElementById('registerError');
-  errEl.classList.remove('show');
-
-  const last_name = document.getElementById('regLastName').value.trim();
-  const first_name = document.getElementById('regFirstName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-  const phone = document.getElementById('regPhone').value.trim();
-  const birth_date = document.getElementById('regBirthDate').value || undefined;
-  const address_prefecture = document.getElementById('regPrefecture').value || undefined;
-  const address_city = document.getElementById('regCity').value.trim() || undefined;
-  const address_street = document.getElementById('regStreet').value.trim() || undefined;
-  const address_building = document.getElementById('regBuilding').value.trim() || undefined;
-  const agree = document.getElementById('regAgree').checked;
-
-  // Validate
-  if (!last_name || !first_name || !email || !password || !phone) {
-    errEl.textContent = '必須項目を全て入力してください';
-    errEl.classList.add('show');
-    return;
-  }
-  if (password.length < 8) {
-    errEl.textContent = 'パスワードは8文字以上で設定してください';
-    errEl.classList.add('show');
-    return;
-  }
-  if (!agree) {
-    errEl.textContent = '利用規約とプライバシーポリシーに同意してください';
-    errEl.classList.add('show');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '登録中...';
-
-  try {
-    const res = await fetch(API_BASE + '/api/members/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email, password, first_name, last_name, phone,
-        gender: registerGender || undefined,
-        birth_date, address_prefecture, address_city, address_street, address_building,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      errEl.textContent = data.error || '登録に失敗しました';
-      errEl.classList.add('show');
-      return;
-    }
-
-    // Show success — need to verify email first, then login
-    document.getElementById('registerSuccess').classList.add('show');
-    document.getElementById('registerSuccess').textContent = data.message || '確認メールを送信しました';
-
-    // Auto-login after registration
-    const loginRes = await fetch(API_BASE + '/api/members/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (loginRes.ok) {
-      const loginData = await loginRes.json();
-      authToken = loginData.access_token;
-      currentUser = loginData.member;
-      localStorage.setItem('aiden_token', authToken);
-      localStorage.setItem('aiden_member', JSON.stringify(currentUser));
-      updateAuthUI();
-      prefillCustomerInfo();
-      loadSavedCards();
-
-      setTimeout(() => {
-        hideAuthModal();
-      }, 1500);
-    }
-  } catch(e) {
-    errEl.textContent = 'ネットワークエラーが発生しました';
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '会員登録する';
-  }
-}
-
-// ===================================================================
-// LOGIN
-// ===================================================================
-async function submitLogin() {
-  const btn = document.getElementById('btnLoginSubmit');
-  const errEl = document.getElementById('loginError');
-  errEl.classList.remove('show');
-
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  if (!email || !password) {
-    errEl.textContent = 'メールアドレスとパスワードを入力してください';
-    errEl.classList.add('show');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'ログイン中...';
-
-  try {
-    const res = await fetch(API_BASE + '/api/members/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      errEl.textContent = data.error || 'ログインに失敗しました';
-      errEl.classList.add('show');
-      return;
-    }
-
-    authToken = data.access_token;
-    currentUser = data.member;
-    localStorage.setItem('aiden_token', authToken);
-    localStorage.setItem('aiden_member', JSON.stringify(currentUser));
-    updateAuthUI();
-    prefillCustomerInfo();
-    loadSavedCards();
-    hideAuthModal();
-  } catch(e) {
-    errEl.textContent = 'ネットワークエラーが発生しました';
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'ログイン';
-  }
-}
-
-// ===================================================================
-// LINE LOGIN
-// ===================================================================
-function startLineLogin() {
-  const channelId = ''; // Set via environment/config in production
-  const callbackUrl = encodeURIComponent(API_BASE + '/api/members/login/line/callback');
-  const state = crypto.randomUUID();
-  sessionStorage.setItem('aiden_line_state', state);
-  // Save current checkout data so we can restore after redirect
-  sessionStorage.setItem('aiden_checkout_data', JSON.stringify(CHECKOUT_DATA));
-  const lineAuthUrl = 'https://access.line.me/oauth2/v2.1/authorize'
-    + '?response_type=code'
-    + '&client_id=' + channelId
-    + '&redirect_uri=' + callbackUrl
-    + '&state=' + state
-    + '&scope=profile%20openid';
-  window.location.href = lineAuthUrl;
-}
-
-// ===================================================================
-// GUEST ORDER
-// ===================================================================
-function updateGuestFields() {
-  const guestMode = mode; // use current order mode
-  document.querySelectorAll('.guest-field-delivery').forEach(el => {
-    el.style.display = (guestMode === 'delivery') ? '' : 'none';
-  });
-  document.querySelectorAll('.guest-field-pickup').forEach(el => {
-    el.style.display = (guestMode === 'delivery' || guestMode === 'takeout') ? '' : 'none';
-  });
-}
-
-function submitGuest() {
-  const errEl = document.getElementById('guestError');
-  errEl.classList.remove('show');
-
-  const name = document.getElementById('guestName').value.trim();
-  const email = document.getElementById('guestEmail').value.trim();
-  const phone = document.getElementById('guestPhone')?.value.trim() || '';
-  const addr_pref = document.getElementById('guestPrefecture')?.value || '';
-  const addr_city = document.getElementById('guestCity')?.value.trim() || '';
-  const addr_street = document.getElementById('guestStreet')?.value.trim() || '';
-  const addr_building = document.getElementById('guestBuilding')?.value.trim() || '';
-
-  // Validate based on mode
-  if (!name || !email || !email.includes('@')) {
-    errEl.textContent = '名前とメールアドレスは必須です';
-    errEl.classList.add('show');
-    return;
-  }
-  if ((mode === 'takeout' || mode === 'delivery') && !phone) {
-    errEl.textContent = '電話番号を入力してください';
-    errEl.classList.add('show');
-    return;
-  }
-  if (mode === 'delivery' && (!addr_pref || !addr_city || !addr_street)) {
-    errEl.textContent = '配達先住所を入力してください';
-    errEl.classList.add('show');
-    return;
-  }
-
-  isGuest = true;
-  guestInfo = {
-    name, email, phone,
-    address_prefecture: addr_pref,
-    address_city: addr_city,
-    address_street: addr_street,
-    address_building: addr_building,
-  };
-
-  // Prefill customer info from guest data
-  const nameParts = name.split(/\s+/);
-  document.getElementById('custLastName').value = nameParts[0] || '';
-  document.getElementById('custFirstName').value = nameParts.slice(1).join(' ') || '';
-  document.getElementById('custEmail').value = email;
-  document.getElementById('custPhone').value = phone;
-
-  if (mode === 'delivery' && addr_pref) {
-    CHECKOUT_DATA.userAddress = addr_pref + addr_city + addr_street + (addr_building ? ' ' + addr_building : '');
-    document.getElementById('locationText').textContent = CHECKOUT_DATA.userAddress;
-  }
-
-  validateForm();
-  hideAuthModal();
-}
-
-// ===================================================================
-// PREFILL CUSTOMER INFO FROM LOGGED-IN USER
-// ===================================================================
-function prefillCustomerInfo() {
-  if (!currentUser) return;
-  if (currentUser.last_name) document.getElementById('custLastName').value = currentUser.last_name;
-  if (currentUser.first_name) document.getElementById('custFirstName').value = currentUser.first_name;
-  if (currentUser.email) document.getElementById('custEmail').value = currentUser.email;
-  if (currentUser.phone) document.getElementById('custPhone').value = currentUser.phone;
-
-  // Prefill delivery address if available
-  if (currentUser.address_prefecture && mode === 'delivery') {
-    const addr = (currentUser.address_prefecture || '') + (currentUser.address_city || '') + (currentUser.address_street || '') + (currentUser.address_building ? ' ' + currentUser.address_building : '');
-    if (addr.trim()) {
-      CHECKOUT_DATA.userAddress = addr.trim();
-      document.getElementById('locationText').textContent = CHECKOUT_DATA.userAddress;
-    }
-  }
-  validateForm();
-}
-
-// ===================================================================
-// PLACE ORDER (with auth check + Stripe payment)
-// ===================================================================
-let isPlacingOrder = false;
+// AIden 手数料率（チャネル別）- システム設定と同期
+const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 
 async function placeOrder() {
-  if (isPlacingOrder) return;
-
   if(!checkAllValid(true)) {
+    // Show summary alert
     const alertEl = document.getElementById('orderAlert');
     const missing = [];
     const ln = document.getElementById('custLastName').value.trim();
@@ -2084,14 +1647,9 @@ async function placeOrder() {
     if(!selectedPayment) missing.push('お支払い方法');
     alertEl.textContent = '入力が不足しています: ' + missing.join('、');
     alertEl.classList.add('show');
+    // Scroll to first error
     const firstAlert = document.querySelector('.section-alert.show');
     if(firstAlert) firstAlert.scrollIntoView({ behavior:'smooth', block:'center' });
-    return;
-  }
-
-  // Check auth status — show modal if not logged in and not guest
-  if (!currentUser && !isGuest) {
-    showAuthModal();
     return;
   }
 
@@ -2099,340 +1657,109 @@ async function placeOrder() {
   document.getElementById('orderAlert').classList.remove('show');
   document.querySelectorAll('.section-alert').forEach(a => a.classList.remove('show'));
 
-  // --- Non-Stripe fallback (when STRIPE_PUBLIC_KEY is not set) ---
-  if (!stripeInstance || !API_BASE) {
-    const pm = CHECKOUT_DATA.paymentMethods.find(p => p.id === selectedPayment);
-    const orderInfo = currentUser
-      ? '会員: ' + currentUser.last_name + ' ' + currentUser.first_name
-      : 'ゲスト: ' + (guestInfo?.name || '');
-    alert('✅ 注文が完了しました！\n\n' +
-      orderInfo + '\n' +
-      '注文モード: ' + (mode==='delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
-      '決済方法: ' + pm.name + '\n' +
-      '合計: ' + document.getElementById('priceTotal').textContent + '\n\n' +
-      '（API未接続のためシミュレーションです）');
-    return;
-  }
+  // 住所保存処理（チェックされている場合）
+  saveAddressIfChecked();
 
-  // --- Real Stripe + API flow ---
-  isPlacingOrder = true;
-  const btn = document.getElementById('btnOrder');
-  const origText = document.getElementById('orderBtnText').textContent;
-  btn.disabled = true;
-  document.getElementById('orderBtnText').textContent = '注文処理中...';
+  const pm = CHECKOUT_DATA.paymentMethods.find(p => p.id === selectedPayment);
+  const totalEl = document.getElementById('priceTotal');
+  const totalText = totalEl ? totalEl.textContent.replace(/[^0-9]/g, '') : '0';
+  const totalAmount = parseInt(totalText, 10);
 
-  try {
-    // 1. Build order items payload
-    const items = CHECKOUT_DATA.cartItems.map(item => ({
-      product_id: item.id || item.product_id,
-      size_id: item.size_id || null,
-      quantity: item.qty,
-      option_item_ids: item.option_item_ids || [],
-    }));
+  // カード決済の場合: Stripe Connect 経由で PaymentIntent を作成
+  if (selectedPayment === 'card') {
+    const orderBtn = document.querySelector('.order-btn');
+    if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = '決済処理中...'; }
 
-    // 2. Build scheduled time
-    let scheduledAt = null;
-    if (mode === 'delivery' && selectedTime === 'scheduled') {
-      const d = document.getElementById('schedDate').value;
-      const t = document.getElementById('schedTime').value;
-      if (d && t) scheduledAt = d + 'T' + t + ':00';
-    } else if (mode === 'takeout') {
-      const d = document.getElementById('takeoutDate').value;
-      const t = document.getElementById('takeoutTime').value;
-      if (d && t) scheduledAt = d + 'T' + t + ':00';
-    }
+    try {
+      // チャネル判定（手数料率の決定用）
+      const channel = mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout');
+      const feeRate = AIDEN_FEE_RATES[channel] || 0.040;
+      const applicationFee = Math.round(totalAmount * feeRate);
 
-    // 3. Build customer info
-    const customer = {
-      last_name: document.getElementById('custLastName').value.trim(),
-      first_name: document.getElementById('custFirstName').value.trim(),
-      email: document.getElementById('custEmail').value.trim(),
-      phone: document.getElementById('custPhone').value.trim(),
-    };
-
-    // 4. POST /api/orders/ to create order + PaymentIntent
-    const orderPayload = {
-      store_id: CHECKOUT_DATA.storeId,
-      order_type: mode === 'delivery' ? 'delivery' : 'takeout',
-      items,
-      customer,
-      delivery_address: mode === 'delivery' ? CHECKOUT_DATA.userAddress : undefined,
-      scheduled_at: scheduledAt,
-      leave_at_door: mode === 'delivery' ? document.getElementById('toggleLeaveAtDoor')?.checked : undefined,
-      payment_method: selectedPayment,
-    };
-
-    // Add member_id if logged in
-    if (currentUser && currentUser.member_id) {
-      orderPayload.member_id = currentUser.member_id;
-    }
-
-    const orderRes = await apiFetch('/api/orders/', {
-      method: 'POST',
-      body: JSON.stringify(orderPayload),
-    });
-
-    const clientSecret = orderRes.client_secret;
-    const orderId = orderRes.order_id || orderRes.display_id;
-    const trackingToken = orderRes.tracking_token;
-
-    // 5. Confirm payment with Stripe
-    let paymentResult;
-
-    if (selectedPayment === 'card') {
-      if (!useNewCard && selectedSavedCardId) {
-        // Use saved payment method
-        paymentResult = await stripeInstance.confirmCardPayment(clientSecret, {
-          payment_method: selectedSavedCardId,
-        });
-      } else {
-        // Use new card via Stripe Elements
-        const paymentData = {
-          payment_method: {
-            card: stripeCardElement,
-            billing_details: {
-              name: customer.last_name + ' ' + customer.first_name,
-              email: customer.email,
-              phone: customer.phone,
-            },
-          },
-        };
-
-        // Save card for future use (member only)
-        if (currentUser && !isGuest) {
-          const saveToggle = document.getElementById('saveCardToggle');
-          if (saveToggle && saveToggle.checked) {
-            paymentData.setup_future_usage = 'off_session';
-          }
-        }
-
-        paymentResult = await stripeInstance.confirmCardPayment(clientSecret, paymentData);
-      }
-    } else {
-      // For other payment methods (Apple Pay, Google Pay, PayPay) — future implementation
-      // For now, just confirm with card as fallback
-      paymentResult = await stripeInstance.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: stripeCardElement,
-          billing_details: {
-            name: customer.last_name + ' ' + customer.first_name,
-          },
+      // Supabase Edge Function で PaymentIntent を作成
+      const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_KEY
         },
+        body: JSON.stringify({
+          amount: totalAmount,
+          currency: 'jpy',
+          stripe_account_id: CHECKOUT_DATA.stripeAccountId || null,
+          application_fee_amount: applicationFee,
+          metadata: {
+            store_id: CHECKOUT_DATA.storeId || '',
+            order_mode: mode,
+            customer_email: document.getElementById('custEmail').value.trim(),
+            customer_name: document.getElementById('custLastName').value.trim() + ' ' + document.getElementById('custFirstName').value.trim(),
+            points_used: appliedPoints || 0,
+            aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+            normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0
+          }
+        })
       });
-    }
 
-    if (paymentResult.error) {
-      // Payment failed
-      const alertEl = document.getElementById('orderAlert');
-      alertEl.textContent = '決済に失敗しました: ' + paymentResult.error.message;
-      alertEl.classList.add('show');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: '決済処理に失敗しました' }));
+        throw new Error(err.error || '決済処理に失敗しました');
+      }
+
+      const data = await res.json();
+
+      // PaymentIntent の client_secret で 3Dセキュア認証を実行
+      // ※ 本番実装では Stripe.js の confirmCardPayment を使用
+      // const stripe = Stripe('pk_test_xxx');
+      // const { error } = await stripe.confirmCardPayment(data.client_secret, {
+      //   payment_method: { card: cardElement }
+      // });
+
+      // テスト環境: 3Dセキュア認証のシミュレーション
+      if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + data.payment_intent_id + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n送金先: ' + (CHECKOUT_DATA.stripeAccountId || 'なし') + '\n\n認証を完了しますか？')) {
+        if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
+        return;
+      }
+
+      // ポイント消費トランザクションを記録
+      if (appliedPoints > 0) {
+        try {
+          const memberId = sessionStorage.getItem('aiden_member_id');
+          if (memberId) {
+            await sb.from('point_transactions').insert({
+              member_id: memberId,
+              amount: -appliedPoints,
+              balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
+              source: 'normal',
+              reason: '注文消費（' + data.payment_intent_id + '）',
+              order_id: null
+            });
+          }
+        } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
+      }
+
+      alert('✅ 注文が完了しました！\n\n' +
+        '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
+        '決済方法: ' + pm.name + '\n' +
+        '合計: ¥' + totalAmount.toLocaleString() + '\n' +
+        'PaymentIntent: ' + data.payment_intent_id + '\n' +
+        (appliedPoints > 0 ? 'ポイント使用: ' + appliedPoints + 'pt（AIden原資: ' + (CHECKOUT_DATA.aidenPointsUsed||0) + 'pt / 通常: ' + (CHECKOUT_DATA.normalPointsUsed||0) + 'pt）\n' : '') +
+        '\n（注文追跡ページへ遷移します）');
+
+    } catch (e) {
+      console.error('Payment error:', e);
+      alert('❌ 決済エラー: ' + e.message);
+      if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
       return;
     }
-
-    // 6. Payment succeeded — redirect to tracking page
-    const trackingUrl = './aiden-order-tracking.html?order=' + encodeURIComponent(orderId) + '&token=' + encodeURIComponent(trackingToken);
-
-    // Clear cart
-    try { sessionStorage.removeItem('aiden_checkout_data'); } catch(e) {}
-
-    window.location.href = trackingUrl;
-
-  } catch(e) {
-    const alertEl = document.getElementById('orderAlert');
-    alertEl.textContent = '注文処理中にエラーが発生しました: ' + (e.message || e);
-    alertEl.classList.add('show');
-    alertEl.scrollIntoView({ behavior:'smooth', block:'center' });
-  } finally {
-    isPlacingOrder = false;
-    btn.disabled = false;
-    document.getElementById('orderBtnText').textContent = origText;
+  } else {
+    // カード以外の決済（PayPay, Apple Pay 等）- 現状シミュレーション
+    alert('✅ 注文が完了しました！\n\n' +
+      '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
+      '決済方法: ' + pm.name + '\n' +
+      '合計: ¥' + totalAmount.toLocaleString() + '\n\n' +
+      '（注文追跡ページへ遷移します）');
   }
 }
-
-// Init auth on page load
-initAuthState();
 </script>
-
-<!-- ===== AUTH MODAL ===== -->
-<div class="auth-overlay" id="authOverlay" onclick="if(event.target===this)hideAuthModal()">
-  <div class="auth-modal">
-    <div class="auth-modal-close" onclick="hideAuthModal()">&times;</div>
-    <div class="auth-modal-body">
-
-      <!-- Screen: Choice -->
-      <div class="auth-screen active" id="authScreen_choice">
-        <div class="auth-choice-title">会員登録でスムーズに注文</div>
-        <div class="auth-choice-sub">お得なクーポンやポイントをご利用いただけます</div>
-
-        <div class="auth-benefits">
-          <div class="auth-benefit coupon" title="クーポン">🎫</div>
-          <div class="auth-benefit point" title="ポイント">💰</div>
-          <div class="auth-benefit pay" title="かんたん決済">💳</div>
-        </div>
-
-        <button class="auth-btn auth-btn-register" onclick="showAuthScreen('register')">会員登録</button>
-        <button class="auth-btn auth-btn-line" onclick="startLineLogin()">
-          <svg viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-          LINEでログイン
-        </button>
-        <button class="auth-btn auth-btn-login" onclick="showAuthScreen('login')">ログイン</button>
-        <div class="auth-btn-guest" onclick="showAuthScreen('guest');updateGuestFields()">ゲストとして注文</div>
-      </div>
-
-      <!-- Screen: Register -->
-      <div class="auth-screen" id="authScreen_register">
-        <div class="auth-back" onclick="showAuthScreen('choice')">← 戻る</div>
-        <div class="auth-form-title">会員登録</div>
-        <div class="auth-form-sub">アカウントを作成して、お得に注文しましょう</div>
-
-        <div class="auth-error" id="registerError"></div>
-        <div class="auth-success" id="registerSuccess"></div>
-
-        <div class="auth-form-row">
-          <div class="auth-form-group">
-            <label>姓<span class="req">*</span></label>
-            <input type="text" class="form-input" id="regLastName" placeholder="山田">
-          </div>
-          <div class="auth-form-group">
-            <label>名<span class="req">*</span></label>
-            <input type="text" class="form-input" id="regFirstName" placeholder="太郎">
-          </div>
-        </div>
-        <div class="auth-form-group">
-          <label>メールアドレス<span class="req">*</span></label>
-          <input type="email" class="form-input" id="regEmail" placeholder="example@mail.com">
-        </div>
-        <div class="auth-form-group">
-          <label>パスワード<span class="req">*</span> <span style="font-weight:400;color:var(--text-light)">(8文字以上)</span></label>
-          <input type="password" class="form-input" id="regPassword" placeholder="8文字以上で入力">
-        </div>
-        <div class="auth-form-group">
-          <label>電話番号<span class="req">*</span></label>
-          <input type="tel" class="form-input" id="regPhone" placeholder="09012345678">
-        </div>
-
-        <div class="auth-form-section-label">任意項目</div>
-
-        <div class="auth-form-group">
-          <label>性別</label>
-          <div class="auth-gender-group">
-            <div class="auth-gender-btn" data-gender="male" onclick="setRegisterGender('male')">男性</div>
-            <div class="auth-gender-btn" data-gender="female" onclick="setRegisterGender('female')">女性</div>
-            <div class="auth-gender-btn" data-gender="other" onclick="setRegisterGender('other')">その他</div>
-          </div>
-        </div>
-        <div class="auth-form-group">
-          <label>生年月日</label>
-          <input type="date" class="form-input" id="regBirthDate">
-        </div>
-        <div class="auth-form-group">
-          <label>配達先住所</label>
-          <div class="auth-form-hint">入力しておくとデリバリー注文時に便利です</div>
-          <select class="form-input" id="regPrefecture" style="margin-top:6px">
-            <option value="">都道府県を選択</option>
-            <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option>
-            <option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option>
-            <option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option>
-            <option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option>
-            <option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
-            <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option>
-            <option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option>
-            <option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option>
-            <option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option>
-            <option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option>
-            <option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option>
-            <option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
-          </select>
-          <input type="text" class="form-input" id="regCity" placeholder="市区町村" style="margin-top:6px">
-          <input type="text" class="form-input" id="regStreet" placeholder="番地" style="margin-top:6px">
-          <input type="text" class="form-input" id="regBuilding" placeholder="建物名・部屋番号" style="margin-top:6px">
-        </div>
-
-        <div class="auth-terms-check">
-          <input type="checkbox" id="regAgree">
-          <label for="regAgree"><a href="./aiden-terms.html" target="_blank">利用規約</a>と<a href="./aiden-privacy.html" target="_blank">プライバシーポリシー</a>に同意する</label>
-        </div>
-
-        <button class="auth-submit" id="btnRegisterSubmit" onclick="submitRegister()">会員登録する</button>
-      </div>
-
-      <!-- Screen: Login -->
-      <div class="auth-screen" id="authScreen_login">
-        <div class="auth-back" onclick="showAuthScreen('choice')">← 戻る</div>
-        <div class="auth-form-title">ログイン</div>
-        <div class="auth-form-sub">登録済みのアカウントでログイン</div>
-
-        <div class="auth-error" id="loginError"></div>
-
-        <div class="auth-form-group">
-          <label>メールアドレス</label>
-          <input type="email" class="form-input" id="loginEmail" placeholder="example@mail.com">
-        </div>
-        <div class="auth-form-group">
-          <label>パスワード</label>
-          <input type="password" class="form-input" id="loginPassword" placeholder="パスワード">
-        </div>
-
-        <button class="auth-submit" id="btnLoginSubmit" onclick="submitLogin()" style="margin-top:20px">ログイン</button>
-      </div>
-
-      <!-- Screen: Guest -->
-      <div class="auth-screen" id="authScreen_guest">
-        <div class="auth-back" onclick="showAuthScreen('choice')">← 戻る</div>
-        <div class="auth-form-title">ゲストとして注文</div>
-        <div class="auth-form-sub">カード情報は保存されません</div>
-
-        <div class="auth-error" id="guestError"></div>
-
-        <div class="auth-form-group">
-          <label>お名前<span class="req">*</span></label>
-          <input type="text" class="form-input" id="guestName" placeholder="山田 太郎">
-        </div>
-        <div class="auth-form-group">
-          <label>メールアドレス<span class="req">*</span></label>
-          <input type="email" class="form-input" id="guestEmail" placeholder="example@mail.com">
-        </div>
-        <div class="auth-form-group guest-field-pickup">
-          <label>電話番号<span class="req">*</span></label>
-          <input type="tel" class="form-input" id="guestPhone" placeholder="09012345678">
-        </div>
-
-        <div class="guest-field-delivery">
-          <div class="auth-form-section-label">配達先住所</div>
-          <div class="auth-form-group">
-            <select class="form-input" id="guestPrefecture">
-              <option value="">都道府県を選択</option>
-              <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option>
-              <option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option>
-              <option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option>
-              <option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option>
-              <option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
-              <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option>
-              <option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option>
-              <option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option>
-              <option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option>
-              <option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option>
-              <option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option>
-              <option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
-            </select>
-          </div>
-          <div class="auth-form-group">
-            <input type="text" class="form-input" id="guestCity" placeholder="市区町村">
-          </div>
-          <div class="auth-form-group">
-            <input type="text" class="form-input" id="guestStreet" placeholder="番地">
-          </div>
-          <div class="auth-form-group">
-            <input type="text" class="form-input" id="guestBuilding" placeholder="建物名・部屋番号">
-          </div>
-        </div>
-
-        <button class="auth-submit" onclick="submitGuest()" style="margin-top:20px">ゲストとして注文する</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
