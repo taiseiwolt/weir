@@ -534,6 +534,8 @@ const NAV = [
     {id:'member-rank', label:'ランク設定'},
     {id:'member-incentive', label:'初回特典設定'},
     {id:'member-crm', label:'CRM配信'},
+    {id:'guest-analysis', label:'ゲスト注文分析'},
+    {id:'guest-conversion', label:'ゲスト→会員転換設定'},
     {id:'ai-sns', label:'SNS管理'},
     {id:'subscription', label:'サブスクリプション'},
   ]},
@@ -632,6 +634,8 @@ function showPage(pageId, catId){
     setTimeout(()=>{ if(typeof renderSalesCharts==='function') renderSalesCharts(); }, 50);
   }
   if(pageId === 'member-incentive' && typeof loadIncentiveSettings === 'function') loadIncentiveSettings();
+  if(pageId === 'guest-analysis' && typeof loadGuestAnalysis === 'function') loadGuestAnalysis();
+  if(pageId === 'guest-conversion' && typeof loadGuestConversionSettings === 'function') loadGuestConversionSettings();
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
@@ -2810,6 +2814,88 @@ content.innerHTML = `
         <div style="font-size:14px;font-weight:700;margin-bottom:6px">🎁 初回特典をプレゼント！</div>
         <div id="incentivePreviewDetail" style="font-size:13px;color:#555;line-height:1.6"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 👥 ゲスト注文分析 -->
+<div class="page" id="page-guest-analysis">
+  <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM・SNS</a> ＞ ゲスト注文分析</div>
+  <div class="page-title">ゲスト注文分析</div>
+  <div class="page-subtitle">ゲスト注文の集計データを表示します（個人情報は一切含みません）</div>
+
+  <div style="background:#fff3e0;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:11px;display:flex;align-items:center;gap:8px">
+    <span style="font-size:16px">🔒</span>
+    <div>
+      <div style="font-weight:700;color:#e65100">ゲスト注文者の個人情報は非表示です</div>
+      <div style="color:#888">氏名・メールアドレス・電話番号は加盟店には共有されません。注文回数・金額・店舗別内訳のみ閲覧可能です。</div>
+    </div>
+  </div>
+
+  <div class="stats-row" id="guestAnalysisStats">
+    <div class="stat-card"><div class="stat-label">総ゲスト注文数</div><div class="stat-value" id="guestTotalOrders">--</div></div>
+    <div class="stat-card"><div class="stat-label">ゲスト注文者数（ユニーク）</div><div class="stat-value" id="guestUniqueCount">--</div></div>
+    <div class="stat-card"><div class="stat-label">ゲスト注文売上</div><div class="stat-value" id="guestTotalRevenue">--</div></div>
+    <div class="stat-card"><div class="stat-label">平均注文単価</div><div class="stat-value" id="guestAvgOrderValue">--</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏪 店舗別ゲスト注文一覧</div>
+    <div id="guestStoreTableWrap">
+      <table class="data-table" id="guestStoreTable">
+        <thead><tr><th>店舗名</th><th class="r">注文回数</th><th class="r">合計金額</th><th>最終注文日</th></tr></thead>
+        <tbody id="guestStoreTableBody">
+          <tr><td colspan="4" style="text-align:center;color:#aaa;padding:30px">データを読み込み中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 👥 ゲスト→会員転換設定 -->
+<div class="page" id="page-guest-conversion">
+  <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM・SNS</a> ＞ ゲスト→会員転換設定</div>
+  <div class="page-title">ゲスト→会員転換設定</div>
+  <div class="page-subtitle">ゲスト注文完了後に表示する会員登録促進バナーを設定します</div>
+
+  <div class="card">
+    <div class="card-title">🎯 会員登録促進バナー</div>
+    <div class="toggle-row" style="border:none;padding-bottom:16px">
+      <span class="label" style="font-weight:700;font-size:14px">ゲスト注文完了後に会員登録バナーを表示する</span>
+      <label class="toggle"><input type="checkbox" id="guestPromptEnabled"><span class="slider"></span></label>
+    </div>
+
+    <div id="guestPromptSettings" style="display:none">
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="font-weight:600;margin-bottom:6px;display:block">バナーメッセージ</label>
+        <input type="text" id="guestPromptMessage" value="会員登録すると次回のご注文がもっと便利に！" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+        <div style="font-size:10px;color:#aaa;margin-top:4px">ゲスト注文完了画面に表示されるメインメッセージです</div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="font-weight:600;margin-bottom:6px;display:block">特典テキスト</label>
+        <input type="text" id="guestPromptIncentive" value="今なら100ポイントプレゼント！" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+        <div style="font-size:10px;color:#aaa;margin-top:4px">「○○がもらえます！」などのインセンティブ表示</div>
+      </div>
+
+      <!-- プレビュー -->
+      <div style="margin-top:20px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">📱 プレビュー</div>
+        <div id="guestPromptPreview" style="border:2px solid var(--border);border-radius:12px;padding:20px;max-width:400px;background:#f9fafb">
+          <div style="text-align:center">
+            <div style="font-size:28px;margin-bottom:8px">🎁</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px" id="guestPromptPreviewMsg">会員登録すると次回のご注文がもっと便利に！</div>
+            <div style="font-size:13px;color:#e65100;font-weight:700;margin-bottom:12px" id="guestPromptPreviewIncentive">今なら100ポイントプレゼント！</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <div style="padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;background:var(--accent);cursor:default">無料で会員登録</div>
+              <div style="padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;color:#888;background:#eee;cursor:default">あとで</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-group" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="saveGuestConversionSettings()">保存</button>
     </div>
   </div>
 </div>
@@ -13665,6 +13751,143 @@ function popRefreshSavedList() {
 }
 
 document.addEventListener('DOMContentLoaded', function() { popRefreshSavedList(); });
+
+// ===== ゲスト注文分析 =====
+async function loadGuestAnalysis() {
+  try {
+    const { data, error } = await sb.from('guest_order_summaries').select('*');
+    if (error) throw error;
+
+    const rows = data || [];
+    const totalOrders = rows.reduce(function(s, r) { return s + (r.order_count || 0); }, 0);
+    const uniqueGuests = new Set(rows.map(function(r) { return r.guest_identifier; })).size;
+    const totalRevenue = rows.reduce(function(s, r) { return s + (parseFloat(r.total_amount) || 0); }, 0);
+    const avgOrder = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+
+    document.getElementById('guestTotalOrders').textContent = totalOrders.toLocaleString();
+    document.getElementById('guestUniqueCount').textContent = uniqueGuests.toLocaleString();
+    document.getElementById('guestTotalRevenue').textContent = '\u00a5' + totalRevenue.toLocaleString();
+    document.getElementById('guestAvgOrderValue').textContent = '\u00a5' + avgOrder.toLocaleString();
+
+    // 店舗別集計
+    var storeMap = {};
+    rows.forEach(function(r) {
+      var key = r.store_id || 'unknown';
+      if (!storeMap[key]) storeMap[key] = { name: r.store_name || '不明', count: 0, amount: 0, last: '' };
+      storeMap[key].count += r.order_count || 0;
+      storeMap[key].amount += parseFloat(r.total_amount) || 0;
+      if (r.last_order_at && r.last_order_at > (storeMap[key].last || '')) storeMap[key].last = r.last_order_at;
+    });
+
+    var tbody = document.getElementById('guestStoreTableBody');
+    var storeKeys = Object.keys(storeMap);
+    if (storeKeys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:30px">ゲスト注文データがまだありません</td></tr>';
+    } else {
+      storeKeys.sort(function(a, b) { return storeMap[b].amount - storeMap[a].amount; });
+      tbody.innerHTML = storeKeys.map(function(k) {
+        var s = storeMap[k];
+        var dt = s.last ? s.last.split('T')[0] : '--';
+        return '<tr><td style="font-weight:600">' + s.name + '</td><td class="r" style="font-weight:700">' + s.count.toLocaleString() + '</td><td class="r" style="font-weight:700">\u00a5' + s.amount.toLocaleString() + '</td><td>' + dt + '</td></tr>';
+      }).join('');
+    }
+  } catch (e) {
+    console.warn('Guest analysis load error:', e);
+    document.getElementById('guestStoreTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:30px">データの読み込みに失敗しました</td></tr>';
+  }
+}
+
+// ===== ゲスト→会員転換設定 =====
+var _guestPromptRow = null;
+
+async function loadGuestConversionSettings() {
+  try {
+    var brandId = (typeof BRAND_ID !== 'undefined' && BRAND_ID) ? BRAND_ID : null;
+    if (!brandId) {
+      // ブランドIDを取得（店舗情報から）
+      var storeData = typeof _storeList !== 'undefined' ? _storeList : [];
+      if (storeData.length > 0 && storeData[0].brand_id) brandId = storeData[0].brand_id;
+    }
+    if (!brandId) {
+      // Supabaseから最初のブランドを取得
+      var { data: brands } = await sb.from('brands').select('id').limit(1);
+      if (brands && brands.length > 0) brandId = brands[0].id;
+    }
+    if (!brandId) return;
+
+    var { data, error } = await sb.from('guest_registration_prompt').select('*').eq('brand_id', brandId).maybeSingle();
+    if (error) throw error;
+
+    _guestPromptRow = data;
+    var enabledEl = document.getElementById('guestPromptEnabled');
+    var settingsEl = document.getElementById('guestPromptSettings');
+
+    if (data) {
+      enabledEl.checked = data.is_enabled;
+      document.getElementById('guestPromptMessage').value = data.prompt_message || '';
+      document.getElementById('guestPromptIncentive').value = data.incentive_text || '';
+      settingsEl.style.display = data.is_enabled ? '' : 'none';
+    } else {
+      enabledEl.checked = false;
+      settingsEl.style.display = 'none';
+    }
+
+    enabledEl.onchange = function() {
+      settingsEl.style.display = enabledEl.checked ? '' : 'none';
+    };
+
+    // プレビュー自動更新
+    document.getElementById('guestPromptMessage').oninput = updateGuestPromptPreview;
+    document.getElementById('guestPromptIncentive').oninput = updateGuestPromptPreview;
+    updateGuestPromptPreview();
+  } catch (e) {
+    console.warn('Guest conversion settings load error:', e);
+  }
+}
+
+function updateGuestPromptPreview() {
+  var msg = document.getElementById('guestPromptMessage').value || '';
+  var inc = document.getElementById('guestPromptIncentive').value || '';
+  document.getElementById('guestPromptPreviewMsg').textContent = msg;
+  document.getElementById('guestPromptPreviewIncentive').textContent = inc;
+}
+
+async function saveGuestConversionSettings() {
+  try {
+    var brandId = null;
+    if (typeof BRAND_ID !== 'undefined' && BRAND_ID) brandId = BRAND_ID;
+    if (!brandId) {
+      var storeData = typeof _storeList !== 'undefined' ? _storeList : [];
+      if (storeData.length > 0 && storeData[0].brand_id) brandId = storeData[0].brand_id;
+    }
+    if (!brandId) {
+      var { data: brands } = await sb.from('brands').select('id').limit(1);
+      if (brands && brands.length > 0) brandId = brands[0].id;
+    }
+    if (!brandId) { alert('ブランドIDが取得できません'); return; }
+
+    var payload = {
+      brand_id: brandId,
+      is_enabled: document.getElementById('guestPromptEnabled').checked,
+      prompt_message: document.getElementById('guestPromptMessage').value.trim(),
+      incentive_text: document.getElementById('guestPromptIncentive').value.trim()
+    };
+
+    var result;
+    if (_guestPromptRow && _guestPromptRow.id) {
+      result = await sb.from('guest_registration_prompt').update(payload).eq('id', _guestPromptRow.id);
+    } else {
+      result = await sb.from('guest_registration_prompt').upsert(payload, { onConflict: 'brand_id' });
+    }
+
+    if (result.error) throw result.error;
+    alert('保存しました');
+    loadGuestConversionSettings();
+  } catch (e) {
+    console.error('Save guest conversion settings error:', e);
+    alert('保存に失敗しました: ' + e.message);
+  }
+}
 
 </script>
 </body>
