@@ -220,11 +220,58 @@ serve(async (req) => {
       }
     }
 
+    // 6. PDF生成 + メール送信を非同期で連鎖実行
+    const pdfEmailResults = []
+    const authHeader = req.headers.get('Authorization') || `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+    for (const r of results) {
+      if (r.error || !r.invoice_id) continue
+      try {
+        // PDF生成
+        const pdfRes = await fetch(`${SUPABASE_URL}/functions/v1/generate-invoice-pdf`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify({ invoice_id: r.invoice_id }),
+        })
+        const pdfData = await pdfRes.json()
+
+        // メール送信
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-invoice-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify({ invoice_id: r.invoice_id }),
+        })
+        const emailData = await emailRes.json()
+
+        pdfEmailResults.push({
+          invoice_id: r.invoice_id,
+          corp_name: r.corp_name,
+          pdf: pdfData.success ? 'ok' : pdfData.error,
+          email: emailData.success ? `sent to ${emailData.sent_to}` : emailData.error,
+        })
+      } catch (chainErr) {
+        console.error(`PDF/Email chain error for ${r.invoice_id}:`, chainErr)
+        pdfEmailResults.push({
+          invoice_id: r.invoice_id,
+          corp_name: r.corp_name,
+          pdf: 'error',
+          email: 'error',
+          detail: (chainErr as Error).message,
+        })
+      }
+    }
+
     return jsonResponse({
       billing_period: billingPeriod,
       due_date: dueDateStr,
       invoices_created: results.filter(r => !r.error).length,
       results,
+      pdf_email_results: pdfEmailResults,
     })
   } catch (err) {
     console.error('Edge function error:', err)

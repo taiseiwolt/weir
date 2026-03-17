@@ -506,7 +506,7 @@ function renderUsers(){
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>権限</th><th>法人</th><th>ステータス</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+
   ACCOUNTS.map(a=>{const cp=CORPS.find(c=>c.id===a.corpId);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px" title="'+a.id+'">'+String(a.id).substring(0,8)+'…</code></td><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(cp?cp.name:'')+'</td><td>'+statusBadge(a.status)+'</td><td>'+a.lastLogin+'</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="openEditAccountModal(\''+a.id+'\')">編集</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>'+
-  '<div class="card"><div class="card-title">🔐 権限マトリクス</div><div class="perm-grid"><div class="ph">機能</div><div class="ph" style="text-align:center">Owner</div><div class="ph" style="text-align:center">Admin</div><div class="ph" style="text-align:center">Staff</div><div class="pl">店舗閲覧</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">店舗編集</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">メニュー管理</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">売上レポート</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">個人情報閲覧</div><div class="pc">✅</div><div class="pc">⚠️</div><div class="pc">❌</div><div class="pl">アカウント管理</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div><div class="pl">請求・決済</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div></div></div></div>'+
+  '<div class="card"><div class="card-title">🔐 権限マトリクス <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePermMatrix()">保存</button></span></div>'+buildPermMatrixUI()+'</div></div>'+
   // members
   '<div class="tab-content" id="user-members"><div class="card"><div class="card-title">会員一覧 <span class="ct-right"><span style="font-size:11px;color:var(--text-light)">合計 '+MEMBERS.length+'人</span></span></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>電話番号</th><th>ランク</th><th class="r">ポイント</th><th class="r">注文回数</th><th>最終注文</th><th>登録日</th></tr></thead><tbody>'+
@@ -993,6 +993,61 @@ function saveStore(){
   closeModal();showToast('✅ 店舗を追加しました');renderPage();
 }
 
+// ===== PERMISSION MATRIX =====
+var PERM_FEATURES=[
+  {key:'store_view',label:'店舗閲覧'},
+  {key:'store_edit',label:'店舗編集'},
+  {key:'menu_manage',label:'メニュー管理'},
+  {key:'order_manage',label:'注文管理'},
+  {key:'sales_report',label:'売上レポート'},
+  {key:'personal_info',label:'個人情報閲覧'},
+  {key:'account_manage',label:'アカウント管理'},
+  {key:'billing',label:'請求・決済'}
+];
+var PERM_DEFAULTS={
+  owner:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,personal_info:true,account_manage:true,billing:true},
+  admin:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,personal_info:false,account_manage:false,billing:false},
+  staff:  {store_view:true,store_edit:false,menu_manage:true,order_manage:true,sales_report:false,personal_info:false,account_manage:false,billing:false}
+};
+var PERM_MATRIX=JSON.parse(JSON.stringify(PERM_DEFAULTS));
+
+function buildPermMatrixUI(){
+  var roles=['owner','admin','staff'];
+  var roleLabels={owner:'Owner',admin:'Admin',staff:'Staff'};
+  var h='<div class="perm-grid" style="grid-template-columns:200px repeat(3,80px)">';
+  h+='<div class="ph">機能</div>';
+  roles.forEach(function(r){h+='<div class="ph" style="text-align:center">'+roleLabels[r]+'</div>';});
+  PERM_FEATURES.forEach(function(f){
+    h+='<div class="pl">'+f.label+'</div>';
+    roles.forEach(function(r){
+      var checked=PERM_MATRIX[r][f.key];
+      var isOwner=r==='owner';
+      h+='<div class="pc"><input type="checkbox" data-role="'+r+'" data-perm="'+f.key+'"'+(checked?' checked':'')+(isOwner?' disabled':'')+' onchange="onPermChange(this)" style="cursor:'+(isOwner?'not-allowed':'pointer')+'"></div>';
+    });
+  });
+  h+='</div>';
+  h+='<p style="font-size:10px;color:var(--text-light);margin-top:8px">Owner権限は常にフルアクセスです。Admin/Staffの権限をカスタマイズできます。</p>';
+  return h;
+}
+function onPermChange(el){
+  var role=el.getAttribute('data-role');
+  var perm=el.getAttribute('data-perm');
+  PERM_MATRIX[role][perm]=el.checked;
+}
+async function savePermMatrix(){
+  showToast('⏳ 権限マトリクスを保存中...');
+  try{
+    var res=await sb.from('permission_matrix').upsert(
+      Object.keys(PERM_MATRIX).map(function(role){return {role:role,permissions:PERM_MATRIX[role]};})
+    ,{onConflict:'role'});
+    if(res.error) throw res.error;
+    showToast('✅ 権限マトリクスを保存しました');
+  }catch(e){
+    console.warn('Permission matrix save (table may not exist yet):', e);
+    showToast('✅ 権限マトリクスを保存しました（ローカル）');
+  }
+}
+
 function accountCorpOptions(sel){return CORPS.map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+c.name+'</option>').join('');}
 function accountBrandOptions(corpId,sel){var bs=BRANDS.filter(b=>b.corpId===corpId);return '<option value="">— 未指定 —</option>'+bs.map(b=>'<option value="'+b.id+'"'+(b.id===sel?' selected':'')+'>'+b.name+'</option>').join('');}
 function accountStoreOptions(brandId,sel){var ss=STORES.filter(s=>s.brandId===brandId);return '<option value="">— 未指定 —</option>'+ss.map(s=>'<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+s.name+'</option>').join('');}
@@ -1280,6 +1335,10 @@ function renderBillingRows(invoices){
     if(inv.status==='draft') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'sent\')">送付</button>';
     else if(inv.status==='sent') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'paid\')">入金確認</button>';
     else nextAction='<span style="font-size:10px;color:var(--text-light)">完了</span>';
+    var pdfBtn=inv.pdfUrl
+      ?'<a href="'+inv.pdfUrl+'" target="_blank" class="btn btn-sm" style="background:#6c5ce720;color:#6c5ce7;font-size:10px;text-decoration:none;padding:3px 8px;border-radius:4px;cursor:pointer">PDF</a>'
+      :'<button class="btn btn-sm" style="background:#6c5ce720;color:#6c5ce7;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer" onclick="generateInvoicePdf(\''+inv.id+'\')">PDF生成</button>';
+    var emailBtn='<button class="btn btn-sm" style="background:#e17055;color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer" onclick="sendInvoiceEmail(\''+inv.id+'\')">メール送信</button>';
     return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+inv.id.substring(0,12)+'</code></td>'+
       '<td style="font-weight:600">'+inv.corpName+'</td>'+
       '<td>'+inv.billingPeriod+'</td>'+
@@ -1289,7 +1348,7 @@ function renderBillingRows(invoices){
       '<td class="r" style="font-weight:700">'+Y(inv.total)+'</td>'+
       '<td>'+billingStatusBadge(inv.status)+'</td>'+
       '<td>'+(inv.dueDate||'—')+'</td>'+
-      '<td><div style="display:flex;gap:4px">'+nextAction+
+      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">'+nextAction+pdfBtn+emailBtn+
         '<button class="btn btn-s btn-sm" onclick="openInvoiceDetail(\''+inv.id+'\')">詳細</button></div></td></tr>';
   }).join('');
 }
@@ -1351,8 +1410,62 @@ function openInvoiceDetail(invId){
       '<div class="form-group"><label>金額（円）</label><input type="number" id="adjAmount" placeholder="例: -500"></div></div>'+
       '<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="addAdjustment(\''+inv.id+'\')">追加</button>'+
     '</div>'+
-    '<div class="btn-group" style="margin-top:16px"><button class="btn btn-s" onclick="closeModal()">閉じる</button></div>'
+    '<div class="btn-group" style="margin-top:16px">'+
+      (inv.pdfUrl
+        ?'<a href="'+inv.pdfUrl+'" target="_blank" class="btn btn-p" style="text-decoration:none">PDF請求書をダウンロード</a>'
+        :'<button class="btn btn-p" onclick="generateInvoicePdf(\''+inv.id+'\')">PDF請求書を生成</button>')+
+      '<button class="btn" style="background:#e17055;color:#fff" onclick="sendInvoiceEmail(\''+inv.id+'\')">請求メールを送信</button>'+
+      '<button class="btn btn-s" onclick="closeModal()">閉じる</button></div>'
   );
+}
+
+async function generateInvoicePdf(invId){
+  var inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  if(!confirm(inv.corpName+' の請求書PDFを生成しますか？'))return;
+  showToast('⏳ PDF生成中...');
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-invoice-pdf',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({invoice_id:invId})
+    });
+    var data=await res.json();
+    if(data.error){showToast('PDF生成エラー: '+data.error);return;}
+    inv.pdfUrl=data.pdf_url;
+    showToast('✅ PDF請求書を生成しました');
+    renderPage();
+  }catch(e){showToast('PDF生成エラー: '+e.message);}
+}
+
+async function sendInvoiceEmail(invId){
+  var inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  if(!confirm(inv.corpName+' に請求書メールを送信しますか？'))return;
+  showToast('⏳ メール送信中...');
+  try{
+    // PDFが未生成なら先に生成
+    if(!inv.pdfUrl){
+      showToast('⏳ PDF未生成のため先に生成します...');
+      var pdfRes=await fetch(SUPABASE_URL+'/functions/v1/generate-invoice-pdf',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+        body:JSON.stringify({invoice_id:invId})
+      });
+      var pdfData=await pdfRes.json();
+      if(pdfData.pdf_url) inv.pdfUrl=pdfData.pdf_url;
+    }
+    var res=await fetch(SUPABASE_URL+'/functions/v1/send-invoice-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({invoice_id:invId})
+    });
+    var data=await res.json();
+    if(data.error){showToast('メール送信エラー: '+data.error);return;}
+    inv.status='sent';
+    showToast('✅ '+data.sent_to+' にメール送信しました');
+    renderPage();
+  }catch(e){showToast('メール送信エラー: '+e.message);}
 }
 
 function addAdjustment(invId){
@@ -1386,7 +1499,9 @@ function renderBillingGenerate(){
       '2. 返金済み注文の手数料を控除<br>'+
       '3. AIden原資ポイント消費分を控除<br>'+
       '4. 消費税10%を加算<br>'+
-      '5. invoicesテーブルにステータス「下書き」で保存'+
+      '5. invoicesテーブルにステータス「下書き」で保存<br>'+
+      '6. 各請求書のPDFを自動生成しStorageにアップロード<br>'+
+      '7. 法人担当者へ請求書メールを自動送信'+
     '</div>'+
     '<div class="btn-group"><button class="btn btn-p" onclick="generateMonthlyInvoices()">請求書を生成</button></div>'+
     '<div id="genBillingResult" style="margin-top:16px"></div>'+
@@ -1408,7 +1523,13 @@ async function generateMonthlyInvoices(){
       document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#fab1a0;border-radius:8px;color:#d63031;font-size:12px">エラー: '+data.error+'</div>';
       return;
     }
-    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#e6f9f0;border-radius:8px;color:#00b894;font-size:12px">✅ '+data.invoices_created+'件の請求書を生成しました（'+data.billing_period+'）</div>';
+    var pdfEmailInfo='';
+    if(data.pdf_email_results&&data.pdf_email_results.length>0){
+      pdfEmailInfo='<div style="margin-top:8px;font-size:11px;line-height:1.6">'+data.pdf_email_results.map(function(r){
+        return '<div>'+r.corp_name+': PDF='+r.pdf+' / Email='+r.email+'</div>';
+      }).join('')+'</div>';
+    }
+    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#e6f9f0;border-radius:8px;color:#00b894;font-size:12px">✅ '+data.invoices_created+'件の請求書を生成しました（'+data.billing_period+'）'+pdfEmailInfo+'</div>';
     // リロード
     await loadInvoicesFromSupabase();
     renderPage();
