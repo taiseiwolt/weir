@@ -197,6 +197,27 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 .btn-logout { background:none; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.7); padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer; transition:all .2s; font-family:inherit; }
 .btn-logout:hover { background:rgba(255,255,255,0.1); color:#fff; }
 
+/* === LOGIN OVERLAY === */
+.login-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.login-card { background:#fff; border-radius:16px; padding:40px 36px; width:400px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.login-card .logo-area { text-align:center; margin-bottom:28px; }
+.login-card .logo-area .logo-icon-lg { width:48px; height:48px; margin:0 auto 12px; position:relative; display:flex; align-items:center; justify-content:center; }
+.login-card .logo-area .logo-icon-lg::before { content:''; position:absolute; width:48px; height:48px; border:2px solid rgba(26,26,46,0.3); border-radius:50%; }
+.login-card .logo-area .logo-icon-lg::after { content:''; position:absolute; width:36px; height:36px; border:2px solid rgba(26,26,46,0.6); border-radius:50%; }
+.login-card .logo-area .logo-dot-lg { width:6px; height:6px; background:#1a1a2e; border-radius:50%; position:relative; z-index:1; }
+.login-card .logo-area h1 { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:#1a1a2e; letter-spacing:3px; margin-bottom:4px; }
+.login-card .logo-area p { font-size:12px; color:#636e72; }
+.login-card .form-group { margin-bottom:18px; }
+.login-card .form-group label { display:block; font-size:12px; font-weight:600; color:#2d3436; margin-bottom:6px; }
+.login-card .form-group input { width:100%; padding:10px 14px; border:1px solid #e0e0e0; border-radius:8px; font-size:13px; font-family:inherit; transition:border-color .2s; }
+.login-card .form-group input:focus { outline:none; border-color:#e94560; box-shadow:0 0 0 3px rgba(233,69,96,0.1); }
+.login-btn { width:100%; padding:12px; background:#e94560; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .2s; }
+.login-btn:hover { background:#c81e45; }
+.login-btn:disabled { background:#ccc; cursor:not-allowed; }
+.login-error { background:#ffeef1; color:#d63031; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:16px; display:none; border:1px solid #f5c2c7; }
+.login-card .demo-info { margin-top:20px; padding:14px; background:#f0f4ff; border-radius:8px; font-size:11px; color:#636e72; line-height:1.6; }
+.login-card .demo-info strong { color:#2d3436; }
+
 /* === SIDEBAR === */
 .sidebar { position:fixed; top:var(--header-h); left:0; width:var(--sidebar-w); height:calc(100vh - var(--header-h)); background:var(--primary); overflow-y:auto; z-index:90; }
 .sidebar::-webkit-scrollbar { width:4px; }
@@ -411,36 +432,62 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 <body>
 
 <!-- ========== HEADER ========== -->
-<header class="header">
+<!-- ========== LOGIN OVERLAY ========== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="logo-area">
+      <div class="logo-icon-lg"><div class="logo-dot-lg"></div></div>
+      <h1>AIDEN</h1>
+      <p>加盟店管理画面</p>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="loginEmail" placeholder="admin@example.jp" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="loginPassword" placeholder="パスワードを入力" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">ログイン</button>
+    </form>
+    <div class="demo-info">
+      <strong>デモアカウント:</strong><br>
+      炭火亭: admin@sumibite.jp<br>
+      焼肉キング: admin@yakiniku-king.jp<br>
+      パスワード: Aiden2026Pass
+    </div>
+  </div>
+</div>
+
+<header class="header" id="appHeader" style="display:none">
   <div class="header-logo">
     <div class="logo-icon"><div class="logo-dot"></div></div>
     <span class="logo-text">AIDEN</span>
     <span class="label">管理画面</span>
   </div>
   <div class="header-selectors">
-    <select id="brandSelector">
-      <option>🏷 スシロー</option>
-      <option>🏷 炭火亭</option>
-    </select>
+    <select id="brandSelector"></select>
   </div>
   <div class="header-right">
-    <span style="font-size:11px;opacity:.6">最終ログイン: 2026/03/01 10:30</span>
+    <span style="font-size:11px;opacity:.6" id="lastLoginTime"></span>
     <div class="header-user">
-      <div class="avatar">T</div>
+      <div class="avatar" id="userAvatar">T</div>
       <div>
-        <div>田中太郎</div>
-        <div style="font-size:10px;opacity:.6">ブランドオーナー</div>
+        <div id="userName">-</div>
+        <div style="font-size:10px;opacity:.6" id="userRole">-</div>
       </div>
     </div>
-    <button class="btn-logout" onclick="alert('ログアウトしますか？')">ログアウト</button>
+    <button class="btn-logout" onclick="handleLogout()">ログアウト</button>
   </div>
 </header>
 
 <!-- ========== SIDEBAR ========== -->
-<nav class="sidebar" id="sidebar"></nav>
+<nav class="sidebar" id="sidebar" style="display:none"></nav>
 
 <!-- ========== CONTENT ========== -->
-<main class="content" id="content"></main>
+<main class="content" id="content" style="display:none"></main>
 
 <script>
 // ===== NAVIGATION STRUCTURE =====
@@ -4311,18 +4358,118 @@ function generateId(length) {
 // ===== CORP DATA =====
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzQ1NTYsImV4cCI6MjA4NzE1MDU1Nn0.OBrQDSoC_0fbKtRUdQHg3fnTXZjtwphmcI9k05Ss2d8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== AUTH STATE =====
+let CURRENT_AUTH_USER = null; // auth.users record
+let CURRENT_STAFF = null;    // staff_accounts record
+let BRAND_ID = null;         // set after login from staff_accounts
+let CORP_ID = null;          // set after login from staff_accounts
+
+// ===== LOGIN HANDLER =====
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+    if (error) throw error;
+    await onAuthSuccess(data.user);
+  } catch (err) {
+    errEl.textContent = err.message === 'Invalid login credentials'
+      ? 'メールアドレスまたはパスワードが正しくありません'
+      : 'ログインエラー: ' + (err.message || '不明なエラー');
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+  }
+}
+
+// ===== LOGOUT HANDLER =====
+async function handleLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  await sb.auth.signOut();
+  CURRENT_AUTH_USER = null;
+  CURRENT_STAFF = null;
+  BRAND_ID = null;
+  CORP_ID = null;
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('appHeader').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+// ===== AUTH SUCCESS: load staff profile & show app =====
+async function onAuthSuccess(user) {
+  CURRENT_AUTH_USER = user;
+  // Get staff account (RLS: own record only)
+  const { data: staffRows, error: staffErr } = await sb.from('staff_accounts').select('*').eq('auth_user_id', user.id);
+  if (staffErr || !staffRows || staffRows.length === 0) {
+    document.getElementById('loginError').textContent = 'このアカウントに紐づく加盟店情報が見つかりません。管理者にお問い合わせください。';
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'ログイン';
+    await sb.auth.signOut();
+    return;
+  }
+  CURRENT_STAFF = staffRows[0];
+  BRAND_ID = CURRENT_STAFF.brand_id;
+  CORP_ID = CURRENT_STAFF.corp_id;
+
+  // Update header UI
+  const displayName = CURRENT_STAFF.display_name || user.user_metadata?.display_name || user.email;
+  const roleLabel = CURRENT_STAFF.role === 'owner' ? 'ブランドオーナー' : CURRENT_STAFF.role === 'manager' ? 'マネージャー' : 'スタッフ';
+  document.getElementById('userName').textContent = displayName;
+  document.getElementById('userRole').textContent = roleLabel;
+  document.getElementById('userAvatar').textContent = displayName.charAt(0);
+  document.getElementById('lastLoginTime').textContent = '最終ログイン: ' + new Date().toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+  // Populate brand selector
+  const { data: brands } = await sb.from('brands').select('id,name');
+  const sel = document.getElementById('brandSelector');
+  sel.innerHTML = '';
+  if (brands && brands.length > 0) {
+    brands.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = '🏷 ' + b.name;
+      if (b.id === BRAND_ID) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } else {
+    sel.innerHTML = '<option>🏷 ' + (displayName || 'ブランド') + '</option>';
+  }
+
+  // Show app, hide login
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('appHeader').style.display = 'flex';
+  document.getElementById('sidebar').style.display = '';
+  document.getElementById('content').style.display = '';
+
+  // Load admin data
+  await initAdminAfterAuth();
+}
 
 async function loadAdminFromSupabase() {
+  const errors = [];
   try {
-    // 1. Corp
-    const {data: corps} = await sb.from('corps').select('*').limit(1);
+    // 1. Corp (RLS: filtered by staff corp_id)
+    const {data: corps, error: corpErr} = await sb.from('corps').select('*').limit(1);
+    if (corpErr) errors.push('法人情報: ' + corpErr.message);
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; }
 
-    // 2. Stores
-    const {data: stores} = await sb.from('stores').select('*').eq('brand_id', BRAND_ID).order('name');
+    // 2. Stores (RLS: filtered by brand)
+    const {data: stores, error: storeErr} = await sb.from('stores').select('*').order('name');
+    if (storeErr) errors.push('店舗: ' + storeErr.message);
     if (stores && stores.length > 0) {
       STORES = stores.map(s => ({
         id: s.id, storeId: s.slug || s.id.substring(0,6), name: s.name, kana: '', address: s.address || '', zip: '', phone: s.phone || '', email: s.email || '',
@@ -4336,15 +4483,18 @@ async function loadAdminFromSupabase() {
       }));
     }
 
-    // 3. Categories
-    const {data: cats} = await sb.from('categories').select('*').eq('brand_id', BRAND_ID).order('sort_order');
+    // 3. Categories (RLS: filtered by brand)
+    const {data: cats, error: catErr} = await sb.from('categories').select('*').order('sort_order');
+    if (catErr) errors.push('カテゴリ: ' + catErr.message);
     if (cats && cats.length > 0) {
       CATEGORIES = cats.map(c => ({ id: c.id, name: c.name, description: '', displayStart: '', displayEnd: '', sortOrder: c.sort_order }));
     }
 
-    // 4. Products + Sizes
-    const {data: products} = await sb.from('products').select('*').eq('brand_id', BRAND_ID);
-    const {data: sizes} = await sb.from('product_sizes').select('*');
+    // 4. Products + Sizes (RLS: filtered by brand)
+    const {data: products, error: prodErr} = await sb.from('products').select('*');
+    if (prodErr) errors.push('商品: ' + prodErr.message);
+    const {data: sizes, error: sizeErr} = await sb.from('product_sizes').select('*');
+    if (sizeErr) errors.push('商品サイズ: ' + sizeErr.message);
     if (products && products.length > 0) {
       const catMap = {}; CATEGORIES.forEach(c => catMap[c.id] = c.name);
       PRODUCTS = products.map(p => {
@@ -4355,13 +4505,13 @@ async function loadAdminFromSupabase() {
           sizes: pSizes.map(s => ({name: s.name, price: s.price})), optionGroupIds: []
         };
       });
-      // Load product-option mappings
       const {data: pogs} = await sb.from('product_option_groups').select('*');
       if (pogs) { pogs.forEach(po => { const p = PRODUCTS.find(x => x.itemId === po.product_id); if (p) p.optionGroupIds.push(po.option_group_id); }); }
     }
 
-    // 5. Option Groups + Items
-    const {data: ogs} = await sb.from('option_groups').select('*').eq('brand_id', BRAND_ID);
+    // 5. Option Groups + Items (RLS: filtered by brand)
+    const {data: ogs, error: ogErr} = await sb.from('option_groups').select('*');
+    if (ogErr) errors.push('オプション: ' + ogErr.message);
     const {data: ois} = await sb.from('option_items').select('*');
     if (ogs && ogs.length > 0) {
       OPTION_GROUPS = ogs.map(og => ({
@@ -4395,8 +4545,9 @@ async function loadAdminFromSupabase() {
       });
     }
 
-    // 7. Reviews
-    const {data: reviews} = await sb.from('reviews').select('*').order('created_at', {ascending: false});
+    // 7. Reviews (RLS: filtered by store→brand)
+    const {data: reviews, error: revErr} = await sb.from('reviews').select('*').order('created_at', {ascending: false});
+    if (revErr) errors.push('口コミ: ' + revErr.message);
     if (reviews && reviews.length > 0) {
       REVIEWS = reviews.map(r => {
         const store = STORES.find(s => s.id === r.store_id);
@@ -4409,35 +4560,68 @@ async function loadAdminFromSupabase() {
       });
     }
 
-    // 8. Invoices
-    const {data: invoices} = await sb.from('invoices').select('*').eq('brand_id', BRAND_ID).order('due_date', {ascending: false});
+    // 8. Invoices (RLS: filtered by brand)
+    const {data: invoices, error: invErr} = await sb.from('invoices').select('*').order('due_date', {ascending: false});
+    if (invErr) errors.push('請求書: ' + invErr.message);
     if (invoices && invoices.length > 0) {
       INVOICES = invoices.map(inv => ({
         id: inv.id, month: inv.month, type: inv.type, amount: inv.amount, status: inv.status, dueDate: inv.due_date, pdfUrl: '#'
       }));
     }
 
+    // 9. Members (RLS: filtered by brand)
+    const {data: mbrs, error: mbrErr} = await sb.from('members').select('*').order('created_at', {ascending: false});
+    if (mbrErr) errors.push('会員: ' + mbrErr.message);
+    if (mbrs && mbrs.length > 0) {
+      MEMBERS = mbrs.map(m => ({
+        id: m.display_id || m.id.substring(0,8), name: m.name || ((m.last_name||'') + ' ' + (m.first_name||'')).trim(), tel: m.phone || '',
+        email: m.email || '', rank: m.rank === 'platinum' ? 'プラチナ' : m.rank === 'gold' ? 'ゴールド' : m.rank === 'silver' ? 'シルバー' : 'レギュラー',
+        points: m.point_balance || 0, count: m.order_count || 0,
+        last: m.updated_at ? new Date(m.updated_at).toLocaleDateString('ja-JP') : '-',
+        regDate: m.created_at ? new Date(m.created_at).toLocaleDateString('ja-JP') : '-',
+        birthday: m.birth_date || '', address: m.address_prefecture || '',
+        channel: { dineIn: Math.floor((m.order_count||0)*0.55), takeout: Math.floor((m.order_count||0)*0.3), delivery: Math.floor((m.order_count||0)*0.15) },
+        totalSpend: m.total_spend || 0, avgSpend: m.order_count ? Math.round((m.total_spend||0) / m.order_count) : 0, optout: false
+      }));
+    }
 
-    // 9. Service subscriptions for this brand
+    // 10. Service subscriptions (RLS: filtered by brand)
     const {data: svcRows} = await sb.from('service_subscriptions').select('service_key').eq('entity_type', 'brand').eq('entity_id', BRAND_ID).eq('is_active', true);
     if (svcRows) {
       window._brandServices = svcRows.map(r => r.service_key);
     }
   } catch(e) {
+    errors.push('データ読み込みエラー: ' + (e.message || '不明'));
+  }
+
+  // Show error banner if any errors occurred
+  if (errors.length > 0) {
+    showDataLoadError(errors);
   }
 }
 
-let CORP = { id: 'Xk9mPr2', name: '株式会社スシロー' }; // 法人ID: 7桁
+function showDataLoadError(errors) {
+  let banner = document.getElementById('dataLoadErrorBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'dataLoadErrorBanner';
+    banner.style.cssText = 'position:fixed;top:var(--header-h);left:var(--sidebar-w);right:0;z-index:95;background:#ffeef1;border-bottom:1px solid #f5c2c7;padding:10px 20px;font-size:12px;color:#d63031;display:flex;align-items:center;gap:8px;';
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = '<span style="font-size:16px">⚠️</span><div><strong>一部のデータの読み込みに失敗しました</strong><br>' + errors.join(' / ') + '</div><button onclick="this.parentNode.remove()" style="margin-left:auto;background:none;border:none;color:#d63031;cursor:pointer;font-size:16px">&times;</button>';
+}
+
+let CORP = { id: '', name: '' };
 
 // ===== CHANGE LOG SYSTEM =====
 // 本番ではSupabaseテーブルに保存。デモではメモリ上に保持。
 const CHANGE_LOG = [];
-const CURRENT_USER = 'admin@sushiro.co.jp'; // ログイン中ユーザー（デモ用）
+function getCurrentUserEmail() { return CURRENT_AUTH_USER ? CURRENT_AUTH_USER.email : 'unknown'; }
 
 function addChangeLog(action, detail) {
   CHANGE_LOG.unshift({
     timestamp: new Date().toLocaleString('ja-JP'),
-    user: CURRENT_USER,
+    user: getCurrentUserEmail(),
     action: action,
     detail: detail
   });
@@ -4476,169 +4660,25 @@ function getTaxLabel(prod) {
   return prod.tax==='reduced'?'軽減8%':'標準10%';
 }
 
-// ===== STORE DATA =====
-let STORES = [
-  { id:'s1', storeId:'aB3kX9', name:'スシロー 渋谷店', kana:'すしろー しぶやてん', address:'東京都渋谷区道玄坂1-2-3 渋谷ビル2F', zip:'150-0043', phone:'03-1234-5678', email:'shibuya@sushiro.co.jp', access:'渋谷駅 ハチ公口 徒歩3分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'新鮮なネタを毎日直送。お手頃価格で本格寿司をお楽しみいただけます。', lat:35.6595, lng:139.7005, hoursOpen:'11:00', hoursClose:'22:00', delOpen:'11:30', delClose:'21:00', seats:80, smoking:'完全禁煙', parking:true, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:true, takeout:true, reservation:true, status:'営業中', radius:'3.0km', delFee:'¥300', minOrder:'¥1,000', cookTime:'20分', delTime:'15〜40分', headerImg:3, thumbImg:1, galleryImg:8, heroImg:1, staffImg:2, menuPatternId:'mp1' },
-  { id:'s2', storeId:'Pq7mN2', name:'スシロー 新宿店', kana:'すしろー しんじゅくてん', address:'東京都新宿区歌舞伎町1-1-1', zip:'160-0021', phone:'03-2345-6789', email:'shinjuku@sushiro.co.jp', access:'新宿駅東口 徒歩5分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'歌舞伎町の中心で深夜まで営業。', lat:35.6938, lng:139.7034, hoursOpen:'11:00', hoursClose:'23:00', delOpen:'11:00', delClose:'22:00', seats:120, smoking:'分煙', parking:false, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:true, takeout:true, reservation:true, status:'営業時間外', radius:'2.5km', delFee:'¥350', minOrder:'¥1,200', cookTime:'25分', delTime:'20〜45分', headerImg:5, thumbImg:1, galleryImg:12, heroImg:1, staffImg:3, menuPatternId:'mp1' },
-  { id:'s3', storeId:'Wy4cR8', name:'スシロー 池袋店', kana:'すしろー いけぶくろてん', address:'東京都豊島区南池袋2-3-4', zip:'171-0022', phone:'03-3456-7890', email:'ikebukuro@sushiro.co.jp', access:'池袋駅東口 徒歩4分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'家族で楽しめるアットホームな雰囲気。', lat:35.7281, lng:139.7105, hoursOpen:'10:30', hoursClose:'22:00', delOpen:'—', delClose:'—', seats:60, smoking:'完全禁煙', parking:true, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:false, takeout:true, reservation:true, status:'休業中', radius:'—', delFee:'—', minOrder:'—', cookTime:'—', delTime:'—', headerImg:2, thumbImg:1, galleryImg:5, heroImg:0, staffImg:1, menuPatternId:'mp1' },
-  { id:'s4', storeId:'Tn6jL5', name:'スシロー 横浜店', kana:'すしろー よこはまてん', address:'神奈川県横浜市西区みなとみらい1-2-3', zip:'220-0012', phone:'045-111-2222', email:'yokohama@sushiro.co.jp', access:'みなとみらい駅 徒歩2分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'みなとみらいの絶景を見ながらお寿司を。', lat:35.4579, lng:139.6323, hoursOpen:'10:00', hoursClose:'22:00', delOpen:'10:30', delClose:'21:30', seats:100, smoking:'完全禁煙', parking:true, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:true, takeout:true, reservation:true, status:'営業中', radius:'3.5km', delFee:'¥300', minOrder:'¥1,000', cookTime:'20分', delTime:'15〜40分', headerImg:4, thumbImg:1, galleryImg:10, heroImg:1, staffImg:2, menuPatternId:'mp1' },
-  { id:'s5', storeId:'Gk2pQ9', name:'スシロー 川崎店', kana:'すしろー かわさきてん', address:'神奈川県川崎市中原区新丸子1-1-1', zip:'211-0005', phone:'044-333-4444', email:'kawasaki@sushiro.co.jp', access:'新丸子駅 徒歩3分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'地元に愛される人気店。', lat:35.5808, lng:139.6597, hoursOpen:'11:00', hoursClose:'22:00', delOpen:'11:30', delClose:'21:00', seats:70, smoking:'完全禁煙', parking:false, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:true, takeout:true, reservation:true, status:'営業中', radius:'2.0km', delFee:'¥350', minOrder:'¥1,200', cookTime:'25分', delTime:'20〜45分', headerImg:3, thumbImg:1, galleryImg:6, heroImg:1, staffImg:1, menuPatternId:'mp2' },
-  { id:'s6', storeId:'Hm8nV3', name:'スシロー 六本木店', kana:'すしろー ろっぽんぎてん', address:'東京都港区六本木3-2-1', zip:'106-0032', phone:'03-5555-6666', email:'roppongi@sushiro.co.jp', access:'六本木駅 徒歩1分', genre:'寿司', subGenre:'回転寿司', price:'¥2,000〜¥3,000', desc:'六本木の大人な雰囲気で楽しむ寿司。', lat:35.6627, lng:139.7310, hoursOpen:'11:00', hoursClose:'23:00', delOpen:'11:30', delClose:'22:00', seats:90, smoking:'分煙', parking:false, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:true, takeout:true, reservation:true, status:'閉店', radius:'2.5km', delFee:'¥300', minOrder:'¥1,000', cookTime:'20分', delTime:'15〜35分', headerImg:4, thumbImg:1, galleryImg:7, heroImg:1, staffImg:2, menuPatternId:'mp3' },
-  { id:'s7', storeId:'Rj5wD7', name:'スシロー 吉祥寺店', kana:'すしろー きちじょうじてん', address:'東京都武蔵野市吉祥寺本町1-5-1', zip:'180-0004', phone:'0422-11-2233', email:'kichijoji@sushiro.co.jp', access:'吉祥寺駅北口 徒歩5分', genre:'寿司', subGenre:'回転寿司', price:'¥1,000〜¥2,000', desc:'中央線沿線の人気スポット。', lat:35.7032, lng:139.5795, hoursOpen:'10:30', hoursClose:'21:30', delOpen:'—', delClose:'—', seats:55, smoking:'完全禁煙', parking:true, kids:true, pets:false, payment:'Card/QR/電子マネー/交通系IC/現金', delivery:false, takeout:true, reservation:true, status:'閉店', radius:'—', delFee:'—', minOrder:'—', cookTime:'—', delTime:'—', headerImg:2, thumbImg:1, galleryImg:4, heroImg:0, staffImg:1, menuPatternId:'mp2' },
-];
+// ===== STORE DATA (populated from Supabase after login) =====
+let STORES = [];
 
-// ===== BRAND PRODUCT POOL (共通商品マスタ) =====
-// sizes: [{name,price,displayStart,displayEnd,optionGroupIds}]
-// tax: 'reduced'(軽減8%) | 'standard'(標準10%)
-// ageRestrict: true/false, isAlcohol: true/false
-let PRODUCTS = [
-  { itemId:'A01', name:'まぐろ', category:'握り', tags:['おすすめ'], dineIn:true, takeout:true, delivery:true, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'一貫',price:120},{name:'二貫',price:220}], optionGroupIds:['og1','og2'] },
-  { itemId:'A02', name:'サーモン', category:'握り', tags:['一番人気'], dineIn:true, takeout:true, delivery:true, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'一貫',price:120},{name:'二貫',price:220}], optionGroupIds:['og1','og2'] },
-  { itemId:'B01', name:'えびアボカド', category:'軍艦', tags:['NEW'], dineIn:true, takeout:true, delivery:true, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:150}], optionGroupIds:[] },
-  { itemId:'C01', name:'茶碗蒸し', category:'サイドメニュー', tags:[], dineIn:true, takeout:true, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:280}], optionGroupIds:[] },
-  { itemId:'D01', name:'特選にぎり10貫セット', category:'おすすめ', tags:['期間限定'], dineIn:true, takeout:true, delivery:true, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:980},{name:'プレミアム15貫',price:1480}], optionGroupIds:['og2'] },
-  { itemId:'E01', name:'抹茶パフェ', category:'デザート', tags:['季節限定'], dineIn:true, takeout:true, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:350}], optionGroupIds:[] },
-  { itemId:'F01', name:'春の桜えび軍艦', category:'軍艦', tags:['季節限定'], dineIn:true, takeout:true, delivery:true, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:180}], optionGroupIds:[] },
-  { itemId:'F02', name:'いちごパフェ', category:'デザート', tags:['期間限定'], dineIn:true, takeout:true, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:400}], optionGroupIds:[] },
-  { itemId:'G01', name:'A5和牛握り', category:'握り', tags:['プレミアム'], dineIn:true, takeout:false, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:580}], optionGroupIds:[] },
-  { itemId:'G02', name:'大トロ三貫', category:'握り', tags:['おすすめ'], dineIn:true, takeout:true, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'reduced', ageRestrict:false, isAlcohol:false,
-    sizes:[{name:'通常',price:680}], optionGroupIds:[] },
-  { itemId:'G03', name:'シャンパン', category:'ドリンク', tags:[], dineIn:true, takeout:false, delivery:false, imgData:null, displayStart:'', displayEnd:'', tax:'standard', ageRestrict:true, isAlcohol:true,
-    sizes:[{name:'グラス',price:800},{name:'ボトル',price:3500}], optionGroupIds:[] },
-];
+// ===== BRAND PRODUCT POOL (populated from Supabase after login) =====
+let PRODUCTS = [];
 
-// ===== OPTION GROUPS & OPTIONS =====
-// type: 'radio'|'checkbox'|'counter', required, min/max, choices[].default
-let OPTION_GROUPS = [
-  { id:'og1', name:'サイズ', type:'radio', required:true, min:null, max:null, options:[
-    {id:'op1a', name:'並盛', price:0, default:true, tax:'reduced'},
-    {id:'op1b', name:'大盛（+¥150）', price:150, default:false, tax:'reduced'},
-    {id:'op1c', name:'特盛（+¥300）', price:300, default:false, tax:'reduced'},
-  ]},
-  { id:'og2', name:'わさび', type:'radio', required:true, min:null, max:null, options:[
-    {id:'op2a', name:'あり', price:0, default:true, tax:'reduced'},
-    {id:'op2b', name:'なし', price:0, default:false, tax:'reduced'},
-  ]},
-  { id:'og3', name:'追加トッピング', type:'counter', required:false, min:0, max:5, options:[
-    {id:'op3a', name:'いくら', price:220, default:false, tax:'reduced'},
-    {id:'op3b', name:'うに', price:330, default:false, tax:'reduced'},
-    {id:'op3c', name:'サーモン', price:165, default:false, tax:'reduced'},
-    {id:'op3d', name:'中トロ', price:275, default:false, tax:'reduced'},
-  ]},
-  { id:'og4', name:'薬味トッピング（最大3つ）', type:'checkbox', required:false, min:0, max:3, options:[
-    {id:'op4a', name:'大葉（+¥30）', price:30, default:false, tax:'reduced'},
-    {id:'op4b', name:'みょうが（+¥50）', price:50, default:false, tax:'reduced'},
-    {id:'op4c', name:'ねぎ（+¥30）', price:30, default:false, tax:'reduced'},
-    {id:'op4d', name:'生姜（+¥30）', price:30, default:false, tax:'reduced'},
-  ]},
-  { id:'og5', name:'つけダレ（最侎1つ選択）', type:'checkbox', required:true, min:1, max:3, options:[
-    {id:'op5a', name:'特製醤油', price:0, default:false, tax:'reduced'},
-    {id:'op5b', name:'ポン酢', price:0, default:false, tax:'reduced'},
-    {id:'op5c', name:'藻塩', price:0, default:false, tax:'reduced'},
-    {id:'op5d', name:'トリュフ塩（+¥120）', price:120, default:false, tax:'reduced'},
-  ]},
-  { id:'og6', name:'ご飯の種類', type:'radio', required:true, min:null, max:null, options:[
-    {id:'op6a', name:'白米', price:0, default:true, tax:'reduced'},
-    {id:'op6b', name:'酢飯（+¥50）', price:50, default:false, tax:'reduced'},
-    {id:'op6c', name:'玄米（+¥100）', price:100, default:false, tax:'reduced'},
-  ]},
-  { id:'og7', name:'ご飯の量', type:'radio', required:true, min:null, max:null, options:[
-    {id:'op7a', name:'少なめ（−¥100）', price:-100, default:false, tax:'reduced'},
-    {id:'op7b', name:'普通', price:0, default:true, tax:'reduced'},
-    {id:'op7c', name:'大盛（+¥150）', price:150, default:false, tax:'reduced'},
-  ]},
-  { id:'og8', name:'サイドメニュー追加', type:'radio', required:false, min:null, max:null, options:[
-    {id:'op8a', name:'追加なし', price:0, default:true, tax:'reduced'},
-    {id:'op8b', name:'味噌汁（+¥180）', price:180, default:false, tax:'reduced'},
-    {id:'op8c', name:'茶碗蒸し（+¥280）', price:280, default:false, tax:'reduced'},
-  ]},
-  { id:'og9', name:'盛り付けスタイル', type:'radio', required:true, min:null, max:null, options:[
-    {id:'op9a', name:'桶盛り', price:0, default:true, tax:'reduced'},
-    {id:'op9b', name:'船盛り（+¥500）', price:500, default:false, tax:'reduced'},
-    {id:'op9c', name:'重箱（+¥300）', price:300, default:false, tax:'reduced'},
-  ]},
-  { id:'og10', name:'無料サービス（最大2つ）', type:'checkbox', required:false, min:0, max:2, options:[
-    {id:'op10a', name:'ガリ増量', price:0, default:false, tax:'reduced'},
-    {id:'op10b', name:'醤油ボトル', price:0, default:false, tax:'reduced'},
-    {id:'op10c', name:'割り笸追加', price:0, default:false, tax:'reduced'},
-  ]},
-];
+// ===== OPTION GROUPS (populated from Supabase after login) =====
+let OPTION_GROUPS = [];
 
-// ===== CATEGORIES (ブランド共通) =====
-let CATEGORIES = [
-  { id:'cat1', name:'握り', description:'新鮮なネタの握り寿司', displayStart:'', displayEnd:'', sortOrder:1 },
-  { id:'cat2', name:'軍艦', description:'軍艦巻きメニュー', displayStart:'', displayEnd:'', sortOrder:2 },
-  { id:'cat3', name:'サイドメニュー', description:'一品料理', displayStart:'', displayEnd:'', sortOrder:3 },
-  { id:'cat4', name:'おすすめ', description:'店長おすすめセット', displayStart:'', displayEnd:'', sortOrder:4 },
-  { id:'cat5', name:'デザート', description:'食後のデザート', displayStart:'', displayEnd:'', sortOrder:5 },
-  { id:'cat6', name:'ドリンク', description:'お飲み物', displayStart:'', displayEnd:'', sortOrder:6 },
-];
+// ===== CATEGORIES (populated from Supabase after login) =====
+let CATEGORIES = [];
 
-// ===== MENU PATTERN DATA =====
-// categories: [{catId, sortOrder, items:[{itemId, status, suspendUntil, timerStart, timerEnd, sortOrder}]}]
-// status: '販売中' | '品切れ' | '終売'
-let MENU_PATTERNS = [
-  { id:'mp1', menuId:'aB3kX', name:'スタンダードメニュー', createdAt:'2026/01/15 10:30', updatedAt:'2026/03/01 14:22', displayStart:'', displayEnd:'',
-    categories: [
-      { catId:'cat1', sortOrder:1, items:[
-        { itemId:'A01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-        { itemId:'A02', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:2 },
-      ]},
-      { catId:'cat2', sortOrder:2, items:[
-        { itemId:'B01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-      { catId:'cat3', sortOrder:3, items:[
-        { itemId:'C01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-      { catId:'cat4', sortOrder:4, items:[
-        { itemId:'D01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-      { catId:'cat5', sortOrder:5, items:[
-        { itemId:'E01', status:'品切れ', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-    ]},
-  { id:'mp2', menuId:'Pq7mN', name:'期間限定メニュー', createdAt:'2026/02/10 09:15', updatedAt:'2026/02/28 16:45', displayStart:'2026-02-10', displayEnd:'2026-04-30',
-    categories: [
-      { catId:'cat1', sortOrder:1, items:[
-        { itemId:'A01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-      { catId:'cat2', sortOrder:2, items:[
-        { itemId:'F01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-      { catId:'cat5', sortOrder:3, items:[
-        { itemId:'F02', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-    ]},
-  { id:'mp3', menuId:'Wy4cR', name:'六本木プレミアム', createdAt:'2026/03/01 15:30', updatedAt:'2026/03/03 08:00', displayStart:'', displayEnd:'',
-    categories: [
-      { catId:'cat1', sortOrder:1, items:[
-        { itemId:'G01', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-        { itemId:'G02', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:2 },
-      ]},
-      { catId:'cat6', sortOrder:2, items:[
-        { itemId:'G03', status:'販売中', suspendUntil:'', timerStart:'', timerEnd:'', sortOrder:1 },
-      ]},
-    ]},
-];
+// ===== MENU PATTERN DATA (populated from Supabase after login) =====
+let MENU_PATTERNS = [];
 
-// ===== DEMO DATA: INVOICES =====
-let INVOICES = [
-  { id:'inv1', month:'2026/02', type:'請求書', amount:125400, status:'確定', dueDate:'2026/03/31', pdfUrl:'#', subtotal:114000, adjustments:0, tax:11400 },
-  { id:'inv2', month:'2026/02', type:'支払通知書', amount:287600, status:'確定', dueDate:'2026/03/05', pdfUrl:'#', subtotal:261455, adjustments:0, tax:26145 },
-  { id:'inv3', month:'2026/01', type:'請求書', amount:98200, status:'支払済', dueDate:'2026/02/28', pdfUrl:'#', subtotal:89273, adjustments:0, tax:8927 },
-  { id:'inv4', month:'2026/01', type:'支払通知書', amount:312400, status:'支払済', dueDate:'2026/02/05', pdfUrl:'#', subtotal:284000, adjustments:0, tax:28400 },
-];
+// ===== INVOICES (populated from Supabase after login) =====
+let INVOICES = [];
 
-// Supabase から請求書を読み込み
+// Supabase から請求書を再読み込み (RLS: filtered by brand)
 async function loadInvoicesFromSupabase(){
   try{
     var res=await sb.from('invoices').select('*').order('created_at',{ascending:false});
@@ -4665,19 +4705,8 @@ async function loadInvoicesFromSupabase(){
   }catch(e){console.warn('Invoice load failed:',e);}
 }
 
-// ===== DEMO DATA: REVIEWS =====
-let REVIEWS = [
-  { id:'r1', type:'store', storeName:'スシロー 渋谷店', rating:4.5, comment:'ネタが新鮮でとても美味しかったです！', userName:'匿名A', date:'2026/02/28', reply:'', replyStatus:'' },
-  { id:'r2', type:'store', storeName:'スシロー 新宿店', rating:3.0, comment:'混んでいて少し待ちましたが味は良かったです。', userName:'匿名B', date:'2026/02/25', reply:'', replyStatus:'' },
-  { id:'r3', type:'product', storeName:'スシロー 渋谷店', productName:'まぐろ', rating:5.0, comment:'最高のまぐろでした', userName:'匿名C', date:'2026/02/20', tags:['新鮮','おすすめ'], reply:'ありがとうございます！', replyStatus:'掲載済' },
-  { id:'r4', type:'product', storeName:'スシロー 横浜店', productName:'A5和牛握り', rating:4.0, comment:'少し値段が高いですが味は間違いない', userName:'匿名D', date:'2026/02/18', tags:['コスパ','おすすめ'], reply:'', replyStatus:'' },
-  { id:'r5', type:'store', storeName:'スシロー 横浜店', rating:2.0, comment:'配達が遅かった', userName:'匿名E', date:'2026/02/15', reply:'', replyStatus:'' },
-  { id:'r7', type:'store', storeName:'スシロー 渋谷店', rating:5.0, comment:'スタッフの対応がとても丁寧でした！', userName:'匿名G', date:'2026/02/12', reply:'', replyStatus:'' },
-  { id:'r8', type:'store', storeName:'スシロー 新宿店', rating:4.0, comment:'席が広くてゆったり食べられました', userName:'匿名H', date:'2026/02/10', reply:'ありがとうございます！', replyStatus:'掲載済' },
-  { id:'r9', type:'store', storeName:'スシロー 横浜店', rating:3.5, comment:'ランチタイムは少し混み合いますね', userName:'匿名I', date:'2026/02/08', reply:'', replyStatus:'' },
-  { id:'r10', type:'store', storeName:'スシロー 渋谷店', rating:1.0, comment:'注文した商品が来なかった', userName:'匿名J', date:'2026/02/05', reply:'', replyStatus:'' },
-  { id:'r6', type:'product', storeName:'スシロー 渋谷店', productName:'茶碗蒸し', rating:1.0, comment:'ぬるかった', userName:'匿名F', date:'2026/02/10', tags:['イマイチ'], reply:'大変申し訳ございません。', replyStatus:'審査中' },
-];
+// ===== REVIEWS (populated from Supabase after login) =====
+let REVIEWS = [];
 
 // ===== RENDER STORE TABLES =====
 function badge(val, type='success') { return `<span class="badge badge-${type}">${val}</span>`; }
@@ -7792,8 +7821,8 @@ setTimeout(initSalesDashboard, 100);
 // Placeholder hook
 const _origShowPageSales = showPage;
 
-// ===== INIT: Show first page =====
-(async function initAdmin() {
+// ===== INIT: Check session and bootstrap =====
+async function initAdminAfterAuth() {
   document.getElementById('content').style.opacity = '0.4';
   await loadAdminFromSupabase();
   document.getElementById('content').style.opacity = '1';
@@ -7801,6 +7830,14 @@ const _origShowPageSales = showPage;
   updatePolicyPreview();
   renderMenuPatternList();
   applyServiceVisibility();
+}
+
+(async function checkExistingSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user) {
+    document.getElementById('loginOverlay').innerHTML = '<div style="color:#fff;font-size:14px">読み込み中...</div>';
+    await onAuthSuccess(session.user);
+  }
 })();
 
 function applyServiceVisibility() {
@@ -9940,13 +9977,8 @@ function loadGalleryImage(slot, file) {
 // ===== MEMBER MANAGEMENT =====
 var _memberPrivacy = true; // true = masked (default)
 
-var MEMBERS = [
-  {id:'M001',name:'佐藤花子',tel:'090-1234-5678',email:'sato@example.com',rank:'ゴールド',points:1240,count:28,last:'2026/02/27',regDate:'2024/08/15',birthday:'1985/04/12',address:'東京都渋谷区',channel:{dineIn:15,takeout:8,delivery:5},totalSpend:112000,avgSpend:4000,optout:false},
-  {id:'M002',name:'鈴木一郎',tel:'090-2345-6789',email:'suzuki@example.com',rank:'シルバー',points:560,count:12,last:'2026/02/25',regDate:'2025/03/20',birthday:'1990/11/03',address:'東京都新宿区',channel:{dineIn:6,takeout:4,delivery:2},totalSpend:48000,avgSpend:4000,optout:true},
-  {id:'M003',name:'田中美咲',tel:'080-3456-7890',email:'tanaka@example.com',rank:'プラチナ',points:3100,count:52,last:'2026/03/01',regDate:'2024/01/10',birthday:'1978/07/22',address:'東京都目黒区',channel:{dineIn:30,takeout:12,delivery:10},totalSpend:234000,avgSpend:4500,optout:false},
-  {id:'M004',name:'山田健太',tel:'070-4567-8901',email:'yamada@example.com',rank:'レギュラー',points:80,count:3,last:'2026/02/10',regDate:'2026/01/28',birthday:'1995/02/28',address:'神奈川県横浜市',channel:{dineIn:2,takeout:1,delivery:0},totalSpend:9600,avgSpend:3200,optout:false},
-  {id:'M005',name:'伊藤さくら',tel:'090-5678-9012',email:'ito@example.com',rank:'ゴールド',points:890,count:22,last:'2026/02/28',regDate:'2024/11/05',birthday:'1988/09/15',address:'東京都世田谷区',channel:{dineIn:12,takeout:6,delivery:4},totalSpend:88000,avgSpend:4000,optout:false},
-];
+// MEMBERS (populated from Supabase after login)
+var MEMBERS = [];
 
 function maskName(name) { if(!name || name.length < 2) return '***'; return name.charAt(0) + '＊'.repeat(name.length - 1); }
 function maskTel(tel) { if(!tel) return '***-****-****'; var parts = tel.split('-'); if(parts.length === 3) return parts[0] + '-****-' + parts[2].slice(-2) + '**'; return '***-****-****'; }
