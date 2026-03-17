@@ -2,8 +2,8 @@
 // POST /functions/v1/stripe-create-refund
 //
 // 環境変数（Supabase Dashboard > Edge Functions > Secrets で設定）:
-//   STRIPE_SECRET_KEY: sk_test_xxx
-//   SUPABASE_SERVICE_ROLE_KEY: eyJxxx（orders テーブル更新用）
+//   STRIPE_SECRET_KEY（テスト/本番キーを環境変数で切替）
+//   SUPABASE_SERVICE_ROLE_KEY（orders テーブル更新用）
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'

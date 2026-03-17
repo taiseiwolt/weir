@@ -1,5 +1,13 @@
 {
   "version": 2,
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "www.aiden-jp.net" }],
+      "destination": "https://aiden-jp.net/:path",
+      "permanent": true
+    }
+  ],
   "routes": [
     { "src": "^/api/orders$", "dest": "/api/orders/__root" },
     { "src": "/api/(.*)", "dest": "/api/$1" }

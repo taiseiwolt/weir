@@ -207,7 +207,7 @@ function buildReceiptEmail(data: EmailRequest): string {
                   <p style="margin:0 0 16px;font-size:13px;color:#666;line-height:1.6;">
                     口コミを投稿していただくと、ポイントをプレゼント！
                   </p>
-                  <a href="https://aiden-demo.vercel.app/review?token=${data.review_token}"
+                  <a href="https://aiden-jp.net/review?token=${data.review_token}"
                      style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">
                     口コミを投稿する
                   </a>

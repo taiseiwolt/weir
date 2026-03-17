@@ -1,4 +1,5 @@
 const ALLOWED_ORIGINS = [
+  'https://aiden-jp.net',
   'https://taiseiwolt.github.io',
   'https://aiden-demo.vercel.app',
   'http://localhost:3000',

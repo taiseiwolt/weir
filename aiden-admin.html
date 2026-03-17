@@ -388,8 +388,9 @@ async function createStripeAccount(corpId){
 }
 
 function openStripeDashboard(accountId){
-  // テスト環境の Express ダッシュボードURL
-  window.open('https://dashboard.stripe.com/test/connect/accounts/'+accountId,'_blank');
+  // 環境に応じてダッシュボードURLを切替（test or live）
+  const isTest = (typeof STRIPE_MODE !== 'undefined' && STRIPE_MODE === 'live') ? '' : 'test/';
+  window.open('https://dashboard.stripe.com/'+isTest+'connect/accounts/'+accountId,'_blank');
 }
 
 // SEARCH

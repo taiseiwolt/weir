@@ -1912,7 +1912,7 @@ async function placeOrder() {
 
       // PaymentIntent の client_secret で 3Dセキュア認証を実行
       // ※ 本番実装では Stripe.js の confirmCardPayment を使用
-      // const stripe = Stripe('pk_test_xxx');
+      // const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
       // const { error } = await stripe.confirmCardPayment(data.client_secret, {
       //   payment_method: { card: cardElement }
       // });

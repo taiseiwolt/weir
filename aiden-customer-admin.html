@@ -531,6 +531,7 @@ const NAV = [
     {id:'review-setting', label:'ポイント設定'},
   ]},
   { id:'billing', icon:'💰', label:'請求・支払', subs:[
+    {id:'billing-stripe', label:'Stripe連携'},
     {id:'billing-invoices', label:'請求書・支払通知書'},
     {id:'billing-schedule', label:'スケジュール'},
     {id:'billing-csv', label:'CSVダウンロード'},
@@ -606,6 +607,7 @@ function showPage(pageId, catId){
   if(pageId === 'member-rank' && typeof renderRankTable === 'function') renderRankTable();
   if(pageId === 'review-store' && typeof renderStoreReviews === 'function') renderStoreReviews();
   if(pageId === 'review-product' && typeof renderProductReviews === 'function') renderProductReviews();
+  if(pageId === 'billing-stripe' && typeof renderStripeStatus === 'function') renderStripeStatus();
   if(pageId === 'billing-invoices' && typeof renderInvoices === 'function') renderInvoices();
   if(['sales-dashboard','sales-user','sales-product','sales-benchmark','sales-effect'].includes(pageId)) {
     setTimeout(()=>{ if(typeof renderSalesCharts==='function') renderSalesCharts(); }, 50);
@@ -3656,6 +3658,38 @@ content.innerHTML = `
   </div>
 </div>
 
+<!-- 💰 請求・支払 - Stripe連携 -->
+<div class="page" id="page-billing-stripe">
+  <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ Stripe連携</div>
+  <div class="page-title">Stripe連携</div>
+  <div class="page-subtitle">Stripe Connectアカウントを接続して決済を受け付けます</div>
+
+  <div class="card" id="stripeStatusCard">
+    <div class="card-title">🔗 Stripe Connect ステータス</div>
+    <div id="stripeStatusContent" style="padding:8px 0">
+      <div style="text-align:center;padding:24px;color:var(--text-light)">読み込み中...</div>
+    </div>
+  </div>
+
+  <div class="card" id="stripeDetailCard" style="display:none">
+    <div class="card-title">📋 アカウント詳細</div>
+    <div id="stripeDetailContent"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">❓ Stripe Connectとは</div>
+    <div style="font-size:13px;color:var(--text-light);line-height:1.8">
+      <p>Stripe Connectは、AIdenプラットフォーム上でお客様からのカード決済を受け付けるためのサービスです。</p>
+      <ul style="margin:8px 0 8px 20px">
+        <li>お客様がモバイルオーダーでカード決済した金額が、Stripeアカウントに直接入金されます</li>
+        <li>AIdenの手数料は自動的に差し引かれます（チャネル別手数料率が適用）</li>
+        <li>売上はStripeダッシュボードからいつでも確認・出金できます</li>
+        <li>本人確認（KYC）が完了するとすぐに決済の受付が可能になります</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <!-- 💰 請求・支払 - 請求書・支払通知書 -->
 <div class="page" id="page-billing-invoices">
   <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ 請求書・支払通知書</div>
@@ -4465,7 +4499,7 @@ async function loadAdminFromSupabase() {
     // 1. Corp (RLS: filtered by staff corp_id)
     const {data: corps, error: corpErr} = await sb.from('corps').select('*').limit(1);
     if (corpErr) errors.push('法人情報: ' + corpErr.message);
-    if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; }
+    if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
     // 2. Stores (RLS: filtered by brand)
     const {data: stores, error: storeErr} = await sb.from('stores').select('*').order('name');
@@ -4611,7 +4645,7 @@ function showDataLoadError(errors) {
   banner.innerHTML = '<span style="font-size:16px">⚠️</span><div><strong>一部のデータの読み込みに失敗しました</strong><br>' + errors.join(' / ') + '</div><button onclick="this.parentNode.remove()" style="margin-left:auto;background:none;border:none;color:#d63031;cursor:pointer;font-size:16px">&times;</button>';
 }
 
-let CORP = { id: '', name: '' };
+let CORP = { id: '', name: '', stripe_account_id: null };
 
 // ===== CHANGE LOG SYSTEM =====
 // 本番ではSupabaseテーブルに保存。デモではメモリ上に保持。
@@ -5936,6 +5970,168 @@ function reviewReplySubmit() {
 function reviewReplyClose() {
   document.getElementById('reviewReplyModal').style.display = 'none';
 }
+
+// ===== STRIPE CONNECT STATUS =====
+async function renderStripeStatus() {
+  const container = document.getElementById('stripeStatusContent');
+  const detailCard = document.getElementById('stripeDetailCard');
+  const detailContent = document.getElementById('stripeDetailContent');
+
+  if (CORP.stripe_account_id) {
+    // 接続済み: Stripeアカウントの詳細を取得
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;padding:16px 20px;background:#e6f9f0;border-radius:10px;border:1px solid #b2f2d9">' +
+        '<div style="width:48px;height:48px;border-radius:50%;background:#00b894;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;flex-shrink:0">✓</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:15px;font-weight:700;color:#00b894">Stripe Connect 連携済み</div>' +
+          '<div style="font-size:12px;color:#636e72;font-family:\'Poppins\',monospace;margin-top:4px">' + CORP.stripe_account_id + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="btn btn-secondary btn-sm" onclick="openStripeExpressDashboard()">Stripeダッシュボード</button>' +
+          '<button class="btn btn-secondary btn-sm" onclick="refreshStripeOnboarding()">本人確認を再開</button>' +
+        '</div>' +
+      '</div>';
+
+    // アカウント詳細を取得
+    try {
+      const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        body: JSON.stringify({ stripe_account_id: CORP.stripe_account_id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        detailCard.style.display = '';
+        detailContent.innerHTML =
+          '<div class="form-grid" style="grid-template-columns:1fr 1fr">' +
+            '<div class="form-group"><label>アカウントID</label><div style="font-family:\'Poppins\',monospace;font-size:13px;padding:8px 12px;background:#f8f9fa;border-radius:6px">' + CORP.stripe_account_id + '</div></div>' +
+            '<div class="form-group"><label>法人名</label><div style="font-size:13px;padding:8px 12px;background:#f8f9fa;border-radius:6px">' + (CORP.name || '-') + '</div></div>' +
+            '<div class="form-group"><label>決済受付</label><div style="font-size:13px;padding:8px 12px;background:#f8f9fa;border-radius:6px">' +
+              (data.charges_enabled ? '<span style="color:#00b894;font-weight:600">有効</span>' : '<span style="color:#d63031;font-weight:600">無効（本人確認が必要です）</span>') +
+            '</div></div>' +
+            '<div class="form-group"><label>本人確認</label><div style="font-size:13px;padding:8px 12px;background:#f8f9fa;border-radius:6px">' +
+              (data.details_submitted ? '<span style="color:#00b894;font-weight:600">提出済み</span>' : '<span style="color:#e17055;font-weight:600">未提出</span>') +
+            '</div></div>' +
+          '</div>';
+
+        if (!data.charges_enabled || !data.details_submitted) {
+          detailContent.innerHTML +=
+            '<div style="margin-top:12px;padding:12px 16px;background:#fff8e1;border-radius:8px;border:1px solid #fdcb6e;font-size:12px;color:#856404">' +
+              '⚠️ 本人確認が完了していないため、決済の受付がまだできません。「本人確認を再開」ボタンからStripeのオンボーディングを完了してください。' +
+            '</div>';
+        }
+      }
+    } catch (e) {
+      console.error('Stripe status fetch error:', e);
+    }
+  } else {
+    // 未接続
+    container.innerHTML =
+      '<div style="text-align:center;padding:32px 20px">' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:#ffeaa7;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px">⚠️</div>' +
+        '<div style="font-size:16px;font-weight:700;color:#2d3436;margin-bottom:8px">Stripeアカウントが未接続です</div>' +
+        '<div style="font-size:13px;color:#636e72;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">カード決済を受け付けるには、Stripe Connectアカウントの作成と本人確認が必要です。</div>' +
+        '<button class="btn btn-primary" onclick="startStripeOnboarding()" style="padding:10px 32px;font-size:14px;border-radius:8px">Stripe Connect を開始する</button>' +
+      '</div>';
+    detailCard.style.display = 'none';
+  }
+}
+
+async function startStripeOnboarding() {
+  if (!CORP.id) { alert('法人情報が取得できません'); return; }
+  if (!confirm('Stripe Connect Expressアカウントを作成します。\n\n法人名: ' + CORP.name + '\n\n本人確認のためStripeの画面に遷移します。続行しますか？')) return;
+
+  const statusEl = document.getElementById('stripeStatusContent');
+  statusEl.innerHTML = '<div style="text-align:center;padding:32px"><div style="font-size:14px;color:var(--text-light)">⏳ Stripeアカウントを作成中...</div></div>';
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      body: JSON.stringify({
+        corp_id: CORP.id,
+        business_name: CORP.name,
+        email: CURRENT_AUTH_USER ? CURRENT_AUTH_USER.email : ''
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(function() { return { error: '不明なエラー' }; });
+      throw new Error(err.error || 'アカウント作成に失敗しました');
+    }
+
+    const data = await res.json();
+    CORP.stripe_account_id = data.account_id;
+
+    if (data.onboarding_url) {
+      window.open(data.onboarding_url, '_blank');
+    }
+
+    renderStripeStatus();
+  } catch (e) {
+    console.error('Stripe Connect error:', e);
+    statusEl.innerHTML =
+      '<div style="text-align:center;padding:24px;color:#d63031">' +
+        '<div style="font-size:14px;font-weight:600">❌ ' + e.message + '</div>' +
+        '<button class="btn btn-secondary btn-sm" onclick="renderStripeStatus()" style="margin-top:12px">再試行</button>' +
+      '</div>';
+  }
+}
+
+async function refreshStripeOnboarding() {
+  if (!CORP.stripe_account_id) { alert('Stripeアカウントが見つかりません'); return; }
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      body: JSON.stringify({ stripe_account_id: CORP.stripe_account_id })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(function() { return { error: '不明なエラー' }; });
+      throw new Error(err.error || 'オンボーディングリンクの生成に失敗しました');
+    }
+
+    const data = await res.json();
+    if (data.onboarding_url) {
+      window.open(data.onboarding_url, '_blank');
+    } else {
+      alert('オンボーディングURLの取得に失敗しました');
+    }
+  } catch (e) {
+    alert('エラー: ' + e.message);
+  }
+}
+
+function openStripeExpressDashboard() {
+  if (!CORP.stripe_account_id) return;
+  // Express Dashboard のログインリンクはAPI経由で生成が必要
+  // 簡易的にStripe Dashboardへ遷移
+  window.open('https://dashboard.stripe.com/connect/accounts/' + CORP.stripe_account_id, '_blank');
+}
+
+// Stripe Connect オンボーディング完了のリダイレクトハンドリング
+(function checkStripeReturn() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('stripe_onboarding') === 'complete') {
+    var accountId = params.get('account_id');
+    if (accountId) {
+      // URL パラメータをクリーンアップ
+      window.history.replaceState({}, '', window.location.pathname);
+      // ページ読み込み完了後にStripeページを表示
+      setTimeout(function() {
+        showPage('billing-stripe', 'billing');
+      }, 1000);
+    }
+  }
+  if (params.get('stripe_refresh') === 'true') {
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(function() {
+      showPage('billing-stripe', 'billing');
+    }, 1000);
+  }
+})();
 
 // ===== INVOICE RENDERING =====
 function renderInvoices() {
