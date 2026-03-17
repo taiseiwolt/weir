@@ -105,13 +105,13 @@
 let CORPS=[{id:'CRP-Xk9mPr2',name:'株式会社スミビフーズ',rep:'近重 泰輔',status:'active',created:'2026-01-15',stripe_account_id:null,rep_email:'taisei@sumbibi.com'},{id:'CRP-Pq7mN2k',name:'株式会社麺道楽',rep:'田中 一郎',status:'active',created:'2026-02-01',stripe_account_id:null,rep_email:'tanaka@mendouraku.com'},{id:'CRP-Wy4cR8j',name:'有限会社カフェブリーズ',rep:'佐藤 美咲',status:'trial',created:'2026-03-01',stripe_account_id:null,rep_email:'sato@cafebreeze.com'}];
 let BRANDS=[{id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭',slug:'sumibite',status:'active',mainColor:'#DC3232'},{id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲',slug:'fuuun-ramen',status:'active',mainColor:'#FF6B35'},{id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極',slug:'tsukemen-kiwami',status:'active',mainColor:'#1B4332'},{id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze',slug:'cafe-breeze',status:'trial',mainColor:'#5BA4A4'}];
 let STORES=[{id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',name:'渋谷店',status:'active',addr:'東京都渋谷区道玄坂1-12-5',tel:'03-6452-1234',orders:245,revenue:3680000},{id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',name:'新宿東口店',status:'active',addr:'東京都新宿区新宿3-1-1',tel:'03-5321-0001',orders:312,revenue:4150000},{id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',name:'池袋店',status:'active',addr:'東京都豊島区南池袋1-1-1',tel:'03-5950-0001',orders:198,revenue:2980000},{id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',name:'恵比寿店',status:'active',addr:'東京都渋谷区恵比寿4-5-6',tel:'03-6450-0001',orders:156,revenue:2450000},{id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',name:'六本木店',status:'active',addr:'東京都港区六本木3-2-1',tel:'03-6430-0001',orders:278,revenue:5120000},{id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',name:'銀座店',status:'active',addr:'東京都中央区銀座5-8-1',tel:'03-3571-0001',orders:189,revenue:3900000},{id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',name:'表参道店',status:'active',addr:'東京都渋谷区神宮前4-1-1',tel:'03-5410-0001',orders:134,revenue:2780000},{id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',name:'新宿本店',status:'active',addr:'東京都新宿区新宿3-5-1',tel:'03-5320-0010',orders:520,revenue:3120000},{id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',name:'渋谷店',status:'active',addr:'東京都渋谷区宇田川町2-1',tel:'03-6450-0010',orders:410,revenue:2460000},{id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',name:'代官山店',status:'trial',addr:'東京都渋谷区猿楽町10-1',tel:'03-6455-0001',orders:45,revenue:340000}];
-let ACCOUNTS=[{id:'ACC-tU7dJ9y',name:'近重 泰輔',email:'taisei@sumbibi.com',role:'owner',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-11'},{id:'ACC-vW8eK2z',name:'山田 太郎',email:'yamada@sumbibi.com',role:'admin',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-10'},{id:'ACC-xY9fL3a',name:'鈴木 花子',email:'suzuki@sumbibi.com',role:'staff',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-09'},{id:'ACC-zA2gM4b',name:'田中 一郎',email:'tanaka@mendouraku.com',role:'owner',corpId:'CRP-Pq7mN2k',status:'active',lastLogin:'2026-03-11'},{id:'ACC-bC3hN5c',name:'佐藤 美咲',email:'sato@cafebreeze.com',role:'owner',corpId:'CRP-Wy4cR8j',status:'active',lastLogin:'2026-03-08'}];
+let ACCOUNTS=[];
 const BANS=[{id:'BAN-tU4tX6n',type:'email',value:'spam@test.com',reason:'不正注文の繰り返し',scope:'global',created:'2026-02-15',by:'Taisei'},{id:'BAN-vW5uY7p',type:'phone',value:'090-0000-0000',reason:'いたずら注文',scope:'global',created:'2026-02-20',by:'Taisei'},{id:'BAN-xY6vZ8q',type:'email',value:'fake@example.com',reason:'なりすまし注文',scope:'guest',created:'2026-03-01',by:'Taisei'}];
 // COMPENSATION DATA
-let COMP_POINT_LOG=[{id:'CPT-demo001',memberId:'MBR-dE4jP6d',memberName:'高橋 翔太',amount:500,reason:'配送遅延による補填',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-10'},{id:'CPT-demo002',memberId:'MBR-jK7nS9g',memberName:'渡辺 さくら',amount:300,reason:'商品品質クレーム対応',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-08'},{id:'CPT-demo003',memberId:'MBR-fG5kQ7e',memberName:'中村 あゆみ',amount:200,reason:'システム障害によるポイント消失復旧',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-05'}];
-let ADMIN_ORDERS=[{id:'ORD-1001',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'高橋 翔太',total:5280,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_3kXm9P2abc',date:'2026-03-11',items:[{name:'特選カルビ',qty:2,price:1280},{name:'ハラミ',qty:1,price:980},{name:'石焼ビビンバ',qty:1,price:780}],aidenPointsUsed:0,normalPointsUsed:200},{id:'ORD-1002',storeId:'STR-eG6uZ8p',storeName:'炭火亭 新宿東口店',brandName:'焼肉 炭火亭',customer:'中村 あゆみ',total:3960,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_7jL5wTn6def',date:'2026-03-10',items:[{name:'上ロース',qty:1,price:1480},{name:'牛タン塩',qty:1,price:1180},{name:'冷麺',qty:1,price:880}],aidenPointsUsed:100,normalPointsUsed:300},{id:'ORD-1003',storeId:'STR-nP4aF6v',storeName:'ラーメン風雲 新宿本店',brandName:'ラーメン風雲',customer:'小林 健太',total:1980,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_9qR5bG7wghi',date:'2026-03-09',items:[{name:'味噌ラーメン',qty:1,price:980},{name:'餃子',qty:1,price:480},{name:'チャーシュー丼',qty:1,price:520}],aidenPointsUsed:0,normalPointsUsed:0},{id:'ORD-1004',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'渡辺 さくら',total:8640,status:'done',paymentStatus:'refunded',paymentIntentId:'pi_test_2pQ9vGk2jkl',date:'2026-03-07',items:[{name:'特選カルビ',qty:3,price:1280},{name:'上ロース',qty:2,price:1480},{name:'生ビール',qty:4,price:550}],aidenPointsUsed:300,normalPointsUsed:0},{id:'ORD-1005',storeId:'STR-qR5bG7w',storeName:'ラーメン風雲 渋谷店',brandName:'ラーメン風雲',customer:'伊藤 大地',total:1460,status:'cancelled',paymentStatus:'paid',paymentIntentId:'pi_test_8nV3sHm8mno',date:'2026-03-06',items:[{name:'醤油ラーメン',qty:1,price:880},{name:'唐揚げ',qty:1,price:580}],aidenPointsUsed:0,normalPointsUsed:0}];
+let COMP_POINT_LOG=[];
+let ADMIN_ORDERS=[];
 let REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
-let MEMBERS=[{id:'MBR-dE4jP6d',name:'高橋 翔太',email:'takahashi@gmail.com',phone:'090-1234-5678',rank:'ゴールド',points:2450,orders:18,lastOrder:'2026-03-10',joined:'2025-08-15'},{id:'MBR-fG5kQ7e',name:'中村 あゆみ',email:'nakamura@gmail.com',phone:'080-2345-6789',rank:'シルバー',points:890,orders:8,lastOrder:'2026-03-08',joined:'2025-11-20'},{id:'MBR-hJ6mR8f',name:'小林 健太',email:'kobayashi@yahoo.co.jp',phone:'070-3456-7890',rank:'レギュラー',points:320,orders:3,lastOrder:'2026-02-25',joined:'2026-01-10'},{id:'MBR-jK7nS9g',name:'渡辺 さくら',email:'watanabe@icloud.com',phone:'090-4567-8901',rank:'ゴールド',points:3100,orders:24,lastOrder:'2026-03-11',joined:'2025-06-01'},{id:'MBR-kL8pT2h',name:'伊藤 大地',email:'ito.d@gmail.com',phone:'080-5678-9012',rank:'レギュラー',points:150,orders:2,lastOrder:'2026-03-05',joined:'2026-02-20'}];
+let MEMBERS=[];
 const GUESTS=[{id:'GST-mN9qU3j',orderCount:3,lastOrder:'2026-03-10',channel:'takeout'},{id:'GST-pQ2rV4k',orderCount:1,lastOrder:'2026-03-08',channel:'delivery'},{id:'GST-rS3sW5m',orderCount:5,lastOrder:'2026-03-11',channel:'dinein'}];
 const MENU=[{id:1,name:'特選カルビ',price:1280,cat:'焼肉',emoji:'🥩',desc:'厳選A5ランク黒毛和牛'},{id:2,name:'ハラミ',price:980,cat:'焼肉',emoji:'🥩',desc:'ジューシーな赤身肉'},{id:3,name:'牛タン塩',price:1180,cat:'焼肉',emoji:'🥩',desc:'厚切りタン'},{id:4,name:'ホルモン盛合せ',price:880,cat:'焼肉',emoji:'🥩',desc:'5種盛り'},{id:5,name:'上ロース',price:1480,cat:'焼肉',emoji:'🥩',desc:'さっぱり上質'},{id:6,name:'石焼ビビンバ',price:780,cat:'ご飯もの',emoji:'🍚',desc:'アツアツ石鍋'},{id:7,name:'カルビクッパ',price:880,cat:'ご飯もの',emoji:'🍚',desc:'旨辛スープご飯'},{id:8,name:'わかめスープ',price:350,cat:'スープ',emoji:'🥣',desc:'定番'},{id:9,name:'冷麺',price:880,cat:'麺',emoji:'🍜',desc:'盛岡冷麺'},{id:10,name:'チョレギサラダ',price:580,cat:'サラダ',emoji:'🥗',desc:'ごま油ドレッシング'},{id:11,name:'生ビール',price:550,cat:'ドリンク',emoji:'🍺',desc:'プレミアムモルツ'}];
 
@@ -236,8 +236,8 @@ async function loadDataFromSupabase(){
     sb.from('point_transactions').select('*').eq('source','aiden_compensation').order('created_at',{ascending:false}),
     sb.from('service_subscriptions').select('*').eq('is_active',true)
   ]);
-  var ok=function(i){return results[i].status==='fulfilled'&&results[i].value.data&&results[i].value.data.length>0;};
-  var d=function(i){return results[i].value.data;};
+  var ok=function(i){return results[i].status==='fulfilled'&&results[i].value.data&&!results[i].value.error;};
+  var d=function(i){return results[i].value.data||[];};
 
   // rank map
   var rankMap={};
@@ -249,12 +249,15 @@ async function loadDataFromSupabase(){
   if(ok(1)) BRANDS=d(1).map(mapBrand);
   // stores
   if(ok(2)) STORES=d(2).map(mapStore);
-  // accounts (may not exist)
+  // accounts
   if(ok(3)) ACCOUNTS=d(3).map(function(row){
     return {
-      id:row.id, name:row.name||((row.first_name||'')+' '+(row.last_name||'')).trim(),
-      email:row.email||'', role:row.role||'staff', corpId:row.corp_id||'',
-      status:row.status||'active', lastLogin:row.last_login?row.last_login.split('T')[0]:'—'
+      id:row.id, name:row.name||'', email:row.email||'',
+      role:row.role||'staff', corpId:row.corp_id||'',
+      brandId:row.brand_id||null, storeId:row.store_id||null,
+      status:row.status||'active',
+      lastLogin:row.last_login?row.last_login.split('T')[0]:'—',
+      created_at:row.created_at||''
     };
   });
   // members
@@ -488,7 +491,7 @@ function renderUsers(){
   // accounts
   '<div class="tab-content active" id="user-accounts"><div class="card"><div class="card-title">アカウント一覧（Owner/Admin/Staff） <span class="ct-right"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'account\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'account\')">📥 一括登録</button><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>権限</th><th>法人</th><th>ステータス</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+
-  ACCOUNTS.map(a=>{const cp=CORPS.find(c=>c.id===a.corpId);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+a.id+'</code></td><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(cp?cp.name:'')+'</td><td>'+statusBadge(a.status)+'</td><td>'+a.lastLogin+'</td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集\')">編集</button></td></tr>';}).join('')+
+  ACCOUNTS.map(a=>{const cp=CORPS.find(c=>c.id===a.corpId);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px" title="'+a.id+'">'+String(a.id).substring(0,8)+'…</code></td><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(cp?cp.name:'')+'</td><td>'+statusBadge(a.status)+'</td><td>'+a.lastLogin+'</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="openEditAccountModal(\''+a.id+'\')">編集</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>'+
   '<div class="card"><div class="card-title">🔐 権限マトリクス</div><div class="perm-grid"><div class="ph">機能</div><div class="ph" style="text-align:center">Owner</div><div class="ph" style="text-align:center">Admin</div><div class="ph" style="text-align:center">Staff</div><div class="pl">店舗閲覧</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">店舗編集</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">メニュー管理</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">売上レポート</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">個人情報閲覧</div><div class="pc">✅</div><div class="pc">⚠️</div><div class="pc">❌</div><div class="pl">アカウント管理</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div><div class="pl">請求・決済</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div></div></div></div>'+
   // members
@@ -636,7 +639,18 @@ async function grantCompPoint(memberId){
     amount:amount,reason:reason,source:'aiden_compensation',
     grantedBy:'Taisei',createdAt:new Date().toISOString().split('T')[0]
   });
-  // Supabase Edge Function 呼び出し（接続時）
+  // Supabase: point_transactions に直接INSERT
+  try{
+    var ptRes=await sb.from('point_transactions').insert({
+      member_id:memberId,brand_id:null,amount:amount,
+      reason:reason,source:'aiden_compensation',granted_by:'Taisei'
+    }).select().single();
+    if(ptRes.data){
+      // インメモリのCOMP_POINT_LOGを実データIDで更新
+      COMP_POINT_LOG[COMP_POINT_LOG.length-1].id=ptRes.data.id;
+    }
+  }catch(e){console.warn('point_transactions insert skipped:',e);}
+  // Edge Function呼び出し（追加処理がある場合）
   try{
     await fetch(SUPABASE_URL+'/functions/v1/compensation-point-grant',{
       method:'POST',
@@ -811,7 +825,7 @@ function renderCorpPage(c){
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div></div>'+
   '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
-  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント</div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td></tr>').join('')+'</tbody></table></div></div>'+
+  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="openEditAccountModal(\''+a.id+'\')">編集</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
   '<div class="tab-content" id="corp-stores"><div class="card"><div class="card-title">店舗一覧（'+stores.length+'）</div><table class="data-table"><thead><tr><th>ブランド</th><th>店舗名</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+stores.map(s=>{const br=getBrandForStore(s);return '<tr><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+'</tbody></table></div></div>';
 }
@@ -966,22 +980,75 @@ function saveStore(){
   closeModal();showToast('✅ 店舗を追加しました');renderPage();
 }
 
+function accountCorpOptions(sel){return CORPS.map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+c.name+'</option>').join('');}
+function accountBrandOptions(corpId,sel){var bs=BRANDS.filter(b=>b.corpId===corpId);return '<option value="">— 未指定 —</option>'+bs.map(b=>'<option value="'+b.id+'"'+(b.id===sel?' selected':'')+'>'+b.name+'</option>').join('');}
+function accountStoreOptions(brandId,sel){var ss=STORES.filter(s=>s.brandId===brandId);return '<option value="">— 未指定 —</option>'+ss.map(s=>'<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+s.name+'</option>').join('');}
+
 function openAddAccountModal(){
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 アカウント追加</h3>'+
   '<div class="form-grid">'+
   '<div class="form-group"><label>氏名 <span style="color:var(--danger)">*</span></label><input type="text" id="addAccName" placeholder="氏名"></div>'+
   '<div class="form-group"><label>メールアドレス <span style="color:var(--danger)">*</span></label><input type="email" id="addAccEmail" placeholder="example@company.com"></div>'+
   '<div class="form-group"><label>権限 <span style="color:var(--danger)">*</span></label><select id="addAccRole"><option value="staff" selected>Staff</option><option value="admin">Admin</option><option value="owner">Owner</option></select></div>'+
-  '<div class="form-group"><label>所属法人</label><select id="addAccCorp">'+CORPS.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')+'</select></div>'+
+  '<div class="form-group"><label>所属法人 <span style="color:var(--danger)">*</span></label><select id="addAccCorp" onchange="document.getElementById(\'addAccBrand\').innerHTML=accountBrandOptions(this.value,\'\');document.getElementById(\'addAccStore\').innerHTML=accountStoreOptions(\'\',\'\')">'+accountCorpOptions('')+'</select></div>'+
+  '<div class="form-group"><label>所属ブランド</label><select id="addAccBrand" onchange="document.getElementById(\'addAccStore\').innerHTML=accountStoreOptions(this.value,\'\')"><option value="">— 未指定 —</option></select></div>'+
+  '<div class="form-group"><label>所属店舗</label><select id="addAccStore"><option value="">— 未指定 —</option></select></div>'+
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveAccount()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-function saveAccount(){
+async function saveAccount(){
   const name=document.getElementById('addAccName').value.trim();
   const email=document.getElementById('addAccEmail').value.trim();
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  ACCOUNTS.push({id:genId('ACC-'),name:name,email:email,role:document.getElementById('addAccRole').value,corpId:document.getElementById('addAccCorp').value,status:'active',lastLogin:'—'});
+  const role=document.getElementById('addAccRole').value;
+  const corpId=document.getElementById('addAccCorp').value;
+  const brandId=document.getElementById('addAccBrand').value||null;
+  const storeId=document.getElementById('addAccStore').value||null;
+  showToast('⏳ 保存中...');
+  var res=await sb.from('accounts').insert({name:name,email:email,role:role,corp_id:corpId,brand_id:brandId,store_id:storeId,status:'active'}).select().single();
+  if(res.error){showToast('❌ '+res.error.message);return;}
+  ACCOUNTS.push({id:res.data.id,name:name,email:email,role:role,corpId:corpId,brandId:brandId,storeId:storeId,status:'active',lastLogin:'—',created_at:res.data.created_at});
   closeModal();showToast('✅ アカウントを追加しました');renderPage();
+}
+
+function openEditAccountModal(accId){
+  var a=ACCOUNTS.find(x=>x.id===accId);if(!a)return;
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>📝 アカウント編集</h3>'+
+  '<div class="form-grid">'+
+  '<div class="form-group"><label>氏名 <span style="color:var(--danger)">*</span></label><input type="text" id="editAccName" value="'+a.name+'"></div>'+
+  '<div class="form-group"><label>メールアドレス <span style="color:var(--danger)">*</span></label><input type="email" id="editAccEmail" value="'+a.email+'"></div>'+
+  '<div class="form-group"><label>権限</label><select id="editAccRole"><option value="staff"'+(a.role==='staff'?' selected':'')+'>Staff</option><option value="admin"'+(a.role==='admin'?' selected':'')+'>Admin</option><option value="owner"'+(a.role==='owner'?' selected':'')+'>Owner</option></select></div>'+
+  '<div class="form-group"><label>所属法人</label><select id="editAccCorp" onchange="document.getElementById(\'editAccBrand\').innerHTML=accountBrandOptions(this.value,\'\');document.getElementById(\'editAccStore\').innerHTML=accountStoreOptions(\'\',\'\')">'+accountCorpOptions(a.corpId)+'</select></div>'+
+  '<div class="form-group"><label>所属ブランド</label><select id="editAccBrand" onchange="document.getElementById(\'editAccStore\').innerHTML=accountStoreOptions(this.value,\'\')">'+accountBrandOptions(a.corpId,a.brandId||'')+'</select></div>'+
+  '<div class="form-group"><label>所属店舗</label><select id="editAccStore">'+accountStoreOptions(a.brandId||'',a.storeId||'')+'</select></div>'+
+  '<div class="form-group"><label>ステータス</label><select id="editAccStatus"><option value="active"'+(a.status==='active'?' selected':'')+'>稼働中</option><option value="suspended"'+(a.status==='suspended'?' selected':'')+'>停止</option></select></div>'+
+  '</div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="updateAccount(\''+accId+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+async function updateAccount(accId){
+  var name=document.getElementById('editAccName').value.trim();
+  var email=document.getElementById('editAccEmail').value.trim();
+  if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
+  var role=document.getElementById('editAccRole').value;
+  var corpId=document.getElementById('editAccCorp').value;
+  var brandId=document.getElementById('editAccBrand').value||null;
+  var storeId=document.getElementById('editAccStore').value||null;
+  var status=document.getElementById('editAccStatus').value;
+  showToast('⏳ 保存中...');
+  var res=await sb.from('accounts').update({name:name,email:email,role:role,corp_id:corpId,brand_id:brandId,store_id:storeId,status:status}).eq('id',accId);
+  if(res.error){showToast('❌ '+res.error.message);return;}
+  var a=ACCOUNTS.find(x=>x.id===accId);
+  if(a){a.name=name;a.email=email;a.role=role;a.corpId=corpId;a.brandId=brandId;a.storeId=storeId;a.status=status;}
+  closeModal();showToast('✅ アカウントを更新しました');renderPage();
+}
+async function deleteAccount(accId){
+  var a=ACCOUNTS.find(x=>x.id===accId);if(!a)return;
+  if(!confirm('アカウント「'+a.name+'」を削除しますか？\nこの操作は取り消せません。'))return;
+  showToast('⏳ 削除中...');
+  var res=await sb.from('accounts').delete().eq('id',accId);
+  if(res.error){showToast('❌ '+res.error.message);return;}
+  ACCOUNTS=ACCOUNTS.filter(x=>x.id!==accId);
+  showToast('🗑 アカウントを削除しました');renderPage();
 }
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
@@ -1126,10 +1193,11 @@ function validateBulkRows(dataRows,type){
   return {valid,errors};
 }
 
-function confirmBulkImport(){
+async function confirmBulkImport(){
   if(!_bulkParsed||!_bulkParsed.length){showToast('⚠️ 登録データがありません');return;}
   let added=0;
-  _bulkParsed.forEach(item=>{
+  for(var i=0;i<_bulkParsed.length;i++){
+    var item=_bulkParsed[i];
     if(_bulkType==='corp'){
       CORPS.push({id:genId('CRP-'),name:item.name,rep:item.rep,status:item.status,created:item.created,hp:item.hp,recruit:item.recruit});added++;
     }else if(_bulkType==='brand'){
@@ -1137,9 +1205,10 @@ function confirmBulkImport(){
     }else if(_bulkType==='store'){
       STORES.push({id:genId('STR-'),brandId:item.brandId,name:item.name,status:item.status,addr:item.addr,tel:item.tel,email:item.email,station:item.station,priceRange:item.priceRange,seats:item.seats,smoking:item.smoking,children:item.children,pets:item.pets,parking:item.parking,lat:item.lat,lng:item.lng,deliveryRadius:item.deliveryRadius,deliveryFee:item.deliveryFee,minOrder:item.minOrder,serviceCharge:item.serviceCharge,orders:0,revenue:0});added++;
     }else if(_bulkType==='account'){
-      ACCOUNTS.push({id:genId('ACC-'),name:item.name,email:item.email,role:item.role,corpId:item.corpId,phone:item.phone,status:'active',lastLogin:'—'});added++;
+      var res=await sb.from('accounts').insert({name:item.name,email:item.email,role:item.role,corp_id:item.corpId,status:'active'}).select().single();
+      if(res.data){ACCOUNTS.push({id:res.data.id,name:item.name,email:item.email,role:item.role,corpId:item.corpId,brandId:null,storeId:null,status:'active',lastLogin:'—'});added++;}
     }
-  });
+  }
   closeModal();
   showToast('✅ '+added+'件を登録しました');
   _bulkParsed=null;_bulkType=null;
