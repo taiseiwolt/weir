@@ -305,6 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('trackingView').style.display = '';
     initMap();
     renderTracking();
+    startRealtime();
     startPolling();
 
   } catch (e) {
@@ -452,7 +453,48 @@ function renderTracking() {
 }
 
 // ===================================================================
-// POLLING
+// SUPABASE REALTIME
+// ===================================================================
+let realtimeChannel = null;
+
+function startRealtime() {
+  if (!orderData || !orderData.id) return;
+  const cur = orderData.tracking_status || 'placed';
+  if (FINAL_STATUSES.includes(cur) || cur === 'cancelled') return;
+
+  if (realtimeChannel) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  realtimeChannel = sb.channel('order-tracking-' + orderData.id)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'id=eq.' + orderData.id },
+      (payload) => {
+        console.log('Realtime order update:', payload.new?.tracking_status);
+        const data = payload.new;
+        if (data) {
+          const changed = data.tracking_status !== orderData.tracking_status;
+          Object.assign(orderData, data);
+          if (changed) renderTracking();
+          if (getChannel() === 'delivery' && data.delivery_lat && data.delivery_lng) {
+            updateDriverMarker(data.delivery_lat, data.delivery_lng);
+          }
+          if (FINAL_STATUSES.includes(data.tracking_status) || data.tracking_status === 'cancelled') {
+            sb.removeChannel(realtimeChannel);
+            realtimeChannel = null;
+            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+          }
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('Tracking Realtime status:', status);
+    });
+}
+
+// ===================================================================
+// POLLING (fallback)
 // ===================================================================
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
@@ -491,7 +533,7 @@ function startPolling() {
         if (FINAL_STATUSES.includes(data.tracking_status) || data.tracking_status==='cancelled') { clearInterval(pollInterval); pollInterval=null; }
       }
     } catch(e) { console.error('Poll error:', e); }
-  }, 30000);
+  }, 60000);
 }
 
 // ===================================================================

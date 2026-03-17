@@ -1071,11 +1071,107 @@ document.querySelectorAll('.mini-filter').forEach(el=>el.addEventListener('click
 document.querySelectorAll('.htable th[data-s]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.s;if(hSortKey===k)hSortDir*=-1;else{hSortKey=k;hSortDir=-1;}renderHistory();}));
 document.addEventListener('click',e=>{if(!e.target.closest('#ptgl')&&!e.target.closest('#pmenu'))document.getElementById('pmenu').classList.remove('open');});
 
-// ===== POLLING =====
+// ===== NOTIFICATION SOUND =====
+let audioCtx = null;
+function playNewOrderSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    // Two-tone chime
+    [880, 1108.73].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, now + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.5);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.15);
+      osc.stop(now + i * 0.15 + 0.5);
+    });
+  } catch(e) { console.warn('Sound error:', e); }
+}
+
+// ===== SUPABASE REALTIME =====
+let realtimeChannel = null;
+let realtimeConnected = false;
+
+function startRealtime() {
+  if (!STORE_ID) return;
+
+  // Clean up previous channel if any
+  if (realtimeChannel) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  realtimeChannel = sb.channel('orders-dashboard-' + STORE_ID)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'orders', filter: 'store_id=eq.' + STORE_ID },
+      async (payload) => {
+        console.log('Realtime INSERT:', payload.new?.id);
+        try {
+          // Fetch full order with items
+          let fullOrder = null;
+          if (API_BASE) {
+            try {
+              const data = await apiFetch('/api/orders/' + payload.new.id);
+              fullOrder = data;
+            } catch(e) { /* fall through */ }
+          }
+          if (!fullOrder) {
+            const { data } = await sb.from('orders').select('*, order_items(*)').eq('id', payload.new.id).single();
+            fullOrder = data;
+          }
+          if (fullOrder) {
+            const existing = O.find(x => x.dbId === fullOrder.id);
+            if (!existing) {
+              O.unshift(buildDashboardOrder(fullOrder, O.length));
+              oCtr++;
+              rNav(); rOrders(); renderHistory();
+              playNewOrderSound();
+              showToast('🔔 新しい注文が入りました');
+            }
+          }
+        } catch(e) { console.error('Realtime INSERT handler error:', e); }
+      }
+    )
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'store_id=eq.' + STORE_ID },
+      (payload) => {
+        console.log('Realtime UPDATE:', payload.new?.id);
+        try {
+          const updated = payload.new;
+          const existing = O.find(x => x.dbId === updated.id);
+          if (existing) {
+            const newStatus = mapOrderStatus(updated.status || updated.tracking_status);
+            if (existing.s !== newStatus) {
+              existing.s = newStatus;
+              rNav(); rOrders(); renderHistory();
+            }
+            if (updated.total_amount) existing.tot = updated.total_amount;
+            if (updated.customer_name) existing.cust = updated.customer_name;
+          }
+        } catch(e) { console.error('Realtime UPDATE handler error:', e); }
+      }
+    )
+    .subscribe((status) => {
+      console.log('Realtime status:', status);
+      realtimeConnected = (status === 'SUBSCRIBED');
+      // Update connection indicator
+      const dot = document.querySelector('.dot');
+      if (dot) dot.className = 'dot ' + (realtimeConnected ? 'on' : 'off');
+    });
+}
+
+// ===== POLLING (fallback) =====
 let pollTimer = null;
 
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
+  // Use longer interval when Realtime is connected
+  const interval = realtimeConnected ? 60000 : 30000;
   pollTimer = setInterval(async () => {
     try {
       if (API_BASE && STORE_ID) {
@@ -1085,16 +1181,15 @@ function startPolling() {
         activeOrders.forEach(ord => {
           const existing = O.find(x => x.dbId === ord.id);
           if (existing) {
-            // Update status if changed
             const newStatus = mapOrderStatus(ord.status || ord.tracking_status);
             if (existing.s !== newStatus) { existing.s = newStatus; hasNew = true; }
           } else {
-            // New order
             O.unshift(buildDashboardOrder(ord, O.length));
             hasNew = true;
+            playNewOrderSound();
           }
         });
-        if (hasNew) { rOrders(); renderHistory(); }
+        if (hasNew) { rNav(); rOrders(); renderHistory(); }
       } else if (STORE_ID) {
         // Supabase fallback polling
         const {data: orders} = await sb.from('orders')
@@ -1110,13 +1205,12 @@ function startPolling() {
               const newStatus = mapOrderStatus(ord.status || ord.tracking_status);
               if (existing.s !== newStatus) { existing.s = newStatus; hasNew = true; }
             }
-            // For truly new orders via Supabase, we'd need full data — skip for polling
           });
-          if (hasNew) { rOrders(); renderHistory(); }
+          if (hasNew) { rNav(); rOrders(); renderHistory(); }
         }
       }
     } catch(e) { console.error('Poll error:', e); }
-  }, 30000);
+  }, interval);
 }
 
 // ===== INIT =====
@@ -1149,7 +1243,8 @@ function startPolling() {
   rNav();rHdr();rOrders();
   const today=new Date();document.getElementById('dTo').value=today.toISOString().split('T')[0];document.getElementById('dFrom').value=new Date(today.getTime()-7*864e5).toISOString().split('T')[0];
 
-  // Start 30s polling for new orders
+  // Start Realtime subscription + polling fallback
+  startRealtime();
   startPolling();
 })();
 </script>
