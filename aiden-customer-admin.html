@@ -260,6 +260,8 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 /* === CARDS / FORMS === */
 .card { background:var(--card); border-radius:10px; padding:20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06); overflow-x:auto; }
 .card-title { font-size:15px; font-weight:700; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+.ct-right { margin-left:auto; display:flex; gap:8px; }
+.empty-state { text-align:center; padding:40px; color:var(--text-light); font-size:13px; }
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .form-grid.cols-3 { grid-template-columns:1fr 1fr 1fr; }
 .form-group { display:flex; flex-direction:column; gap:4px; }
@@ -552,6 +554,10 @@ const NAV = [
     {id:'support-setting', label:'チャット設定'},
     {id:'support-history', label:'チャット履歴'},
   ]},
+  { id:'accounts', icon:'👤', label:'アカウント管理', subs:[
+    {id:'accounts-list', label:'スタッフ一覧'},
+    {id:'accounts-permissions', label:'権限設定'},
+  ]},
   { id:'ban', icon:'⛔', label:'BAN管理', subs:[
     {id:'ban-execute', label:'BAN実行'},
     {id:'ban-list', label:'BANリスト'},
@@ -624,6 +630,8 @@ function showPage(pageId, catId){
   if(['sales-dashboard','sales-user','sales-product','sales-benchmark','sales-effect'].includes(pageId)) {
     setTimeout(()=>{ if(typeof renderSalesCharts==='function') renderSalesCharts(); }, 50);
   }
+  if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
+  if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
 }
 
@@ -3798,6 +3806,63 @@ content.innerHTML = `
 </div>
 
 <!-- ============================== -->
+<!-- ============================== -->
+<!-- 👤 アカウント管理 - スタッフ一覧 -->
+<!-- ============================== -->
+<div class="page" id="page-accounts-list">
+  <div class="breadcrumb"><a href="#" onclick="return false">アカウント管理</a> ＞ スタッフ一覧</div>
+  <div class="page-title">スタッフアカウント管理</div>
+  <div class="page-subtitle">自社スタッフのアカウント追加・編集・削除</div>
+
+  <div class="card">
+    <div class="card-title">👤 スタッフ一覧
+      <span class="ct-right">
+        <button class="btn btn-primary btn-sm" onclick="openAddStaffModal()">＋ スタッフ追加</button>
+      </span>
+    </div>
+    <table class="data-table" id="staffAccountsTable">
+      <thead>
+        <tr>
+          <th>氏名</th>
+          <th>メールアドレス</th>
+          <th>権限</th>
+          <th>所属店舗</th>
+          <th>ステータス</th>
+          <th>最終ログイン</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="staffAccountsBody">
+        <tr><td colspan="7" class="empty-state">読み込み中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- 👤 アカウント管理 - 権限設定 -->
+<!-- ============================== -->
+<div class="page" id="page-accounts-permissions">
+  <div class="breadcrumb"><a href="#" onclick="return false">アカウント管理</a> ＞ 権限設定</div>
+  <div class="page-title">権限設定</div>
+  <div class="page-subtitle">各ロールがアクセスできる機能を確認</div>
+
+  <div class="card">
+    <div class="card-title">🔐 権限マトリクス</div>
+    <div id="staffPermMatrix"></div>
+    <p style="font-size:10px;color:var(--text-light);margin-top:8px">Owner = 全機能アクセス可能 / Manager = 店舗設定＋メニュー＋注文＋売上 / Staff = メニュー＋注文のみ</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 ロール別アクセス範囲</div>
+    <div style="font-size:12px;line-height:2;color:var(--text-light)">
+      <p><strong style="color:#6c5ce7">Owner（ブランドオーナー）</strong>：全機能にアクセス可能。アカウント管理・請求管理を含む全メニューが表示されます。</p>
+      <p><strong style="color:#0984e3">Manager（マネージャー）</strong>：店舗設定・メニュー管理・注文管理・売上分析にアクセス可能。アカウント管理・請求管理は非表示。</p>
+      <p><strong style="color:#636e72">Staff（スタッフ）</strong>：メニュー管理・注文管理のみアクセス可能。店舗設定や売上データは非表示。</p>
+    </div>
+  </div>
+</div>
+
 <!-- ⛔ BAN管理 - BAN実行 -->
 <!-- ============================== -->
 <div class="page" id="page-ban-execute">
@@ -3944,7 +4009,24 @@ content.innerHTML = `
     </div>
   </div>
 </div>
+
+<!-- Generic Modal -->
+<div class="modal-overlay" id="genericModalOverlay">
+  <div class="modal" id="genericModalBody"></div>
+</div>
 `;
+
+// ===== GENERIC MODAL =====
+function openModal(html) {
+  document.getElementById('genericModalBody').innerHTML = html;
+  document.getElementById('genericModalOverlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('genericModalOverlay').classList.remove('show');
+}
+document.getElementById('genericModalOverlay').addEventListener('click', function(e) {
+  if (e.target === e.currentTarget) closeModal();
+});
 
 // ===== UTILITY FUNCTIONS =====
 function switchSubTab(el, group){
@@ -8029,11 +8111,211 @@ setTimeout(initSalesDashboard, 100);
 // Placeholder hook
 const _origShowPageSales = showPage;
 
+// ===== STAFF ACCOUNT MANAGEMENT (CRUD) =====
+var STAFF_ACCOUNTS = [];
+
+async function loadStaffAccounts() {
+  if (!BRAND_ID) return;
+  try {
+    var res = await sb.from('staff_accounts').select('*').eq('brand_id', BRAND_ID).order('created_at', {ascending: false});
+    if (res.data) STAFF_ACCOUNTS = res.data;
+  } catch(e) { console.warn('staff_accounts load:', e); }
+}
+
+function staffRoleBadge(role) {
+  var c = {owner:'#6c5ce7', manager:'#0984e3', staff:'#636e72'};
+  var l = {owner:'Owner', manager:'Manager', staff:'Staff'};
+  return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(c[role]||'#999')+'20;color:'+(c[role]||'#999')+'">'+(l[role]||role)+'</span>';
+}
+
+function renderStaffAccountsTable() {
+  var tbody = document.getElementById('staffAccountsBody');
+  if (!tbody) return;
+  if (STAFF_ACCOUNTS.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">スタッフアカウントがありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = STAFF_ACCOUNTS.map(function(sa) {
+    var storeName = '—';
+    if (sa.store_id) {
+      var st = STORES.find(function(s){ return s.id === sa.store_id; });
+      storeName = st ? st.name : sa.store_id;
+    }
+    var statusBg = sa.status === 'active' ? '#e6f9f0' : '#fab1a0';
+    var statusColor = sa.status === 'active' ? '#00b894' : '#d63031';
+    var statusLabel = sa.status === 'active' ? '有効' : '停止';
+    var lastLogin = sa.last_login ? new Date(sa.last_login).toLocaleDateString('ja-JP') : '—';
+    return '<tr>' +
+      '<td style="font-weight:600">' + (sa.display_name || '—') + '</td>' +
+      '<td>' + (sa.email || '—') + '</td>' +
+      '<td>' + staffRoleBadge(sa.role || 'staff') + '</td>' +
+      '<td>' + storeName + '</td>' +
+      '<td><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+statusBg+';color:'+statusColor+'">' + statusLabel + '</span></td>' +
+      '<td>' + lastLogin + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="btn btn-secondary btn-sm" onclick="openEditStaffModal(\'' + sa.id + '\')">編集</button> ' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteStaffAccount(\'' + sa.id + '\')">削除</button>' +
+      '</td></tr>';
+  }).join('');
+}
+
+function openAddStaffModal() {
+  var storeOpts = '<option value="">— 全店舗 —</option>' + STORES.map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
+  var h = '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3>👤 スタッフ追加</h3>' +
+    '<div class="form-grid">' +
+      '<div class="form-group"><label>氏名 <span style="color:#d63031">*</span></label><input type="text" id="addStaffName" placeholder="氏名"></div>' +
+      '<div class="form-group"><label>メールアドレス <span style="color:#d63031">*</span></label><input type="email" id="addStaffEmail" placeholder="example@company.com"></div>' +
+      '<div class="form-group"><label>権限 <span style="color:#d63031">*</span></label><select id="addStaffRole"><option value="staff" selected>Staff</option><option value="manager">Manager</option><option value="owner">Owner</option></select></div>' +
+      '<div class="form-group"><label>所属店舗</label><select id="addStaffStore">' + storeOpts + '</select></div>' +
+    '</div>' +
+    '<div style="margin-top:12px;padding:10px;background:#f5f6fa;border-radius:8px;font-size:11px;color:var(--text-light)">※ Supabase Authアカウントが既に存在するメールアドレスを指定してください。auth_user_idが自動紐付けされます。</div>' +
+    '<div class="btn-group"><button class="btn btn-primary" onclick="saveStaffAccount()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>';
+  openModal(h);
+}
+
+async function saveStaffAccount() {
+  var name = document.getElementById('addStaffName').value.trim();
+  var email = document.getElementById('addStaffEmail').value.trim();
+  if (!name || !email) { showToast('氏名とメールアドレスは必須です'); return; }
+  var role = document.getElementById('addStaffRole').value;
+  var storeId = document.getElementById('addStaffStore').value || null;
+  showToast('保存中...');
+  try {
+    var res = await sb.from('staff_accounts').insert({
+      display_name: name, email: email, role: role,
+      brand_id: BRAND_ID, corp_id: CORP_ID, store_id: storeId, status: 'active'
+    }).select().single();
+    if (res.error) throw res.error;
+    STAFF_ACCOUNTS.unshift(res.data);
+    closeModal();
+    showToast('スタッフを追加しました');
+    renderStaffAccountsTable();
+  } catch(e) {
+    showToast('エラー: ' + (e.message || e));
+  }
+}
+
+function openEditStaffModal(staffId) {
+  var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
+  if (!sa) return;
+  var storeOpts = '<option value="">— 全店舗 —</option>' + STORES.map(function(s){ return '<option value="'+s.id+'"'+(s.id===sa.store_id?' selected':'')+'>'+s.name+'</option>'; }).join('');
+  var h = '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3>📝 スタッフ編集</h3>' +
+    '<div class="form-grid">' +
+      '<div class="form-group"><label>氏名 <span style="color:#d63031">*</span></label><input type="text" id="editStaffName" value="' + (sa.display_name || '') + '"></div>' +
+      '<div class="form-group"><label>メールアドレス</label><input type="email" id="editStaffEmail" value="' + (sa.email || '') + '" readonly style="background:#f5f6fa;color:var(--text-light)"></div>' +
+      '<div class="form-group"><label>権限</label><select id="editStaffRole"><option value="staff"'+(sa.role==='staff'?' selected':'')+'>Staff</option><option value="manager"'+(sa.role==='manager'?' selected':'')+'>Manager</option><option value="owner"'+(sa.role==='owner'?' selected':'')+'>Owner</option></select></div>' +
+      '<div class="form-group"><label>所属店舗</label><select id="editStaffStore">' + storeOpts + '</select></div>' +
+      '<div class="form-group"><label>ステータス</label><select id="editStaffStatus"><option value="active"'+(sa.status==='active'?' selected':'')+'>有効</option><option value="suspended"'+(sa.status==='suspended'?' selected':'')+'>停止</option></select></div>' +
+    '</div>' +
+    '<div class="btn-group"><button class="btn btn-primary" onclick="updateStaffAccount(\'' + staffId + '\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>';
+  openModal(h);
+}
+
+async function updateStaffAccount(staffId) {
+  var name = document.getElementById('editStaffName').value.trim();
+  if (!name) { showToast('氏名は必須です'); return; }
+  var role = document.getElementById('editStaffRole').value;
+  var storeId = document.getElementById('editStaffStore').value || null;
+  var status = document.getElementById('editStaffStatus').value;
+  showToast('保存中...');
+  try {
+    var res = await sb.from('staff_accounts').update({
+      display_name: name, role: role, store_id: storeId, status: status
+    }).eq('id', staffId);
+    if (res.error) throw res.error;
+    var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
+    if (sa) { sa.display_name = name; sa.role = role; sa.store_id = storeId; sa.status = status; }
+    closeModal();
+    showToast('スタッフ情報を更新しました');
+    renderStaffAccountsTable();
+  } catch(e) {
+    showToast('エラー: ' + (e.message || e));
+  }
+}
+
+async function deleteStaffAccount(staffId) {
+  var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
+  if (!sa) return;
+  if (!confirm('「' + (sa.display_name || sa.email) + '」を削除しますか？\nこの操作は取り消せません。')) return;
+  showToast('削除中...');
+  try {
+    var res = await sb.from('staff_accounts').delete().eq('id', staffId);
+    if (res.error) throw res.error;
+    STAFF_ACCOUNTS = STAFF_ACCOUNTS.filter(function(x){ return x.id !== staffId; });
+    showToast('スタッフを削除しました');
+    renderStaffAccountsTable();
+  } catch(e) {
+    showToast('エラー: ' + (e.message || e));
+  }
+}
+
+// ===== STAFF PERMISSION MATRIX (READ-ONLY) =====
+function renderStaffPermMatrix() {
+  var el = document.getElementById('staffPermMatrix');
+  if (!el) return;
+  var features = [
+    {key:'store_view', label:'店舗閲覧'},
+    {key:'store_edit', label:'店舗編集'},
+    {key:'menu_manage', label:'メニュー管理'},
+    {key:'order_manage', label:'注文管理'},
+    {key:'sales_report', label:'売上・分析'},
+    {key:'brand_hp', label:'ブランドHP'},
+    {key:'member_crm', label:'会員・CRM'},
+    {key:'account_manage', label:'アカウント管理'},
+    {key:'billing', label:'請求・支払'}
+  ];
+  var roles = ['owner','manager','staff'];
+  var perms = {
+    owner:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,brand_hp:true,member_crm:true,account_manage:true,billing:true},
+    manager:{store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,brand_hp:false,member_crm:false,account_manage:false,billing:false},
+    staff:  {store_view:false,store_edit:false,menu_manage:true,order_manage:true,sales_report:false,brand_hp:false,member_crm:false,account_manage:false,billing:false}
+  };
+  var roleLabels = {owner:'Owner', manager:'Manager', staff:'Staff'};
+  var h = '<div style="display:grid;grid-template-columns:200px repeat(3,80px);gap:0;font-size:12px">';
+  h += '<div style="font-weight:700;padding:8px;background:#f5f6fa;border-bottom:1px solid var(--border)">機能</div>';
+  roles.forEach(function(r){ h += '<div style="font-weight:700;padding:8px;background:#f5f6fa;border-bottom:1px solid var(--border);text-align:center">'+roleLabels[r]+'</div>'; });
+  features.forEach(function(f){
+    h += '<div style="padding:8px;border-bottom:1px solid #f0f0f0;font-weight:500">'+f.label+'</div>';
+    roles.forEach(function(r){
+      h += '<div style="padding:8px;border-bottom:1px solid #f0f0f0;text-align:center">'+(perms[r][f.key]?'✅':'❌')+'</div>';
+    });
+  });
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+// ===== ROLE-BASED SIDEBAR CONTROL =====
+function applyRoleBasedSidebar() {
+  if (!CURRENT_STAFF) return;
+  var role = CURRENT_STAFF.role || 'staff';
+  // Define which NAV categories each role can access
+  var roleAccess = {
+    owner: null, // null = all access
+    manager: ['store','menu','sales','review','support'],
+    staff: ['menu']
+  };
+  var allowed = roleAccess[role];
+  if (allowed === null || allowed === undefined) return; // owner: show everything
+  // Hide unauthorized nav categories
+  document.querySelectorAll('.nav-category').forEach(function(cat) {
+    var catId = cat.getAttribute('data-cat');
+    if (allowed.indexOf(catId) === -1) {
+      cat.style.display = 'none';
+    } else {
+      cat.style.display = '';
+    }
+  });
+}
+
 // ===== INIT: Check session and bootstrap =====
 async function initAdminAfterAuth() {
   document.getElementById('content').style.opacity = '0.4';
   await loadAdminFromSupabase();
+  await loadStaffAccounts();
   document.getElementById('content').style.opacity = '1';
+  applyRoleBasedSidebar();
   document.querySelector('.nav-cat-header[data-cat="store"]').click();
   updatePolicyPreview();
   renderMenuPatternList();
