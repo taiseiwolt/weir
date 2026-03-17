@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ページが見つかりません | AIden</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="ページが見つかりません | AIden">
+    <meta property="og:description" content="お探しのページは見つかりませんでした。">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/404.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ページが見つかりません | AIden">
+    <meta name="twitter:description" content="お探しのページは見つかりませんでした。">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="お探しのページは見つかりませんでした。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', 'Noto Sans JP', sans-serif;
+            background: #fafafa;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+        .error-container {
+            max-width: 480px;
+            width: 100%;
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            color: #D32F2F;
+            line-height: 1;
+            letter-spacing: -4px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .error-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin: 16px 0 8px;
+        }
+        .error-message {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: #D32F2F;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #B71C1C;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(211,47,47,0.3);
+        }
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 1.5px solid #ddd;
+        }
+        .btn-secondary:hover {
+            border-color: #D32F2F;
+            color: #D32F2F;
+            transform: translateY(-1px);
+        }
+        .error-illustration {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 8px;
+            position: relative;
+        }
+        .error-illustration svg {
+            width: 100%;
+            height: 100%;
+        }
+        .footer-note {
+            margin-top: 48px;
+            font-size: 13px;
+            color: #999;
+        }
+        .footer-note a {
+            color: #D32F2F;
+            text-decoration: none;
+        }
+        .footer-note a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 480px) {
+            .error-code { font-size: 80px; }
+            .error-title { font-size: 18px; }
+            .error-actions { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-illustration">
+            <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="80" cy="80" r="72" fill="#FFEBEE"/>
+                <circle cx="80" cy="80" r="52" fill="#FFCDD2"/>
+                <path d="M80 44C60.12 44 44 60.12 44 80s16.12 36 36 36 36-16.12 36-36S99.88 44 80 44zm0 56c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm4-16h-8V64h8v20z" fill="#D32F2F"/>
+            </svg>
+        </div>
+        <div class="error-code">404</div>
+        <h1 class="error-title">ページが見つかりません</h1>
+        <p class="error-message">
+            お探しのページは移動または削除された可能性があります。<br>
+            URLをご確認のうえ、再度お試しください。
+        </p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">トップページへ</a>
+            <button onclick="history.back()" class="btn btn-secondary">前のページに戻る</button>
+        </div>
+        <p class="footer-note">
+            Powered by <a href="https://aiden-jp.net">AIden</a>
+        </p>
+    </div>
+</body>
+</html>

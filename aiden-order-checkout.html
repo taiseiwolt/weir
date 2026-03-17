@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>注文の最終確認 | AIden モバイルオーダー</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="注文の最終確認 | AIden モバイルオーダー">
+    <meta property="og:description" content="ご注文内容の最終確認画面です。">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/aiden-order-checkout.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="注文の最終確認 | AIden モバイルオーダー">
+    <meta name="twitter:description" content="ご注文内容の最終確認画面です。">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="ご注文内容の最終確認画面です。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -587,7 +599,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 
 <!-- ===== HERO ===== -->
 <section class="hero">
-  <img class="hero-img" id="heroImg" src="https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=300&fit=crop" alt="">
+  <img class="hero-img" id="heroImg" src="https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=300&fit=crop" alt="" loading="lazy">
   <div class="hero-overlay">
     <h1 class="hero-title">注文の最終確認</h1>
     <p class="hero-subtitle" id="heroStoreName">焼肉 炭火亭 渋谷店</p>
@@ -1193,7 +1205,7 @@ function renderOrderItems() {
   const el = document.getElementById('orderItemsList');
   el.innerHTML = CHECKOUT_DATA.cartItems.map((item, idx) => `
     <div class="order-item">
-      <img class="order-item-img" src="${item.img}" alt="">
+      <img class="order-item-img" src="${item.img}" alt="" loading="lazy">
       <div class="order-item-info">
         <div class="order-item-name">${escapeHtml(item.name)}</div>
         ${item.optText ? `<div class="order-item-opts">${escapeHtml(item.optText)}</div>` : ''}

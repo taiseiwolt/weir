@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">焼肉 炭火亭 渋谷店</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="焼肉 炭火亭 渋谷店">
+    <meta property="og:description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/aiden-store.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="焼肉 炭火亭 渋谷店">
+    <meta name="twitter:description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -1786,7 +1798,7 @@ function openLightbox(idx, fallbackEmoji, usePhotoMedia) {
     lbIdx   = idx;
     var m = media[idx];
     document.getElementById('lightbox-img').innerHTML = m.imgUrl
-      ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain">'
+      ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain" loading="lazy">'
       : '<div style="font-size:100px;padding:40px;display:flex;align-items:center;justify-content:center">'+m.emoji+'</div>';
   } else {
     lbMedia = []; lbIdx = 0;
@@ -1801,7 +1813,7 @@ function moveLightbox(dir) {
   lbIdx = (lbIdx + dir + lbMedia.length) % lbMedia.length;
   var m = lbMedia[lbIdx];
   document.getElementById('lightbox-img').innerHTML = m.imgUrl
-    ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain">'
+    ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain" loading="lazy">'
     : '<div style="font-size:100px;padding:40px">'+m.emoji+'</div>';
 }
 document.getElementById('lightbox').addEventListener('click', function(e){ if(e.target===this) closeLightbox(); });

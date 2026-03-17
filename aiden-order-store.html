@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AIden モバイルオーダー</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="AIden モバイルオーダー">
+    <meta property="og:description" content="AIdenモバイルオーダー - スマホからかんたん注文">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/aiden-order-store.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AIden モバイルオーダー">
+    <meta name="twitter:description" content="AIdenモバイルオーダー - スマホからかんたん注文">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="AIdenモバイルオーダー - スマホからかんたん注文">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -748,7 +760,7 @@ img { max-width:100%; display:block; }
 
 <!-- ===== HERO ===== -->
 <section class="hero">
-  <img class="hero-img" id="heroImg" src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1200&h=400&fit=crop" alt="店舗画像">
+  <img class="hero-img" id="heroImg" src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1200&h=400&fit=crop" alt="店舗画像" loading="lazy">
   <div class="hero-overlay">
     <h1 class="hero-store-name" id="heroStoreName"></h1>
     <p class="hero-store-desc" id="heroStoreDesc"></p>
@@ -888,7 +900,7 @@ img { max-width:100%; display:block; }
 <div class="modal-overlay product-modal" id="productModal" onclick="closeModal(event,'productModal')">
   <div class="modal-content" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeModalById('productModal')">✕</button>
-    <img class="product-modal-img" id="prodImg" src="" alt="">
+    <img class="product-modal-img" id="prodImg" src="" alt="" loading="lazy">
     <div class="product-modal-body">
       <div class="product-modal-tags" id="prodTags"></div>
       <h2 class="product-modal-name" id="prodName"></h2>
@@ -2191,7 +2203,7 @@ function renderOrderItems() {
     }).join('');
 
     return `<div class="order-item">
-      <img class="order-item-img" src="${item.img}" alt="${item.name}">
+      <img class="order-item-img" src="${item.img}" alt="${item.name}" loading="lazy">
       <div class="order-item-info">
         <div class="order-item-name">${item.name}</div>
         ${optText ? `<div class="order-item-options">${optText}</div>` : ''}

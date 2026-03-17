@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">焼肉 炭火亭 | うまい肉を、炭火で。</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="焼肉 炭火亭 | うまい肉を、炭火で。">
+    <meta property="og:description" content="焼肉 炭火亭の公式サイト。こだわりの炭火焼きで最高の焼肉体験を。">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/aiden-brand-sushiro.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="焼肉 炭火亭 | うまい肉を、炭火で。">
+    <meta name="twitter:description" content="焼肉 炭火亭の公式サイト。こだわりの炭火焼きで最高の焼肉体験を。">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="焼肉 炭火亭の公式サイト。こだわりの炭火焼きで最高の焼肉体験を。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link id="font-link" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -824,8 +836,8 @@ function applyBrandConfig() {
   var mark = document.getElementById('logo-mark');
   var footerMark = document.getElementById('footer-logo-mark');
   if (c.logoMarkType === 'image' && c.logoMarkSrc) {
-    mark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo">';
-    footerMark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo">';
+    mark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo" loading="lazy">';
+    footerMark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo" loading="lazy">';
   } else {
     mark.textContent = c.logoMarkEmoji;
     footerMark.textContent = c.logoMarkEmoji;
@@ -834,7 +846,7 @@ function applyBrandConfig() {
   var txt = document.getElementById('logo-text');
   var footerTxt = document.getElementById('footer-logo-text');
   if (c.logoTextType === 'image' && c.logoTextValue) {
-    txt.innerHTML = '<img src="'+c.logoTextValue+'" alt="'+c.name+'">';
+    txt.innerHTML = '<img src="'+c.logoTextValue+'" alt="'+c.name+'" loading="lazy">';
     footerTxt.textContent = c.name;
   } else {
     txt.textContent = c.logoTextValue;

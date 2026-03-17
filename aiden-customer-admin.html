@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AIden 顧客管理画面</title>
+    <!-- OGP / SNS Meta Tags -->
+    <meta property="og:title" content="AIden 顧客管理画面">
+    <meta property="og:description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
+    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
+    <meta property="og:url" content="https://aiden-jp.net/aiden-customer-admin.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AIden">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AIden 顧客管理画面">
+    <meta name="twitter:description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
+    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -35,7 +47,7 @@ function _snsAddImgFile(file) {
     var wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;width:64px;height:64px';
     wrap.innerHTML =
-      '<img src="' + ev.target.result + '" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #ddd">' +
+      '<img src="' + ev.target.result + '" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #ddd" loading="lazy">' +
       '<button onclick="snsImgRemove(' + idx + ',this.parentNode)" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#e94560;color:#fff;border:none;font-size:10px;cursor:pointer;line-height:1">×</button>';
     row.appendChild(wrap);
   };
@@ -135,7 +147,7 @@ function snsGenerateImage() {
     var ratioStyle = ratioMap[_snsSelectedRatio] || ratioMap['1:1'];
     var imgHtml = '';
     if(_snsImgFiles.length > 0) {
-      imgHtml = '<img src="' + _snsImgFiles[0].dataUrl + '" style="' + ratioStyle + ';object-fit:cover;border-radius:8px;border:1px solid #ddd;display:block;margin:0 auto">';
+      imgHtml = '<img src="' + _snsImgFiles[0].dataUrl + '" style="' + ratioStyle + ';object-fit:cover;border-radius:8px;border:1px solid #ddd;display:block;margin:0 auto" loading="lazy">';
       _snsGeneratedImgDataUrl = _snsImgFiles[0].dataUrl;
     } else {
       imgHtml = '<div style="' + ratioStyle + ';background:linear-gradient(135deg,#f8f9ff,#e8e0ff);border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:36px">🎨</div>';
@@ -709,7 +721,7 @@ content.innerHTML = `
           </div>
           <div style="position:relative">
             <div class="map-preview" id="mapPreview"></div>
-            <div class="map-center-pin" id="centerPin"><img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" alt="pin"></div>
+            <div class="map-center-pin" id="centerPin"><img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" alt="pin" loading="lazy"></div>
           </div>
           <div class="map-coords">
             <div class="coord-item">緯度: <span class="coord-val" id="latVal">35.6595</span></div>
@@ -2320,7 +2332,7 @@ content.innerHTML = `
         <label>ブランドロゴ</label>
         <div id="dpLogoUploadArea" style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s" onclick="document.getElementById('dpLogoFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fef0f3'" ondragleave="this.style.borderColor='';this.style.background=''" ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';dpHandleDrop(event,'logo')">
           <input type="file" id="dpLogoFileInput" accept="image/*" style="display:none" onchange="dpHandleUpload(this,'logo')">
-          <div id="dpLogoPreviewWrap" style="display:none"><img id="dpLogoPreviewImg" style="max-height:60px;max-width:100%;border-radius:4px"></div>
+          <div id="dpLogoPreviewWrap" style="display:none"><img id="dpLogoPreviewImg" style="max-height:60px;max-width:100%;border-radius:4px" loading="lazy"></div>
           <div id="dpLogoPlaceholder"><div style="font-size:20px">📤</div><div style="font-size:11px;color:#999">クリックまたはドラッグ&ドロップ</div></div>
         </div>
       </div>
@@ -2328,7 +2340,7 @@ content.innerHTML = `
         <label>ヘッダー背景画像</label>
         <div id="dpHeaderBgUploadArea" style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s" onclick="document.getElementById('dpHeaderBgFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fef0f3'" ondragleave="this.style.borderColor='';this.style.background=''" ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';dpHandleDrop(event,'headerBg')">
           <input type="file" id="dpHeaderBgFileInput" accept="image/*" style="display:none" onchange="dpHandleUpload(this,'headerBg')">
-          <div id="dpHeaderBgPreviewWrap" style="display:none"><img id="dpHeaderBgPreviewImg" style="max-height:60px;max-width:100%;border-radius:4px"></div>
+          <div id="dpHeaderBgPreviewWrap" style="display:none"><img id="dpHeaderBgPreviewImg" style="max-height:60px;max-width:100%;border-radius:4px" loading="lazy"></div>
           <div id="dpHeaderBgPlaceholder"><div style="font-size:20px">📤</div><div style="font-size:11px;color:#999">クリックまたはドラッグ&ドロップ</div></div>
         </div>
       </div>
@@ -5468,7 +5480,7 @@ function renderMediaGrids(store) {
           </div>`;
         } else {
           html += `<div style="aspect-ratio:1;border-radius:8px;border:1px solid var(--border);position:relative;cursor:pointer;overflow:hidden" onclick="mediaSlotAction(${cfgIdx},${i})">
-            <img src="${img.data}" style="width:100%;height:100%;object-fit:cover">
+            <img src="${img.data}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
             <div class="media-slot-hover" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;border-radius:8px">
               <span style="color:#fff;font-size:11px;font-weight:600">🗑 削除</span>
             </div>
@@ -5503,7 +5515,7 @@ function mediaSlotAction(cfgIdx, slotIdx) {
 
   const img = images[slotIdx];
   const previewHtml = img && img.data
-    ? '<div style="aspect-ratio:1;max-width:200px;margin:0 auto 16px;border-radius:10px;overflow:hidden;border:1px solid #eee"><img src="' + img.data + '" style="width:100%;height:100%;object-fit:cover"></div>'
+    ? '<div style="aspect-ratio:1;max-width:200px;margin:0 auto 16px;border-radius:10px;overflow:hidden;border:1px solid #eee"><img src="' + img.data + '" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>'
     : '';
 
   const modal = document.getElementById('mediaSlotModal');
@@ -5594,7 +5606,7 @@ function showMediaPreview(file) {
     if(dropZone) dropZone.style.display = 'none';
     if(previewArea) {
       previewArea.style.display = 'block';
-      previewArea.innerHTML = '<div style="aspect-ratio:1;max-width:280px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #eee"><img src="' + ev.target.result + '" style="width:100%;height:100%;object-fit:cover"></div><div style="font-size:11px;color:#999;margin-top:8px">' + file.name + '</div>';
+      previewArea.innerHTML = '<div style="aspect-ratio:1;max-width:280px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #eee"><img src="' + ev.target.result + '" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div><div style="font-size:11px;color:#999;margin-top:8px">' + file.name + '</div>';
     }
     if(buttons) {
       buttons.innerHTML = '<div style="display:flex;gap:12px;justify-content:center"><button onclick="closeMediaModal()" style="padding:10px 28px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#666">キャンセル</button><button onclick="confirmMediaAdd()" style="padding:10px 28px;border:none;border-radius:8px;background:#e94560;color:#fff;cursor:pointer;font-size:13px;font-weight:600">登録する</button></div>';
@@ -5947,7 +5959,7 @@ function reviewReplyPreview() {
       '</div>' +
       '<div style="font-size:13px;color:#202124;line-height:1.8;white-space:pre-wrap">' + text + '</div>' +
       '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #f1f3f4;font-size:11px;color:#70757a;display:flex;align-items:center;gap:6px">' +
-        '<img src="https://www.google.com/favicon.ico" width="14" height="14" style="vertical-align:middle"> Google マップに掲載されます' +
+        '<img src="https://www.google.com/favicon.ico" width="14" height="14" style="vertical-align:middle" loading="lazy"> Google マップに掲載されます' +
       '</div>' +
     '</div>';
   document.getElementById('reviewReplyStep1').style.display = 'none';
@@ -8313,7 +8325,7 @@ function renderMenuItems() {
     html += `<tr ${dragCatAttr}><td colspan="11" style="font-weight:700;font-size:13px;padding:10px 14px">${isDraggable?'<span style="color:#bbb;margin-right:6px;cursor:grab">☰</span>':''}📁 ${getCatName(cat.catId)}<span style="font-size:11px;color:var(--text-light);font-weight:400;margin-left:8px">${(cat.items||[]).length}品</span></td></tr>`;
     items.forEach(item => {
       const imgHtml = item.imgData
-        ? '<img src="'+item.imgData+'" style="width:36px;height:36px;border-radius:6px;object-fit:cover">'
+        ? '<img src="'+item.imgData+'" style="width:36px;height:36px;border-radius:6px;object-fit:cover" loading="lazy">'
         : '<div style="width:36px;height:36px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">🍣</div>';
       const tagsHtml = (item.tags && item.tags.length) ? item.tags.map(t => '<span class="tag selected" style="font-size:9px;margin:1px">'+t+'</span>').join('') : '';
       const periodText = formatPeriod(item.displayStart, item.displayEnd);
@@ -9095,7 +9107,7 @@ function dpHandleUpload(input, type) {
       // Reflect in fixed preview
       var dpLogo = document.getElementById('dpLogo');
       if(dpLogo) {
-        dpLogo.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:4px">';
+        dpLogo.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:4px" loading="lazy">';
       }
     } else if(type === 'headerBg') {
       document.getElementById('dpHeaderBgPreviewImg').src = dataUrl;
@@ -9146,7 +9158,7 @@ function dpHandleDrop(e, type) {
       document.getElementById('dpLogoPreviewWrap').style.display = '';
       document.getElementById('dpLogoPlaceholder').style.display = 'none';
       var dpLogo = document.getElementById('dpLogo');
-      if(dpLogo) dpLogo.innerHTML = '<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:4px">';
+      if(dpLogo) dpLogo.innerHTML = '<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:4px" loading="lazy">';
     } else {
       document.getElementById('dpHeaderBgPreviewImg').src = ev.target.result;
       document.getElementById('dpHeaderBgPreviewWrap').style.display = '';
@@ -9294,7 +9306,7 @@ function dpHandleDrop(e, type) {
           <div style="font-size:10px;color:#888;margin-bottom:6px">一覧で表示されるカード画像（推奨: 4:3）</div>
           <div class="ceDropZone" style="border:2px dashed #ddd;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;width:140px">
             <input type="file" accept="image/*,video/*" style="display:none">
-            <div class="ceDropPreview" style="display:none;margin-bottom:4px"><img style="max-height:60px;max-width:100%;border-radius:4px"></div>
+            <div class="ceDropPreview" style="display:none;margin-bottom:4px"><img style="max-height:60px;max-width:100%;border-radius:4px" loading="lazy"></div>
             <div class="ceDropPlaceholder"><div style="font-size:20px">&#x1F4E4;</div><div style="font-size:10px;color:#999">D&amp;D / クリック</div></div>
           </div>
         </div>
@@ -9339,7 +9351,7 @@ function dpHandleDrop(e, type) {
           <div style="font-size:10px;color:#888;margin-bottom:6px">一覧で表示されるカード画像</div>
           <div class="ceDropZone" style="border:2px dashed #ddd;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;width:140px">
             <input type="file" accept="image/*" style="display:none">
-            <div class="ceDropPreview" style="display:none;margin-bottom:4px"><img style="max-height:60px;max-width:100%;border-radius:4px"></div>
+            <div class="ceDropPreview" style="display:none;margin-bottom:4px"><img style="max-height:60px;max-width:100%;border-radius:4px" loading="lazy"></div>
             <div class="ceDropPlaceholder"><div style="font-size:20px">&#x1F4E4;</div><div style="font-size:10px;color:#999">D&amp;D / クリック</div></div>
           </div>
         </div>
@@ -9683,7 +9695,7 @@ function ceLoadItemData(type, index) {
   data.galleryImages.forEach(function(src, i) {
     if(src && slots[i]) {
       var num = i + 1;
-      slots[i].innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#fff;font-weight:700;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.5)">' + num + '</span><img src="' + src + '" style="width:100%;height:100%;object-fit:cover">';
+      slots[i].innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#fff;font-weight:700;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.5)">' + num + '</span><img src="' + src + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">';
       slots[i].style.borderStyle = 'solid';
       slots[i].style.borderColor = '#eee';
     }
@@ -9987,7 +9999,7 @@ function ceShowPreview() {
     });
     if(imgs.length === 0) return '';
     return '<div style="display:flex;gap:4px;margin-bottom:8px;overflow-x:auto">' +
-      imgs.map(function(src){ return '<img src="'+src+'" style="height:60px;border-radius:4px;flex-shrink:0">'; }).join('') +
+      imgs.map(function(src){ return '<img src="'+src+'" style="height:60px;border-radius:4px;flex-shrink:0" loading="lazy">'; }).join('') +
       '</div>';
   }
 
@@ -10004,7 +10016,7 @@ function ceShowPreview() {
     html = '<div style="font-weight:700;font-size:15px;margin-bottom:8px">' + (title ? title.value || '（タイトル未入力）' : '') + '</div>';
     var thumbImg = fields.querySelector('.ceDropPreview img');
     if(thumbImg && thumbImg.src && thumbImg.src !== location.href) {
-      html += '<div style="margin-bottom:8px"><span style="font-size:9px;color:#888;display:block;margin-bottom:2px">サムネイル</span><img src="' + thumbImg.src + '" style="height:50px;border-radius:4px"></div>';
+      html += '<div style="margin-bottom:8px"><span style="font-size:9px;color:#888;display:block;margin-bottom:2px">サムネイル</span><img src="' + thumbImg.src + '" style="height:50px;border-radius:4px" loading="lazy"></div>';
     }
     html += getGalleryHtml(fields);
     var body = getBodyHtml(fields);
@@ -10016,7 +10028,7 @@ function ceShowPreview() {
     if(inputs[1] && inputs[1].value) html += '<div style="font-size:12px;color:#888;margin-bottom:8px">' + inputs[1].value + '</div>';
     var gThumbImg = gf.querySelector('.ceDropPreview img');
     if(gThumbImg && gThumbImg.src && gThumbImg.src !== location.href) {
-      html += '<div style="margin-bottom:8px"><span style="font-size:9px;color:#888;display:block;margin-bottom:2px">サムネイル</span><img src="' + gThumbImg.src + '" style="height:50px;border-radius:4px"></div>';
+      html += '<div style="margin-bottom:8px"><span style="font-size:9px;color:#888;display:block;margin-bottom:2px">サムネイル</span><img src="' + gThumbImg.src + '" style="height:50px;border-radius:4px" loading="lazy"></div>';
     }
     html += getGalleryHtml(gf);
     var body2 = getBodyHtml(gf);
@@ -10077,7 +10089,7 @@ function ceShowPreview() {
     // Gallery slots
     document.querySelectorAll('.ceGallerySlot').forEach(function(slot) {
       slot.addEventListener('click', function() {
-        if(slot.querySelector('img')) { slot.innerHTML = slot.innerHTML.replace(/<img[^>]*>/,''); slot.querySelector('.ceDropPlaceholder') || (slot.innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#bbb;font-weight:700">'+((Array.from(slot.parentNode.children).indexOf(slot))+1)+'</span>\uFF0B'); slot.style.borderStyle='dashed'; return; }
+        if(slot.querySelector('img')) { slot.innerHTML = slot.innerHTML.replace(/<img[^ loading="lazy">]*>/,''); slot.querySelector('.ceDropPlaceholder') || (slot.innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#bbb;font-weight:700">'+((Array.from(slot.parentNode.children).indexOf(slot))+1)+'</span>\uFF0B'); slot.style.borderStyle='dashed'; return; }
         var inp = document.createElement('input');
         inp.type = 'file'; inp.accept = 'image/*';
         inp.onchange = function() { if(inp.files[0]) loadGalleryImage(slot, inp.files[0]); };
@@ -10111,7 +10123,7 @@ function loadGalleryImage(slot, file) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var num = Array.from(slot.parentNode.children).indexOf(slot) + 1;
-    slot.innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#fff;font-weight:700;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.5)">' + num + '</span><img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover">';
+    slot.innerHTML = '<span style="position:absolute;top:2px;left:4px;font-size:8px;color:#fff;font-weight:700;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.5)">' + num + '</span><img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">';
     slot.style.borderStyle = 'solid'; slot.style.borderColor = '#eee';
   };
   reader.readAsDataURL(file);
@@ -12889,11 +12901,11 @@ function _popBuildPreview(data) {
   // 画像エリアHTML
   var imgHtml = '';
   if(imgs.length === 1) {
-    imgHtml = '<div style="text-align:center;margin:4px 0"><img src="' + imgs[0].dataUrl + '" style="max-width:100%;max-height:' + (isH ? '100' : '130') + 'px;border-radius:6px;object-fit:cover"></div>';
+    imgHtml = '<div style="text-align:center;margin:4px 0"><img src="' + imgs[0].dataUrl + '" style="max-width:100%;max-height:' + (isH ? '100' : '130') + 'px;border-radius:6px;object-fit:cover" loading="lazy"></div>';
   } else if(imgs.length > 1) {
     var thumbSize = isH ? '64px' : '74px';
     imgHtml = '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:4px 0">'
-      + imgs.map(function(img){ return '<img src="' + img.dataUrl + '" style="width:' + thumbSize + ';height:' + thumbSize + ';object-fit:cover;border-radius:5px">'; }).join('')
+      + imgs.map(function(img){ return '<img src="' + img.dataUrl + '" style="width:' + thumbSize + ';height:' + thumbSize + ';object-fit:cover;border-radius:5px" loading="lazy">'; }).join('')
       + '</div>';
   }
 
@@ -13015,7 +13027,7 @@ function popRenderThumbs() {
   if(!_popImages.length) { el.innerHTML = ''; return; }
   el.innerHTML = _popImages.map(function(img, i) {
     return '<div style="position:relative;display:inline-block">'
-      + '<img src="' + img.dataUrl + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #ddd">'
+      + '<img src="' + img.dataUrl + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #ddd" loading="lazy">'
       + '<button onclick="popRemoveImage(' + i + ')" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#e94560;color:#fff;border:none;cursor:pointer;font-size:10px;line-height:1;padding:0">\xd7</button>'
       + '</div>';
   }).join('');
@@ -13026,7 +13038,7 @@ function popRenderRevisionImageRow() {
   if(!_popRevisionImages.length) { el.innerHTML = ''; return; }
   el.innerHTML = _popRevisionImages.map(function(img, i) {
     return '<div style="position:relative;display:inline-block">'
-      + '<img src="' + img.dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid #ddd">'
+      + '<img src="' + img.dataUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid #ddd" loading="lazy">'
       + '<button onclick="popRemoveRevisionImage(' + i + ')" style="position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#e94560;color:#fff;border:none;cursor:pointer;font-size:9px;line-height:1;padding:0">\xd7</button>'
       + '</div>';
   }).join('');

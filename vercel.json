@@ -11,5 +11,8 @@
   "routes": [
     { "src": "^/api/orders$", "dest": "/api/orders/__root" },
     { "src": "/api/(.*)", "dest": "/api/$1" }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/404.html" }
   ]
 }
