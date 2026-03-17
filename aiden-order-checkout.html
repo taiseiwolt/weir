@@ -1785,6 +1785,57 @@ function clearPoints() {
 // AIden 手数料率（チャネル別）- システム設定と同期
 const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 
+// ===== メール送信ヘルパー（Resend経由）=====
+async function sendOrderEmail(type, orderId, totalAmount, extraData) {
+  try {
+    const email = document.getElementById('custEmail').value.trim();
+    const customerName = document.getElementById('custLastName').value.trim() + ' ' + document.getElementById('custFirstName').value.trim();
+    if (!email) return;
+
+    const items = CHECKOUT_DATA.cartItems.map(item => ({
+      name: item.name,
+      qty: item.qty,
+      price: item.price,
+      options: item.optionText || item.options || ''
+    }));
+
+    const deliveryFeeEl = document.getElementById('priceDelivery');
+    const deliveryFee = (mode === 'delivery' && deliveryFeeEl) ? parseInt(deliveryFeeEl.textContent.replace(/[^0-9]/g, '') || '0', 10) : 0;
+    const discountEl = document.getElementById('priceCoupon');
+    const discount = discountEl ? parseInt(discountEl.textContent.replace(/[^0-9]/g, '') || '0', 10) : 0;
+
+    const payload = {
+      type: type,
+      to: email,
+      customer_name: customerName,
+      order_id: orderId,
+      store_name: CHECKOUT_DATA.storeName,
+      brand_name: CHECKOUT_DATA.brandName,
+      items: items,
+      subtotal: CHECKOUT_DATA.subtotal || 0,
+      delivery_fee: deliveryFee,
+      discount: discount,
+      points_used: appliedPoints || 0,
+      total: totalAmount,
+      order_mode: mode,
+      payment_method: extraData?.paymentMethod || '',
+      paid_at: extraData?.paidAt || '',
+      review_token: extraData?.reviewToken || ''
+    };
+
+    await fetch(SUPABASE_URL + '/functions/v1/send-order-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (emailErr) {
+    console.warn('Email send skipped:', emailErr);
+  }
+}
+
 async function placeOrder() {
   if(!checkAllValid(true)) {
     // Show summary alert
@@ -1984,6 +2035,18 @@ async function placeOrder() {
         } catch(rvErr) { console.warn('Review token generation skipped:', rvErr); }
       }
 
+      // ===== 注文確認メール送信 =====
+      sendOrderEmail('confirmation', data.payment_intent_id, totalAmount, {
+        paymentMethod: pm.name
+      });
+
+      // ===== 領収書メール送信（カード決済=即時paid扱い）=====
+      sendOrderEmail('receipt', data.payment_intent_id, totalAmount, {
+        paymentMethod: pm.name,
+        paidAt: new Date().toISOString(),
+        reviewToken: CHECKOUT_DATA.reviewToken || ''
+      });
+
       alert('✅ 注文が完了しました！\n\n' +
         '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
         '決済方法: ' + pm.name + '\n' +
@@ -2001,6 +2064,13 @@ async function placeOrder() {
     }
   } else {
     // カード以外の決済（PayPay, Apple Pay 等）- 現状シミュレーション
+    const simOrderId = 'ORD-' + Date.now();
+
+    // ===== 注文確認メール送信 =====
+    sendOrderEmail('confirmation', simOrderId, totalAmount, {
+      paymentMethod: pm.name
+    });
+
     alert('✅ 注文が完了しました！\n\n' +
       '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
       '決済方法: ' + pm.name + '\n' +
