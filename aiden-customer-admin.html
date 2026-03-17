@@ -4632,11 +4632,38 @@ let MENU_PATTERNS = [
 
 // ===== DEMO DATA: INVOICES =====
 let INVOICES = [
-  { id:'inv1', month:'2026/02', type:'請求書', amount:125400, status:'確定', dueDate:'2026/03/31', pdfUrl:'#' },
-  { id:'inv2', month:'2026/02', type:'支払通知書', amount:287600, status:'確定', dueDate:'2026/03/05', pdfUrl:'#' },
-  { id:'inv3', month:'2026/01', type:'請求書', amount:98200, status:'支払済', dueDate:'2026/02/28', pdfUrl:'#' },
-  { id:'inv4', month:'2026/01', type:'支払通知書', amount:312400, status:'支払済', dueDate:'2026/02/05', pdfUrl:'#' },
+  { id:'inv1', month:'2026/02', type:'請求書', amount:125400, status:'確定', dueDate:'2026/03/31', pdfUrl:'#', subtotal:114000, adjustments:0, tax:11400 },
+  { id:'inv2', month:'2026/02', type:'支払通知書', amount:287600, status:'確定', dueDate:'2026/03/05', pdfUrl:'#', subtotal:261455, adjustments:0, tax:26145 },
+  { id:'inv3', month:'2026/01', type:'請求書', amount:98200, status:'支払済', dueDate:'2026/02/28', pdfUrl:'#', subtotal:89273, adjustments:0, tax:8927 },
+  { id:'inv4', month:'2026/01', type:'支払通知書', amount:312400, status:'支払済', dueDate:'2026/02/05', pdfUrl:'#', subtotal:284000, adjustments:0, tax:28400 },
 ];
+
+// Supabase から請求書を読み込み
+async function loadInvoicesFromSupabase(){
+  try{
+    var res=await sb.from('invoices').select('*').order('created_at',{ascending:false});
+    if(res.data&&res.data.length>0){
+      INVOICES=res.data.map(function(row){
+        var stMap={draft:'下書き',sent:'確定',paid:'支払済'};
+        return {
+          id:row.id,
+          month:row.billing_period?(row.billing_period.replace('-','/')):
+                (row.billing_period_start?row.billing_period_start.substring(0,7).replace('-','/'):''),
+          type:'請求書',
+          amount:row.total||0,
+          status:stMap[row.status]||row.status||'下書き',
+          dueDate:row.due_date||'',
+          pdfUrl:row.pdf_url||'#',
+          subtotal:row.subtotal||0,
+          adjustments:row.adjustments||0,
+          tax:row.tax||0,
+          adjustmentDetails:row.adjustment_details||[]
+        };
+      });
+      if(typeof renderInvoices==='function') renderInvoices();
+    }
+  }catch(e){console.warn('Invoice load failed:',e);}
+}
 
 // ===== DEMO DATA: REVIEWS =====
 let REVIEWS = [
@@ -5891,9 +5918,44 @@ function renderInvoices() {
     return true;
   });
   document.getElementById('invoiceBody').innerHTML = filtered.map(inv => {
-    const stBadge = inv.status==='確定'?'badge-warning':'badge-success';
-    return `<tr><td>${inv.month}</td><td>${inv.type}</td><td>¥${inv.amount.toLocaleString()}</td><td><span class="badge ${stBadge}">${inv.status}</span></td><td>${inv.dueDate}</td><td><button class="btn btn-secondary btn-sm" onclick="showToast('PDFダウンロード（デモ）')">PDF</button> <button class="btn btn-secondary btn-sm" onclick="showToast('CSV出力（デモ）')">CSV</button></td></tr>`;
+    const stMap = {'下書き':'badge-secondary','確定':'badge-warning','支払済':'badge-success'};
+    const stBadge = stMap[inv.status] || 'badge-warning';
+    return `<tr><td>${inv.month}</td><td>${inv.type}</td><td>¥${inv.amount.toLocaleString()}</td><td><span class="badge ${stBadge}">${inv.status}</span></td><td>${inv.dueDate}</td><td><button class="btn btn-secondary btn-sm" onclick="openInvoiceBreakdown('${inv.id}')">内訳</button> <button class="btn btn-secondary btn-sm" onclick="showToast('PDFダウンロード（デモ）')">PDF</button></td></tr>`;
   }).join('');
+  // Supabase からも読み込み試行
+  if(typeof loadInvoicesFromSupabase==='function' && !renderInvoices._loaded){
+    renderInvoices._loaded = true;
+    loadInvoicesFromSupabase();
+  }
+}
+
+function openInvoiceBreakdown(invId){
+  var inv = INVOICES.find(function(i){return i.id === invId;});
+  if(!inv) return;
+  var adjHtml = '';
+  if(inv.adjustmentDetails && inv.adjustmentDetails.length > 0){
+    adjHtml = '<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">調整項目</div>' +
+      inv.adjustmentDetails.map(function(a){
+        return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid #f0f0f0"><span>' + a.reason + '</span><span style="color:#d63031;font-weight:700">¥' + a.amount.toLocaleString() + '</span></div>';
+      }).join('') + '</div>';
+  }
+  var modalHtml = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)this.remove()" id="invBreakdownModal">' +
+    '<div style="background:#fff;border-radius:14px;padding:28px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button style="position:absolute;top:14px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#999" onclick="document.getElementById(\'invBreakdownModal\').remove()">✕</button>' +
+      '<h3 style="font-size:17px;font-weight:700;margin-bottom:16px">請求書 内訳</h3>' +
+      '<div style="background:#f5f6fa;border-radius:10px;padding:14px;margin-bottom:16px">' +
+        '<div style="font-weight:700;font-size:14px">対象月: ' + inv.month + '</div>' +
+        '<div style="font-size:11px;color:#636e72;margin-top:4px">支払期日: ' + inv.dueDate + ' / ' + inv.status + '</div>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>' +
+        '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 0">手数料小計（税抜）</td><td style="text-align:right;font-weight:700;padding:8px 0">¥' + (inv.subtotal||0).toLocaleString() + '</td></tr>' +
+        '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 0">調整額</td><td style="text-align:right;font-weight:700;color:' + ((inv.adjustments||0)<0?'#d63031':'#333') + ';padding:8px 0">¥' + (inv.adjustments||0).toLocaleString() + '</td></tr>' +
+        '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 0">消費税（10%）</td><td style="text-align:right;padding:8px 0">¥' + (inv.tax||0).toLocaleString() + '</td></tr>' +
+        '<tr><td style="padding:8px 0;font-weight:800;font-size:14px">請求合計</td><td style="text-align:right;font-weight:800;font-size:14px;color:#e94560;padding:8px 0">¥' + inv.amount.toLocaleString() + '</td></tr>' +
+      '</tbody></table>' +
+      adjHtml +
+    '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 // ===== PAGE SHOW HOOK =====

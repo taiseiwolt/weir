@@ -94,6 +94,7 @@
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
   <div class="nav-item" data-page="ai" onclick="goTo('ai')"><span class="icon">🤖</span><span class="label">AI品質管理</span></div>
   <div class="sb-div"></div>
+  <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">💰</span><span class="label">請求管理</span></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
 </nav>
 <main class="content" id="content"></main>
@@ -409,7 +410,7 @@ function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSide
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',compensation:'compensation',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',billing:'billing',compensation:'compensation',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -429,11 +430,13 @@ function renderPage(){
   else if(v.type==='users')el.innerHTML=renderUsers();
   else if(v.type==='system')el.innerHTML=renderSystem();
   else if(v.type==='ai')el.innerHTML=renderAI();
+  else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
   else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
   // post hooks
+  if(v.type==='billing')loadInvoicesFromSupabase();
   if(v.type==='dashboard')renderDashCharts();
   if(v.type==='ai')renderAICharts();
   if(v.type==='brand')initBrandTabs();
@@ -1141,6 +1144,214 @@ function confirmBulkImport(){
   showToast('✅ '+added+'件を登録しました');
   _bulkParsed=null;_bulkType=null;
   renderPage();
+}
+
+// ===== BILLING (請求管理) =====
+let INVOICES=[
+  {id:'INV-demo001',corpId:'CRP-Xk9mPr2',corpName:'株式会社スミビフーズ',billingPeriod:'2026-02',subtotal:148200,adjustments:-3500,tax:14470,total:159170,status:'draft',dueDate:'2026-03-31',pdfUrl:null,adjustmentDetails:[{reason:'返金控除 (ORD-1004)',amount:-2500},{reason:'AIden原資ポイント控除',amount:-1000}]},
+  {id:'INV-demo002',corpId:'CRP-Pq7mN2k',corpName:'株式会社麺道楽',billingPeriod:'2026-02',subtotal:52400,adjustments:0,tax:5240,total:57640,status:'sent',dueDate:'2026-03-31',pdfUrl:null,adjustmentDetails:[]},
+  {id:'INV-demo003',corpId:'CRP-Xk9mPr2',corpName:'株式会社スミビフーズ',billingPeriod:'2026-01',subtotal:132800,adjustments:-1200,tax:13160,total:144760,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[{reason:'AIden原資ポイント控除',amount:-1200}]},
+  {id:'INV-demo004',corpId:'CRP-Pq7mN2k',corpName:'株式会社麺道楽',billingPeriod:'2026-01',subtotal:48600,adjustments:0,tax:4860,total:53460,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[]}
+];
+
+function billingStatusBadge(s){
+  var m={draft:{bg:'#ffeaa7',c:'#d68910',l:'下書き'},sent:{bg:'#74b9ff',c:'#0984e3',l:'送付済'},paid:{bg:'#e6f9f0',c:'#00b894',l:'入金済'}};
+  var st=m[s]||{bg:'#dfe6e9',c:'#636e72',l:s};
+  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
+}
+
+function renderBilling(){
+  var totalDraft=INVOICES.filter(function(i){return i.status==='draft';}).length;
+  var totalSent=INVOICES.filter(function(i){return i.status==='sent';}).length;
+  var totalPaid=INVOICES.filter(function(i){return i.status==='paid';}).length;
+  var totalAmount=INVOICES.reduce(function(s,i){return s+i.total;},0);
+  return '<div class="page-title">請求管理</div><div class="page-subtitle">加盟店向け月次請求書の一覧・ステータス管理</div>'+
+  '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
+    '<div class="stat-card orange"><div class="sc-label">下書き</div><div class="sc-val">'+totalDraft+'</div></div>'+
+    '<div class="stat-card blue"><div class="sc-label">送付済</div><div class="sc-val">'+totalSent+'</div></div>'+
+    '<div class="stat-card green"><div class="sc-label">入金済</div><div class="sc-val">'+totalPaid+'</div></div>'+
+    '<div class="stat-card purple"><div class="sc-label">請求総額</div><div class="sc-val">'+Y(totalAmount)+'</div></div>'+
+  '</div>'+
+  '<div class="tabs" id="billingTabs">'+
+    '<div class="tab active" onclick="switchTab(\'billing\',this,\'list\')">請求書一覧</div>'+
+    '<div class="tab" onclick="switchTab(\'billing\',this,\'generate\')">請求書生成</div>'+
+  '</div>'+
+  '<div class="tab-content active" id="billing-list">'+renderBillingList()+'</div>'+
+  '<div class="tab-content" id="billing-generate">'+renderBillingGenerate()+'</div>';
+}
+
+function renderBillingList(){
+  return '<div class="card" style="padding:0;overflow:hidden">'+
+    '<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">'+
+      '<select id="billingCorpFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全法人</option>'+
+      CORPS.map(function(c){return '<option value="'+c.id+'">'+c.name+'</option>';}).join('')+'</select>'+
+      '<select id="billingPeriodFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全期間</option><option value="2026-03">2026年3月</option><option value="2026-02">2026年2月</option><option value="2026-01">2026年1月</option></select>'+
+      '<select id="billingStatusFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全ステータス</option><option value="draft">下書き</option><option value="sent">送付済</option><option value="paid">入金済</option></select>'+
+    '</div>'+
+    '<table class="data-table"><thead><tr><th>請求ID</th><th>法人</th><th>対象月</th><th class="r">手数料小計</th><th class="r">調整</th><th class="r">税</th><th class="r">合計</th><th>ステータス</th><th>支払期日</th><th>操作</th></tr></thead>'+
+    '<tbody id="billingTableBody">'+renderBillingRows(INVOICES)+'</tbody></table></div>';
+}
+
+function renderBillingRows(invoices){
+  return invoices.map(function(inv){
+    var nextAction='';
+    if(inv.status==='draft') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'sent\')">送付</button>';
+    else if(inv.status==='sent') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'paid\')">入金確認</button>';
+    else nextAction='<span style="font-size:10px;color:var(--text-light)">完了</span>';
+    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+inv.id.substring(0,12)+'</code></td>'+
+      '<td style="font-weight:600">'+inv.corpName+'</td>'+
+      '<td>'+inv.billingPeriod+'</td>'+
+      '<td class="r">'+Y(inv.subtotal)+'</td>'+
+      '<td class="r" style="color:'+(inv.adjustments<0?'var(--danger)':'var(--text)')+'">'+Y(inv.adjustments)+'</td>'+
+      '<td class="r">'+Y(inv.tax)+'</td>'+
+      '<td class="r" style="font-weight:700">'+Y(inv.total)+'</td>'+
+      '<td>'+billingStatusBadge(inv.status)+'</td>'+
+      '<td>'+(inv.dueDate||'—')+'</td>'+
+      '<td><div style="display:flex;gap:4px">'+nextAction+
+        '<button class="btn btn-s btn-sm" onclick="openInvoiceDetail(\''+inv.id+'\')">詳細</button></div></td></tr>';
+  }).join('');
+}
+
+function filterBillingTable(){
+  var cf=document.getElementById('billingCorpFilter').value;
+  var pf=document.getElementById('billingPeriodFilter').value;
+  var sf=document.getElementById('billingStatusFilter').value;
+  var filtered=INVOICES.filter(function(inv){
+    if(cf&&inv.corpId!==cf)return false;
+    if(pf&&inv.billingPeriod!==pf)return false;
+    if(sf&&inv.status!==sf)return false;
+    return true;
+  });
+  document.getElementById('billingTableBody').innerHTML=renderBillingRows(filtered);
+}
+
+function updateInvoiceStatus(invId,newStatus){
+  var inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  var labels={sent:'送付済',paid:'入金済'};
+  if(!confirm('請求書 '+inv.id+' のステータスを「'+labels[newStatus]+'」に変更しますか？'))return;
+  inv.status=newStatus;
+  // Supabase更新
+  sb.from('invoices').update({status:newStatus}).eq('id',invId).then(function(){}).catch(function(e){console.warn('Invoice status update failed:',e);});
+  showToast('✅ ステータスを「'+labels[newStatus]+'」に変更しました');
+  renderPage();
+}
+
+function openInvoiceDetail(invId){
+  var inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  var adjHtml='';
+  if(inv.adjustmentDetails&&inv.adjustmentDetails.length>0){
+    adjHtml='<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">調整項目内訳</div>'+
+      '<table class="dt"><thead><tr><th>理由</th><th class="r">金額</th></tr></thead><tbody>'+
+      inv.adjustmentDetails.map(function(a){
+        return '<tr><td style="font-size:11px">'+a.reason+'</td><td class="r" style="color:var(--danger);font-weight:700">'+Y(a.amount)+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>💰 請求書詳細</h3>'+
+    '<div style="margin-bottom:16px;padding:14px;background:#f5f6fa;border-radius:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+        '<span style="font-weight:700;font-size:14px">'+inv.corpName+'</span>'+billingStatusBadge(inv.status)+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--text-light)">対象月: '+inv.billingPeriod+' / 期日: '+inv.dueDate+'</div>'+
+    '</div>'+
+    '<table class="dt" style="margin-bottom:0"><tbody>'+
+      '<tr><td>手数料小計（税抜）</td><td class="r" style="font-weight:700">'+Y(inv.subtotal)+'</td></tr>'+
+      '<tr><td>調整額</td><td class="r" style="color:'+(inv.adjustments<0?'var(--danger)':'var(--text)')+';font-weight:700">'+Y(inv.adjustments)+'</td></tr>'+
+      '<tr><td>消費税（10%）</td><td class="r">'+Y(inv.tax)+'</td></tr>'+
+      '<tr style="font-size:14px;font-weight:800"><td>請求合計</td><td class="r" style="color:var(--accent)">'+Y(inv.total)+'</td></tr>'+
+    '</tbody></table>'+
+    adjHtml+
+    '<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">調整項目を手動追加</div>'+
+      '<div class="form-grid"><div class="form-group"><label>理由</label><input type="text" id="adjReason" placeholder="例: 追加手数料"></div>'+
+      '<div class="form-group"><label>金額（円）</label><input type="number" id="adjAmount" placeholder="例: -500"></div></div>'+
+      '<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="addAdjustment(\''+inv.id+'\')">追加</button>'+
+    '</div>'+
+    '<div class="btn-group" style="margin-top:16px"><button class="btn btn-s" onclick="closeModal()">閉じる</button></div>'
+  );
+}
+
+function addAdjustment(invId){
+  var inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  var reason=document.getElementById('adjReason').value.trim();
+  var amount=parseInt(document.getElementById('adjAmount').value);
+  if(!reason||isNaN(amount)){showToast('⚠️ 理由と金額を入力してください');return;}
+  inv.adjustmentDetails.push({reason:reason,amount:amount});
+  inv.adjustments+=amount;
+  var taxable=inv.subtotal+inv.adjustments;
+  inv.tax=Math.round(Math.max(0,taxable)*0.10);
+  inv.total=taxable+inv.tax;
+  // Supabase更新
+  sb.from('invoices').update({adjustments:inv.adjustments,adjustment_details:inv.adjustmentDetails,tax:inv.tax,total:inv.total}).eq('id',invId).then(function(){}).catch(function(e){console.warn('Adjustment update failed:',e);});
+  closeModal();
+  showToast('✅ 調整項目を追加しました');
+  renderPage();
+}
+
+function renderBillingGenerate(){
+  return '<div class="card"><div class="card-title">📄 月次請求書の一括生成</div>'+
+    '<p style="font-size:12px;color:var(--text-light);margin-bottom:16px">指定した対象月の注文を集計し、法人別に請求書を自動生成します。</p>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>対象月</label><select id="genBillingPeriod">'+
+        '<option value="2026-02">2026年2月</option><option value="2026-01">2026年1月</option><option value="2025-12">2025年12月</option></select></div>'+
+    '</div>'+
+    '<div style="margin-top:12px;padding:12px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e17055;line-height:1.6">'+
+      '⚠️ この操作で以下が実行されます:<br>'+
+      '1. 対象期間の全注文から手数料（application_fee_amount）を法人別に集計<br>'+
+      '2. 返金済み注文の手数料を控除<br>'+
+      '3. AIden原資ポイント消費分を控除<br>'+
+      '4. 消費税10%を加算<br>'+
+      '5. invoicesテーブルにステータス「下書き」で保存'+
+    '</div>'+
+    '<div class="btn-group"><button class="btn btn-p" onclick="generateMonthlyInvoices()">請求書を生成</button></div>'+
+    '<div id="genBillingResult" style="margin-top:16px"></div>'+
+  '</div>';
+}
+
+async function generateMonthlyInvoices(){
+  var period=document.getElementById('genBillingPeriod').value;
+  if(!confirm(period+' の月次請求書を生成しますか？'))return;
+  showToast('⏳ 請求書を生成中...');
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-monthly-invoice',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({billing_period:period})
+    });
+    var data=await res.json();
+    if(data.error){
+      document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#fab1a0;border-radius:8px;color:#d63031;font-size:12px">エラー: '+data.error+'</div>';
+      return;
+    }
+    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#e6f9f0;border-radius:8px;color:#00b894;font-size:12px">✅ '+data.invoices_created+'件の請求書を生成しました（'+data.billing_period+'）</div>';
+    // リロード
+    await loadInvoicesFromSupabase();
+    renderPage();
+  }catch(e){
+    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#fab1a0;border-radius:8px;color:#d63031;font-size:12px">エラー: '+e.message+'</div>';
+  }
+}
+
+async function loadInvoicesFromSupabase(){
+  try{
+    var res=await sb.from('invoices').select('*').order('created_at',{ascending:false});
+    if(res.data&&res.data.length>0){
+      var corpMap={};
+      CORPS.forEach(function(c){corpMap[c.id]=c.name;});
+      INVOICES=res.data.map(function(row){
+        return {
+          id:row.id,corpId:row.corp_id,corpName:corpMap[row.corp_id]||'不明',
+          billingPeriod:row.billing_period||(row.billing_period_start?row.billing_period_start.substring(0,7):''),
+          subtotal:row.subtotal||0,adjustments:row.adjustments||0,tax:row.tax||0,total:row.total||0,
+          status:row.status||'draft',dueDate:row.due_date||'',pdfUrl:row.pdf_url||null,
+          adjustmentDetails:row.adjustment_details||[]
+        };
+      });
+    }
+  }catch(e){console.warn('Invoice load failed:',e);}
 }
 
 // INIT
