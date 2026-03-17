@@ -89,8 +89,7 @@ function snsImgSelectPlatform(platform, el) {
   var noteEl = document.getElementById('snsImgPlatformNote');
   if(noteEl && info) {
     var icon = info.type === 'video_note' ? '🎬' : '💡';
-    noteEl.innerHTML = icon + ' ' + info.note.replace(/
-/g,'<br>');
+    noteEl.innerHTML = icon + ' ' + info.note.replace(/\n/g,'<br>');
     noteEl.style.display = '';
     noteEl.style.background = info.type === 'video_note' ? '#fff8e1' : '#f0edff';
     noteEl.style.color = info.type === 'video_note' ? '#795548' : '#6c5ce7';
