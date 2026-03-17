@@ -567,21 +567,53 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 
     <!-- Signup Form -->
     <div class="auth-form" id="formSignup">
-      <div class="form-group">
-        <label>姓</label>
-        <input type="text" class="form-input" id="authSignupLastName" placeholder="山田">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label>姓 <span style="color:#D32F2F">*</span></label>
+          <input type="text" class="form-input" id="authSignupLastName" placeholder="山田">
+        </div>
+        <div class="form-group">
+          <label>名 <span style="color:#D32F2F">*</span></label>
+          <input type="text" class="form-input" id="authSignupFirstName" placeholder="太郎">
+        </div>
       </div>
       <div class="form-group">
-        <label>名</label>
-        <input type="text" class="form-input" id="authSignupFirstName" placeholder="太郎">
-      </div>
-      <div class="form-group">
-        <label>メールアドレス</label>
+        <label>メールアドレス <span style="color:#D32F2F">*</span></label>
         <input type="email" class="form-input" id="authSignupEmail" placeholder="example@mail.com">
       </div>
       <div class="form-group">
-        <label>パスワード（8文字以上）</label>
+        <label>パスワード（8文字以上） <span style="color:#D32F2F">*</span></label>
         <input type="password" class="form-input" id="authSignupPassword" placeholder="パスワード">
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="tel" class="form-input" id="authSignupPhone" placeholder="090-1234-5678">
+      </div>
+      <div class="form-group">
+        <label>住所</label>
+        <input type="text" class="form-input" id="authSignupAddress" placeholder="東京都渋谷区...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label>生年月日</label>
+          <input type="date" class="form-input" id="authSignupBirthDate">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select class="form-input" id="authSignupGender">
+            <option value="">選択してください</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+            <option value="other">その他</option>
+            <option value="no_answer">回答しない</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>お気に入り店舗 <span style="color:#D32F2F">*</span>（最低1店舗選択）</label>
+        <div id="authSignupFavStores" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
+          <div style="color:var(--text-light);font-size:13px">読み込み中...</div>
+        </div>
       </div>
       <button class="auth-btn" id="btnAuthSignup" onclick="handleEmailSignup()">新規登録</button>
     </div>
@@ -594,6 +626,38 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     </button>
 
     <button class="auth-guest-btn" onclick="closeAuthModal()">ゲストとして注文する</button>
+  </div>
+</div>
+
+<!-- ===== EMAIL CONFIRMATION MODAL ===== -->
+<div class="auth-overlay" id="emailConfirmOverlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="auth-modal" style="text-align:center">
+    <div class="auth-modal-close" onclick="document.getElementById('emailConfirmOverlay').classList.remove('show')">&times;</div>
+    <div style="font-size:48px;margin-bottom:16px">📧</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:8px">確認メールを送信しました</div>
+    <div style="font-size:14px;color:var(--text-light);margin-bottom:24px;line-height:1.6">
+      ご登録いただいたメールアドレスに確認メールを送信しました。<br>
+      メール内のリンクをクリックして、登録を完了してください。
+    </div>
+    <div style="background:var(--bg);border-radius:var(--radius-sm);padding:14px;font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:20px">
+      メールが届かない場合は、迷惑メールフォルダをご確認ください。<br>
+      数分経っても届かない場合は、メールアドレスをご確認の上、再度ご登録ください。
+    </div>
+    <button class="auth-btn" onclick="document.getElementById('emailConfirmOverlay').classList.remove('show')">閉じる</button>
+  </div>
+</div>
+
+<!-- ===== REGISTRATION COMPLETE MODAL ===== -->
+<div class="auth-overlay" id="regCompleteOverlay">
+  <div class="auth-modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">🎉</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:8px">登録ありがとうございます！</div>
+    <div style="font-size:14px;color:var(--text-light);margin-bottom:20px">会員登録が完了しました</div>
+    <div id="regCompleteIncentive" style="display:none;background:linear-gradient(135deg,#FFF9C4,#FFF3E0);border:1px solid #FFE082;border-radius:var(--radius);padding:16px;margin-bottom:20px;text-align:left">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px">🎁 初回特典をプレゼント！</div>
+      <div id="regCompleteIncentiveDetail" style="font-size:14px;color:var(--text-mid);line-height:1.6"></div>
+    </div>
+    <button class="auth-btn" onclick="closeRegCompleteModal()">注文に進む</button>
   </div>
 </div>
 
@@ -952,6 +1016,8 @@ async function loadCheckoutData() {
       const brandId = storeRow.brands?.id;
       if (brandId) {
         CHECKOUT_DATA.brandId = brandId;
+        // お気に入り店舗リストをロード（登録フォーム用）
+        loadSignupFavStores();
         const { data: coupons } = await sb.from('coupons').select('*').eq('brand_id', brandId).eq('is_active', true);
         if (coupons && coupons.length > 0) {
           CHECKOUT_DATA.availableCoupons = coupons.map(c => ({
@@ -2155,19 +2221,59 @@ async function handleEmailLogin() {
   }
 }
 
+// --- お気に入り店舗一覧のロード ---
+async function loadSignupFavStores() {
+  const container = document.getElementById('authSignupFavStores');
+  if (!container) return;
+  try {
+    const brandId = CHECKOUT_DATA.brandId;
+    if (!brandId) { container.innerHTML = '<div style="color:var(--text-light);font-size:13px">店舗情報を取得できません</div>'; return; }
+    const { data: stores } = await sb.from('stores').select('id, name').eq('brand_id', brandId).order('name');
+    if (!stores || stores.length === 0) { container.innerHTML = '<div style="color:var(--text-light);font-size:13px">店舗がありません</div>'; return; }
+    container.innerHTML = stores.map(s =>
+      '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px">' +
+      '<input type="checkbox" class="favStoreCheck" value="' + s.id + '" style="accent-color:var(--brand)">' +
+      escapeHtml(s.name) + '</label>'
+    ).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--text-light);font-size:13px">店舗の読み込みに失敗しました</div>';
+  }
+}
+
 // --- Email+Password Signup ---
 async function handleEmailSignup() {
   const lastName = document.getElementById('authSignupLastName').value.trim();
   const firstName = document.getElementById('authSignupFirstName').value.trim();
   const email = document.getElementById('authSignupEmail').value.trim();
   const password = document.getElementById('authSignupPassword').value;
+  const phone = document.getElementById('authSignupPhone').value.trim();
+  const address = document.getElementById('authSignupAddress').value.trim();
+  const birthDate = document.getElementById('authSignupBirthDate').value;
+  const gender = document.getElementById('authSignupGender').value;
+
+  // お気に入り店舗
+  const favChecks = document.querySelectorAll('.favStoreCheck:checked');
+  const favoriteStoreIds = Array.from(favChecks).map(c => c.value);
 
   if (!lastName || !firstName) { showAuthError('姓名を入力してください'); return; }
   if (!email) { showAuthError('メールアドレスを入力してください'); return; }
   if (password.length < 8) { showAuthError('パスワードは8文字以上で入力してください'); return; }
+  if (favoriteStoreIds.length === 0) { showAuthError('お気に入り店舗を最低1つ選択してください'); return; }
 
   const btn = document.getElementById('btnAuthSignup');
   btn.disabled = true; btn.textContent = '登録中...';
+
+  // 登録時にinsertするmemberデータを組み立て
+  const memberData = {
+    first_name: firstName,
+    last_name: lastName,
+    email: email,
+    favorite_store_ids: favoriteStoreIds,
+  };
+  if (phone) memberData.phone = phone;
+  if (address) memberData.address_street = address;
+  if (birthDate) memberData.birth_date = birthDate;
+  if (gender) memberData.gender = gender;
 
   try {
     const { data, error } = await sb.auth.signUp({
@@ -2181,23 +2287,28 @@ async function handleEmailSignup() {
 
     // メール確認が必要な場合
     if (data.user && !data.session) {
-      showAuthSuccess('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
-      btn.disabled = false; btn.textContent = '新規登録';
+      // 仮memberレコードを作成（確認後に有効化）
+      memberData.auth_user_id = data.user.id;
+      await sb.from('members').insert(memberData);
+
+      closeAuthModal();
+      document.getElementById('emailConfirmOverlay').classList.add('show');
       return;
     }
 
     // 即座にセッション取得できた場合（メール確認OFF設定時）
     if (data.user && data.session) {
-      // members テーブルにレコード作成
-      await sb.from('members').insert({
-        auth_user_id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
-      });
+      memberData.auth_user_id = data.user.id;
+      const { data: inserted } = await sb.from('members').insert(memberData).select('id').single();
+
+      if (inserted) {
+        sessionStorage.setItem('aiden_member_id', inserted.id);
+        await grantFirstTimeIncentive(inserted.id);
+      }
 
       await onAuthSuccess(data.user);
       closeAuthModal();
+      showRegCompleteModal();
     }
   } catch (e) {
     const msg = e.message.includes('already registered')
@@ -2207,6 +2318,78 @@ async function handleEmailSignup() {
   } finally {
     btn.disabled = false; btn.textContent = '新規登録';
   }
+}
+
+// --- 初回特典付与ロジック ---
+async function grantFirstTimeIncentive(memberId) {
+  try {
+    const brandId = CHECKOUT_DATA.brandId;
+    if (!brandId || !memberId) return;
+
+    const { data: incentive } = await sb.from('first_time_incentives')
+      .select('*')
+      .eq('brand_id', brandId)
+      .eq('is_active', true)
+      .single();
+
+    if (!incentive) return;
+
+    const details = [];
+
+    // ポイント付与
+    if ((incentive.type === 'point' || incentive.type === 'both') && incentive.point_amount > 0) {
+      await sb.from('point_transactions').insert({
+        member_id: memberId,
+        brand_id: brandId,
+        amount: incentive.point_amount,
+        balance_after: incentive.point_amount,
+        source: 'normal',
+        reason: '初回登録特典',
+      });
+      details.push('🎯 ' + incentive.point_amount + ' ポイントを付与しました');
+    }
+
+    // クーポン付与
+    if ((incentive.type === 'coupon' || incentive.type === 'both') && incentive.coupon_id) {
+      await sb.from('member_coupons').insert({
+        member_id: memberId,
+        coupon_id: incentive.coupon_id,
+        source: 'first_time',
+      });
+      // クーポン名を取得
+      const { data: coupon } = await sb.from('coupons').select('name').eq('id', incentive.coupon_id).single();
+      details.push('🎫 クーポン「' + (coupon ? coupon.name : '初回特典') + '」を配布しました');
+    }
+
+    // 登録完了モーダルに特典情報をセット
+    if (details.length > 0) {
+      sessionStorage.setItem('_regIncentiveDetails', JSON.stringify(details));
+    }
+  } catch(e) {
+    console.warn('First-time incentive grant error:', e);
+  }
+}
+
+// --- 登録完了モーダル ---
+function showRegCompleteModal() {
+  const overlay = document.getElementById('regCompleteOverlay');
+  const incentiveSection = document.getElementById('regCompleteIncentive');
+  const incentiveDetail = document.getElementById('regCompleteIncentiveDetail');
+
+  const details = JSON.parse(sessionStorage.getItem('_regIncentiveDetails') || '[]');
+  if (details.length > 0) {
+    incentiveSection.style.display = 'block';
+    incentiveDetail.innerHTML = details.join('<br>');
+    sessionStorage.removeItem('_regIncentiveDetails');
+  } else {
+    incentiveSection.style.display = 'none';
+  }
+
+  overlay.classList.add('show');
+}
+
+function closeRegCompleteModal() {
+  document.getElementById('regCompleteOverlay').classList.remove('show');
 }
 
 // --- LINE Login ---
@@ -2354,8 +2537,47 @@ async function restoreSession() {
   }
 }
 
-// --- Auth Init: LINE callback処理 → セッション復元 ---
+// --- メール確認コールバック処理 ---
+async function handleEmailConfirmCallback() {
+  // Supabase email confirmationのリダイレクト処理
+  const hash = window.location.hash;
+  if (!hash) return false;
+  const params = new URLSearchParams(hash.substring(1));
+  const accessToken = params.get('access_token');
+  const type = params.get('type');
+
+  if (type === 'signup' && accessToken) {
+    try {
+      const { data, error } = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: params.get('refresh_token') || '',
+      });
+      if (error) throw error;
+      if (data.user) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+        // member_id取得して初回特典付与
+        const { data: member } = await sb.from('members').select('id').eq('auth_user_id', data.user.id).single();
+        if (member) {
+          sessionStorage.setItem('aiden_member_id', member.id);
+          await grantFirstTimeIncentive(member.id);
+        }
+        await onAuthSuccess(data.user);
+        showRegCompleteModal();
+        return true;
+      }
+    } catch(e) {
+      console.warn('Email confirm callback error:', e);
+    }
+  }
+  return false;
+}
+
+// --- Auth Init: LINE callback処理 → メール確認 → セッション復元 ---
 async function initAuth() {
+  // メール確認コールバックを先にチェック
+  const emailConfirmed = await handleEmailConfirmCallback();
+  if (emailConfirmed) return;
+
   await handleLineCallback();
 
   // LINE callbackでログイン済みでなければセッション復元を試みる

@@ -532,6 +532,7 @@ const NAV = [
     {id:'member-list', label:'会員ダッシュボード'},
     {id:'member-point', label:'ポイント設定'},
     {id:'member-rank', label:'ランク設定'},
+    {id:'member-incentive', label:'初回特典設定'},
     {id:'member-crm', label:'CRM配信'},
     {id:'ai-sns', label:'SNS管理'},
     {id:'subscription', label:'サブスクリプション'},
@@ -630,6 +631,7 @@ function showPage(pageId, catId){
   if(['sales-dashboard','sales-user','sales-product','sales-benchmark','sales-effect'].includes(pageId)) {
     setTimeout(()=>{ if(typeof renderSalesCharts==='function') renderSalesCharts(); }, 50);
   }
+  if(pageId === 'member-incentive' && typeof loadIncentiveSettings === 'function') loadIncentiveSettings();
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
@@ -2732,6 +2734,82 @@ content.innerHTML = `
     <div style="display:flex;justify-content:flex-end;gap:8px">
       <button class="btn btn-secondary" onclick="document.getElementById('rankEditModal').style.display='none'">キャンセル</button>
       <button class="btn btn-primary" onclick="saveRank()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 👥 会員・CRM - 初回特典設定 -->
+<div class="page" id="page-member-incentive">
+  <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM</a> ＞ 初回特典設定</div>
+  <div class="page-title">初回特典設定</div>
+  <div class="page-subtitle">新規会員登録時に自動付与する特典を設定します</div>
+
+  <div class="card">
+    <div class="card-title">🎁 初回特典</div>
+    <div class="toggle-row" style="border:none;padding-bottom:16px">
+      <span class="label" style="font-weight:700;font-size:14px">初回特典を有効にする</span>
+      <label class="toggle"><input type="checkbox" id="incentiveEnabled"><span class="slider"></span></label>
+    </div>
+
+    <div id="incentiveSettings" style="display:none">
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="font-weight:600;margin-bottom:8px;display:block">特典タイプ</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;padding:8px 14px;border:2px solid var(--border);border-radius:8px" id="incentiveTypePointLabel">
+            <input type="radio" name="incentiveType" value="point" onchange="toggleIncentiveType()" style="accent-color:var(--accent)"> 🎯 ポイント付与
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;padding:8px 14px;border:2px solid var(--border);border-radius:8px" id="incentiveTypeCouponLabel">
+            <input type="radio" name="incentiveType" value="coupon" onchange="toggleIncentiveType()" style="accent-color:var(--accent)"> 🎫 クーポン配布
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;padding:8px 14px;border:2px solid var(--border);border-radius:8px" id="incentiveTypeBothLabel">
+            <input type="radio" name="incentiveType" value="both" onchange="toggleIncentiveType()" style="accent-color:var(--accent)"> 🎉 両方
+          </label>
+        </div>
+      </div>
+
+      <!-- ポイント付与設定 -->
+      <div id="incentivePointSection" style="display:none;margin-bottom:16px;background:#f8f9ff;border-radius:8px;padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎯 ポイント付与設定</div>
+        <div class="form-group">
+          <label>付与ポイント数</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="number" id="incentivePointAmount" value="100" min="1" style="width:120px">
+            <span style="font-size:13px;color:#666">ポイント</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- クーポン配布設定 -->
+      <div id="incentiveCouponSection" style="display:none;margin-bottom:16px;background:#fff8f0;border-radius:8px;padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎫 クーポン配布設定</div>
+        <div class="form-group">
+          <label>配布するクーポン</label>
+          <select id="incentiveCouponId" style="width:100%">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div style="margin-top:8px">
+          <button class="btn btn-secondary btn-sm" onclick="openCouponModal()">＋ 新規クーポン作成</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="saveIncentiveSettings()">💾 保存</button>
+    </div>
+  </div>
+
+  <!-- プレビュー -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">👁️ 登録完了画面プレビュー</div>
+    <div style="background:#f5f5f5;border-radius:12px;padding:24px;text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">🎉</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px">登録ありがとうございます！</div>
+      <div style="font-size:13px;color:#666;margin-bottom:16px">会員登録が完了しました</div>
+      <div id="incentivePreview" style="display:none;background:linear-gradient(135deg,#FFF9C4,#FFF3E0);border:1px solid #FFE082;border-radius:8px;padding:14px;text-align:left;max-width:320px;margin:0 auto">
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px">🎁 初回特典をプレゼント！</div>
+        <div id="incentivePreviewDetail" style="font-size:13px;color:#555;line-height:1.6"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -10820,6 +10898,143 @@ async function savePointSettings() {
       if(error) throw error;
     }
     showToast('ポイント設定を保存しました');
+  } catch(e) { alert('保存エラー: ' + e.message); }
+}
+
+// ===== 初回特典設定 (Supabase連携) =====
+async function loadIncentiveSettings() {
+  try {
+    const { data, error } = await sb.from('first_time_incentives').select('*').eq('brand_id', BRAND_ID).single();
+    if (error && error.code !== 'PGRST116') throw error;
+
+    var enabledEl = document.getElementById('incentiveEnabled');
+    var settingsEl = document.getElementById('incentiveSettings');
+
+    if (data) {
+      enabledEl.checked = data.is_active;
+      settingsEl.style.display = data.is_active ? 'block' : 'none';
+
+      // タイプ選択
+      var radios = document.querySelectorAll('input[name="incentiveType"]');
+      radios.forEach(function(r) { r.checked = r.value === data.type; });
+
+      if (data.point_amount) document.getElementById('incentivePointAmount').value = data.point_amount;
+      if (data.coupon_id) document.getElementById('incentiveCouponId').value = data.coupon_id;
+
+      toggleIncentiveType();
+    }
+
+    // ON/OFFトグル
+    enabledEl.addEventListener('change', function() {
+      settingsEl.style.display = this.checked ? 'block' : 'none';
+      updateIncentivePreview();
+    });
+
+    // クーポン一覧をロード
+    await loadIncentiveCouponOptions();
+    if (data && data.coupon_id) document.getElementById('incentiveCouponId').value = data.coupon_id;
+
+    updateIncentivePreview();
+  } catch(e) { console.warn('Incentive settings load error:', e); }
+}
+
+async function loadIncentiveCouponOptions() {
+  try {
+    var select = document.getElementById('incentiveCouponId');
+    var { data: coupons } = await sb.from('coupons').select('id, name, code, discount_value, discount_type').eq('brand_id', BRAND_ID).eq('is_active', true);
+    if (coupons && coupons.length > 0) {
+      var optionsHtml = '<option value="">選択してください</option>';
+      coupons.forEach(function(c) {
+        var discountLabel = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value + '引き';
+        optionsHtml += '<option value="' + c.id + '">' + c.name + ' (' + discountLabel + ')</option>';
+      });
+      select.innerHTML = optionsHtml;
+    }
+  } catch(e) { console.warn('Coupon options load error:', e); }
+}
+
+function toggleIncentiveType() {
+  var selected = document.querySelector('input[name="incentiveType"]:checked');
+  var type = selected ? selected.value : '';
+  document.getElementById('incentivePointSection').style.display = (type === 'point' || type === 'both') ? 'block' : 'none';
+  document.getElementById('incentiveCouponSection').style.display = (type === 'coupon' || type === 'both') ? 'block' : 'none';
+
+  // ラジオボタンのスタイル更新
+  ['Point','Coupon','Both'].forEach(function(t) {
+    var label = document.getElementById('incentiveType' + t + 'Label');
+    if (label) label.style.borderColor = (type === t.toLowerCase()) ? 'var(--accent)' : 'var(--border)';
+  });
+
+  updateIncentivePreview();
+}
+
+function updateIncentivePreview() {
+  var enabled = document.getElementById('incentiveEnabled').checked;
+  var previewEl = document.getElementById('incentivePreview');
+  var detailEl = document.getElementById('incentivePreviewDetail');
+
+  if (!enabled) { previewEl.style.display = 'none'; return; }
+
+  var selected = document.querySelector('input[name="incentiveType"]:checked');
+  if (!selected) { previewEl.style.display = 'none'; return; }
+
+  var type = selected.value;
+  var details = [];
+
+  if (type === 'point' || type === 'both') {
+    var pts = document.getElementById('incentivePointAmount').value || 0;
+    details.push('🎯 ' + pts + ' ポイントを付与');
+  }
+  if (type === 'coupon' || type === 'both') {
+    var couponSelect = document.getElementById('incentiveCouponId');
+    var couponName = couponSelect.selectedOptions[0] ? couponSelect.selectedOptions[0].text : 'クーポン';
+    if (couponSelect.value) details.push('🎫 クーポン「' + couponName + '」を配布');
+  }
+
+  if (details.length > 0) {
+    previewEl.style.display = 'block';
+    detailEl.innerHTML = details.join('<br>');
+  } else {
+    previewEl.style.display = 'none';
+  }
+}
+
+// イベントリスナーをページ読み込み時に登録
+document.addEventListener('DOMContentLoaded', function() {
+  var ptAmountEl = document.getElementById('incentivePointAmount');
+  if (ptAmountEl) ptAmountEl.addEventListener('input', updateIncentivePreview);
+  var couponEl = document.getElementById('incentiveCouponId');
+  if (couponEl) couponEl.addEventListener('change', updateIncentivePreview);
+});
+
+async function saveIncentiveSettings() {
+  var enabled = document.getElementById('incentiveEnabled').checked;
+  var selected = document.querySelector('input[name="incentiveType"]:checked');
+  var type = selected ? selected.value : 'point';
+
+  var row = {
+    brand_id: BRAND_ID,
+    type: type,
+    point_amount: (type === 'point' || type === 'both') ? (parseInt(document.getElementById('incentivePointAmount').value) || 0) : 0,
+    coupon_id: (type === 'coupon' || type === 'both') ? (document.getElementById('incentiveCouponId').value || null) : null,
+    is_active: enabled,
+    updated_at: new Date().toISOString()
+  };
+
+  if (enabled && !selected) { alert('特典タイプを選択してください'); return; }
+  if (enabled && (type === 'point' || type === 'both') && row.point_amount <= 0) { alert('ポイント数を入力してください'); return; }
+  if (enabled && (type === 'coupon' || type === 'both') && !row.coupon_id) { alert('クーポンを選択してください'); return; }
+
+  try {
+    var { data: existing } = await sb.from('first_time_incentives').select('id').eq('brand_id', BRAND_ID).single();
+    if (existing) {
+      var { error } = await sb.from('first_time_incentives').update(row).eq('id', existing.id);
+      if(error) throw error;
+    } else {
+      var { error } = await sb.from('first_time_incentives').insert(row);
+      if(error) throw error;
+    }
+    showToast('初回特典設定を保存しました');
   } catch(e) { alert('保存エラー: ' + e.message); }
 }
 
