@@ -142,6 +142,7 @@
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
   <div class="nav-item" data-page="ai" onclick="goTo('ai')"><span class="icon">🤖</span><span class="label">AI品質管理</span></div>
   <div class="sb-div"></div>
+  <div class="nav-item" data-page="plan-mgmt" onclick="goTo('plan-mgmt')"><span class="icon">📋</span><span class="label">プラン管理</span></div>
   <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">💰</span><span class="label">請求管理</span></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
   <div class="nav-item" data-page="support" onclick="goTo('support')"><span class="icon">💬</span><span class="label">サポート管理</span></div>
@@ -487,7 +488,7 @@ function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSide
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',billing:'billing',compensation:'compensation',support:'support',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai','plan-mgmt':'plan-mgmt',billing:'billing',compensation:'compensation',support:'support',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -507,6 +508,7 @@ function renderPage(){
   else if(v.type==='users')el.innerHTML=renderUsers();
   else if(v.type==='system')el.innerHTML=renderSystem();
   else if(v.type==='ai')el.innerHTML=renderAI();
+  else if(v.type==='plan-mgmt')el.innerHTML=renderPlanManagement();
   else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
   else if(v.type==='support')el.innerHTML=renderAdminSupport();
@@ -514,6 +516,7 @@ function renderPage(){
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
   // post hooks
+  if(v.type==='plan-mgmt')loadPlanChangeRequests();
   if(v.type==='billing')loadInvoicesFromSupabase();
   if(v.type==='dashboard')renderDashCharts();
   if(v.type==='ai')renderAICharts();
@@ -1374,6 +1377,231 @@ let INVOICES=[
   {id:'INV-demo003',corpId:'CRP-Xk9mPr2',corpName:'株式会社スミビフーズ',billingPeriod:'2026-01',subtotal:132800,adjustments:-1200,tax:13160,total:144760,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[{reason:'AIden原資ポイント控除',amount:-1200}]},
   {id:'INV-demo004',corpId:'CRP-Pq7mN2k',corpName:'株式会社麺道楽',billingPeriod:'2026-01',subtotal:48600,adjustments:0,tax:4860,total:53460,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[]}
 ];
+
+// ===== PLAN MANAGEMENT =====
+var PLAN_REQUESTS = [];
+var PLAN_SVC_MAP = {};
+
+function planStatusBadge(s) {
+  var m = { pending: {bg:'#ffeaa7',c:'#d68910',l:'承認待ち'}, approved: {bg:'#e6f9f0',c:'#00b894',l:'承認済'}, rejected: {bg:'#fab1a0',c:'#d63031',l:'却下'} };
+  var st = m[s] || {bg:'#dfe6e9',c:'#636e72',l:s};
+  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
+}
+
+function planDirectionBadge(d) {
+  if (d === 'upgrade') return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#dbeafe;color:#2563eb">⬆ アップグレード</span>';
+  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#f3e8ff;color:#7c3aed">⬇ ダウングレード</span>';
+}
+
+function planBadgeColor(p) {
+  if (p === 'EXPERT') return 'background:#7C3AED;color:#fff';
+  if (p === 'PRO') return 'background:#2563EB;color:#fff';
+  return 'background:#6B7280;color:#fff';
+}
+
+function renderPlanManagement() {
+  var pending = PLAN_REQUESTS.filter(function(r){ return r.status === 'pending'; }).length;
+  return '<div class="page-title">プラン管理</div><div class="page-subtitle">ブランドのプラン変更申請を管理します</div>' +
+    '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="stat-card purple"><div class="sc-label">承認待ち</div><div class="sc-val">' + pending + '</div></div>' +
+      '<div class="stat-card green"><div class="sc-label">承認済（今月）</div><div class="sc-val">' + PLAN_REQUESTS.filter(function(r){ return r.status==='approved'; }).length + '</div></div>' +
+      '<div class="stat-card blue"><div class="sc-label">総申請数</div><div class="sc-val">' + PLAN_REQUESTS.length + '</div></div>' +
+    '</div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+      '<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">' +
+        '<select id="planStatusFilter" onchange="filterPlanTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">' +
+          '<option value="">全ステータス</option><option value="pending">承認待ち</option><option value="approved">承認済</option><option value="rejected">却下</option>' +
+        '</select>' +
+      '</div>' +
+      '<table class="data-table"><thead><tr>' +
+        '<th>ブランド</th><th>現プラン</th><th>希望プラン</th><th>種別</th><th>申請者</th><th>申請日</th><th>ステータス</th><th>操作</th>' +
+      '</tr></thead><tbody id="planTableBody">' + renderPlanRows(PLAN_REQUESTS) + '</tbody></table>' +
+    '</div>';
+}
+
+function renderPlanRows(rows) {
+  if (rows.length === 0) return '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-light)">プラン変更申請はありません</td></tr>';
+  return rows.map(function(r) {
+    var brand = BRANDS.find(function(b){ return b.id === r.brand_id; });
+    var brandName = brand ? brand.name : r.brand_id;
+    var dt = r.requested_at ? new Date(r.requested_at).toLocaleDateString('ja-JP') : '-';
+    var actions = '';
+    if (r.status === 'pending') {
+      actions = '<button class="btn btn-p btn-sm" onclick="approvePlanRequest(\'' + r.id + '\')">承認</button> ' +
+                '<button class="btn btn-d btn-sm" onclick="rejectPlanRequest(\'' + r.id + '\')">却下</button>';
+    } else if (r.status === 'approved') {
+      actions = '<span style="font-size:10px;color:var(--text-light)">' + (r.effective_date ? '適用日: ' + r.effective_date : '承認済') + '</span>';
+    } else {
+      actions = '<span style="font-size:10px;color:var(--text-light)">却下済</span>';
+    }
+    return '<tr>' +
+      '<td style="font-weight:600">' + brandName + '</td>' +
+      '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;' + planBadgeColor(r.current_plan) + '">' + r.current_plan + '</span></td>' +
+      '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;' + planBadgeColor(r.requested_plan) + '">' + r.requested_plan + '</span></td>' +
+      '<td>' + planDirectionBadge(r.direction) + '</td>' +
+      '<td>' + (r.requested_by || '-') + '</td>' +
+      '<td>' + dt + '</td>' +
+      '<td>' + planStatusBadge(r.status) + '</td>' +
+      '<td>' + actions + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function filterPlanTable() {
+  var status = document.getElementById('planStatusFilter').value;
+  var filtered = status ? PLAN_REQUESTS.filter(function(r){ return r.status === status; }) : PLAN_REQUESTS;
+  document.getElementById('planTableBody').innerHTML = renderPlanRows(filtered);
+}
+
+async function loadPlanChangeRequests() {
+  try {
+    var { data, error } = await sb.from('plan_change_requests').select('*').order('requested_at', { ascending: false });
+    if (error) throw error;
+    PLAN_REQUESTS = data || [];
+    // Also load service_subscriptions for plan mapping
+    var { data: svcData } = await sb.from('service_subscriptions').select('entity_id, service_key, is_active').eq('entity_type', 'brand').eq('is_active', true);
+    if (svcData) {
+      PLAN_SVC_MAP = {};
+      svcData.forEach(function(s) {
+        if (!PLAN_SVC_MAP[s.entity_id]) PLAN_SVC_MAP[s.entity_id] = [];
+        PLAN_SVC_MAP[s.entity_id].push(s.service_key);
+      });
+    }
+    var tbody = document.getElementById('planTableBody');
+    if (tbody) tbody.innerHTML = renderPlanRows(PLAN_REQUESTS);
+  } catch(e) {
+    console.warn('Plan requests load error:', e);
+  }
+}
+
+async function approvePlanRequest(id) {
+  var req = PLAN_REQUESTS.find(function(r){ return r.id === id; });
+  if (!req) return;
+  if (!confirm(req.requested_plan + ' へのプラン変更を承認しますか？')) return;
+
+  try {
+    var today = new Date().toISOString().split('T')[0];
+    var effectiveDate = req.direction === 'downgrade' ? req.effective_date : today;
+
+    // 1. Update request status
+    var { error: updateErr } = await sb.from('plan_change_requests').update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      effective_date: effectiveDate,
+      approved_by: 'Admin'
+    }).eq('id', id);
+    if (updateErr) throw updateErr;
+
+    // 2. For upgrades: update service_subscriptions immediately
+    if (req.direction === 'upgrade') {
+      await updateBrandPlanSubscriptions(req.brand_id, req.current_plan, req.requested_plan);
+      // 3. Add adjustment to invoices (prorated)
+      await addProratedAdjustment(req.brand_id, req.current_plan, req.requested_plan);
+    }
+    // For downgrades: effective on effective_date (pg_cron handles)
+
+    // 4. Send notification email via Resend
+    await sendPlanApprovalEmail(req);
+
+    showToast('✅ プラン変更申請を承認しました');
+    await loadPlanChangeRequests();
+  } catch(e) {
+    console.error('Approve error:', e);
+    showToast('⚠️ 承認処理に失敗しました: ' + (e.message || ''));
+  }
+}
+
+async function rejectPlanRequest(id) {
+  var req = PLAN_REQUESTS.find(function(r){ return r.id === id; });
+  if (!req) return;
+  if (!confirm('この申請を却下しますか？')) return;
+  try {
+    var { error } = await sb.from('plan_change_requests').update({
+      status: 'rejected', approved_at: new Date().toISOString(), approved_by: 'Admin'
+    }).eq('id', id);
+    if (error) throw error;
+    showToast('申請を却下しました');
+    await loadPlanChangeRequests();
+  } catch(e) {
+    console.error('Reject error:', e);
+    showToast('⚠️ 却下処理に失敗しました');
+  }
+}
+
+async function updateBrandPlanSubscriptions(brandId, oldPlan, newPlan) {
+  var keyMap = { STANDARD: 'ai_std', PRO: 'ai_pro', EXPERT: 'ai_expert' };
+  var oldKey = keyMap[oldPlan];
+  var newKey = keyMap[newPlan];
+  // Deactivate old
+  if (oldKey) {
+    await sb.from('service_subscriptions').update({ is_active: false })
+      .eq('entity_type', 'brand').eq('entity_id', brandId).eq('service_key', oldKey);
+  }
+  // Activate or insert new
+  var { data: existing } = await sb.from('service_subscriptions').select('id')
+    .eq('entity_type', 'brand').eq('entity_id', brandId).eq('service_key', newKey).limit(1);
+  if (existing && existing.length > 0) {
+    await sb.from('service_subscriptions').update({ is_active: true, activated_at: new Date().toISOString() }).eq('id', existing[0].id);
+  } else {
+    await sb.from('service_subscriptions').insert({ entity_type: 'brand', entity_id: brandId, service_key: newKey, is_active: true, activated_at: new Date().toISOString() });
+  }
+  // Also handle CRM / competing features that come with higher plans
+  if (newPlan === 'PRO' || newPlan === 'EXPERT') {
+    var crmKeys = ['crm_pro'];
+    for (var i = 0; i < crmKeys.length; i++) {
+      var { data: ex } = await sb.from('service_subscriptions').select('id')
+        .eq('entity_type','brand').eq('entity_id',brandId).eq('service_key',crmKeys[i]).limit(1);
+      if (ex && ex.length > 0) {
+        await sb.from('service_subscriptions').update({ is_active: true }).eq('id', ex[0].id);
+      } else {
+        await sb.from('service_subscriptions').insert({ entity_type:'brand', entity_id:brandId, service_key:crmKeys[i], is_active:true, activated_at:new Date().toISOString() });
+      }
+    }
+  }
+}
+
+async function addProratedAdjustment(brandId, oldPlan, newPlan) {
+  var priceMap = { STANDARD: 0, PRO: 4980, EXPERT: 9800 };
+  var diff = priceMap[newPlan] - priceMap[oldPlan];
+  if (diff <= 0) return;
+  var today = new Date();
+  var daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  var remainDays = daysInMonth - today.getDate();
+  var prorated = Math.round(diff * remainDays / daysInMonth);
+  // Find or create draft invoice for this brand's corp
+  var brand = BRANDS.find(function(b){ return b.id === brandId; });
+  if (!brand) return;
+  var corp = CORPS.find(function(c){ return c.id === brand.corpId; });
+  if (!corp) return;
+  var period = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0');
+  var inv = INVOICES.find(function(i){ return i.corpId === corp.id && i.billingPeriod === period && i.status === 'draft'; });
+  if (inv) {
+    inv.adjustments += prorated;
+    inv.adjustmentDetails.push({ reason: 'プランアップグレード日割(' + oldPlan + '→' + newPlan + ')', amount: prorated });
+    inv.tax = Math.round((inv.subtotal + inv.adjustments) * 0.1);
+    inv.total = inv.subtotal + inv.adjustments + inv.tax;
+  }
+}
+
+async function sendPlanApprovalEmail(req) {
+  try {
+    var brand = BRANDS.find(function(b){ return b.id === req.brand_id; });
+    var brandName = brand ? brand.name : req.brand_id;
+    var corp = brand ? CORPS.find(function(c){ return c.id === brand.corpId; }) : null;
+    var toEmail = corp && corp.rep_email ? corp.rep_email : null;
+    if (!toEmail) { console.warn('No email for brand corp'); return; }
+    var subject = '【AIden】プラン変更が承認されました';
+    var body = brandName + ' 様\n\nプラン変更申請が承認されました。\n\n' +
+      '変更内容: ' + req.current_plan + ' → ' + req.requested_plan + '\n' +
+      (req.direction === 'upgrade' ? '適用日: 本日より\n' : '適用日: ' + req.effective_date + '\n') +
+      '\n今後ともAIdenをよろしくお願いいたします。\n\nAIden運営チーム';
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer re_RxHKiDAj_FNETYeckXbsvJosdpApSx4y5', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'AIden <noreply@aiden-jp.net>', to: [toEmail], subject: subject, text: body })
+    });
+  } catch(e) { console.warn('Email send error:', e); }
+}
 
 function billingStatusBadge(s){
   var m={draft:{bg:'#ffeaa7',c:'#d68910',l:'下書き'},sent:{bg:'#74b9ff',c:'#0984e3',l:'送付済'},paid:{bg:'#e6f9f0',c:'#00b894',l:'入金済'}};
