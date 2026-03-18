@@ -163,6 +163,35 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
   <button class="float-btn btn-receipt" onclick="openReceipt()" title="注文概要">🧾</button>
 </div>
 
+<!-- FAQ MODAL (CS-3) -->
+<div class="modal-overlay" id="faqModal" onclick="if(event.target===this)closeFaqModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">よくある質問</div>
+    <div style="font-size:13px;color:var(--text-light);margin-bottom:16px">お問い合わせの前にFAQをご確認ください</div>
+    <div id="faqContent" style="margin-bottom:16px">
+      <div style="text-align:center;padding:20px;color:var(--text-light)">読み込み中...</div>
+    </div>
+    <button style="width:100%;padding:14px;background:var(--brand,#D32F2F);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif" onclick="closeFaqModal();startChat()">解決しない場合はチャットで問い合わせ</button>
+    <button class="modal-close" onclick="closeFaqModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- CHAT MODAL (CS-2) -->
+<div class="modal-overlay" id="chatModal" onclick="if(event.target===this)closeChatModal()">
+  <div class="modal-sheet" style="display:flex;flex-direction:column;max-height:85vh">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💬 チャットサポート</div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;min-height:200px;max-height:50vh;padding:8px 0;margin-bottom:12px">
+      <div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px">メッセージを入力して送信してください</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="chatInput" placeholder="メッセージを入力..." style="flex:1;padding:12px;border:1px solid #E0E0E0;border-radius:12px;font-size:14px;font-family:'Poppins',sans-serif" onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button onclick="sendChatMessage()" style="padding:12px 20px;background:var(--brand,#D32F2F);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif">送信</button>
+    </div>
+  </div>
+</div>
+
 <!-- ORDER DETAIL MODAL -->
 <div class="modal-overlay" id="receiptModal" onclick="if(event.target===this)closeReceipt()">
   <div class="modal-sheet">
@@ -572,9 +601,173 @@ function openReceipt() {
 function closeReceipt() { document.getElementById('receiptModal').classList.remove('show'); }
 
 // ===================================================================
-// CHAT / REVIEW
 // ===================================================================
-function openChat() { alert('💬 チャットサポート\n\nこの機能は今後実装予定です。\nお問い合わせは店舗までお電話ください。\n\n'+(storeData?.phone||'')); }
+// CS-3: FAQ MODAL
+// ===================================================================
+async function openChat() {
+  // Show FAQ first before chat
+  document.getElementById('faqModal').classList.add('show');
+  await loadFaqContent();
+}
+
+function closeFaqModal() {
+  document.getElementById('faqModal').classList.remove('show');
+}
+
+async function loadFaqContent() {
+  const container = document.getElementById('faqContent');
+  try {
+    // Load common FAQs + brand-specific FAQs
+    let query = sb.from('faqs').select('*').eq('is_active', true).order('sort_order', { ascending: true });
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Filter: common FAQs + brand FAQs matching current brand
+    const brandId = brandData?.id || null;
+    const faqs = (data || []).filter(f => f.is_common || (brandId && f.brand_id === brandId));
+
+    if (faqs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light)">FAQがありません</div>';
+      return;
+    }
+
+    // Group by category
+    const catLabels = { order:'注文について', delivery:'配達について', payment:'支払について', other:'その他' };
+    const groups = {};
+    faqs.forEach(f => {
+      const cat = f.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(f);
+    });
+
+    let html = '';
+    Object.keys(catLabels).forEach(cat => {
+      if (!groups[cat] || groups[cat].length === 0) return;
+      html += '<div style="margin-bottom:12px">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text);padding:8px 0;border-bottom:1px solid #F0F0F0">' + catLabels[cat] + '</div>';
+      groups[cat].forEach((f, i) => {
+        const fid = 'faq-' + cat + '-' + i;
+        html += '<div style="border-bottom:1px solid #F5F5F5">';
+        html += '<div onclick="toggleFaq(\'' + fid + '\')" style="padding:12px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500">';
+        html += '<span>' + escHtml(f.question) + '</span>';
+        html += '<span style="font-size:18px;color:#999;transition:transform 0.2s" id="' + fid + '-arrow">＋</span>';
+        html += '</div>';
+        html += '<div id="' + fid + '" style="display:none;padding:0 0 12px;font-size:13px;color:var(--text-light);line-height:1.6">' + escHtml(f.answer) + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    container.innerHTML = html;
+  } catch (e) {
+    console.error('loadFaqContent error:', e);
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light)">FAQの読み込みに失敗しました</div>';
+  }
+}
+
+function toggleFaq(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  if (!el) return;
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : '';
+  if (arrow) arrow.textContent = showing ? '＋' : '－';
+}
+
+// ===================================================================
+// CS-2: REALTIME CHAT
+// ===================================================================
+let chatId = null;
+let chatRealtimeChannel = null;
+
+function startChat() {
+  document.getElementById('chatModal').classList.add('show');
+  if (!chatId) initChat();
+}
+
+function closeChatModal() {
+  document.getElementById('chatModal').classList.remove('show');
+}
+
+async function initChat() {
+  try {
+    // Determine user identity
+    const memberId = orderData?.member_id || null;
+    const guestId = (!memberId && orderData?.customer_email)
+      ? btoa(orderData.customer_email).substring(0, 20)
+      : null;
+
+    // Create chat record
+    const { data, error } = await sb.from('customer_chats').insert({
+      order_id: orderData?.id || null,
+      store_id: orderData?.store_id || storeData?.id || null,
+      member_id: memberId,
+      guest_identifier: guestId,
+      status: 'active'
+    }).select().single();
+
+    if (error) throw error;
+    chatId = data.id;
+
+    // Subscribe to realtime
+    chatRealtimeChannel = sb.channel('chat-' + chatId)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'customer_chat_messages', filter: 'chat_id=eq.' + chatId },
+        (payload) => { appendChatMsg(payload.new); }
+      ).subscribe();
+
+    document.getElementById('chatMessages').innerHTML =
+      '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-light)">チャットが開始されました。お気軽にお問い合わせください。</div>';
+  } catch (e) {
+    console.error('initChat error:', e);
+    document.getElementById('chatMessages').innerHTML =
+      '<div style="text-align:center;padding:20px;color:#E53935;font-size:13px">チャットの開始に失敗しました</div>';
+  }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !chatId) return;
+  input.value = '';
+
+  try {
+    const { error } = await sb.from('customer_chat_messages').insert({
+      chat_id: chatId,
+      sender_type: 'user',
+      message: msg
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error('sendChatMessage error:', e);
+    input.value = msg;
+  }
+}
+
+function appendChatMsg(m) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  // Remove placeholder
+  const placeholder = container.querySelector('div[style*="text-align:center"]');
+  if (placeholder && placeholder.textContent.includes('入力して')) placeholder.remove();
+
+  const isUser = m.sender_type === 'user';
+  const d = new Date(m.created_at);
+  const time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;justify-content:' + (isUser ? 'flex-end' : 'flex-start') + ';margin-bottom:8px;padding:0 4px';
+  div.innerHTML = '<div style="max-width:80%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.5;background:' +
+    (isUser ? 'var(--brand,#D32F2F)' : '#F0F0F0') + ';color:' + (isUser ? '#fff' : '#333') + '">' +
+    '<div>' + escHtml(m.message) + '</div>' +
+    '<div style="font-size:10px;opacity:0.7;margin-top:4px;text-align:right">' + time + '</div></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ===================================================================
+// REVIEW
+// ===================================================================
 function openReview() { alert('⭐ 口コミ投稿\n\nこの機能は今後実装予定です。'); }
 
 // ===================================================================

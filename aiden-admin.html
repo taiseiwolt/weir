@@ -144,6 +144,7 @@
   <div class="sb-div"></div>
   <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">💰</span><span class="label">請求管理</span></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
+  <div class="nav-item" data-page="support" onclick="goTo('support')"><span class="icon">💬</span><span class="label">サポート管理</span></div>
 </nav>
 <main class="content" id="content" style="display:none"></main>
 <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBody"></div></div>
@@ -486,7 +487,7 @@ function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSide
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',billing:'billing',compensation:'compensation',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',billing:'billing',compensation:'compensation',support:'support',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -508,6 +509,7 @@ function renderPage(){
   else if(v.type==='ai')el.innerHTML=renderAI();
   else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
+  else if(v.type==='support')el.innerHTML=renderAdminSupport();
   else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
@@ -518,6 +520,7 @@ function renderPage(){
   if(v.type==='brand')initBrandTabs();
   if(v.type==='store')initStoreTabs();
   if(v.type==='users')loadAdminGuestData();
+  if(v.type==='support')loadAdminSupportData();
 }
 
 // ===== DASHBOARD =====
@@ -1830,6 +1833,253 @@ async function checkExistingSession(){
 // Enterキーでログイン
 document.getElementById('loginPassword').addEventListener('keydown',function(e){if(e.key==='Enter')handleAdminLogin();});
 document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginPassword').focus();});
+
+// ===== SUPPORT MANAGEMENT (CS-1 + CS-3) =====
+var _adminSupportTab='tickets';
+var _adminTicketFilter={brand:'',status:'',type:''};
+var _adminCurrentTicketId=null;
+var _adminTicketRealtimeCh=null;
+var _adminFaqTab='common';
+var _adminEditFaqId=null;
+
+function renderAdminSupport(){
+  return '<div class="page-title">サポート管理</div><div class="page-subtitle">全顧客からの問い合わせとFAQを管理します</div>'+
+  '<div class="tabs" style="margin-bottom:16px"><button class="tab active" onclick="switchAdminSupportTab(\'tickets\',this)">チケット一覧</button><button class="tab" onclick="switchAdminSupportTab(\'faq\',this)">FAQ管理</button></div>'+
+  '<div id="adminSupportTickets">'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
+      '<select id="adminFilterBrand" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全ブランド</option></select>'+
+      '<select id="adminFilterStatus" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全ステータス</option><option value="open">未対応</option><option value="in_progress">対応中</option><option value="resolved">解決済み</option><option value="closed">クローズ</option></select>'+
+      '<select id="adminFilterType" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全種別</option><option value="realtime">リアルタイム</option><option value="ticket">チケット</option></select>'+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow:hidden"><table class="data-table"><thead><tr><th>ID</th><th>ブランド</th><th>種別</th><th>カテゴリ</th><th>件名</th><th>最終更新</th><th>ステータス</th><th></th></tr></thead><tbody id="adminTicketBody"><tr><td colspan="8">読み込み中...</td></tr></tbody></table></div>'+
+  '</div>'+
+  '<div id="adminSupportFaq" style="display:none">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+      '<div class="tabs"><button class="tab active" onclick="switchAdminFaqTab(\'common\',this)">共通FAQ</button><button class="tab" onclick="switchAdminFaqTab(\'brand\',this)">ブランド別</button></div>'+
+      '<button class="btn btn-primary" id="adminAddFaqBtn" onclick="openAdminFaqModal()">＋ FAQ追加</button>'+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow:hidden"><table class="data-table"><thead><tr><th>カテゴリ</th><th>ブランド</th><th>質問</th><th>回答</th><th>並び順</th><th>有効</th><th></th></tr></thead><tbody id="adminFaqBody"><tr><td colspan="7">読み込み中...</td></tr></tbody></table></div>'+
+  '</div>';
+}
+
+function switchAdminSupportTab(tab,el){
+  _adminSupportTab=tab;
+  if(el){el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');}
+  document.getElementById('adminSupportTickets').style.display=tab==='tickets'?'':'none';
+  document.getElementById('adminSupportFaq').style.display=tab==='faq'?'':'none';
+  if(tab==='tickets')loadAdminTickets();
+  if(tab==='faq')loadAdminFaqs();
+}
+
+async function loadAdminSupportData(){
+  // Populate brand filter
+  var sel=document.getElementById('adminFilterBrand');
+  if(sel){
+    var opts='<option value="">全ブランド</option>';
+    BRANDS.forEach(function(b){opts+='<option value="'+b.id+'">'+b.name+'</option>';});
+    sel.innerHTML=opts;
+  }
+  loadAdminTickets();
+}
+
+function adminTicketFilterChange(){
+  _adminTicketFilter.brand=document.getElementById('adminFilterBrand').value;
+  _adminTicketFilter.status=document.getElementById('adminFilterStatus').value;
+  _adminTicketFilter.type=document.getElementById('adminFilterType').value;
+  loadAdminTickets();
+}
+
+async function loadAdminTickets(){
+  var tbody=document.getElementById('adminTicketBody');
+  if(!tbody)return;
+  tbody.innerHTML='<tr><td colspan="8">読み込み中...</td></tr>';
+  try{
+    var q=sb.from('support_tickets').select('*, brands(name)').order('updated_at',{ascending:false}).limit(100);
+    if(_adminTicketFilter.brand)q=q.eq('brand_id',_adminTicketFilter.brand);
+    if(_adminTicketFilter.status)q=q.eq('status',_adminTicketFilter.status);
+    if(_adminTicketFilter.type)q=q.eq('type',_adminTicketFilter.type);
+    var{data,error}=await q;
+    if(error)throw error;
+    if(!data||data.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:24px">チケットがありません</td></tr>';return;}
+    var catL={order_payment:'注文・決済',settings:'設定・操作',billing:'契約・請求',feature_request:'機能リクエスト'};
+    var typeL={realtime:'リアルタイム',ticket:'チケット'};
+    var stL={open:'未対応',in_progress:'対応中',resolved:'解決済み',closed:'クローズ'};
+    var stC={open:'background:#fff3cd;color:#856404',in_progress:'background:#cce5ff;color:#004085',resolved:'background:#d4edda;color:#155724',closed:'background:#e2e3e5;color:#383d41'};
+    tbody.innerHTML=data.map(function(t){
+      var d=new Date(t.updated_at);var ds=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      var bn=t.brands?t.brands.name:'-';
+      return '<tr><td style="font-family:monospace;font-size:11px">'+t.id.substring(0,8)+'</td><td>'+bn+'</td>'+
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;'+(t.type==='realtime'?'background:#fee;color:#c00':'background:#e3f2fd;color:#1565c0')+'">'+typeL[t.type]+'</span></td>'+
+        '<td>'+(catL[t.category]||t.category)+'</td>'+
+        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.subject+'</td>'+
+        '<td style="font-size:12px">'+ds+'</td>'+
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;'+stC[t.status]+'">'+(stL[t.status]||t.status)+'</span></td>'+
+        '<td><button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent)" onclick="openAdminTicket(\''+t.id+'\')">詳細</button></td></tr>';
+    }).join('');
+  }catch(e){console.error(e);tbody.innerHTML='<tr><td colspan="8">読み込みエラー</td></tr>';}
+}
+
+async function openAdminTicket(ticketId){
+  _adminCurrentTicketId=ticketId;
+  try{
+    var{data:ticket}=await sb.from('support_tickets').select('*, brands(name)').eq('id',ticketId).single();
+    var{data:msgs}=await sb.from('support_messages').select('*').eq('ticket_id',ticketId).order('created_at',{ascending:true});
+    var catL={order_payment:'注文・決済',settings:'設定・操作',billing:'契約・請求',feature_request:'機能リクエスト'};
+    var stL={open:'未対応',in_progress:'対応中',resolved:'解決済み',closed:'クローズ'};
+    var bn=ticket.brands?ticket.brands.name:'';
+    var msgsHtml='';
+    if(msgs&&msgs.length>0){
+      msgsHtml=msgs.map(function(m){
+        var isAiden=m.sender_type==='aiden';
+        var d=new Date(m.created_at);
+        var tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        return '<div style="display:flex;justify-content:'+(isAiden?'flex-end':'flex-start')+';margin-bottom:8px">'+
+          '<div style="max-width:75%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;background:'+(isAiden?'var(--accent)':'#e8e8e8')+';color:'+(isAiden?'#fff':'#333')+'">'+
+          '<div>'+m.message.replace(/</g,'&lt;')+'</div>'+
+          '<div style="font-size:10px;opacity:0.7;margin-top:4px;text-align:right">'+tm+'</div></div></div>';
+      }).join('');
+    }else{msgsHtml='<div style="text-align:center;color:#999;padding:30px">メッセージなし</div>';}
+    var statusBtns='';
+    if(ticket.status!=='resolved'&&ticket.status!=='closed'){
+      statusBtns='<button class="btn btn-sm" style="background:#d4edda;color:#155724" onclick="updateAdminTicketStatus(\'resolved\')">解決済み</button> '+
+        '<button class="btn btn-sm" style="background:#e2e3e5;color:#383d41" onclick="updateAdminTicketStatus(\'closed\')">クローズ</button>';
+    }
+    var html='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'+
+      '<div><div style="font-size:16px;font-weight:700">'+ticket.subject+'</div><div style="font-size:12px;color:var(--text-light);margin-top:4px">'+bn+' | '+(catL[ticket.category]||'')+' | '+(stL[ticket.status]||'')+'</div></div>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+statusBtns+'<button class="btn btn-sm" onclick="closeModal()">✕</button></div></div>'+
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;max-height:350px;overflow-y:auto;background:#fafafa;margin-bottom:12px" id="adminTicketMsgs">'+msgsHtml+'</div>'+
+      '<div style="display:flex;gap:8px"><input type="text" id="adminTicketReply" placeholder="返信を入力..." style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px" onkeydown="if(event.key===\'Enter\')sendAdminTicketReply()"><button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="sendAdminTicketReply()">送信</button></div>';
+    openModal(html);
+    // Subscribe realtime
+    if(ticket.type==='realtime'){
+      if(_adminTicketRealtimeCh){sb.removeChannel(_adminTicketRealtimeCh);}
+      _adminTicketRealtimeCh=sb.channel('admin-ticket-'+ticketId)
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages',filter:'ticket_id=eq.'+ticketId},function(pl){
+          var m=pl.new;var isAiden=m.sender_type==='aiden';
+          var d=new Date(m.created_at);var tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+          var container=document.getElementById('adminTicketMsgs');if(!container)return;
+          var div=document.createElement('div');
+          div.style.cssText='display:flex;justify-content:'+(isAiden?'flex-end':'flex-start')+';margin-bottom:8px';
+          div.innerHTML='<div style="max-width:75%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;background:'+(isAiden?'var(--accent)':'#e8e8e8')+';color:'+(isAiden?'#fff':'#333')+'"><div>'+m.message.replace(/</g,'&lt;')+'</div><div style="font-size:10px;opacity:0.7;margin-top:4px;text-align:right">'+tm+'</div></div>';
+          container.appendChild(div);container.scrollTop=container.scrollHeight;
+        }).subscribe();
+    }
+  }catch(e){console.error(e);openModal('<div>読み込みエラー</div>');}
+}
+
+async function sendAdminTicketReply(){
+  var input=document.getElementById('adminTicketReply');
+  var msg=input.value.trim();if(!msg||!_adminCurrentTicketId)return;
+  input.value='';
+  try{
+    await sb.from('support_messages').insert({ticket_id:_adminCurrentTicketId,sender_type:'aiden',message:msg});
+    await sb.from('support_tickets').update({status:'in_progress'}).eq('id',_adminCurrentTicketId).in('status',['open']);
+    // Reload for non-realtime
+    openAdminTicket(_adminCurrentTicketId);
+  }catch(e){console.error(e);alert('送信失敗');}
+}
+
+async function updateAdminTicketStatus(newStatus){
+  if(!_adminCurrentTicketId)return;
+  try{
+    await sb.from('support_tickets').update({status:newStatus}).eq('id',_adminCurrentTicketId);
+    closeModal();loadAdminTickets();
+    if(_adminTicketRealtimeCh){sb.removeChannel(_adminTicketRealtimeCh);_adminTicketRealtimeCh=null;}
+  }catch(e){console.error(e);alert('更新失敗');}
+}
+
+// FAQ management
+function switchAdminFaqTab(tab,el){
+  _adminFaqTab=tab;
+  if(el){el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');}
+  document.getElementById('adminAddFaqBtn').style.display=tab==='common'?'':'none';
+  loadAdminFaqs();
+}
+
+async function loadAdminFaqs(){
+  var tbody=document.getElementById('adminFaqBody');
+  if(!tbody)return;
+  tbody.innerHTML='<tr><td colspan="7">読み込み中...</td></tr>';
+  try{
+    var q=sb.from('faqs').select('*, brands(name)').order('sort_order',{ascending:true});
+    if(_adminFaqTab==='common')q=q.eq('is_common',true);
+    else q=q.eq('is_common',false);
+    var{data,error}=await q;
+    if(error)throw error;
+    if(!data||data.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#999;padding:24px">FAQがありません</td></tr>';return;}
+    var catL={order:'注文',delivery:'配達',payment:'支払',other:'その他'};
+    tbody.innerHTML=data.map(function(f){
+      var bn=f.brands?f.brands.name:(f.is_common?'共通':'-');
+      var prev=f.answer.length>30?f.answer.substring(0,30)+'...':f.answer;
+      var acts=_adminFaqTab==='common'
+        ?'<button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent)" onclick="openAdminFaqModal(\''+f.id+'\')">編集</button> <button class="btn btn-sm" style="background:#fee;color:#c00" onclick="deleteAdminFaq(\''+f.id+'\')">削除</button>'
+        :'<span style="font-size:11px;color:#999">ブランド管理</span>';
+      return '<tr><td>'+(catL[f.category]||f.category)+'</td><td>'+bn+'</td>'+
+        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+f.question+'</td>'+
+        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:12px">'+prev+'</td>'+
+        '<td>'+f.sort_order+'</td>'+
+        '<td>'+(f.is_active?'<span style="color:var(--success)">有効</span>':'<span style="color:#999">無効</span>')+'</td>'+
+        '<td>'+acts+'</td></tr>';
+    }).join('');
+  }catch(e){console.error(e);tbody.innerHTML='<tr><td colspan="7">読み込みエラー</td></tr>';}
+}
+
+function openAdminFaqModal(faqId){
+  _adminEditFaqId=faqId||null;
+  if(faqId){
+    sb.from('faqs').select('*').eq('id',faqId).single().then(function(res){
+      var f=res.data;
+      if(!f)return;
+      openModal(renderFaqForm(f));
+    });
+  }else{
+    openModal(renderFaqForm(null));
+  }
+}
+
+function renderFaqForm(f){
+  var title=f?'FAQ編集':'FAQ追加';
+  return '<div style="font-size:16px;font-weight:700;margin-bottom:16px">'+title+'</div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">カテゴリ</label>'+
+    '<select id="adminFaqCat" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px">'+
+    '<option value="order"'+(f&&f.category==='order'?' selected':'')+'>注文について</option>'+
+    '<option value="delivery"'+(f&&f.category==='delivery'?' selected':'')+'>配達について</option>'+
+    '<option value="payment"'+(f&&f.category==='payment'?' selected':'')+'>支払について</option>'+
+    '<option value="other"'+(f&&f.category==='other'?' selected':'')+'>その他</option></select></div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">質問</label>'+
+    '<input type="text" id="adminFaqQ" value="'+(f?f.question.replace(/"/g,'&quot;'):'')+'" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px"></div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">回答</label>'+
+    '<textarea id="adminFaqA" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;resize:vertical">'+(f?f.answer:'')+'</textarea></div>'+
+    '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">並び順</label>'+
+    '<input type="number" id="adminFaqSort" value="'+(f?f.sort_order:0)+'" min="0" style="width:100px;padding:10px;border:1px solid var(--border);border-radius:6px"></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-sm" onclick="closeModal()">キャンセル</button>'+
+    '<button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="saveAdminFaq()">保存</button></div>';
+}
+
+async function saveAdminFaq(){
+  var cat=document.getElementById('adminFaqCat').value;
+  var q=document.getElementById('adminFaqQ').value.trim();
+  var a=document.getElementById('adminFaqA').value.trim();
+  var sort=parseInt(document.getElementById('adminFaqSort').value)||0;
+  if(!q||!a){alert('質問と回答を入力してください');return;}
+  try{
+    var payload={brand_id:null,category:cat,question:q,answer:a,sort_order:sort,is_common:true,is_active:true};
+    if(_adminEditFaqId){
+      await sb.from('faqs').update(payload).eq('id',_adminEditFaqId);
+    }else{
+      await sb.from('faqs').insert(payload);
+    }
+    closeModal();loadAdminFaqs();
+  }catch(e){console.error(e);alert('保存失敗: '+e.message);}
+}
+
+async function deleteAdminFaq(faqId){
+  if(!confirm('このFAQを削除しますか？'))return;
+  try{
+    await sb.from('faqs').delete().eq('id',faqId);
+    loadAdminFaqs();
+  }catch(e){console.error(e);alert('削除失敗');}
+}
 
 // INIT
 checkExistingSession();
