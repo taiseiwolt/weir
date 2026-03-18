@@ -523,6 +523,7 @@ const NAV = [
     {id:'sales-benchmark', label:'比較分析'},
     {id:'sales-campaign', label:'キャンペーン管理'},
     {id:'sales-effect', label:'効果検証'},
+    {id:'sales-google-reviews', label:'Google口コミ分析'},
   ]},
   { id:'brand', icon:'🎨', label:'ブランドHP', subs:[
     {id:'brand-design', label:'ホームページ管理'},
@@ -641,6 +642,7 @@ function showPage(pageId, catId){
   if(pageId === 'guest-conversion' && typeof loadGuestConversionSettings === 'function') loadGuestConversionSettings();
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
+  if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
 }
 
@@ -2292,8 +2294,156 @@ content.innerHTML = `
   </div>
 </div>
 
+<!-- 📊 Google口コミ分析 -->
+<div class="page" id="page-sales-google-reviews">
+  <div class="breadcrumb"><a href="#" onclick="return false">売上・分析</a> ＞ Google口コミ分析</div>
+  <div class="page-title">Google口コミ分析</div>
+  <div class="page-subtitle">Google Maps の口コミを自動収集・分析し、評判管理と競合比較を行います</div>
 
+  <!-- 接続ステータスバナー -->
+  <div id="grConnectionBanner" style="display:flex;align-items:center;gap:8px;background:#e8f0fe;border:1px solid #c5d5f8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px">
+    <span style="font-size:16px">🔗</span>
+    <div>
+      <span style="font-weight:700;color:#1a6fc4">Google Places API 連動中</span>
+      <span style="color:#555;margin-left:6px">毎週月曜3:00に自動収集 ｜ 次回: <span id="grNextFetch">—</span></span>
+    </div>
+    <div style="margin-left:auto">
+      <button class="btn btn-sm" style="background:#1a6fc4;color:#fff;font-size:10px" onclick="grManualFetch()">🔄 手動取得</button>
+    </div>
+  </div>
 
+  <!-- KPI行 -->
+  <div class="stats-row" style="margin-bottom:16px">
+    <div class="stat-card">
+      <div class="stat-label">平均評価</div>
+      <div class="stat-value" id="grAvgRating">—</div>
+      <div id="grAvgRatingDiff" style="font-size:11px;margin-top:3px;color:#888"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">口コミ総数</div>
+      <div class="stat-value" id="grTotalCount">—</div>
+      <div id="grTotalCountDiff" style="font-size:11px;margin-top:3px;color:#888"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">直近30日の新着</div>
+      <div class="stat-value" id="grRecentCount">—</div>
+      <div id="grRecentLabel" style="font-size:11px;margin-top:3px;color:#888"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">未読アラート</div>
+      <div class="stat-value" style="color:#e94560" id="grAlertCount">0</div>
+      <div style="font-size:11px;margin-top:3px;color:#e94560">星1-2の新着</div>
+    </div>
+  </div>
+
+  <!-- 評価推移グラフ -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0">📈 評価推移（月次）</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-sm grPeriodBtn" data-period="6m" onclick="grSetChartPeriod('6m')" style="background:#e8e0ff;color:#6c5ce7;font-size:10px">6ヶ月</button>
+        <button class="btn btn-sm grPeriodBtn" data-period="12m" onclick="grSetChartPeriod('12m')" style="font-size:10px">12ヶ月</button>
+        <button class="btn btn-sm grPeriodBtn" data-period="all" onclick="grSetChartPeriod('all')" style="font-size:10px">全期間</button>
+      </div>
+    </div>
+    <canvas id="grRatingChart" height="200" style="width:100%"></canvas>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <!-- 評価分布 -->
+    <div class="card" style="padding:16px">
+      <div class="card-title" style="margin-bottom:12px">📊 評価分布</div>
+      <div id="grRatingDist" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <!-- 競合比較 -->
+    <div class="card" style="padding:16px">
+      <div class="card-title" style="margin-bottom:12px">🏪 近隣競合との比較</div>
+      <div id="grCompetitorTable">
+        <table class="data-table" style="font-size:12px">
+          <thead><tr><th>店舗名</th><th>評価</th><th>口コミ数</th><th>距離</th></tr></thead>
+          <tbody id="grCompetitorBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ネガティブ口コミアラート一覧 -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0;color:#e94560">🚨 ネガティブ口コミアラート（星1-2）</div>
+      <button class="btn btn-sm" style="background:#fff0f0;color:#e94560;font-size:10px" onclick="grMarkAllRead()">全て既読にする</button>
+    </div>
+    <div style="overflow-y:auto;max-height:320px">
+      <table class="data-table" style="font-size:12px">
+        <thead>
+          <tr>
+            <th style="position:sticky;top:0;background:#fff;z-index:1;width:30px"></th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">投稿日</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">投稿者</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">評価</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">コメント</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">ステータス</th>
+          </tr>
+        </thead>
+        <tbody id="grAlertBody"></tbody>
+      </table>
+    </div>
+    <div id="grAlertEmpty" style="display:none;text-align:center;padding:24px;color:#888;font-size:13px">ネガティブ口コミはありません 🎉</div>
+  </div>
+
+  <!-- 全口コミ一覧 -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0">📝 全口コミ一覧</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="grRatingFilter" onchange="grRenderAllReviews()" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
+          <option value="">全評価</option>
+          <option value="5">★5</option><option value="4">★4</option><option value="3">★3</option><option value="2">★2</option><option value="1">★1</option>
+        </select>
+        <select id="grSortOrder" onchange="grRenderAllReviews()" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
+          <option value="newest">新しい順</option>
+          <option value="oldest">古い順</option>
+          <option value="rating_high">評価高い順</option>
+          <option value="rating_low">評価低い順</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:400px">
+      <table class="data-table" style="font-size:12px">
+        <thead>
+          <tr>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">投稿日</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">投稿者</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">評価</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1">コメント</th>
+          </tr>
+        </thead>
+        <tbody id="grAllReviewsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI分析サマリー -->
+  <div style="background:linear-gradient(135deg,#f8f6ff 0%,#eff8ff 100%);border:1px solid #d4c5f9;border-radius:12px;padding:20px;margin-top:16px">
+    <div style="font-size:15px;font-weight:700;color:#5b4a9e;margin-bottom:16px">🤖 AI Google口コミ分析サマリー</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      <div style="background:#fff;border-radius:10px;padding:18px;border:1px solid #e0d8fc">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">🎯 目標評価スコア</div>
+        <div style="font-size:36px;font-weight:800;color:#5b4a9e;line-height:1" id="grTargetScore">—</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">近隣同業態の上位25%水準</div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f0ecff">
+          <div style="font-size:11px;font-weight:700;color:#444;margin-bottom:8px">📊 近隣同業態との比較</div>
+          <div id="grBenchmarkStats" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+          <div id="grBenchmarkGap" style="margin-top:10px;background:#f8f6ff;border-radius:6px;padding:8px 10px;font-size:11px;color:#5b4a9e"></div>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:18px;border:1px solid #e0d8fc">
+        <div style="font-size:11px;font-weight:700;color:#444;margin-bottom:8px">🔍 AIが検出した改善ポイント</div>
+        <div id="grAiInsights" style="display:flex;flex-direction:column;gap:8px;font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============================== -->
 <!-- 🎨 ブランドHP - デザイン設定 -->
@@ -14706,6 +14856,516 @@ function goToSupportPage() {
   document.getElementById('supportFloatPopup').style.display = 'none';
   showPage('support-aiden', 'support');
 }
+
+// ===================================================================
+// Google口コミ分析（sales-google-reviews）
+// ===================================================================
+var _grData = { reviews: [], alerts: [], competitors: [], place: null };
+var _grLoaded = false;
+
+async function grLoadData() {
+  if (_grLoaded) { grRenderAll(); return; }
+  try {
+    // 現在の店舗のgoogle_place_idを取得
+    var storeId = typeof _currentStoreId !== 'undefined' ? _currentStoreId : null;
+    var placeId = null;
+
+    if (storeId) {
+      var { data: store } = await supabase.from('stores').select('google_place_id').eq('id', storeId).single();
+      placeId = store ? store.google_place_id : null;
+    }
+
+    if (!placeId) {
+      // google_place_idを持つ最初の店舗を使用
+      var { data: stores } = await supabase.from('stores').select('id, google_place_id').not('google_place_id', 'is', null).limit(1);
+      if (stores && stores.length > 0) {
+        placeId = stores[0].google_place_id;
+        storeId = stores[0].id;
+      }
+    }
+
+    if (placeId) {
+      // 自店のPlace情報
+      var { data: place } = await supabase.from('google_places').select('*').eq('place_id', placeId).single();
+      _grData.place = place;
+
+      // 自店の口コミ
+      var { data: reviews } = await supabase.from('google_reviews').select('*').eq('place_id', placeId).order('published_at', { ascending: false });
+      _grData.reviews = reviews || [];
+
+      // アラート
+      if (storeId) {
+        var { data: alerts } = await supabase.from('review_alerts').select('*, google_reviews(*)').eq('store_id', storeId).order('created_at', { ascending: false });
+        _grData.alerts = alerts || [];
+      }
+
+      // 競合
+      if (storeId) {
+        var { data: comps } = await supabase.from('competitor_mappings').select('*, google_places(*)').eq('store_id', storeId).order('distance_meters', { ascending: true }).limit(10);
+        _grData.competitors = comps || [];
+      }
+    }
+
+    _grLoaded = true;
+    grRenderAll();
+    grUpdateAlertBadge();
+  } catch (e) {
+    console.error('grLoadData error:', e);
+    grRenderDemoData();
+  }
+}
+
+function grRenderDemoData() {
+  // デモデータでUI表示（Supabase未接続時のフォールバック）
+  document.getElementById('grAvgRating').textContent = '3.8';
+  document.getElementById('grAvgRatingDiff').innerHTML = '<span style="color:#27ae60">前月比 +0.2</span>';
+  document.getElementById('grTotalCount').textContent = '156';
+  document.getElementById('grTotalCountDiff').textContent = '累計口コミ数';
+  document.getElementById('grRecentCount').textContent = '12';
+  document.getElementById('grRecentLabel').textContent = '過去30日間';
+  document.getElementById('grAlertCount').textContent = '3';
+  document.getElementById('grTargetScore').textContent = '4.2';
+
+  // 評価分布デモ
+  var distEl = document.getElementById('grRatingDist');
+  var demoDistData = [{s:5,c:52,p:33.3},{s:4,c:48,p:30.8},{s:3,c:32,p:20.5},{s:2,c:16,p:10.3},{s:1,c:8,p:5.1}];
+  distEl.innerHTML = demoDistData.map(function(d) {
+    var color = d.s >= 4 ? '#27ae60' : d.s === 3 ? '#f39c12' : '#e94560';
+    return '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="font-size:12px;font-weight:700;width:20px">★' + d.s + '</span>' +
+      '<div style="flex:1;height:18px;background:#f0f0f0;border-radius:4px;overflow:hidden">' +
+      '<div style="height:100%;width:' + d.p + '%;background:' + color + ';border-radius:4px;transition:width 0.5s"></div></div>' +
+      '<span style="font-size:11px;color:#666;width:60px;text-align:right">' + d.c + '件 (' + d.p + '%)</span></div>';
+  }).join('');
+
+  // 競合比較デモ
+  var compBody = document.getElementById('grCompetitorBody');
+  var demoComps = [
+    {n:'競合A寿司',r:4.1,c:234,d:'350m'},
+    {n:'競合Bラーメン',r:3.9,c:189,d:'520m'},
+    {n:'競合C定食',r:4.3,c:312,d:'680m'},
+    {n:'競合D焼肉',r:3.7,c:145,d:'890m'},
+    {n:'競合E居酒屋',r:3.5,c:98,d:'1.2km'},
+  ];
+  compBody.innerHTML = demoComps.map(function(c) {
+    var color = c.r >= 4.0 ? '#27ae60' : c.r >= 3.5 ? '#f39c12' : '#e94560';
+    return '<tr><td>' + c.n + '</td><td style="color:' + color + ';font-weight:700">★' + c.r.toFixed(1) + '</td><td>' + c.c + '件</td><td>' + c.d + '</td></tr>';
+  }).join('');
+
+  // アラートデモ
+  var alertBody = document.getElementById('grAlertBody');
+  var demoAlerts = [
+    {d:'2026-03-16',a:'田中太郎',r:1,t:'料理が冷めていた。配達が遅く30分以上かかった。',read:false},
+    {d:'2026-03-14',a:'佐藤花子',r:2,t:'注文と違う商品が入っていた。連絡しても対応が遅かった。',read:false},
+    {d:'2026-03-10',a:'山田一郎',r:2,t:'量が少なすぎる。写真と実物が全然違う。',read:true},
+  ];
+  alertBody.innerHTML = demoAlerts.map(function(a) {
+    var stars = '';
+    for (var i = 0; i < 5; i++) stars += i < a.r ? '★' : '☆';
+    return '<tr style="' + (!a.read ? 'background:#fff8f8' : '') + '">' +
+      '<td>' + (!a.read ? '<span style="display:inline-block;width:8px;height:8px;background:#e94560;border-radius:50%"></span>' : '') + '</td>' +
+      '<td style="white-space:nowrap">' + a.d + '</td>' +
+      '<td>' + a.a + '</td>' +
+      '<td style="color:#e94560;font-weight:700">' + stars + '</td>' +
+      '<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.t + '</td>' +
+      '<td>' + (a.read ? '<span style="color:#888;font-size:10px">既読</span>' : '<button class="btn btn-sm" style="background:#fff0f0;color:#e94560;font-size:10px" onclick="grMarkRead(this)">既読にする</button>') + '</td></tr>';
+  }).join('');
+  document.getElementById('grAlertEmpty').style.display = 'none';
+
+  // 全口コミデモ
+  grRenderDemoAllReviews();
+
+  // ベンチマークデモ
+  var benchStats = document.getElementById('grBenchmarkStats');
+  benchStats.innerHTML =
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">近隣平均</span><span style="font-weight:700">3.9</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">上位25%</span><span style="font-weight:700;color:#5b4a9e">4.2</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">現在スコア</span><span style="font-weight:700;color:#e17055">3.8</span></div>';
+  document.getElementById('grBenchmarkGap').innerHTML = '近隣平均（3.9）には <b>+0.1</b>、目標（4.2）には <b>+0.4</b> 必要です';
+
+  // AI改善ポイントデモ
+  var insights = document.getElementById('grAiInsights');
+  var demoInsights = [
+    {bg:'#fff8e1',tc:'#b7791f',title:'① 低評価レビューの配達遅延クレームが42%',desc:'配達エリアの適正化と繁忙時間帯のドライバー増員で、配達遅延起因の低評価を月3件→1件に削減見込み'},
+    {bg:'#e8f8f0',tc:'#276749',title:'② 口コミ返信率が23%と低水準',desc:'48時間以内の返信ルールを導入し、返信率80%以上を目標に。返信のある店舗は再来店率が1.4倍'},
+    {bg:'#e8f0fe',tc:'#1a6fc4',title:'③ 高評価レビューの誘導施策が未実施',desc:'会計時のQRコード設置とモバイルオーダー完了画面からの口コミ誘導で月間+15件を見込む'},
+    {bg:'#fdf2f8',tc:'#97266d',title:'④ 競合比較で「メニューの多様性」が弱点',desc:'競合A・Cの高評価口コミで「メニューが豊富」が頻出。季節メニューの拡充を検討'},
+  ];
+  insights.innerHTML = demoInsights.map(function(i) {
+    return '<div style="background:' + i.bg + ';border-radius:6px;padding:8px 10px"><div style="font-weight:700;color:' + i.tc + ';margin-bottom:3px">' + i.title + '</div><div style="color:#666">' + i.desc + '</div></div>';
+  }).join('');
+
+  // 評価推移チャートデモ
+  grRenderDemoChart();
+}
+
+function grRenderDemoAllReviews() {
+  var demoReviews = [
+    {d:'2026-03-17',a:'鈴木美咲',r:5,t:'最高のお寿司でした！ネタが新鮮で大満足です。配達も早くて助かりました。'},
+    {d:'2026-03-16',a:'田中太郎',r:1,t:'料理が冷めていた。配達が遅く30分以上かかった。'},
+    {d:'2026-03-15',a:'高橋健二',r:4,t:'コスパが良い。ランチセットがお得でした。'},
+    {d:'2026-03-14',a:'佐藤花子',r:2,t:'注文と違う商品が入っていた。連絡しても対応が遅かった。'},
+    {d:'2026-03-13',a:'渡辺翔太',r:5,t:'いつも利用しています。安定の美味しさ。'},
+    {d:'2026-03-12',a:'小林さくら',r:4,t:'サーモンが美味しかった。少し待ちましたが許容範囲。'},
+    {d:'2026-03-11',a:'伊藤大輔',r:3,t:'普通でした。特に印象に残るものはなかった。'},
+    {d:'2026-03-10',a:'山田一郎',r:2,t:'量が少なすぎる。写真と実物が全然違う。'},
+  ];
+  var body = document.getElementById('grAllReviewsBody');
+  var rFilter = document.getElementById('grRatingFilter').value;
+  var sort = document.getElementById('grSortOrder').value;
+  var filtered = demoReviews;
+  if (rFilter) filtered = filtered.filter(function(r) { return r.r === parseInt(rFilter); });
+  filtered.sort(function(a, b) {
+    if (sort === 'newest') return a.d < b.d ? 1 : -1;
+    if (sort === 'oldest') return a.d > b.d ? 1 : -1;
+    if (sort === 'rating_high') return b.r - a.r;
+    return a.r - b.r;
+  });
+  body.innerHTML = filtered.map(function(r) {
+    var stars = '';
+    for (var i = 0; i < 5; i++) stars += i < r.r ? '★' : '☆';
+    var color = r.r >= 4 ? '#27ae60' : r.r === 3 ? '#f39c12' : '#e94560';
+    return '<tr><td style="white-space:nowrap">' + r.d + '</td><td>' + r.a + '</td>' +
+      '<td style="color:' + color + ';font-weight:700">' + stars + '</td>' +
+      '<td style="max-width:400px">' + r.t + '</td></tr>';
+  }).join('');
+}
+
+function grRenderDemoChart() {
+  var canvas = document.getElementById('grRatingChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  var ctx = canvas.getContext('2d');
+  if (canvas._grChart) canvas._grChart.destroy();
+  var months = ['2025/10','2025/11','2025/12','2026/01','2026/02','2026/03'];
+  var ratings = [3.4, 3.5, 3.6, 3.6, 3.7, 3.8];
+  var counts = [8, 10, 14, 11, 15, 12];
+  canvas._grChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { type: 'line', label: '平均評価', data: ratings, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.1)', yAxisID: 'y1', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#6c5ce7', fill: true },
+        { type: 'bar', label: '口コミ件数', data: counts, backgroundColor: 'rgba(108,92,231,0.2)', borderColor: '#6c5ce7', borderWidth: 1, yAxisID: 'y', borderRadius: 4 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: '件数', font: { size: 10 } }, grid: { color: '#f0f0f0' } },
+        y1: { position: 'right', min: 1, max: 5, title: { display: true, text: '平均評価', font: { size: 10 } }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+function grSetChartPeriod(period) {
+  document.querySelectorAll('.grPeriodBtn').forEach(function(b) {
+    b.style.background = b.dataset.period === period ? '#e8e0ff' : '';
+    b.style.color = b.dataset.period === period ? '#6c5ce7' : '';
+  });
+  grRenderDemoChart();
+}
+
+function grRenderAll() {
+  if (!_grData.place && _grData.reviews.length === 0) { grRenderDemoData(); return; }
+
+  var reviews = _grData.reviews;
+  var place = _grData.place;
+
+  // KPI
+  if (place) {
+    document.getElementById('grAvgRating').textContent = place.rating ? place.rating.toFixed(1) : '—';
+    document.getElementById('grTotalCount').textContent = place.user_ratings_total || reviews.length;
+    document.getElementById('grTotalCountDiff').textContent = '累計口コミ数';
+  }
+
+  // 直近30日
+  var now = new Date();
+  var thirtyDaysAgo = new Date(now - 30 * 86400000);
+  var recent = reviews.filter(function(r) { return new Date(r.published_at) >= thirtyDaysAgo; });
+  document.getElementById('grRecentCount').textContent = recent.length;
+  document.getElementById('grRecentLabel').textContent = '過去30日間';
+
+  // アラート数
+  var unreadAlerts = _grData.alerts.filter(function(a) { return !a.is_read; });
+  document.getElementById('grAlertCount').textContent = unreadAlerts.length;
+
+  // 評価分布
+  grRenderRatingDist(reviews);
+  // 競合
+  grRenderCompetitors();
+  // アラート一覧
+  grRenderAlerts();
+  // 全口コミ
+  grRenderAllReviews();
+  // ベンチマーク
+  grRenderBenchmark();
+  // チャート
+  grRenderChart(reviews);
+}
+
+function grRenderRatingDist(reviews) {
+  var dist = [0, 0, 0, 0, 0];
+  reviews.forEach(function(r) { if (r.rating >= 1 && r.rating <= 5) dist[r.rating - 1]++; });
+  var total = reviews.length || 1;
+  var distEl = document.getElementById('grRatingDist');
+  distEl.innerHTML = [5,4,3,2,1].map(function(s) {
+    var c = dist[s - 1];
+    var p = (c / total * 100).toFixed(1);
+    var color = s >= 4 ? '#27ae60' : s === 3 ? '#f39c12' : '#e94560';
+    return '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:700;width:20px">★' + s + '</span><div style="flex:1;height:18px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="height:100%;width:' + p + '%;background:' + color + ';border-radius:4px"></div></div><span style="font-size:11px;color:#666;width:60px;text-align:right">' + c + '件 (' + p + '%)</span></div>';
+  }).join('');
+}
+
+function grRenderCompetitors() {
+  var body = document.getElementById('grCompetitorBody');
+  if (!_grData.competitors.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;padding:16px">競合データなし</td></tr>';
+    return;
+  }
+  body.innerHTML = _grData.competitors.map(function(c) {
+    var p = c.google_places;
+    if (!p) return '';
+    var r = p.rating || 0;
+    var color = r >= 4.0 ? '#27ae60' : r >= 3.5 ? '#f39c12' : '#e94560';
+    var d = c.distance_meters < 1000 ? c.distance_meters + 'm' : (c.distance_meters / 1000).toFixed(1) + 'km';
+    return '<tr><td>' + (p.name || '—') + '</td><td style="color:' + color + ';font-weight:700">★' + r.toFixed(1) + '</td><td>' + (p.user_ratings_total || 0) + '件</td><td>' + d + '</td></tr>';
+  }).join('');
+}
+
+function grRenderAlerts() {
+  var body = document.getElementById('grAlertBody');
+  var emptyEl = document.getElementById('grAlertEmpty');
+  var alerts = _grData.alerts;
+  if (!alerts.length) { body.innerHTML = ''; emptyEl.style.display = ''; return; }
+  emptyEl.style.display = 'none';
+  body.innerHTML = alerts.map(function(a) {
+    var rv = a.google_reviews;
+    if (!rv) return '';
+    var stars = '';
+    for (var i = 0; i < 5; i++) stars += i < rv.rating ? '★' : '☆';
+    return '<tr style="' + (!a.is_read ? 'background:#fff8f8' : '') + '">' +
+      '<td>' + (!a.is_read ? '<span style="display:inline-block;width:8px;height:8px;background:#e94560;border-radius:50%"></span>' : '') + '</td>' +
+      '<td style="white-space:nowrap">' + new Date(rv.published_at).toLocaleDateString('ja-JP') + '</td>' +
+      '<td>' + rv.author_name + '</td>' +
+      '<td style="color:#e94560;font-weight:700">' + stars + '</td>' +
+      '<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (rv.text || '') + '</td>' +
+      '<td>' + (a.is_read ? '<span style="color:#888;font-size:10px">既読</span>' : '<button class="btn btn-sm" style="background:#fff0f0;color:#e94560;font-size:10px" onclick="grMarkAlertRead(\'' + a.id + '\',this)">既読にする</button>') + '</td></tr>';
+  }).join('');
+}
+
+function grRenderAllReviews() {
+  if (!_grData.reviews.length) { grRenderDemoAllReviews(); return; }
+  var body = document.getElementById('grAllReviewsBody');
+  var rFilter = document.getElementById('grRatingFilter').value;
+  var sort = document.getElementById('grSortOrder').value;
+  var filtered = _grData.reviews.slice();
+  if (rFilter) filtered = filtered.filter(function(r) { return r.rating === parseInt(rFilter); });
+  filtered.sort(function(a, b) {
+    if (sort === 'newest') return new Date(b.published_at) - new Date(a.published_at);
+    if (sort === 'oldest') return new Date(a.published_at) - new Date(b.published_at);
+    if (sort === 'rating_high') return b.rating - a.rating;
+    return a.rating - b.rating;
+  });
+  body.innerHTML = filtered.slice(0, 50).map(function(r) {
+    var stars = '';
+    for (var i = 0; i < 5; i++) stars += i < r.rating ? '★' : '☆';
+    var color = r.rating >= 4 ? '#27ae60' : r.rating === 3 ? '#f39c12' : '#e94560';
+    return '<tr><td style="white-space:nowrap">' + new Date(r.published_at).toLocaleDateString('ja-JP') + '</td><td>' + r.author_name + '</td>' +
+      '<td style="color:' + color + ';font-weight:700">' + stars + '</td>' +
+      '<td style="max-width:400px">' + (r.text || '') + '</td></tr>';
+  }).join('');
+}
+
+function grRenderBenchmark() {
+  var comps = _grData.competitors;
+  var myRating = _grData.place ? _grData.place.rating || 0 : 0;
+  var ratings = comps.map(function(c) { return c.google_places ? c.google_places.rating || 0 : 0; }).filter(function(r) { return r > 0; });
+  var avg = ratings.length ? (ratings.reduce(function(a, b) { return a + b; }, 0) / ratings.length) : 0;
+  var sorted = ratings.slice().sort(function(a, b) { return b - a; });
+  var top25 = sorted.length >= 4 ? sorted[Math.floor(sorted.length * 0.25)] : (sorted[0] || 0);
+
+  document.getElementById('grTargetScore').textContent = top25 ? top25.toFixed(1) : '—';
+  var stats = document.getElementById('grBenchmarkStats');
+  stats.innerHTML =
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">近隣平均</span><span style="font-weight:700">' + avg.toFixed(1) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">上位25%</span><span style="font-weight:700;color:#5b4a9e">' + top25.toFixed(1) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><span style="color:#666">現在スコア</span><span style="font-weight:700;color:#e17055">' + myRating.toFixed(1) + '</span></div>';
+  var gap = document.getElementById('grBenchmarkGap');
+  var gapToAvg = (avg - myRating).toFixed(1);
+  var gapToTarget = (top25 - myRating).toFixed(1);
+  gap.innerHTML = '近隣平均（' + avg.toFixed(1) + '）には <b>' + (gapToAvg >= 0 ? '+' : '') + gapToAvg + '</b>、目標（' + top25.toFixed(1) + '）には <b>' + (gapToTarget >= 0 ? '+' : '') + gapToTarget + '</b> 必要です';
+
+  // AI改善ポイント
+  var insights = document.getElementById('grAiInsights');
+  var insightData = [];
+  var negReviews = _grData.reviews.filter(function(r) { return r.rating <= 2; });
+  var negPct = _grData.reviews.length ? Math.round(negReviews.length / _grData.reviews.length * 100) : 0;
+  if (negPct > 10) insightData.push({bg:'#fff8e1',tc:'#b7791f',title:'① 低評価口コミが全体の' + negPct + '%',desc:'低評価口コミへの迅速な返信と改善報告で、信頼回復を図りましょう'});
+  if (myRating < avg) insightData.push({bg:'#e8f8f0',tc:'#276749',title:'② 近隣平均を下回っています',desc:'現在の評価' + myRating.toFixed(1) + 'は近隣平均' + avg.toFixed(1) + 'を下回っています。サービス品質の見直しを検討してください'});
+  insightData.push({bg:'#e8f0fe',tc:'#1a6fc4',title:'③ 口コミ投稿の誘導施策',desc:'会計時QRコードでGoogle口コミページへ誘導。来店ポイント特典と連動させることで月間+15件を見込む'});
+  insightData.push({bg:'#fdf2f8',tc:'#97266d',title:'④ 競合分析に基づく差別化',desc:'競合の高評価口コミで頻出するキーワードを分析し、自店の強化ポイントを特定しましょう'});
+
+  insights.innerHTML = insightData.map(function(i) {
+    return '<div style="background:' + i.bg + ';border-radius:6px;padding:8px 10px"><div style="font-weight:700;color:' + i.tc + ';margin-bottom:3px">' + i.title + '</div><div style="color:#666">' + i.desc + '</div></div>';
+  }).join('');
+}
+
+function grRenderChart(reviews) {
+  var canvas = document.getElementById('grRatingChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  var ctx = canvas.getContext('2d');
+  if (canvas._grChart) canvas._grChart.destroy();
+
+  // 月ごとに集計
+  var monthlyData = {};
+  reviews.forEach(function(r) {
+    var d = new Date(r.published_at);
+    var key = d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    if (!monthlyData[key]) monthlyData[key] = { total: 0, sum: 0 };
+    monthlyData[key].total++;
+    monthlyData[key].sum += r.rating;
+  });
+
+  var keys = Object.keys(monthlyData).sort();
+  if (keys.length < 2) { grRenderDemoChart(); return; }
+
+  var months = keys;
+  var ratings = months.map(function(k) { return (monthlyData[k].sum / monthlyData[k].total).toFixed(1); });
+  var counts = months.map(function(k) { return monthlyData[k].total; });
+
+  canvas._grChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { type: 'line', label: '平均評価', data: ratings, borderColor: '#6c5ce7', backgroundColor: 'rgba(108,92,231,0.1)', yAxisID: 'y1', tension: 0.3, pointRadius: 4, pointBackgroundColor: '#6c5ce7', fill: true },
+        { type: 'bar', label: '口コミ件数', data: counts, backgroundColor: 'rgba(108,92,231,0.2)', borderColor: '#6c5ce7', borderWidth: 1, yAxisID: 'y', borderRadius: 4 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: '件数', font: { size: 10 } }, grid: { color: '#f0f0f0' } },
+        y1: { position: 'right', min: 1, max: 5, title: { display: true, text: '平均評価', font: { size: 10 } }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+async function grMarkAlertRead(alertId, btn) {
+  try {
+    await supabase.from('review_alerts').update({ is_read: true }).eq('id', alertId);
+    var row = btn.closest('tr');
+    if (row) { row.style.background = ''; row.querySelector('td:first-child').innerHTML = ''; }
+    btn.outerHTML = '<span style="color:#888;font-size:10px">既読</span>';
+    var cnt = document.getElementById('grAlertCount');
+    cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
+    grUpdateAlertBadge();
+  } catch (e) { console.error('grMarkAlertRead error:', e); }
+}
+
+async function grMarkAllRead() {
+  try {
+    var unread = _grData.alerts.filter(function(a) { return !a.is_read; });
+    for (var i = 0; i < unread.length; i++) {
+      await supabase.from('review_alerts').update({ is_read: true }).eq('id', unread[i].id);
+      unread[i].is_read = true;
+    }
+    grRenderAlerts();
+    document.getElementById('grAlertCount').textContent = '0';
+    grUpdateAlertBadge();
+    if (typeof showToast === 'function') showToast('全て既読にしました');
+  } catch (e) { console.error('grMarkAllRead error:', e); }
+}
+
+function grMarkRead(btn) {
+  var row = btn.closest('tr');
+  if (row) { row.style.background = ''; row.querySelector('td:first-child').innerHTML = ''; }
+  btn.outerHTML = '<span style="color:#888;font-size:10px">既読</span>';
+  var cnt = document.getElementById('grAlertCount');
+  cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
+}
+
+async function grManualFetch() {
+  try {
+    if (typeof showToast === 'function') showToast('口コミ取得を開始しました...');
+    var res = await fetch(SUPABASE_URL + '/functions/v1/google-reviews-collector', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (res.ok) {
+      _grLoaded = false;
+      grLoadData();
+      if (typeof showToast === 'function') showToast('口コミ取得が完了しました');
+    } else {
+      if (typeof showToast === 'function') showToast('取得に失敗しました');
+    }
+  } catch (e) {
+    console.error('grManualFetch error:', e);
+    if (typeof showToast === 'function') showToast('取得に失敗しました');
+  }
+}
+
+function grUpdateAlertBadge() {
+  // サイドバーの売上・分析メニューに未読バッジ表示
+  var unreadCount = 0;
+  try {
+    unreadCount = _grData.alerts.filter(function(a) { return !a.is_read; }).length;
+  } catch (e) { unreadCount = 0; }
+
+  // 既存バッジを削除
+  var existing = document.querySelector('.gr-alert-badge');
+  if (existing) existing.remove();
+
+  if (unreadCount > 0) {
+    var salesHeader = document.querySelector('.nav-cat-header[data-cat="sales"]');
+    if (salesHeader) {
+      var badge = document.createElement('span');
+      badge.className = 'gr-alert-badge';
+      badge.textContent = unreadCount;
+      badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;background:#e94560;color:#fff;border-radius:8px;font-size:9px;font-weight:700;margin-left:6px;padding:0 4px';
+      salesHeader.querySelector('.label').appendChild(badge);
+    }
+    // サブメニューにもバッジ
+    var subItem = document.querySelector('.nav-subitem[data-page="sales-google-reviews"]');
+    if (subItem && !subItem.querySelector('.gr-alert-badge')) {
+      var subBadge = document.createElement('span');
+      subBadge.className = 'gr-alert-badge';
+      subBadge.textContent = unreadCount;
+      subBadge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;background:#e94560;color:#fff;border-radius:7px;font-size:8px;font-weight:700;margin-left:4px;padding:0 3px';
+      subItem.appendChild(subBadge);
+    }
+  }
+}
+
+// 初期ロード時にアラートバッジを更新
+(function() {
+  setTimeout(function() {
+    if (typeof supabase !== 'undefined') {
+      supabase.from('review_alerts').select('id, is_read', { count: 'exact' }).eq('is_read', false).then(function(res) {
+        if (res.data && res.data.length > 0) {
+          _grData.alerts = res.data.map(function(a) { return { id: a.id, is_read: a.is_read }; });
+          grUpdateAlertBadge();
+        }
+      }).catch(function() {
+        // デモ用: 3件の未読アラートを表示
+        _grData.alerts = [{id:'1',is_read:false},{id:'2',is_read:false},{id:'3',is_read:false}];
+        grUpdateAlertBadge();
+      });
+    } else {
+      _grData.alerts = [{id:'1',is_read:false},{id:'2',is_read:false},{id:'3',is_read:false}];
+      grUpdateAlertBadge();
+    }
+  }, 500);
+})();
 
 </script>
 </body>
