@@ -997,7 +997,7 @@ async function loadMenuFromSupabase() {
   var {data: cats} = await sb.from('categories').select('*').eq('brand_id', BRAND_ID).order('sort_order');
   var {data: products} = await sb.from('products').select('*').eq('brand_id', BRAND_ID);
   var {data: sizes} = await sb.from('product_sizes').select('*');
-  if (!cats || !products) return;
+  if (!cats || !cats.length || !products || !products.length) return;
   MENU_DATA = cats.map(function(c, ci) {
     var catProducts = products.filter(function(p) { return p.category_id === c.id; });
     return {

@@ -11581,7 +11581,10 @@ async function saveReviewPointSettings() {
 
 // ===== 初期ロード =====
 setTimeout(async function(){
-  await Promise.all([loadPointSettings(), loadRankSettings(), loadReviewPointSettings()]);
+  var sess = await sb.auth.getSession();
+  if (sess && sess.data && sess.data.session) {
+    await Promise.all([loadPointSettings(), loadRankSettings(), loadReviewPointSettings()]);
+  }
 }, 200);
 </script>
 
@@ -14841,9 +14844,9 @@ async function deleteFaq(faqId) {
 // ===================================================================
 // サポートページ用 render hooks 登録
 // ===================================================================
-var _origShowPage = showPage;
+var _origShowPageSupport = showPage;
 showPage = function(pageId, catId) {
-  _origShowPage(pageId, catId);
+  _origShowPageSupport(pageId, catId);
   if (pageId === 'support-aiden') loadSupportTickets();
   if (pageId === 'support-enduser') loadEndUserChats();
   if (pageId === 'support-faq') loadFaqTable();
@@ -14916,13 +14919,13 @@ async function grLoadData() {
     var placeId = null;
 
     if (storeId) {
-      var { data: store } = await supabase.from('stores').select('google_place_id').eq('id', storeId).single();
+      var { data: store } = await sb.from('stores').select('google_place_id').eq('id', storeId).single();
       placeId = store ? store.google_place_id : null;
     }
 
     if (!placeId) {
       // google_place_idを持つ最初の店舗を使用
-      var { data: stores } = await supabase.from('stores').select('id, google_place_id').not('google_place_id', 'is', null).limit(1);
+      var { data: stores } = await sb.from('stores').select('id, google_place_id').not('google_place_id', 'is', null).limit(1);
       if (stores && stores.length > 0) {
         placeId = stores[0].google_place_id;
         storeId = stores[0].id;
@@ -14931,22 +14934,22 @@ async function grLoadData() {
 
     if (placeId) {
       // 自店のPlace情報
-      var { data: place } = await supabase.from('google_places').select('*').eq('place_id', placeId).single();
+      var { data: place } = await sb.from('google_places').select('*').eq('place_id', placeId).single();
       _grData.place = place;
 
       // 自店の口コミ
-      var { data: reviews } = await supabase.from('google_reviews').select('*').eq('place_id', placeId).order('published_at', { ascending: false });
+      var { data: reviews } = await sb.from('google_reviews').select('*').eq('place_id', placeId).order('published_at', { ascending: false });
       _grData.reviews = reviews || [];
 
       // アラート
       if (storeId) {
-        var { data: alerts } = await supabase.from('review_alerts').select('*, google_reviews(*)').eq('store_id', storeId).order('created_at', { ascending: false });
+        var { data: alerts } = await sb.from('review_alerts').select('*, google_reviews(*)').eq('store_id', storeId).order('created_at', { ascending: false });
         _grData.alerts = alerts || [];
       }
 
       // 競合
       if (storeId) {
-        var { data: comps } = await supabase.from('competitor_mappings').select('*, google_places(*)').eq('store_id', storeId).order('distance_meters', { ascending: true }).limit(10);
+        var { data: comps } = await sb.from('competitor_mappings').select('*, google_places(*)').eq('store_id', storeId).order('distance_meters', { ascending: true }).limit(10);
         _grData.competitors = comps || [];
       }
     }
@@ -15306,7 +15309,7 @@ function grRenderChart(reviews) {
 
 async function grMarkAlertRead(alertId, btn) {
   try {
-    await supabase.from('review_alerts').update({ is_read: true }).eq('id', alertId);
+    await sb.from('review_alerts').update({ is_read: true }).eq('id', alertId);
     var row = btn.closest('tr');
     if (row) { row.style.background = ''; row.querySelector('td:first-child').innerHTML = ''; }
     btn.outerHTML = '<span style="color:#888;font-size:10px">既読</span>';
@@ -15320,7 +15323,7 @@ async function grMarkAllRead() {
   try {
     var unread = _grData.alerts.filter(function(a) { return !a.is_read; });
     for (var i = 0; i < unread.length; i++) {
-      await supabase.from('review_alerts').update({ is_read: true }).eq('id', unread[i].id);
+      await sb.from('review_alerts').update({ is_read: true }).eq('id', unread[i].id);
       unread[i].is_read = true;
     }
     grRenderAlerts();
@@ -15394,8 +15397,8 @@ function grUpdateAlertBadge() {
 // 初期ロード時にアラートバッジを更新
 (function() {
   setTimeout(function() {
-    if (typeof supabase !== 'undefined') {
-      supabase.from('review_alerts').select('id, is_read', { count: 'exact' }).eq('is_read', false).then(function(res) {
+    if (typeof sb !== 'undefined') {
+      sb.from('review_alerts').select('id, is_read', { count: 'exact' }).eq('is_read', false).then(function(res) {
         if (res.data && res.data.length > 0) {
           _grData.alerts = res.data.map(function(a) { return { id: a.id, is_read: a.is_read }; });
           grUpdateAlertBadge();
