@@ -1876,6 +1876,9 @@ function clearPoints() {
 
 // AIden 手数料率（チャネル別）- システム設定と同期
 const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
+// Vercel API base URL（同一オリジン or 環境別）
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? '' : 'https://aiden-demo.vercel.app';
 
 // ===== メール送信ヘルパー（Resend経由）=====
 async function sendOrderEmail(type, orderId, totalAmount, extraData) {
@@ -1960,184 +1963,103 @@ async function placeOrder() {
   const totalText = totalEl ? totalEl.textContent.replace(/[^0-9]/g, '') : '0';
   const totalAmount = parseInt(totalText, 10);
 
-  // カード決済の場合: Stripe Connect 経由で PaymentIntent を作成
+  // カード決済の場合: Vercel API 経由で注文作成 + PaymentIntent
   if (selectedPayment === 'card') {
     const orderBtn = document.querySelector('.order-btn');
     if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = '決済処理中...'; }
 
     try {
-      // チャネル判定（手数料率の決定用）
-      const channel = mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout');
-      const feeRate = AIDEN_FEE_RATES[channel] || 0.040;
-      const applicationFee = Math.round(totalAmount * feeRate);
+      const memberId = sessionStorage.getItem('aiden_member_id');
+      const custEmail = document.getElementById('custEmail').value.trim();
+      const custName = document.getElementById('custLastName').value.trim() + ' ' + document.getElementById('custFirstName').value.trim();
 
-      // Supabase Edge Function で PaymentIntent を作成
-      const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
+      // ===== Step 1: Vercel API で注文作成 + PaymentIntent =====
+      const orderPayload = {
+        store_id: CHECKOUT_DATA.storeId || '',
+        order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
+        items: (CHECKOUT_DATA.cartItems || []).map(function(ci) {
+          return {
+            product_id: ci.product_id || ci.id,
+            size_id: ci.size_id || null,
+            quantity: ci.quantity || 1,
+            option_item_ids: ci.option_item_ids || []
+          };
+        }),
+        brand_id: CHECKOUT_DATA.brandId || null,
+        stripe_account_id: CHECKOUT_DATA.stripeAccountId || null,
+        member_id: memberId || null,
+        customer_email: custEmail,
+        customer_name: custName,
+        points_used: appliedPoints || 0,
+        aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+        normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
+        subtotal: CHECKOUT_DATA.subtotal || totalAmount,
+        guest_name: custName,
+        guest_email: custEmail,
+        guest_phone: document.getElementById('custPhone').value.trim(),
+      };
+
+      // デリバリー住所
+      if (mode === 'delivery' && CHECKOUT_DATA.userAddress) {
+        orderPayload.delivery_address = CHECKOUT_DATA.userAddress;
+      }
+
+      const authToken = sessionStorage.getItem('aiden_auth_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+
+      const res = await fetch(API_BASE + '/api/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + SUPABASE_KEY
-        },
-        body: JSON.stringify({
-          amount: totalAmount,
-          currency: 'jpy',
-          stripe_account_id: CHECKOUT_DATA.stripeAccountId || null,
-          application_fee_amount: applicationFee,
-          metadata: {
-            store_id: CHECKOUT_DATA.storeId || '',
-            order_mode: mode,
-            customer_email: document.getElementById('custEmail').value.trim(),
-            customer_name: document.getElementById('custLastName').value.trim() + ' ' + document.getElementById('custFirstName').value.trim(),
-            points_used: appliedPoints || 0,
-            aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
-            normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0
-          }
-        })
+        headers: headers,
+        body: JSON.stringify(orderPayload)
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: '決済処理に失敗しました' }));
-        throw new Error(err.error || '決済処理に失敗しました');
+        const err = await res.json().catch(() => ({ error: '注文作成に失敗しました' }));
+        throw new Error(err.error || '注文作成に失敗しました');
       }
 
       const data = await res.json();
 
-      // PaymentIntent の client_secret で 3Dセキュア認証を実行
-      // ※ 本番実装では Stripe.js の confirmCardPayment を使用
-      // const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-      // const { error } = await stripe.confirmCardPayment(data.client_secret, {
-      //   payment_method: { card: cardElement }
-      // });
+      // ===== Step 2: 3Dセキュア認証シミュレーション =====
+      const channel = orderPayload.order_type;
+      const feeRate = AIDEN_FEE_RATES[channel] || 0.040;
+      const applicationFee = data.application_fee || Math.round(totalAmount * feeRate);
 
-      // テスト環境: 3Dセキュア認証のシミュレーション
       if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + data.payment_intent_id + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n送金先: ' + (CHECKOUT_DATA.stripeAccountId || 'なし') + '\n\n認証を完了しますか？')) {
         if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
         return;
       }
 
-      // ポイント消費トランザクションを記録
-      const memberId = sessionStorage.getItem('aiden_member_id');
-      if (appliedPoints > 0) {
-        try {
-          if (memberId) {
-            await sb.from('point_transactions').insert({
-              member_id: memberId,
-              amount: -appliedPoints,
-              balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
-              source: 'normal',
-              reason: '注文消費（' + data.payment_intent_id + '）',
-              order_id: null
-            });
-          }
-        } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
-      }
+      // ===== Step 3: Vercel API で注文確定（ポイント・ランク・レビュー・メール） =====
+      const confirmRes = await fetch(API_BASE + '/api/orders/' + data.order_id + '/confirm', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          member_id: memberId,
+          brand_id: CHECKOUT_DATA.brandId || null,
+          payment_intent_id: data.payment_intent_id,
+          points_used: appliedPoints || 0,
+          aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+          normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
+          subtotal: CHECKOUT_DATA.subtotal || totalAmount,
+          total_amount: totalAmount,
+          point_settings: CHECKOUT_DATA.pointSettings || null,
+          member_rank_multi: CHECKOUT_DATA.memberRankMulti || 1,
+          user_points: CHECKOUT_DATA.userPoints || 0,
+          customer_email: custEmail,
+          customer_name: custName,
+          payment_method_name: pm.name,
+          items: CHECKOUT_DATA.cartItems || []
+        })
+      });
 
-      // ===== ポイント付与（point_settings に基づく）=====
       let earnedPoints = 0;
-      if (memberId && CHECKOUT_DATA.pointSettings && CHECKOUT_DATA.pointSettings.enabled) {
-        try {
-          const ps = CHECKOUT_DATA.pointSettings;
-          // AIden手数料はポイント割引前の注文総額ベース → ポイント付与も割引前の subtotal ベース
-          const baseAmount = CHECKOUT_DATA.subtotal || totalAmount;
-          earnedPoints = Math.floor(baseAmount / ps.earn_rate_unit) * ps.earn_rate_point;
-
-          // ランク別ポイント倍率を適用
-          if (CHECKOUT_DATA.memberRankMulti && CHECKOUT_DATA.memberRankMulti > 1) {
-            earnedPoints = Math.floor(earnedPoints * CHECKOUT_DATA.memberRankMulti);
-          }
-
-          if (earnedPoints > 0) {
-            // 有効期限を計算
-            const expiresAt = new Date();
-            expiresAt.setMonth(expiresAt.getMonth() + (ps.expiry_months || 12));
-
-            // 現在の残高を計算
-            const currentBalance = (CHECKOUT_DATA.userPoints || 0) - appliedPoints;
-
-            await sb.from('point_transactions').insert({
-              member_id: memberId,
-              brand_id: CHECKOUT_DATA.brandId,
-              amount: earnedPoints,
-              balance_after: currentBalance + earnedPoints,
-              source: 'normal',
-              reason: '注文獲得（' + data.payment_intent_id + '）',
-              order_id: null,
-              expires_at: expiresAt.toISOString()
-            });
-          }
-        } catch(ptErr) { console.warn('Point earn record skipped:', ptErr); }
+      if (confirmRes.ok) {
+        const confirmData = await confirmRes.json();
+        earnedPoints = confirmData.earned_points || 0;
+        CHECKOUT_DATA.reviewToken = confirmData.review_token || '';
       }
-
-      // ===== ランク判定・更新 =====
-      if (memberId && CHECKOUT_DATA.brandId) {
-        try {
-          // members の total_spend と monthly_order_count を更新
-          const { data: memberRow } = await sb.from('members').select('id, total_spend, monthly_order_count').eq('id', memberId).single();
-          if (memberRow) {
-            const newTotalSpend = (memberRow.total_spend || 0) + (CHECKOUT_DATA.subtotal || totalAmount);
-            const newMonthlyCount = (memberRow.monthly_order_count || 0) + 1;
-
-            await sb.from('members').update({
-              total_spend: newTotalSpend,
-              monthly_order_count: newMonthlyCount
-            }).eq('id', memberId);
-
-            // rank_settings を取得して条件マッチングで最上位ランクを判定
-            const { data: ranks } = await sb.from('rank_settings')
-              .select('*')
-              .eq('brand_id', CHECKOUT_DATA.brandId)
-              .order('sort_order', { ascending: true });
-
-            if (ranks && ranks.length > 0) {
-              let bestRank = ranks.find(r => r.is_default) || ranks[ranks.length - 1];
-              for (const rank of ranks) {
-                if (rank.is_default) continue;
-                const meetCount = !rank.cond_monthly_count || newMonthlyCount >= rank.cond_monthly_count;
-                const meetSpend = !rank.cond_total_spend || newTotalSpend >= rank.cond_total_spend;
-                if (meetCount && meetSpend) {
-                  bestRank = rank;
-                  break; // sort_order 昇順 = 最上位が先
-                }
-              }
-              await sb.from('members').update({ current_rank_id: bestRank.id }).eq('id', memberId);
-            }
-          }
-        } catch(rankErr) { console.warn('Rank update skipped:', rankErr); }
-      }
-
-      // ===== 口コミトークン生成 =====
-      if (memberId && CHECKOUT_DATA.brandId) {
-        try {
-          const { data: rvSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', CHECKOUT_DATA.brandId).single();
-          if (rvSettings && rvSettings.enabled) {
-            const token = crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
-            const tokenExpires = new Date();
-            tokenExpires.setDate(tokenExpires.getDate() + (rvSettings.review_link_expiry_days || 7));
-
-            await sb.from('review_tokens').insert({
-              order_id: data.payment_intent_id,
-              member_id: memberId,
-              brand_id: CHECKOUT_DATA.brandId,
-              token: token,
-              expires_at: tokenExpires.toISOString()
-            });
-            // トークンURLは領収書メールに含める（Edge Function側で処理）
-            CHECKOUT_DATA.reviewToken = token;
-          }
-        } catch(rvErr) { console.warn('Review token generation skipped:', rvErr); }
-      }
-
-      // ===== 注文確認メール送信 =====
-      sendOrderEmail('confirmation', data.payment_intent_id, totalAmount, {
-        paymentMethod: pm.name
-      });
-
-      // ===== 領収書メール送信（カード決済=即時paid扱い）=====
-      sendOrderEmail('receipt', data.payment_intent_id, totalAmount, {
-        paymentMethod: pm.name,
-        paidAt: new Date().toISOString(),
-        reviewToken: CHECKOUT_DATA.reviewToken || ''
-      });
 
       alert('✅ 注文が完了しました！\n\n' +
         '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
@@ -2154,6 +2076,7 @@ async function placeOrder() {
     } catch (e) {
       console.error('Payment error:', e);
       alert('❌ 決済エラー: ' + e.message);
+      const orderBtn = document.querySelector('.order-btn');
       if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
       return;
     }

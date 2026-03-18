@@ -4862,19 +4862,40 @@ async function loadAdminFromSupabase() {
     }
 
     // 9. Members (RLS: filtered by brand)
+    // 9a. rank_settings をロードしてランクマップを構築（current_rank_id → ランク名）
+    let memberRankMap = {};
+    if (BRAND_ID) {
+      const {data: rankRows} = await sb.from('rank_settings').select('id, rank_name').eq('brand_id', BRAND_ID).order('sort_order');
+      if (rankRows) rankRows.forEach(r => { memberRankMap[r.id] = r.rank_name; });
+    }
     const {data: mbrs, error: mbrErr} = await sb.from('members').select('*').order('created_at', {ascending: false});
     if (mbrErr) errors.push('会員: ' + mbrErr.message);
     if (mbrs && mbrs.length > 0) {
-      MEMBERS = mbrs.map(m => ({
-        id: m.display_id || m.id.substring(0,8), name: m.name || ((m.last_name||'') + ' ' + (m.first_name||'')).trim(), tel: m.phone || '',
-        email: m.email || '', rank: m.rank === 'platinum' ? 'プラチナ' : m.rank === 'gold' ? 'ゴールド' : m.rank === 'silver' ? 'シルバー' : 'レギュラー',
-        points: m.point_balance || 0, count: m.order_count || 0,
-        last: m.updated_at ? new Date(m.updated_at).toLocaleDateString('ja-JP') : '-',
-        regDate: m.created_at ? new Date(m.created_at).toLocaleDateString('ja-JP') : '-',
-        birthday: m.birth_date || '', address: m.address_prefecture || '',
-        channel: { dineIn: Math.floor((m.order_count||0)*0.55), takeout: Math.floor((m.order_count||0)*0.3), delivery: Math.floor((m.order_count||0)*0.15) },
-        totalSpend: m.total_spend || 0, avgSpend: m.order_count ? Math.round((m.total_spend||0) / m.order_count) : 0, optout: false
-      }));
+      MEMBERS = mbrs.map(m => {
+        // ランク: current_rank_id → rank_settings 参照（admin.html と同じロジック）
+        const rankName = (m.current_rank_id && memberRankMap[m.current_rank_id]) ? memberRankMap[m.current_rank_id] : 'レギュラー';
+        const oc = m.order_count || m.monthly_order_count || 0;
+        return {
+          _uuid: m.id,
+          id: m.display_id || m.id.substring(0,8), name: m.name || ((m.last_name||'') + ' ' + (m.first_name||'')).trim(), tel: m.phone || '',
+          email: m.email || '', rank: rankName,
+          points: 0, count: oc,
+          last: m.updated_at ? new Date(m.updated_at).toLocaleDateString('ja-JP') : '-',
+          regDate: m.created_at ? new Date(m.created_at).toLocaleDateString('ja-JP') : '-',
+          birthday: m.birth_date || '', address: m.address_prefecture || '',
+          channel: { dineIn: Math.floor(oc*0.55), takeout: Math.floor(oc*0.3), delivery: Math.floor(oc*0.15) },
+          totalSpend: m.total_spend || 0, avgSpend: oc ? Math.round((m.total_spend||0) / oc) : 0, optout: false
+        };
+      });
+      // 9b. ポイント残高を point_transactions から集計（admin.html と同じロジック）
+      try {
+        const {data: ptData} = await sb.from('point_transactions').select('member_id, amount');
+        if (ptData && ptData.length > 0) {
+          const pb = {};
+          ptData.forEach(t => { if (!pb[t.member_id]) pb[t.member_id] = 0; pb[t.member_id] += t.amount; });
+          MEMBERS.forEach(mm => { if (mm._uuid && pb[mm._uuid] !== undefined) mm.points = Math.max(0, pb[mm._uuid]); });
+        }
+      } catch(ptErr) { console.warn('Point aggregation skipped:', ptErr); }
     }
 
     // 10. Service subscriptions (RLS: filtered by brand)
@@ -8094,12 +8115,17 @@ function renderSalesCharts() {
   }
   drawBarChart('sdDailyChart', d.daily.labels, dailyDS, {height:220});
 
-  // Channel donut
+  // Channel donut（実データ: registration_channel 集計）
+  var chWeb=AICRM_TOTALS.web||0,chLine=AICRM_TOTALS.line||0,chApp=AICRM_TOTALS.app||0,chStore=AICRM_TOTALS.store||0,chRef=AICRM_TOTALS.referral||0;
+  var chTotal=chWeb+chLine+chApp+chStore+chRef;
+  if(chTotal===0){chWeb=1;chTotal=1;} // ゼロ除算防止
   drawDonutChart('sdChannelChart',[
-    {label:'店内注文',value:1194000,color:'#e94560'},
-    {label:'持ち帰り',value:372000,color:'#0984e3'},
-    {label:'デリバリー',value:275000,color:'#00b894'},
-  ],{height:200});
+    {label:'Web登録',value:chWeb,color:'#e94560'},
+    {label:'LINE登録',value:chLine,color:'#0984e3'},
+    {label:'アプリ登録',value:chApp,color:'#00b894'},
+    {label:'店頭登録',value:chStore,color:'#fdcb6e'},
+    {label:'紹介',value:chRef,color:'#a29bfe'},
+  ].filter(function(v){return v.value>0;}),{height:200});
 
   // Hourly bar
   drawBarChart('sdHourlyChart',['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23'],[
@@ -11654,8 +11680,22 @@ function aicrmDonutChart(canvasId, labels, data, colors, memberTotal) {
   });
 }
 
-// チャネル別会員総数
-var AICRM_TOTALS = {all:2847, dine:1240, take:860, deli:620};
+// チャネル別会員総数（実データ: registration_channel から集計）
+var AICRM_TOTALS = {all:0, dine:0, take:0, deli:0, web:0, line:0, app:0, store:0, referral:0};
+async function loadChannelTotals(){
+  try{
+    var{data:members}=await sb.from('members').select('registration_channel');
+    if(!members)return;
+    var counts={all:members.length,web:0,line:0,app:0,store:0,referral:0,dine:0,take:0,deli:0};
+    members.forEach(function(m){
+      var ch=m.registration_channel||'web';
+      if(counts[ch]!==undefined)counts[ch]++;
+      else counts.web++;
+    });
+    AICRM_TOTALS=counts;
+  }catch(e){console.warn('Channel totals load error:',e);}
+}
+loadChannelTotals();
 
 function renderAicrmTimeChart(d) {
   aicrmBarChart('aicrmTimeChart', d.time.labels, d.time.data, '#e94560', '件');

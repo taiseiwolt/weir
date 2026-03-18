@@ -87,17 +87,53 @@
 .loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:13px;font-weight:600;color:var(--text-light)}
+/* ===== LOGIN SCREEN ===== */
+.login-screen{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6c5ce7 0%,#a29bfe 100%);font-family:'Poppins','Noto Sans JP',sans-serif}
+.login-card{background:#fff;border-radius:16px;padding:40px 36px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo .logo-icon{width:48px;height:48px;background:#6c5ce7;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px}
+.login-logo .logo-dot{width:14px;height:14px;background:#fff;border-radius:50%}
+.login-logo h1{font-size:22px;font-weight:700;color:#2d3436;margin:0}
+.login-logo p{font-size:12px;color:#636e72;margin:4px 0 0}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:#636e72;margin-bottom:6px}
+.login-field input{width:100%;padding:10px 14px;border:1.5px solid #dfe6e9;border-radius:8px;font-size:14px;outline:none;transition:border .2s;box-sizing:border-box}
+.login-field input:focus{border-color:#6c5ce7}
+.login-btn{width:100%;padding:12px;background:#6c5ce7;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;margin-top:4px}
+.login-btn:hover{background:#5b4cdb}
+.login-btn:disabled{background:#b2bec3;cursor:not-allowed}
+.login-error{background:#ffe0e0;color:#d63031;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;display:none}
 </style>
 </head>
 <body>
-<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><div class="loading-text">データを読み込み中...</div></div>
-<header class="header">
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon"><div class="logo-dot"></div></div>
+      <h1>AIden</h1>
+      <p>管理マスタ ログイン</p>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-field">
+      <label>メールアドレス</label>
+      <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>パスワード</label>
+      <input type="password" id="loginPassword" placeholder="パスワード" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="handleAdminLogin()">ログイン</button>
+  </div>
+</div>
+<div class="loading-overlay" id="loadingOverlay" style="display:none"><div class="loading-spinner"></div><div class="loading-text">データを読み込み中...</div></div>
+<header class="header" id="adminHeader" style="display:none">
   <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">AIden</span></div>
   <span class="header-badge">MASTER ADMIN</span>
   <div class="header-search"><span class="si">🔍</span><input type="text" id="globalSearch" placeholder="法人 / ブランド / 店舗を検索（名称 or ID）..." oninput="onSearch(this.value)" onfocus="onSearch(this.value)" autocomplete="off"><div class="sdd" id="searchResults"></div></div>
-  <div class="header-right"><div class="header-user"><div class="avatar">T</div><span>Taisei</span></div><button class="btn-logout" onclick="showToast('🔒 ログアウト')">ログアウト</button></div>
+  <div class="header-right"><div class="header-user"><div class="avatar" id="userAvatar">T</div><span id="userName">Taisei</span></div><button class="btn-logout" onclick="handleAdminLogout()">ログアウト</button></div>
 </header>
-<nav class="sidebar" id="sidebar">
+<nav class="sidebar" id="sidebar" style="display:none">
   <div class="nav-item active" data-page="dashboard" onclick="goTo('dashboard')"><span class="icon">📊</span><span class="label">ダッシュボード</span></div>
   <div class="nav-item" data-page="corps" onclick="goTo('corps')"><span class="icon">🏢</span><span class="label">法人管理</span></div>
   <div class="nav-item" data-page="brands" onclick="goTo('brands')"><span class="icon">🏷️</span><span class="label">ブランド管理</span></div>
@@ -109,7 +145,7 @@
   <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">💰</span><span class="label">請求管理</span></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
 </nav>
-<main class="content" id="content"></main>
+<main class="content" id="content" style="display:none"></main>
 <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBody"></div></div>
 <div class="toast" id="toast"></div>
 <script>
@@ -125,7 +161,31 @@ let ADMIN_ORDERS=[];
 let REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
 let MEMBERS=[];
 const GUESTS=[{id:'GST-mN9qU3j',orderCount:3,lastOrder:'2026-03-10',channel:'takeout'},{id:'GST-pQ2rV4k',orderCount:1,lastOrder:'2026-03-08',channel:'delivery'},{id:'GST-rS3sW5m',orderCount:5,lastOrder:'2026-03-11',channel:'dinein'}];
-const MENU=[{id:1,name:'特選カルビ',price:1280,cat:'焼肉',emoji:'🥩',desc:'厳選A5ランク黒毛和牛'},{id:2,name:'ハラミ',price:980,cat:'焼肉',emoji:'🥩',desc:'ジューシーな赤身肉'},{id:3,name:'牛タン塩',price:1180,cat:'焼肉',emoji:'🥩',desc:'厚切りタン'},{id:4,name:'ホルモン盛合せ',price:880,cat:'焼肉',emoji:'🥩',desc:'5種盛り'},{id:5,name:'上ロース',price:1480,cat:'焼肉',emoji:'🥩',desc:'さっぱり上質'},{id:6,name:'石焼ビビンバ',price:780,cat:'ご飯もの',emoji:'🍚',desc:'アツアツ石鍋'},{id:7,name:'カルビクッパ',price:880,cat:'ご飯もの',emoji:'🍚',desc:'旨辛スープご飯'},{id:8,name:'わかめスープ',price:350,cat:'スープ',emoji:'🥣',desc:'定番'},{id:9,name:'冷麺',price:880,cat:'麺',emoji:'🍜',desc:'盛岡冷麺'},{id:10,name:'チョレギサラダ',price:580,cat:'サラダ',emoji:'🥗',desc:'ごま油ドレッシング'},{id:11,name:'生ビール',price:550,cat:'ドリンク',emoji:'🍺',desc:'プレミアムモルツ'}];
+let MENU=[];
+// Supabase からメニューを取得（ブランド別）
+async function loadBrandMenu(brandId){
+  try{
+    // カテゴリ取得
+    var catMap={};
+    var{data:cats}=await sb.from('categories').select('id,name');
+    if(cats)cats.forEach(function(c){catMap[c.id]=c.name;});
+    // 商品取得（最小価格をJOIN）
+    var{data:products}=await sb.from('products').select('id,name,description,image_url,category_id,sale_status').eq('brand_id',brandId);
+    if(!products||products.length===0){MENU=[];renderBrandMenu();return;}
+    // 各商品の最小価格を取得
+    var pids=products.map(function(p){return p.id;});
+    var{data:sizes}=await sb.from('product_sizes').select('product_id,price').in('product_id',pids).order('price',{ascending:true});
+    var priceMap={};
+    if(sizes)sizes.forEach(function(s){if(!priceMap[s.product_id])priceMap[s.product_id]=s.price;});
+    // カテゴリ名→絵文字マッピング
+    var catEmoji={'焼肉':'🥩','ご飯もの':'🍚','ご飯・スープ':'🍚','スープ':'🥣','麺':'🍜','つけ麺':'🍜','サラダ':'🥗','ドリンク':'🍺','デザート':'🍰','サイドメニュー':'🥘','サイド':'🥘','おすすめ':'⭐','セットメニュー':'🍱','チキン・揚げ物':'🍗','チゲ・スープ':'🥘','ビビンバ・ご飯':'🍚','トッピング':'➕'};
+    MENU=products.map(function(p){
+      var cn=catMap[p.category_id]||'その他';
+      return{id:p.id,name:p.name,price:priceMap[p.id]||0,cat:cn,emoji:catEmoji[cn]||'🍽',desc:p.description||'',image_url:p.image_url||'',sale_status:p.sale_status||'on_sale'};
+    });
+    renderBrandMenu();
+  }catch(e){console.warn('Menu load error:',e);MENU=[];renderBrandMenu();}
+}
 
 // SERVICES MASTER
 const SERVICES=[
@@ -197,7 +257,7 @@ function mapStore(row){
 function mapMember(row,rankMap){
   var rn=(rankMap&&row.current_rank_id&&rankMap[row.current_rank_id])?rankMap[row.current_rank_id]:'レギュラー';
   return {
-    id:row.id, name:((row.first_name||'')+' '+(row.last_name||'')).trim()||row.name||'名前未設定',
+    id:row.id, name:((row.last_name||'')+' '+(row.first_name||'')).trim()||row.name||'名前未設定',
     email:row.email||'', phone:row.phone||'', rank:rn, points:0,
     orders:row.monthly_order_count||0, lastOrder:'', joined:row.created_at?row.created_at.split('T')[0]:''
   };
@@ -244,7 +304,7 @@ async function loadDataFromSupabase(){
     sb.from('accounts').select('*'),
     sb.from('members').select('*'),
     sb.from('rank_settings').select('id, rank_name').order('sort_order'),
-    sb.from('orders').select('*, order_items(*)').order('created_at',{ascending:false}).limit(500),
+    sb.from('orders').select('*, order_items(*)').order('created_at',{ascending:false}).limit(2000),
     sb.from('point_transactions').select('*').eq('source','aiden_compensation').order('created_at',{ascending:false}),
     sb.from('service_subscriptions').select('*').eq('is_active',true)
   ]);
@@ -877,7 +937,15 @@ function renderBrandPage(b){
 }
 let brandMenuCat='all';
 function renderBrandMenu(){const q=((document.getElementById('brandMenuSearch')||{}).value||'').toLowerCase();const cats=['all',...new Set(MENU.map(m=>m.cat))];const ce=document.getElementById('brandMenuCats');if(ce)ce.innerHTML=cats.map(c=>'<span class="cat-chip'+(brandMenuCat===c?' active':'')+'" onclick="brandMenuCat=\''+c+'\';renderBrandMenu()">'+(c==='all'?'すべて':c)+'</span>').join(' ');let items=MENU;if(brandMenuCat!=='all')items=items.filter(m=>m.cat===brandMenuCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));const ge=document.getElementById('brandMenuGrid');if(ge)ge.innerHTML=items.map(m=>'<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+m.name+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+m.cat+'</div><div class="mcard-desc">'+m.desc+'</div><div class="mcard-footer"><button onclick="showToast(\'📝 編集\')">編集</button></div></div></div>').join('')||'<div class="empty-state">該当なし</div>';}
-function initBrandTabs(){brandMenuCat='all';renderBrandMenu();}
+function initBrandTabs(){
+  brandMenuCat='all';
+  // Supabase からメニューを読み込み（現在のブランドページのID）
+  if(currentView&&currentView.type==='brand'&&currentView.id){
+    loadBrandMenu(currentView.id);
+  }else{
+    renderBrandMenu();
+  }
+}
 
 // ===== STORE DETAIL =====
 function renderStorePage(s){
@@ -1675,13 +1743,96 @@ function toggleAdminGuestPii() {
   renderAdminGuestTable();
 }
 
-// INIT
-(async function(){
+// ===== AUTH: Supabase Auth + accounts ロール確認 =====
+let adminAuthUser=null;
+let adminAccount=null;
+
+async function handleAdminLogin(){
+  var btn=document.getElementById('loginBtn');
+  var errEl=document.getElementById('loginError');
+  btn.disabled=true;btn.textContent='ログイン中...';
+  errEl.style.display='none';
+  var email=document.getElementById('loginEmail').value.trim();
+  var password=document.getElementById('loginPassword').value;
+  if(!email||!password){
+    errEl.textContent='メールアドレスとパスワードを入力してください';errEl.style.display='block';
+    btn.disabled=false;btn.textContent='ログイン';return;
+  }
+  try{
+    var{data,error:authErr}=await sb.auth.signInWithPassword({email:email,password:password});
+    if(authErr)throw authErr;
+    adminAuthUser=data.user;
+    // accounts テーブルでロール確認（owner or admin のみ許可）
+    var{data:acct,error:acctErr}=await sb.from('accounts').select('*').eq('email',email).single();
+    if(acctErr||!acct){
+      await sb.auth.signOut();
+      throw new Error('このアカウントには管理権限がありません');
+    }
+    if(acct.role!=='owner'&&acct.role!=='admin'){
+      await sb.auth.signOut();
+      throw new Error('管理マスタへのアクセスには owner または admin ロールが必要です');
+    }
+    adminAccount=acct;
+    showAdminUI();
+  }catch(e){
+    errEl.textContent=e.message||'ログインに失敗しました';
+    errEl.style.display='block';
+    btn.disabled=false;btn.textContent='ログイン';
+  }
+}
+
+async function handleAdminLogout(){
+  await sb.auth.signOut();
+  adminAuthUser=null;adminAccount=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('adminHeader').style.display='none';
+  document.getElementById('sidebar').style.display='none';
+  document.getElementById('content').style.display='none';
+}
+
+async function showAdminUI(){
+  // ログイン画面を非表示、管理画面を表示
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminHeader').style.display='';
+  document.getElementById('sidebar').style.display='';
+  document.getElementById('content').style.display='';
+  document.getElementById('loadingOverlay').style.display='';
+  // ヘッダーにユーザー名を反映
+  if(adminAccount){
+    var nm=adminAccount.name||adminAuthUser.email.split('@')[0];
+    document.getElementById('userName').textContent=nm;
+    document.getElementById('userAvatar').textContent=nm.charAt(0).toUpperCase();
+  }
+  // データ読み込み
   try{await loadDataFromSupabase();}catch(e){console.warn('Supabase load failed, using defaults:',e);}
   var ov=document.getElementById('loadingOverlay');
-  if(ov){ov.classList.add('hide');setTimeout(function(){ov.remove();},400);}
+  if(ov){ov.classList.add('hide');setTimeout(function(){ov.style.display='none';},400);}
   renderPage();
-})();
+}
+
+// セッション復元チェック
+async function checkExistingSession(){
+  var{data:{session}}=await sb.auth.getSession();
+  if(session&&session.user){
+    adminAuthUser=session.user;
+    var{data:acct}=await sb.from('accounts').select('*').eq('email',session.user.email).single();
+    if(acct&&(acct.role==='owner'||acct.role==='admin')){
+      adminAccount=acct;
+      showAdminUI();
+      return;
+    }
+    await sb.auth.signOut();
+  }
+  // セッションなし → ログイン画面表示
+  document.getElementById('loginScreen').style.display='flex';
+}
+
+// Enterキーでログイン
+document.getElementById('loginPassword').addEventListener('keydown',function(e){if(e.key==='Enter')handleAdminLogin();});
+document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginPassword').focus();});
+
+// INIT
+checkExistingSession();
 </script>
 </body>
 </html>

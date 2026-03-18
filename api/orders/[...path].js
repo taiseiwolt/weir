@@ -3,6 +3,9 @@ import { stripe } from '../_lib/stripe.js';
 import { handleCors, ok, error } from '../_lib/response.js';
 import { authenticateRequest, requireAuth } from '../_lib/auth.js';
 
+// AIden 手数料率（チャネル別）
+const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
@@ -11,6 +14,11 @@ export default async function handler(req, res) {
   // /api/orders/__root (rewritten from /api/orders)
   if (pathSegments[0] === '__root' || pathSegments.length === 0) {
     return handleOrdersRoot(req, res);
+  }
+
+  // /api/orders/[id]/confirm
+  if (pathSegments[1] === 'confirm') {
+    return handleConfirm(req, res, pathSegments[0]);
   }
 
   // /api/orders/[id]/cancel
@@ -49,9 +57,14 @@ async function handleCreate(req, res) {
     store_id, order_type,
     items,
     member_id,
+    brand_id,
+    stripe_account_id,
     guest_name, guest_email, guest_phone,
     guest_address_prefecture, guest_address_city, guest_address_street, guest_address_building,
     delivery_address,
+    points_used, aiden_points_used, normal_points_used,
+    subtotal,
+    customer_email, customer_name,
   } = body;
 
   if (!store_id || !order_type || !items || items.length === 0) {
@@ -146,15 +159,31 @@ async function handleCreate(req, res) {
       }
     }
 
+    const feeRate = AIDEN_FEE_RATES[order_type] || 0.040;
+    const applicationFee = Math.round(totalAmount * feeRate);
+
     const paymentIntentParams = {
       amount: totalAmount,
       currency: 'jpy',
       capture_method: 'manual',
-      metadata: { store_id, order_type },
+      metadata: {
+        store_id, order_type,
+        customer_email: customer_email || guest_email || '',
+        customer_name: customer_name || guest_name || '',
+        points_used: points_used || 0,
+        aiden_points_used: aiden_points_used || 0,
+        normal_points_used: normal_points_used || 0,
+      },
     };
 
     if (stripeCustomerId) {
       paymentIntentParams.customer = stripeCustomerId;
+    }
+
+    // Stripe Connect: 加盟店のConnectアカウントへ送金
+    if (stripe_account_id) {
+      paymentIntentParams.application_fee_amount = applicationFee;
+      paymentIntentParams.transfer_data = { destination: stripe_account_id };
     }
 
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
@@ -169,10 +198,13 @@ async function handleCreate(req, res) {
       total_amount: totalAmount,
       payment_intent_id: paymentIntent.id,
       member_id: memberId,
-      customer_name: auth ? undefined : guest_name,
-      customer_email: auth ? undefined : guest_email,
+      brand_id: brand_id || null,
+      customer_name: customer_name || (auth ? undefined : guest_name),
+      customer_email: customer_email || (auth ? undefined : guest_email),
       customer_phone: auth ? undefined : guest_phone,
       delivery_address: deliveryAddr,
+      aiden_points_used: aiden_points_used || 0,
+      normal_points_used: normal_points_used || 0,
     };
 
     const { data: order, error: orderError } = await supabase
@@ -207,7 +239,182 @@ async function handleCreate(req, res) {
       status: order.status,
       total_amount: order.total_amount,
       client_secret: paymentIntent.client_secret,
+      payment_intent_id: paymentIntent.id,
+      application_fee: stripe_account_id ? applicationFee : 0,
     }, 201);
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Confirm: ポイント処理・ランク更新・レビュートークン生成・メール送信 ---
+async function handleConfirm(req, res, id) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const body = req.body || {};
+  const {
+    member_id, brand_id, payment_intent_id,
+    points_used, aiden_points_used, normal_points_used,
+    subtotal, total_amount,
+    point_settings, member_rank_multi, user_points,
+    customer_email, customer_name, payment_method_name,
+    items,
+  } = body;
+
+  try {
+    // 注文の存在確認
+    const { data: order, error: orderErr } = await supabase
+      .from('orders')
+      .select('id, store_id, order_type, total_amount, payment_intent_id, member_id')
+      .eq('id', id)
+      .single();
+
+    if (orderErr || !order) return error(res, '注文が見つかりません', 404);
+
+    let earnedPoints = 0;
+    let reviewToken = null;
+    const memberId = member_id || order.member_id;
+    const piId = payment_intent_id || order.payment_intent_id;
+    const orderSubtotal = subtotal || order.total_amount;
+
+    // ===== ポイント消費トランザクション =====
+    if (memberId && points_used > 0) {
+      await supabase.from('point_transactions').insert({
+        member_id: memberId,
+        amount: -(points_used || 0),
+        balance_after: (user_points || 0) - (points_used || 0),
+        source: 'normal',
+        reason: '注文消費（' + piId + '）',
+        order_id: order.id,
+      });
+    }
+
+    // ===== ポイント付与 =====
+    if (memberId && point_settings && point_settings.enabled) {
+      const ps = point_settings;
+      const baseAmount = orderSubtotal;
+      earnedPoints = Math.floor(baseAmount / ps.earn_rate_unit) * ps.earn_rate_point;
+
+      if (member_rank_multi && member_rank_multi > 1) {
+        earnedPoints = Math.floor(earnedPoints * member_rank_multi);
+      }
+
+      if (earnedPoints > 0) {
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + (ps.expiry_months || 12));
+        const currentBalance = (user_points || 0) - (points_used || 0);
+
+        await supabase.from('point_transactions').insert({
+          member_id: memberId,
+          brand_id: brand_id || null,
+          amount: earnedPoints,
+          balance_after: currentBalance + earnedPoints,
+          source: 'normal',
+          reason: '注文獲得（' + piId + '）',
+          order_id: order.id,
+          expires_at: expiresAt.toISOString(),
+        });
+      }
+    }
+
+    // ===== ランク判定・更新 =====
+    // (total_spend, monthly_order_count はDBトリガーで自動更新済み)
+    if (memberId && brand_id) {
+      const { data: memberRow } = await supabase
+        .from('members')
+        .select('id, total_spend, monthly_order_count')
+        .eq('id', memberId)
+        .single();
+
+      if (memberRow) {
+        const { data: ranks } = await supabase
+          .from('rank_settings')
+          .select('*')
+          .eq('brand_id', brand_id)
+          .order('sort_order', { ascending: true });
+
+        if (ranks && ranks.length > 0) {
+          let bestRank = ranks.find(r => r.is_default) || ranks[ranks.length - 1];
+          for (const rank of ranks) {
+            if (rank.is_default) continue;
+            const meetCount = !rank.cond_monthly_count || memberRow.monthly_order_count >= rank.cond_monthly_count;
+            const meetSpend = !rank.cond_total_spend || memberRow.total_spend >= rank.cond_total_spend;
+            if (meetCount && meetSpend) {
+              bestRank = rank;
+              break;
+            }
+          }
+          await supabase.from('members').update({ current_rank_id: bestRank.id }).eq('id', memberId);
+        }
+      }
+    }
+
+    // ===== 口コミトークン生成 =====
+    if (memberId && brand_id) {
+      const { data: rvSettings } = await supabase
+        .from('review_point_settings')
+        .select('*')
+        .eq('brand_id', brand_id)
+        .single();
+
+      if (rvSettings && rvSettings.enabled) {
+        const { randomUUID } = await import('crypto');
+        reviewToken = randomUUID();
+        const tokenExpires = new Date();
+        tokenExpires.setDate(tokenExpires.getDate() + (rvSettings.review_link_expiry_days || 7));
+
+        await supabase.from('review_tokens').insert({
+          order_id: piId,
+          member_id: memberId,
+          brand_id,
+          token: reviewToken,
+          expires_at: tokenExpires.toISOString(),
+        });
+      }
+    }
+
+    // ===== メール送信 =====
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseAnonKey && customer_email) {
+      const emailPayload = {
+        type: 'confirmation',
+        order_id: piId,
+        customer_name: customer_name || '',
+        customer_email,
+        items: items || [],
+        subtotal: orderSubtotal,
+        total: total_amount || order.total_amount,
+        points_used: points_used || 0,
+      };
+
+      // 注文確認メール
+      fetch(supabaseUrl + '/functions/v1/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + supabaseAnonKey },
+        body: JSON.stringify(emailPayload),
+      }).catch(() => {});
+
+      // 領収書メール
+      fetch(supabaseUrl + '/functions/v1/send-order-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + supabaseAnonKey },
+        body: JSON.stringify({
+          ...emailPayload,
+          type: 'receipt',
+          paid_at: new Date().toISOString(),
+          payment_method: payment_method_name || 'カード',
+          review_token: reviewToken || '',
+        }),
+      }).catch(() => {});
+    }
+
+    return ok(res, {
+      order_id: order.id,
+      earned_points: earnedPoints,
+      review_token: reviewToken,
+      confirmed: true,
+    });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
   }
