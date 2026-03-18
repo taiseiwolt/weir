@@ -2561,7 +2561,8 @@ function goToCheckout() {
         storeOptions: c.options
       };
     }),
-    subtotal: getCartTotal()
+    subtotal: getCartTotal(),
+    surchargeAmount: window._surchargeAmount || 0
   };
 
   try {
