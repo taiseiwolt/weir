@@ -623,10 +623,10 @@ function chHtmlPopup(ch){const src=LOGOS[ch];const d=ch==='出前館';if(src)ret
 // ===== DATA LOADER (API first, Supabase fallback) =====
 function mapOrderStatus(s) {
   // Map API/Supabase statuses to dashboard statuses
-  if (s === 'pending' || s === 'placed') return 'new';
-  if (s === 'confirmed' || s === 'preparing') return 'cooking';
+  if (s === 'pending' || s === 'placed' || s === 'order_placed') return 'new';
+  if (s === 'accepted' || s === 'confirmed' || s === 'preparing') return 'cooking';
   if (s === 'prepared') return 'ready';
-  if (s === 'delivered' || s === 'picked_up') return 'done';
+  if (s === 'delivered' || s === 'picked_up' || s === 'completed') return 'done';
   if (s === 'cancelled') return 'cancelled';
   return s; // pass through if already in dashboard format
 }
@@ -818,7 +818,7 @@ function renderExpand(){
 }
 
 // ===== ACTIONS =====
-const STATUS_NEXT_API = {new:'confirmed', cooking:'prepared', ready:'delivered'};
+const STATUS_NEXT_API = {new:'accepted', cooking:'prepared', ready:'delivered'};
 
 async function doAction(id){
   const o=O.find(x=>x.id===id);if(!o)return;

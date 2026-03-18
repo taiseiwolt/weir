@@ -754,7 +754,8 @@ img { max-width:100%; display:block; }
       <span>注文を見る</span>
       <span id="headerCartTotal">¥0</span>
     </button>
-    <button class="btn-signin">サインイン</button>
+    <a href="./aiden-mypage.html" id="mypageIcon" style="display:none;font-size:20px;text-decoration:none;color:var(--text-mid);padding:4px" title="マイページ">👤</a>
+    <button class="btn-signin" id="signinBtn">サインイン</button>
   </div>
 </header>
 
@@ -1480,6 +1481,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!STORE_DATA.storeRequestEnabled) {
     document.getElementById('orderRequest').style.display = 'none';
   }
+
+  // MyPage icon: show if logged in
+  try {
+    var memberId = sessionStorage.getItem('aiden_member_id');
+    var { data: { session } } = await sb.auth.getSession();
+    if (session && memberId) {
+      var mypageEl = document.getElementById('mypageIcon');
+      if (mypageEl) mypageEl.style.display = '';
+      var signinEl = document.getElementById('signinBtn');
+      if (signinEl) signinEl.style.display = 'none';
+    }
+  } catch(e) {}
 });
 
 // ===================================================================

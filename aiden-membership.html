@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会員プログラム | AIden</title>
+<meta property="og:title" content="会員プログラム | AIden">
+<meta property="og:description" content="お得な会員特典やポイントプログラムをご紹介します。">
+<meta property="og:image" content="https://aiden-jp.net/ogp.png">
+<meta property="og:url" content="https://aiden-jp.net/aiden-membership.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AIden">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="会員プログラム | AIden">
+<meta name="twitter:description" content="お得な会員特典やポイントプログラムをご紹介します。">
+<meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+<meta name="description" content="お得な会員特典やポイントプログラムをご紹介します。">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand: #D32F2F;
+  --brand-dark: #B71C1C;
+  --brand-light: #FFEBEE;
+  --brand-lighter: #FFF5F5;
+  --text: #212121;
+  --text-sub: #666;
+  --text-light: #999;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #E0E0E0;
+  --font: 'Noto Sans JP', sans-serif;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+  --gold: #F9A825; --gold-bg: #FFF8E1;
+  --silver: #90A4AE; --silver-bg: #ECEFF1;
+  --bronze: #A1887F; --bronze-bg: #EFEBE9;
+  --green: #2E7D32; --green-bg: #E8F5E9;
+  --blue: #1565C0; --blue-bg: #E3F2FD;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);color:var(--text);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:var(--font)}
+img{max-width:100%}
+
+/* Header */
+.header{background:var(--brand);position:sticky;top:0;z-index:100}
+.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;height:56px;padding:0 20px;gap:12px}
+.header-back{color:#fff;font-size:20px;text-decoration:none;display:flex;align-items:center;opacity:.8}
+.header-back:hover{opacity:1}
+.header-title{color:#fff;font-size:16px;font-weight:700;flex:1}
+.header-logo{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.header-logo-mark{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-logo-text{font-size:15px;font-weight:700}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;padding:48px 20px 40px;text-align:center}
+.hero-icon{font-size:48px;margin-bottom:12px}
+.hero-title{font-size:clamp(22px,4vw,32px);font-weight:800;margin-bottom:8px;line-height:1.3}
+.hero-sub{font-size:14px;opacity:.85;max-width:500px;margin:0 auto}
+
+/* Content */
+.content{max-width:700px;margin:0 auto;padding:20px 16px 80px}
+
+/* Section */
+.section{margin-bottom:24px}
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 4px}
+.sec-icon{font-size:20px}
+.sec-title{font-size:17px;font-weight:700}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow)}
+
+/* Rank cards */
+.rank-list{padding:16px;display:flex;flex-direction:column;gap:12px}
+.rank-card{border-radius:12px;padding:16px;position:relative}
+.rank-card.current{border:2px solid var(--brand)}
+.rank-card.current::after{content:'現在のランク';position:absolute;top:-1px;right:12px;background:var(--brand);color:#fff;font-size:9px;font-weight:700;padding:3px 10px;border-radius:0 0 8px 8px}
+.rank-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rank-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px}
+.rank-name{font-size:16px;font-weight:700}
+.rank-condition{font-size:12px;color:var(--text-sub)}
+.rank-benefits{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)}
+.rank-benefit{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);padding:3px 0}
+.rank-benefit::before{content:'✓';color:var(--green);font-weight:700}
+
+/* Point how-to */
+.how-to{padding:16px}
+.how-to-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid #F5F5F5}
+.how-to-row:last-child{border-bottom:none}
+.how-to-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.how-to-text h4{font-size:14px;font-weight:700;margin-bottom:3px}
+.how-to-text p{font-size:12px;color:var(--text-sub);line-height:1.5}
+
+/* Review point */
+.review-card{padding:20px}
+.review-highlight{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.review-big-icon{font-size:36px}
+.review-big-text{font-size:18px;font-weight:800;color:var(--brand)}
+.review-steps{display:flex;flex-direction:column;gap:10px}
+.review-step{display:flex;align-items:flex-start;gap:10px}
+.review-step-num{width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.review-step-text{font-size:13px;color:var(--text-sub);line-height:1.5}
+.review-note{font-size:11px;color:var(--text-light);margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0}
+
+/* First-time incentive */
+.incentive-card{padding:24px 20px;text-align:center;background:linear-gradient(135deg,#FFF8E1,#FFF3E0)}
+.incentive-icon{font-size:40px;margin-bottom:8px}
+.incentive-title{font-size:18px;font-weight:800;color:#E65100;margin-bottom:4px}
+.incentive-desc{font-size:13px;color:var(--text-sub);margin-bottom:16px}
+.incentive-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.incentive-badge{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #FFE0B2;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;color:#E65100}
+
+/* CTA */
+.cta-section{text-align:center;padding:24px 16px}
+.cta-btn{display:inline-block;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:var(--brand);transition:opacity .2s;text-decoration:none}
+.cta-btn:hover{opacity:.85}
+.cta-sub{font-size:12px;color:var(--text-light);margin-top:8px}
+
+/* Empty */
+.empty-msg{text-align:center;padding:40px 20px;color:var(--text-light);font-size:14px}
+
+@media(max-width:500px){
+  .hero{padding:32px 16px 28px}
+  .incentive-badges{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <a href="./aiden-brand-sushiro.html" class="header-back" id="backLink">←</a>
+    <span class="header-title" id="headerTitle">会員プログラム</span>
+  </div>
+</header>
+
+<!-- Hero -->
+<div class="hero" id="heroSection">
+  <div class="hero-icon">🏆</div>
+  <div class="hero-title" id="heroTitle">会員プログラム</div>
+  <div class="hero-sub" id="heroSub">お得な特典やポイントで、もっと楽しいお食事体験を。</div>
+</div>
+
+<div class="content">
+
+  <!-- Rank Section -->
+  <div class="section" id="sectionRank" style="display:none">
+    <div class="sec-hdr"><span class="sec-icon">🏆</span><span class="sec-title">ランク一覧</span></div>
+    <div class="card"><div class="rank-list" id="rankList"></div></div>
+  </div>
+
+  <!-- Point Section -->
+  <div class="section" id="sectionPoint" style="display:none">
+    <div class="sec-hdr"><span class="sec-icon">💰</span><span class="sec-title">ポイントの貯め方・使い方</span></div>
+    <div class="card"><div class="how-to" id="pointHowTo"></div></div>
+  </div>
+
+  <!-- Review Point Section -->
+  <div class="section" id="sectionReview" style="display:none">
+    <div class="sec-hdr"><span class="sec-icon">⭐</span><span class="sec-title">口コミポイント</span></div>
+    <div class="card"><div class="review-card" id="reviewCard"></div></div>
+  </div>
+
+  <!-- First-time Incentive Section -->
+  <div class="section" id="sectionIncentive" style="display:none">
+    <div class="sec-hdr"><span class="sec-icon">🎁</span><span class="sec-title">初回特典</span></div>
+    <div class="card"><div class="incentive-card" id="incentiveCard"></div></div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section" id="ctaSection">
+    <a href="./aiden-order-checkout.html#signup" class="cta-btn" id="ctaBtn">無料で会員登録する</a>
+    <div class="cta-sub" id="ctaSub">登録は30秒で完了します</div>
+  </div>
+
+  <!-- Empty fallback -->
+  <div class="empty-msg" id="emptyMsg" style="display:none">
+    このブランドでは現在、会員プログラムは設定されていません。
+  </div>
+</div>
+
+<script>
+// ===================================================================
+// SUPABASE CONFIG
+// ===================================================================
+const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Brand ID from URL param or sessionStorage
+const urlParams = new URLSearchParams(window.location.search);
+const BRAND_ID = urlParams.get('brand_id') || sessionStorage.getItem('aiden_brand_id') || '22222222-0000-0000-0000-000000000001';
+
+// ===================================================================
+// RANK COLOR MAP
+// ===================================================================
+const RANK_COLORS = {
+  0: { bg: 'var(--bronze-bg)', icon: 'var(--bronze)', text: '#6D4C41' },
+  1: { bg: 'var(--silver-bg)', icon: 'var(--silver)', text: '#546E7A' },
+  2: { bg: 'var(--gold-bg)',   icon: 'var(--gold)',   text: '#F57F17' }
+};
+
+// ===================================================================
+// LOAD DATA
+// ===================================================================
+(async function init() {
+  try {
+    // Check auth
+    const { data: { session } } = await sb.auth.getSession();
+    const memberId = sessionStorage.getItem('aiden_member_id');
+    let currentMember = null;
+
+    if (session && memberId) {
+      const { data: m } = await sb.from('members').select('id,current_rank_id,brand_id').eq('id', memberId).single();
+      if (m) currentMember = m;
+    }
+
+    // Load brand info
+    const { data: brand } = await sb.from('stores').select('brand_id, brands!inner(id,name,primary_color,primary_dark,primary_light,logo_mark_emoji,logo_text_value,hero_catchphrase)')
+      .eq('brand_id', BRAND_ID).limit(1).single();
+
+    if (brand && brand.brands) {
+      const b = brand.brands;
+      document.getElementById('heroTitle').textContent = (b.name || '') + 'の会員プログラム';
+      document.title = '会員プログラム | ' + (b.name || 'AIden');
+      if (b.primary_color) {
+        document.documentElement.style.setProperty('--brand', b.primary_color);
+        document.documentElement.style.setProperty('--brand-dark', b.primary_dark || b.primary_color);
+        document.documentElement.style.setProperty('--brand-light', b.primary_light || '#FFEBEE');
+      }
+    }
+
+    let hasAnySection = false;
+
+    // 1. Rank Settings
+    const { data: ranks } = await sb.from('rank_settings').select('*').eq('brand_id', BRAND_ID).order('sort_order', { ascending: true });
+    if (ranks && ranks.length > 0) {
+      hasAnySection = true;
+      document.getElementById('sectionRank').style.display = '';
+      const rankList = document.getElementById('rankList');
+      rankList.innerHTML = ranks.map(function(r, i) {
+        const colors = RANK_COLORS[Math.min(i, 2)] || RANK_COLORS[2];
+        const isCurrent = currentMember && currentMember.current_rank_id === r.id;
+        let condText = r.is_default ? '会員登録で自動付与' : '';
+        if (r.cond_total_spend > 0) condText = '累計 ¥' + r.cond_total_spend.toLocaleString() + ' 以上';
+        if (r.cond_monthly_count > 0) condText = '月間 ' + r.cond_monthly_count + '回 以上';
+
+        let benefits = '';
+        if (r.benefit_point_multi && r.benefit_point_multi > 1) {
+          benefits += '<div class="rank-benefit">ポイント付与率 ' + r.benefit_point_multi + '倍</div>';
+        }
+        if (r.benefit_birthday) benefits += '<div class="rank-benefit">' + r.benefit_birthday + '</div>';
+        if (r.benefit_other) benefits += '<div class="rank-benefit">' + r.benefit_other + '</div>';
+
+        return '<div class="rank-card' + (isCurrent ? ' current' : '') + '" style="background:' + colors.bg + '">'
+          + '<div class="rank-header">'
+          + '<div class="rank-icon" style="background:' + colors.icon + '">' + (r.icon || '🏅') + '</div>'
+          + '<div><div class="rank-name" style="color:' + colors.text + '">' + r.rank_name + '</div>'
+          + '<div class="rank-condition">' + condText + '</div></div></div>'
+          + (benefits ? '<div class="rank-benefits">' + benefits + '</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+
+    // 2. Point Settings
+    const { data: pointSettings } = await sb.from('point_settings').select('*').eq('brand_id', BRAND_ID).eq('enabled', true).single();
+    if (pointSettings) {
+      hasAnySection = true;
+      document.getElementById('sectionPoint').style.display = '';
+      const ps = pointSettings;
+      let html = '';
+      html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--green-bg)">🛒</div>'
+        + '<div class="how-to-text"><h4>注文で貯まる</h4><p>お会計' + ps.earn_rate_unit + '円ごとに' + ps.earn_rate_point + 'ポイント付与されます。</p></div></div>';
+      html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--blue-bg)">💳</div>'
+        + '<div class="how-to-text"><h4>お会計で使える</h4><p>' + ps.use_rate_point + 'ポイント = ' + ps.use_rate_yen + '円として、次回のお会計から値引きできます。</p></div></div>';
+      html += '<div class="how-to-row"><div class="how-to-icon" style="background:#FFEBEE">⏰</div>'
+        + '<div class="how-to-text"><h4>有効期限</h4><p>ポイントの有効期限は付与日から' + ps.expiry_months + 'ヶ月です。</p></div></div>';
+
+      // Rank multiplier info
+      if (ranks && ranks.some(function(r) { return r.benefit_point_multi > 1; })) {
+        html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--gold-bg)">🏆</div>'
+          + '<div class="how-to-text"><h4>ランク倍率</h4><p>ランクが上がるとポイント倍率がアップ！上位ランクでは最大'
+          + Math.max.apply(null, ranks.map(function(r){ return r.benefit_point_multi || 1; }))
+          + '倍のポイントが貯まります。</p></div></div>';
+      }
+      document.getElementById('pointHowTo').innerHTML = html;
+    }
+
+    // 3. Review Point Settings
+    const { data: reviewSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', BRAND_ID).eq('enabled', true).single();
+    if (reviewSettings) {
+      hasAnySection = true;
+      document.getElementById('sectionReview').style.display = '';
+      const rs = reviewSettings;
+      let html = '<div class="review-highlight">'
+        + '<div class="review-big-icon">⭐</div>'
+        + '<div class="review-big-text">口コミ投稿で' + rs.points_per_review + 'ポイントもらえる！</div></div>';
+
+      html += '<div class="review-steps">'
+        + '<div class="review-step"><div class="review-step-num">1</div><div class="review-step-text">モバイルオーダーで注文する</div></div>'
+        + '<div class="review-step"><div class="review-step-num">2</div><div class="review-step-text">注文完了後に届くメールの口コミリンクから投稿</div></div>'
+        + '<div class="review-step"><div class="review-step-num">3</div><div class="review-step-text">ポイントが自動付与されます</div></div>'
+        + '</div>';
+
+      html += '<div class="review-note">※ 月間上限: ' + rs.monthly_limit + '回まで'
+        + '　※ 投稿リンク有効期限: ' + rs.review_link_expiry_days + '日間</div>';
+
+      document.getElementById('reviewCard').innerHTML = html;
+    }
+
+    // 4. First-time Incentive
+    const { data: incentive } = await sb.from('first_time_incentives').select('*,coupons(name,discount_value,discount_type)').eq('brand_id', BRAND_ID).eq('is_active', true).single();
+    if (incentive) {
+      hasAnySection = true;
+      document.getElementById('sectionIncentive').style.display = '';
+      let badges = '';
+      if (incentive.type === 'point' || incentive.type === 'both') {
+        badges += '<div class="incentive-badge">🎯 ' + incentive.point_amount + 'ポイント プレゼント</div>';
+      }
+      if ((incentive.type === 'coupon' || incentive.type === 'both') && incentive.coupons) {
+        const c = incentive.coupons;
+        const discountLabel = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value.toLocaleString() + '割引';
+        badges += '<div class="incentive-badge">🎟️ ' + discountLabel + 'クーポン</div>';
+      }
+      document.getElementById('incentiveCard').innerHTML =
+        '<div class="incentive-icon">🎁</div>'
+        + '<div class="incentive-title">今なら登録で特典プレゼント！</div>'
+        + '<div class="incentive-desc">無料会員登録するだけで、すぐに使えるお得な特典がもらえます。</div>'
+        + '<div class="incentive-badges">' + badges + '</div>';
+    }
+
+    // CTA: toggle based on login state
+    if (session && memberId) {
+      document.getElementById('ctaBtn').textContent = 'マイページへ';
+      document.getElementById('ctaBtn').href = './aiden-mypage.html';
+      document.getElementById('ctaSub').textContent = '';
+    }
+
+    // Empty state
+    if (!hasAnySection) {
+      document.getElementById('emptyMsg').style.display = '';
+      document.getElementById('ctaSection').style.display = 'none';
+    }
+
+  } catch (e) {
+    console.error('Membership load error:', e);
+  }
+})();
+</script>
+</body>
+</html>

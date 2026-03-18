@@ -931,6 +931,18 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
   </div>
 </div>
 
+<!-- 口コミポイントバナー（注文完了後に表示、review_point_settings がある場合のみ） -->
+<div id="reviewPointBanner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9998;width:90%;max-width:400px">
+  <div style="background:linear-gradient(135deg,#FFF8E1,#FFF3E0);border:1px solid #FFE0B2;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.15)">
+    <div style="font-size:28px;flex-shrink:0">⭐</div>
+    <div style="flex:1">
+      <div id="reviewPointBannerText" style="font-size:13px;font-weight:700;color:#E65100;line-height:1.4"></div>
+      <div style="font-size:11px;color:#BF360C;margin-top:2px">詳しくは領収書メールをご確認ください</div>
+    </div>
+    <button onclick="document.getElementById('reviewPointBanner').style.display='none'" style="background:none;border:none;font-size:16px;color:#999;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+  </div>
+</div>
+
 <script>
 // ===================================================================
 // CONFIG - passed from previous page (aiden-order-store)
@@ -2072,6 +2084,8 @@ async function placeOrder() {
 
       // ゲスト注文完了後: 会員登録促進バナー表示
       showGuestRegBannerIfEnabled();
+      // 口コミポイントバナー表示
+      showReviewPointBannerIfEnabled();
 
     } catch (e) {
       console.error('Payment error:', e);
@@ -2097,6 +2111,8 @@ async function placeOrder() {
 
     // ゲスト注文完了後: 会員登録促進バナー表示
     showGuestRegBannerIfEnabled();
+    // 口コミポイントバナー表示
+    showReviewPointBannerIfEnabled();
   }
 }
 
@@ -2447,6 +2463,7 @@ function updateAuthUI(user, displayName) {
   const initial = (name || '会').charAt(0);
 
   headerRight.innerHTML = `
+    <a href="./aiden-mypage.html" style="font-size:18px;text-decoration:none;padding:4px" title="マイページ">👤</a>
     <div class="user-badge">
       <div class="user-badge-avatar">${escapeHtml(initial)}</div>
       <span>${escapeHtml(name)}</span>
@@ -2566,6 +2583,39 @@ async function showGuestRegBannerIfEnabled() {
 function closeGuestRegBanner() {
   const overlay = document.getElementById('guestRegBannerOverlay');
   if (overlay) overlay.style.display = 'none';
+}
+
+// ===================================================================
+// REVIEW POINT BANNER (注文完了後に口コミポイント周知)
+// ===================================================================
+async function showReviewPointBannerIfEnabled() {
+  try {
+    const brandId = CHECKOUT_DATA.brandId;
+    if (!brandId) return;
+
+    const { data, error } = await sb
+      .from('review_point_settings')
+      .select('*')
+      .eq('brand_id', brandId)
+      .eq('enabled', true)
+      .maybeSingle();
+
+    if (error || !data || !data.enabled) return;
+
+    const banner = document.getElementById('reviewPointBanner');
+    const textEl = document.getElementById('reviewPointBannerText');
+
+    if (textEl) {
+      textEl.textContent = '口コミ投稿で' + data.points_per_review + 'ポイントゲット！';
+    }
+    if (banner) {
+      banner.style.display = 'block';
+      // Auto-hide after 10 seconds
+      setTimeout(function() { banner.style.display = 'none'; }, 10000);
+    }
+  } catch (e) {
+    console.warn('Review point banner load error:', e);
+  }
 }
 </script>
 </body>

@@ -2521,11 +2521,62 @@ function downloadReceipt(){
 var toastTimer=null;
 
 /* =====================================================
+   GEOLOCATION
+   ===================================================== */
+function requestGeolocation() {
+  // Check localStorage for previous permission state
+  var geoState = localStorage.getItem('aiden_geo_permission');
+  if (geoState === 'denied') {
+    // User previously denied — show address input option, don't re-ask
+    return;
+  }
+
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      // Permission granted
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      localStorage.setItem('aiden_geo_permission', 'granted');
+
+      // Re-render store list sorted by distance
+      renderStoreList();
+
+      // Center map on user location
+      if (mainMap) {
+        mainMap.setView([userLat, userLng], 13);
+        // Add user marker
+        if (!userMarker) {
+          var userIcon = L.divIcon({
+            html: '<div style="width:14px;height:14px;background:#4285F4;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+            className: ''
+          });
+          userMarker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 1000 }).addTo(mainMap);
+        }
+      }
+
+      showToast('📍 現在地を取得しました');
+    },
+    function(err) {
+      // Permission denied or error
+      localStorage.setItem('aiden_geo_permission', 'denied');
+      // Default store list is already shown
+    },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+  );
+}
+
+/* =====================================================
    INIT
    ===================================================== */
 (async function() {
   await loadStoresFromAPI();
   renderStoreList();
+  // Request geolocation after initial render
+  requestGeolocation();
 })();
 
 </script>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイページ | AIden</title>
+<meta property="og:title" content="マイページ | AIden">
+<meta property="og:description" content="会員ランク・ポイント残高・クーポンを確認できます。">
+<meta property="og:image" content="https://aiden-jp.net/ogp.png">
+<meta property="og:url" content="https://aiden-jp.net/aiden-mypage.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AIden">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="マイページ | AIden">
+<meta name="twitter:description" content="会員ランク・ポイント残高・クーポンを確認できます。">
+<meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+<meta name="description" content="会員ランク・ポイント残高・クーポンを確認できます。">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand: #D32F2F;
+  --brand-dark: #B71C1C;
+  --brand-light: #FFEBEE;
+  --text: #212121;
+  --text-sub: #757575;
+  --text-light: #999;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #E0E0E0;
+  --font: 'Noto Sans JP', sans-serif;
+  --gold: #F9A825; --gold-bg: #FFF8E1;
+  --silver: #90A4AE; --silver-bg: #ECEFF1;
+  --bronze: #A1887F; --bronze-bg: #EFEBE9;
+  --green: #2E7D32; --green-bg: #E8F5E9;
+  --blue: #1565C0; --blue-bg: #E3F2FD;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:500px;margin:0 auto;min-height:100vh;padding-bottom:80px;-webkit-font-smoothing:antialiased}
+
+/* Header */
+.header{background:var(--brand);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.header-back{color:#fff;font-size:20px;text-decoration:none;opacity:.8}
+.header-back:hover{opacity:1}
+.header-title{font-size:16px;font-weight:700;flex:1}
+
+/* Not logged in */
+.login-prompt{text-align:center;padding:60px 24px}
+.login-prompt-icon{font-size:48px;margin-bottom:12px}
+.login-prompt-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.login-prompt-text{font-size:13px;color:var(--text-sub);margin-bottom:24px}
+.login-btn{display:inline-block;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;color:#fff;background:var(--brand);text-decoration:none}
+
+/* Status Card */
+.status-card{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;margin:16px;border-radius:16px;padding:24px 20px;position:relative;overflow:hidden}
+.status-card::after{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%}
+.status-rank{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.status-rank-icon{width:48px;height:48px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px}
+.status-rank-name{font-size:22px;font-weight:800}
+.status-rank-label{font-size:11px;opacity:.8}
+.status-member-name{font-size:13px;opacity:.9;margin-bottom:4px}
+
+/* Progress */
+.progress-section{background:rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;margin-top:16px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;opacity:.9;margin-bottom:8px}
+.progress-bar{height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:#FFD54F;border-radius:4px;transition:width .8s ease}
+.progress-hint{font-size:11px;opacity:.7;margin-top:6px;text-align:right}
+.progress-max{font-size:13px;font-weight:700;text-align:center;margin-top:8px}
+
+/* Point balance */
+.point-section{margin:0 16px 16px;display:none}
+.point-card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:20px;display:flex;align-items:center;justify-content:space-between}
+.point-label{font-size:12px;color:var(--text-sub);margin-bottom:2px}
+.point-value{font-size:32px;font-weight:800;letter-spacing:-1px}
+.point-yen{font-size:13px;color:var(--text-sub);font-weight:600}
+.point-icon{font-size:32px}
+
+/* Expiry warning */
+.expiry-warn{background:#FFF3E0;border:1px solid #FFE0B2;border-radius:10px;padding:12px 14px;margin:0 16px 16px;display:flex;align-items:flex-start;gap:10px}
+.expiry-warn-icon{font-size:18px;flex-shrink:0}
+.expiry-warn-text{font-size:12px;color:#E65100;line-height:1.5}
+.expiry-warn-text strong{font-weight:700}
+
+/* Section */
+.section{margin:0 16px 16px;display:none}
+.sec-title{font-size:14px;font-weight:700;padding:12px 0 8px;display:flex;align-items:center;gap:6px}
+.sec-title span{font-size:16px}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+
+/* Review point history */
+.review-item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #F5F5F5}
+.review-item:last-child{border-bottom:none}
+.review-item-icon{width:32px;height:32px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-right:12px}
+.review-item-info{flex:1}
+.review-item-desc{font-size:12px;font-weight:600}
+.review-item-date{font-size:10px;color:var(--text-sub);margin-top:2px}
+.review-item-pts{font-size:14px;font-weight:700;color:var(--green)}
+
+/* Coupons */
+.coupon-item{padding:16px;border-bottom:1px solid #F5F5F5;display:flex;align-items:center;gap:12px}
+.coupon-item:last-child{border-bottom:none}
+.coupon-icon{width:40px;height:40px;border-radius:10px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.coupon-info{flex:1}
+.coupon-name{font-size:13px;font-weight:700}
+.coupon-desc{font-size:11px;color:var(--text-sub);margin-top:2px}
+.coupon-expiry{font-size:10px;color:var(--text-light);margin-top:2px}
+
+/* Link to membership */
+.membership-link{display:block;margin:0 16px 16px;padding:16px;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;font-size:14px;font-weight:700;color:var(--brand);text-decoration:none;transition:background .15s}
+.membership-link:hover{background:var(--brand-light)}
+
+.empty-note{text-align:center;padding:20px;color:var(--text-light);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a href="javascript:history.back()" class="header-back">←</a>
+  <div class="header-title">マイページ</div>
+</div>
+
+<!-- Login prompt (shown when not logged in) -->
+<div id="loginPrompt" style="display:none">
+  <div class="login-prompt">
+    <div class="login-prompt-icon">👤</div>
+    <div class="login-prompt-title">ログインしてください</div>
+    <div class="login-prompt-text">マイページを利用するにはログインが必要です。</div>
+    <a href="./aiden-order-checkout.html#signin" class="login-btn">ログイン / 会員登録</a>
+  </div>
+</div>
+
+<!-- Main content (shown when logged in) -->
+<div id="mainContent" style="display:none">
+
+  <!-- Expiry Warning -->
+  <div class="expiry-warn" id="expiryWarn" style="display:none">
+    <div class="expiry-warn-icon">⚠️</div>
+    <div class="expiry-warn-text" id="expiryText"></div>
+  </div>
+
+  <!-- Current Status Card -->
+  <div class="status-card" id="statusCard" style="display:none">
+    <div class="status-member-name" id="memberName"></div>
+    <div class="status-rank">
+      <div class="status-rank-icon" id="rankIcon"></div>
+      <div>
+        <div class="status-rank-name" id="rankName">-</div>
+        <div class="status-rank-label">現在のランク</div>
+      </div>
+    </div>
+    <div id="progressArea"></div>
+  </div>
+
+  <!-- Point Balance -->
+  <div class="point-section" id="pointSection">
+    <div class="point-card">
+      <div>
+        <div class="point-label">利用可能ポイント</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <div class="point-value" id="pointBalance">0</div>
+          <span style="font-size:14px;font-weight:600;color:var(--text-sub)">pt</span>
+        </div>
+        <div class="point-yen" id="pointYen"></div>
+      </div>
+      <div class="point-icon">💰</div>
+    </div>
+  </div>
+
+  <!-- Review Point History -->
+  <div class="section" id="sectionReviewHistory">
+    <div class="sec-title"><span>⭐</span>口コミポイント履歴</div>
+    <div class="card" id="reviewHistoryCard"></div>
+  </div>
+
+  <!-- Coupons -->
+  <div class="section" id="sectionCoupons">
+    <div class="sec-title"><span>🎟️</span>保有クーポン</div>
+    <div class="card" id="couponsCard"></div>
+  </div>
+
+  <!-- Membership link -->
+  <a href="./aiden-membership.html" class="membership-link" id="membershipLink">
+    📋 会員プログラム詳細を見る
+  </a>
+</div>
+
+<script>
+// ===================================================================
+// SUPABASE CONFIG
+// ===================================================================
+const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const RANK_COLORS = {
+  0: { icon: '🥉' },
+  1: { icon: '🥈' },
+  2: { icon: '🥇' }
+};
+
+function fmtDate(d) {
+  var dt = new Date(d);
+  return dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0');
+}
+
+(async function init() {
+  try {
+    // Check auth
+    const { data: { session } } = await sb.auth.getSession();
+    const memberId = sessionStorage.getItem('aiden_member_id');
+
+    if (!session || !memberId) {
+      document.getElementById('loginPrompt').style.display = '';
+      return;
+    }
+
+    document.getElementById('mainContent').style.display = '';
+
+    // Load member data
+    const { data: member } = await sb.from('members').select('*').eq('id', memberId).single();
+    if (!member) {
+      document.getElementById('loginPrompt').style.display = '';
+      document.getElementById('mainContent').style.display = 'none';
+      return;
+    }
+
+    const brandId = member.brand_id;
+    document.getElementById('membershipLink').href = './aiden-membership.html?brand_id=' + brandId;
+
+    // Member name
+    if (member.last_name || member.first_name) {
+      document.getElementById('memberName').textContent = (member.last_name || '') + ' ' + (member.first_name || '') + ' さん';
+    }
+
+    // Load brand color
+    const { data: stores } = await sb.from('stores').select('brand_id, brands!inner(primary_color,primary_dark,primary_light)').eq('brand_id', brandId).limit(1);
+    if (stores && stores[0] && stores[0].brands) {
+      var b = stores[0].brands;
+      if (b.primary_color) {
+        document.documentElement.style.setProperty('--brand', b.primary_color);
+        document.documentElement.style.setProperty('--brand-dark', b.primary_dark || b.primary_color);
+        document.documentElement.style.setProperty('--brand-light', b.primary_light || '#FFEBEE');
+      }
+    }
+
+    // Load rank settings
+    const { data: ranks } = await sb.from('rank_settings').select('*').eq('brand_id', brandId).order('sort_order', { ascending: true });
+
+    if (ranks && ranks.length > 0) {
+      document.getElementById('statusCard').style.display = '';
+      var currentRank = ranks.find(function(r) { return r.id === member.current_rank_id; });
+      var rankIdx = ranks.indexOf(currentRank);
+      if (rankIdx < 0) { currentRank = ranks[0]; rankIdx = 0; }
+
+      document.getElementById('rankIcon').textContent = currentRank.icon || (RANK_COLORS[Math.min(rankIdx, 2)] || {}).icon || '🏅';
+      document.getElementById('rankName').textContent = currentRank.rank_name;
+
+      // Next rank progress
+      var nextRank = rankIdx < ranks.length - 1 ? ranks[rankIdx + 1] : null;
+      var progressArea = document.getElementById('progressArea');
+      if (nextRank) {
+        var totalSpend = member.total_spend || 0;
+        var target = nextRank.cond_total_spend || 0;
+        var pct = target > 0 ? Math.min(100, Math.round(totalSpend / target * 100)) : 0;
+        var remaining = Math.max(0, target - totalSpend);
+
+        var condText = '';
+        if (nextRank.cond_total_spend > 0) condText = 'あと ¥' + remaining.toLocaleString() + ' で昇格';
+        if (nextRank.cond_monthly_count > 0) {
+          var remCount = Math.max(0, nextRank.cond_monthly_count - (member.monthly_order_count || 0));
+          condText = 'あと ' + remCount + '回 で昇格';
+          pct = nextRank.cond_monthly_count > 0 ? Math.min(100, Math.round((member.monthly_order_count || 0) / nextRank.cond_monthly_count * 100)) : 0;
+        }
+
+        progressArea.innerHTML = '<div class="progress-section">'
+          + '<div class="progress-label"><span>' + currentRank.rank_name + '</span><span>' + nextRank.rank_name + 'まで</span></div>'
+          + '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>'
+          + '<div class="progress-hint">' + condText + '</div></div>';
+      } else {
+        progressArea.innerHTML = '<div class="progress-section"><div class="progress-max">🎉 最高ランク達成！</div></div>';
+      }
+    }
+
+    // Load point settings and balance
+    const { data: pointSettings } = await sb.from('point_settings').select('*').eq('brand_id', brandId).eq('enabled', true).single();
+    if (pointSettings) {
+      document.getElementById('pointSection').style.display = '';
+
+      // Calculate point balance from transactions
+      const { data: txns } = await sb.from('point_transactions').select('amount,expires_at,created_at').eq('member_id', memberId).eq('brand_id', brandId).order('created_at', { ascending: true });
+      var balance = 0;
+      var now = new Date();
+      var soonestExpiry = null;
+      var soonestExpiryAmount = 0;
+
+      if (txns) {
+        // Calculate active balance
+        txns.forEach(function(t) {
+          if (t.amount > 0 && t.expires_at && new Date(t.expires_at) < now) return; // expired
+          balance += t.amount;
+        });
+        balance = Math.max(0, balance);
+
+        // Find soonest expiring positive points
+        txns.filter(function(t) { return t.amount > 0 && t.expires_at && new Date(t.expires_at) > now; })
+          .sort(function(a, b) { return new Date(a.expires_at) - new Date(b.expires_at); })
+          .forEach(function(t) {
+            if (!soonestExpiry) {
+              soonestExpiry = t.expires_at;
+              soonestExpiryAmount = t.amount;
+            } else if (t.expires_at === soonestExpiry) {
+              soonestExpiryAmount += t.amount;
+            }
+          });
+      }
+
+      document.getElementById('pointBalance').textContent = balance.toLocaleString();
+      document.getElementById('pointYen').textContent = balance + 'ポイント = ¥' + (balance * pointSettings.use_rate_yen / pointSettings.use_rate_point).toLocaleString() + '分';
+
+      // Expiry warning
+      if (soonestExpiry) {
+        var expDate = new Date(soonestExpiry);
+        var daysLeft = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 30) {
+          document.getElementById('expiryWarn').style.display = 'flex';
+          document.getElementById('expiryText').innerHTML = '<strong>' + soonestExpiryAmount + 'pt</strong> が' + fmtDate(soonestExpiry) + 'に失効します。お早めにご利用ください。';
+        }
+      }
+    }
+
+    // Review point history
+    const { data: reviewSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', brandId).eq('enabled', true).single();
+    if (reviewSettings) {
+      document.getElementById('sectionReviewHistory').style.display = '';
+      const { data: reviewTxns } = await sb.from('point_transactions').select('*').eq('member_id', memberId).eq('brand_id', brandId).eq('source', 'review').order('created_at', { ascending: false }).limit(5);
+
+      var reviewCard = document.getElementById('reviewHistoryCard');
+      if (reviewTxns && reviewTxns.length > 0) {
+        reviewCard.innerHTML = reviewTxns.map(function(t) {
+          return '<div class="review-item">'
+            + '<div class="review-item-icon">⭐</div>'
+            + '<div class="review-item-info">'
+            + '<div class="review-item-desc">' + (t.reason || '口コミ投稿ポイント') + '</div>'
+            + '<div class="review-item-date">' + fmtDate(t.created_at) + '</div></div>'
+            + '<div class="review-item-pts">+' + t.amount + '</div></div>';
+        }).join('');
+      } else {
+        reviewCard.innerHTML = '<div class="empty-note">口コミポイント履歴はまだありません</div>';
+      }
+    }
+
+    // Coupons
+    const { data: memberCoupons } = await sb.from('member_coupons').select('*,coupons(name,discount_value,discount_type,expires_at)').eq('member_id', memberId).eq('is_used', false);
+    if (memberCoupons && memberCoupons.length > 0) {
+      document.getElementById('sectionCoupons').style.display = '';
+      var couponsCard = document.getElementById('couponsCard');
+      couponsCard.innerHTML = memberCoupons.map(function(mc) {
+        var c = mc.coupons;
+        if (!c) return '';
+        var discountLabel = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value.toLocaleString() + '割引';
+        var expiryLabel = c.expires_at ? '有効期限: ' + fmtDate(c.expires_at) : '';
+        return '<div class="coupon-item">'
+          + '<div class="coupon-icon">🎟️</div>'
+          + '<div class="coupon-info">'
+          + '<div class="coupon-name">' + c.name + '</div>'
+          + '<div class="coupon-desc">' + discountLabel + '</div>'
+          + (expiryLabel ? '<div class="coupon-expiry">' + expiryLabel + '</div>' : '')
+          + '</div></div>';
+      }).join('');
+    }
+
+  } catch (e) {
+    console.error('MyPage load error:', e);
+  }
+})();
+</script>
+</body>
+</html>
