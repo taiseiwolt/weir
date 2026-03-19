@@ -526,6 +526,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .section:nth-child(4) { animation-delay:.15s; }
 .section:nth-child(5) { animation-delay:.2s; }
 </style>
+<script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -961,6 +962,14 @@ const STORE_SLUG   = 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================================================================
+// STRIPE CONFIG
+// ===================================================================
+const stripeInstance = Stripe('pk_test_51TAiXe8IrssGKLKQNOIn8NnQ1f8BzAgd3cSKBNxQODtIYsWzeLX6ggSaZheuKn48isUlMkxLDVUTS2Nr3bRNDbwp00eNu0O0RE');
+let stripeElements = null;
+let cardElement = null;
+let cardComplete = false;
+
+// ===================================================================
 // UTILITY
 // ===================================================================
 function escapeHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1391,22 +1400,9 @@ function renderPaymentMethods() {
     const cardForm = pm.id === 'card' ? `
       <div class="card-form" id="cardForm" style="display:none">
         <div class="form-group" style="margin-bottom:8px">
-          <label>カード番号</label>
-          <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNumber(this);validateForm()">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>有効期限</label>
-            <input type="text" class="form-input" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this);validateForm()">
-          </div>
-          <div class="form-group">
-            <label>セキュリティコード</label>
-            <input type="text" class="form-input" id="cardCvc" placeholder="CVC/CVV" maxlength="4" oninput="validateForm()">
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label>カード名義</label>
-          <input type="text" class="form-input" id="cardHolder" placeholder="カード名義（ローマ字）" oninput="validateForm()">
+          <label>カード情報</label>
+          <div id="card-element" style="padding:12px;border:1px solid #ddd;border-radius:8px;background:#fff;"></div>
+          <div id="card-errors" role="alert" style="color:#e74c3c;margin-top:8px;font-size:14px;"></div>
         </div>
         <div class="card-secure-note">
           🔒 クレジットカードはStripeによって安全に処理されます。3Dセキュア認証に対応しています。お客様の情報はPCI DSS準拠の環境で保護されます。
@@ -1433,21 +1429,42 @@ function selectPayment(id, el) {
 
   // Show card form only for card
   const cardForm = document.getElementById('cardForm');
-  if(cardForm) cardForm.style.display = id==='card' ? '' : 'none';
+  if(cardForm) {
+    cardForm.style.display = id==='card' ? '' : 'none';
+
+    // Mount Stripe Elements if not yet mounted
+    if (id === 'card' && !cardElement) {
+      stripeElements = stripeInstance.elements();
+      cardElement = stripeElements.create('card', {
+        style: {
+          base: {
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Noto Sans JP', sans-serif",
+            '::placeholder': { color: '#aab7c4' }
+          },
+          invalid: { color: '#e74c3c' }
+        },
+        hidePostalCode: true
+      });
+      cardElement.mount('#card-element');
+
+      // Listen for card element changes
+      cardElement.on('change', function(event) {
+        const errEl = document.getElementById('card-errors');
+        if (event.error) {
+          errEl.textContent = event.error.message;
+        } else {
+          errEl.textContent = '';
+        }
+        cardComplete = event.complete;
+        validateForm();
+      });
+    }
+  }
 
   // Update order button
   validateForm();
-}
-
-function formatCardNumber(el) {
-  let v = el.value.replace(/\D/g,'').slice(0,16);
-  el.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
-}
-
-function formatExpiry(el) {
-  let v = el.value.replace(/\D/g,'').slice(0,4);
-  if(v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2);
-  el.value = v;
 }
 
 // ===================================================================
@@ -1790,11 +1807,7 @@ function checkAllValid(showAlerts) {
   if(!selectedPayment) { valid = false; errors.push('お支払い方法'); }
   if(showAlerts) document.getElementById('alertPayment').classList.toggle('show', !selectedPayment);
   if(selectedPayment === 'card') {
-    const cn = document.getElementById('cardNumber').value.replace(/\s/g,'');
-    const ce = document.getElementById('cardExpiry').value;
-    const cc = document.getElementById('cardCvc').value;
-    const ch = document.getElementById('cardHolder').value.trim();
-    if(!cn || cn.length < 14 || !ce || ce.length < 5 || !cc || cc.length < 3 || !ch) {
+    if(!cardComplete) {
       valid = false;
     }
   }
@@ -1905,7 +1918,7 @@ function clearPoints() {
 }
 
 // AIden 手数料率（チャネル別）- システム設定と同期
-const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
+
 // Vercel API base URL（同一オリジン or 環境別）
 const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? '' : 'https://aiden-demo.vercel.app';
@@ -2038,31 +2051,139 @@ async function placeOrder() {
     const newIdempotencyKey = crypto.randomUUID ? crypto.randomUUID() : ('ORD-' + Date.now() + '-' + Math.random().toString(36).slice(2));
     sessionStorage.setItem('aiden_order_idempotency', newIdempotencyKey);
 
-    const simOrderId = 'ORD-' + Date.now();
-    const simPaymentIntent = 'pi_sim_' + Date.now();
+    const channel = mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout');
+    const customerLastName = document.getElementById('custLastName').value.trim();
+    const customerFirstName = document.getElementById('custFirstName').value.trim();
+    const customerEmail = document.getElementById('custEmail').value.trim();
+    const customerPhone = document.getElementById('custPhone').value.trim();
+    const memberId = sessionStorage.getItem('aiden_member_id');
 
-    // Supabaseに注文を保存
-    try {
-      const custEmail = document.getElementById('custEmail').value.trim();
-      const custLastName = document.getElementById('custLastName').value.trim();
-      const custFirstName = document.getElementById('custFirstName').value.trim();
-      const custPhone = document.getElementById('custPhone').value.trim();
-      const memberId = sessionStorage.getItem('aiden_member_id');
+    // カード決済の場合: Stripe Connect + Stripe.js で決済
+    if (selectedPayment === 'card') {
+      // 1. Edge Function で PaymentIntent 作成 + 注文レコード作成（サーバー側で金額再計算）
+      const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          store_id: CHECKOUT_DATA.storeId,
+          cart_items: (CHECKOUT_DATA.cartItems || []).map(item => ({
+            product_id: item.product_id || item.id || null,
+            product_name: item.name,
+            quantity: item.qty || item.quantity || 1,
+            unit_price: item.price || 0,
+            options: item.options || null
+          })),
+          order_type: channel,
+          guest_info: {
+            first_name: customerFirstName,
+            last_name: customerLastName,
+            email: customerEmail,
+            phone: customerPhone
+          },
+          delivery_address: mode === 'delivery' ? {
+            prefecture: document.getElementById('addrPrefecture')?.value || '',
+            city: document.getElementById('addrCityInput')?.value || '',
+            address: document.getElementById('addrLineInput')?.value || '',
+            building: document.getElementById('addrBuildingInput')?.value || ''
+          } : null,
+          idempotency_key: newIdempotencyKey,
+          points_used: appliedPoints || 0,
+          aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+          normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
+          member_id: memberId || null,
+          coupon_discount: appliedCoupon ? (appliedCoupon.type === 'percent' ? Math.round(CHECKOUT_DATA.subtotal * appliedCoupon.discount / 100) : appliedCoupon.discount) : 0
+        })
+      });
 
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: '決済処理に失敗しました' }));
+        if (err.sold_out_products) {
+          throw new Error(err.error);
+        }
+        throw new Error(err.error || '決済処理に失敗しました');
+      }
+
+      const piData = await res.json();
+
+      if (!piData.client_secret) {
+        throw new Error('決済情報の取得に失敗しました');
+      }
+
+      // 2. Stripe.js で決済確認（3Dセキュア自動処理）
+      const { error: stripeError, paymentIntent } = await stripeInstance.confirmCardPayment(
+        piData.client_secret,
+        { payment_method: { card: cardElement } }
+      );
+
+      if (stripeError) {
+        if (stripeError.type === 'card_error' || stripeError.type === 'validation_error') {
+          throw new Error(stripeError.message);
+        }
+        throw new Error('決済処理中にエラーが発生しました');
+      }
+
+      // 3. 決済成功 → confirm-order で注文ステータス更新 + メール送信
+      if (paymentIntent.status === 'succeeded') {
+        try {
+          await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + SUPABASE_KEY
+            },
+            body: JSON.stringify({ payment_intent_id: paymentIntent.id })
+          });
+        } catch (confirmErr) {
+          console.warn('confirm-order call failed (webhook will recover):', confirmErr);
+        }
+
+        // ポイント消費トランザクションを記録
+        if (appliedPoints > 0 && memberId) {
+          try {
+            await sb.from('point_transactions').insert({
+              member_id: memberId,
+              amount: -appliedPoints,
+              balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
+              source: 'normal',
+              reason: '注文消費（' + paymentIntent.id + '）',
+              order_id: piData.order_id
+            });
+          } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
+        }
+
+        // sessionStorage にトラッキング情報を保存
+        sessionStorage.setItem('aiden_tracking_token', piData.tracking_token);
+        sessionStorage.setItem('aiden_last_order_id', piData.display_id);
+
+        showGuestRegBannerIfEnabled();
+        showReviewPointBannerIfEnabled();
+
+        // トラッキングページにリダイレクト
+        window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(piData.tracking_token);
+        return;
+      }
+
+      throw new Error('決済の確認に失敗しました。もう一度お試しください。');
+
+    } else {
+      // カード以外の決済（PayPay, Apple Pay 等）— 従来のSupabase直接INSERT
       const { data: orderData, error: orderError } = await sb
         .from('orders')
         .insert({
           store_id: CHECKOUT_DATA.storeId || null,
-          order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
+          order_type: channel,
           status: 'new',
           payment_method: selectedPayment,
           payment_status: 'paid',
           subtotal: CHECKOUT_DATA.subtotal || totalAmount,
           total_amount: totalAmount,
-          customer_last_name: custLastName,
-          customer_first_name: custFirstName,
-          customer_email: custEmail,
-          customer_phone: custPhone,
+          customer_last_name: customerLastName,
+          customer_first_name: customerFirstName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
           member_id: memberId || null,
           notes: '',
           tracking_token: newIdempotencyKey,
@@ -2070,7 +2191,11 @@ async function placeOrder() {
         .select('id')
         .single();
 
-      if (!orderError && orderData) {
+      if (orderError) {
+        throw new Error('注文の保存に失敗しました: ' + orderError.message);
+      }
+
+      if (orderData) {
         const orderItems = (CHECKOUT_DATA.cartItems || []).map(ci => ({
           order_id: orderData.id,
           product_id: ci.product_id || ci.id || null,
@@ -2083,38 +2208,24 @@ async function placeOrder() {
           await sb.from('order_items').insert(orderItems);
         }
       }
-    } catch(e) {
-      console.warn('Order save to DB failed (demo mode):', e);
+
+      sendOrderEmail('confirmation', orderData?.id || 'N/A', totalAmount, { paymentMethod: pm.name });
+
+      showGuestRegBannerIfEnabled();
+      showReviewPointBannerIfEnabled();
+
+      // トラッキングページにリダイレクト
+      window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(newIdempotencyKey);
     }
-
-    // カード決済の場合は3Dセキュアシミュレーション
-    if (selectedPayment === 'card') {
-      const channel = mode === 'delivery' ? 'delivery' : 'takeout';
-      const feeRate = AIDEN_FEE_RATES[channel] || 0.040;
-      const applicationFee = Math.round(totalAmount * feeRate);
-
-      if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + simPaymentIntent + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n\n認証を完了しますか？')) {
-        sessionStorage.removeItem('aiden_order_idempotency');
-        return; // finally で復旧
-      }
-    }
-
-    sendOrderEmail('confirmation', simOrderId, totalAmount, { paymentMethod: pm.name });
-
-    alert('✅ 注文が完了しました！\n\n' +
-      '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
-      '決済方法: ' + pm.name + '\n' +
-      '合計: ¥' + totalAmount.toLocaleString() + '\n' +
-      (selectedPayment === 'card' ? 'PaymentIntent: ' + simPaymentIntent + '\n' : '') +
-      '\n（注文追跡ページへ遷移します）');
-
-    showGuestRegBannerIfEnabled();
-    showReviewPointBannerIfEnabled();
-    // 注文成功 — 冪等性キーは残す（リロード時の二重注文防止）
 
   } catch (err) {
     console.error('placeOrder error:', err);
-    alert('注文処理中にエラーが発生しました。\nもう一度お試しください。');
+    const errEl = document.getElementById('card-errors');
+    if (errEl) errEl.textContent = err.message;
+    const alertEl = document.getElementById('orderAlert');
+    alertEl.textContent = '❌ ' + err.message;
+    alertEl.classList.add('show');
+    alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     sessionStorage.removeItem('aiden_order_idempotency');
   } finally {
     // X-16: ロック解除
