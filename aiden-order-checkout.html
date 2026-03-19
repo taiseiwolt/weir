@@ -1134,6 +1134,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCheckoutData();
   mode = CHECKOUT_DATA.orderMode || 'delivery'; // sessionStorageから取得した値を反映
 
+  // 空カートガード: 商品0件ならメニューページへリダイレクト
+  if (!CHECKOUT_DATA.cartItems || CHECKOUT_DATA.cartItems.length === 0) {
+    document.body.style.opacity = '';
+    document.body.style.pointerEvents = '';
+    alert('カートが空です。メニューから商品を追加してください。');
+    window.location.href = './aiden-order.html';
+    return;
+  }
+
   document.body.style.opacity = '';
   document.body.style.pointerEvents = '';
 
@@ -1975,144 +1984,85 @@ async function placeOrder() {
   const totalText = totalEl ? totalEl.textContent.replace(/[^0-9]/g, '') : '0';
   const totalAmount = parseInt(totalText, 10);
 
-  // カード決済の場合: Vercel API 経由で注文作成 + PaymentIntent
-  if (selectedPayment === 'card') {
+  // 注文シミュレーション（全決済方法共通）
+  {
     const orderBtn = document.querySelector('.order-btn');
     if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = '決済処理中...'; }
 
+    const simOrderId = 'ORD-' + Date.now();
+    const simPaymentIntent = 'pi_sim_' + Date.now();
+
+    // Supabaseに注文を保存
     try {
-      const memberId = sessionStorage.getItem('aiden_member_id');
       const custEmail = document.getElementById('custEmail').value.trim();
-      const custName = document.getElementById('custLastName').value.trim() + ' ' + document.getElementById('custFirstName').value.trim();
+      const custLastName = document.getElementById('custLastName').value.trim();
+      const custFirstName = document.getElementById('custFirstName').value.trim();
+      const custPhone = document.getElementById('custPhone').value.trim();
+      const memberId = sessionStorage.getItem('aiden_member_id');
 
-      // ===== Step 1: Vercel API で注文作成 + PaymentIntent =====
-      const orderPayload = {
-        store_id: CHECKOUT_DATA.storeId || '',
-        order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
-        items: (CHECKOUT_DATA.cartItems || []).map(function(ci) {
-          return {
-            product_id: ci.product_id || ci.id,
-            size_id: ci.size_id || null,
-            quantity: ci.quantity || 1,
-            option_item_ids: ci.option_item_ids || []
-          };
-        }),
-        brand_id: CHECKOUT_DATA.brandId || null,
-        stripe_account_id: CHECKOUT_DATA.stripeAccountId || null,
-        member_id: memberId || null,
-        customer_email: custEmail,
-        customer_name: custName,
-        points_used: appliedPoints || 0,
-        aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
-        normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
-        subtotal: CHECKOUT_DATA.subtotal || totalAmount,
-        guest_name: custName,
-        guest_email: custEmail,
-        guest_phone: document.getElementById('custPhone').value.trim(),
-      };
+      const { data: orderData, error: orderError } = await sb
+        .from('orders')
+        .insert({
+          store_id: CHECKOUT_DATA.storeId || null,
+          order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
+          status: 'new',
+          payment_method: selectedPayment,
+          payment_status: 'paid',
+          subtotal: CHECKOUT_DATA.subtotal || totalAmount,
+          total_amount: totalAmount,
+          customer_last_name: custLastName,
+          customer_first_name: custFirstName,
+          customer_email: custEmail,
+          customer_phone: custPhone,
+          member_id: memberId || null,
+          notes: '',
+          tracking_token: crypto.randomUUID ? crypto.randomUUID() : simOrderId,
+        })
+        .select('id')
+        .single();
 
-      // デリバリー住所
-      if (mode === 'delivery' && CHECKOUT_DATA.userAddress) {
-        orderPayload.delivery_address = CHECKOUT_DATA.userAddress;
+      if (!orderError && orderData) {
+        // 注文明細を保存
+        const orderItems = (CHECKOUT_DATA.cartItems || []).map(ci => ({
+          order_id: orderData.id,
+          product_id: ci.product_id || ci.id || null,
+          product_name: ci.name,
+          quantity: ci.qty || ci.quantity || 1,
+          unit_price: ci.price,
+          subtotal: ci.price * (ci.qty || ci.quantity || 1),
+        }));
+        if (orderItems.length > 0) {
+          await sb.from('order_items').insert(orderItems);
+        }
       }
+    } catch(e) {
+      console.warn('Order save to DB failed (demo mode):', e);
+    }
 
-      const authToken = sessionStorage.getItem('aiden_auth_token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
-
-      const res = await fetch(API_BASE + '/api/orders', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(orderPayload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: '注文作成に失敗しました' }));
-        throw new Error(err.error || '注文作成に失敗しました');
-      }
-
-      const data = await res.json();
-
-      // ===== Step 2: 3Dセキュア認証シミュレーション =====
-      const channel = orderPayload.order_type;
+    // カード決済の場合は3Dセキュアシミュレーション
+    if (selectedPayment === 'card') {
+      const channel = mode === 'delivery' ? 'delivery' : 'takeout';
       const feeRate = AIDEN_FEE_RATES[channel] || 0.040;
-      const applicationFee = data.application_fee || Math.round(totalAmount * feeRate);
+      const applicationFee = Math.round(totalAmount * feeRate);
 
-      if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + data.payment_intent_id + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n送金先: ' + (CHECKOUT_DATA.stripeAccountId || 'なし') + '\n\n認証を完了しますか？')) {
+      if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + simPaymentIntent + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n\n認証を完了しますか？')) {
         if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
         return;
       }
-
-      // ===== Step 3: Vercel API で注文確定（ポイント・ランク・レビュー・メール） =====
-      const confirmRes = await fetch(API_BASE + '/api/orders/' + data.order_id + '/confirm', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-          member_id: memberId,
-          brand_id: CHECKOUT_DATA.brandId || null,
-          payment_intent_id: data.payment_intent_id,
-          points_used: appliedPoints || 0,
-          aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
-          normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
-          subtotal: CHECKOUT_DATA.subtotal || totalAmount,
-          total_amount: totalAmount,
-          point_settings: CHECKOUT_DATA.pointSettings || null,
-          member_rank_multi: CHECKOUT_DATA.memberRankMulti || 1,
-          user_points: CHECKOUT_DATA.userPoints || 0,
-          customer_email: custEmail,
-          customer_name: custName,
-          payment_method_name: pm.name,
-          items: CHECKOUT_DATA.cartItems || []
-        })
-      });
-
-      let earnedPoints = 0;
-      if (confirmRes.ok) {
-        const confirmData = await confirmRes.json();
-        earnedPoints = confirmData.earned_points || 0;
-        CHECKOUT_DATA.reviewToken = confirmData.review_token || '';
-      }
-
-      alert('✅ 注文が完了しました！\n\n' +
-        '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
-        '決済方法: ' + pm.name + '\n' +
-        '合計: ¥' + totalAmount.toLocaleString() + '\n' +
-        'PaymentIntent: ' + data.payment_intent_id + '\n' +
-        (earnedPoints > 0 ? 'ポイント獲得: +' + earnedPoints + 'pt\n' : '') +
-        (appliedPoints > 0 ? 'ポイント使用: ' + appliedPoints + 'pt（AIden原資: ' + (CHECKOUT_DATA.aidenPointsUsed||0) + 'pt / 通常: ' + (CHECKOUT_DATA.normalPointsUsed||0) + 'pt）\n' : '') +
-        '\n（注文追跡ページへ遷移します）');
-
-      // ゲスト注文完了後: 会員登録促進バナー表示
-      showGuestRegBannerIfEnabled();
-      // 口コミポイントバナー表示
-      showReviewPointBannerIfEnabled();
-
-    } catch (e) {
-      console.error('Payment error:', e);
-      alert('❌ 決済エラー: ' + e.message);
-      const orderBtn = document.querySelector('.order-btn');
-      if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
-      return;
     }
-  } else {
-    // カード以外の決済（PayPay, Apple Pay 等）- 現状シミュレーション
-    const simOrderId = 'ORD-' + Date.now();
 
-    // ===== 注文確認メール送信 =====
-    sendOrderEmail('confirmation', simOrderId, totalAmount, {
-      paymentMethod: pm.name
-    });
+    sendOrderEmail('confirmation', simOrderId, totalAmount, { paymentMethod: pm.name });
 
     alert('✅ 注文が完了しました！\n\n' +
       '注文モード: ' + (mode === 'delivery' ? 'デリバリー' : 'テイクアウト') + '\n' +
       '決済方法: ' + pm.name + '\n' +
-      '合計: ¥' + totalAmount.toLocaleString() + '\n\n' +
-      '（注文追跡ページへ遷移します）');
+      '合計: ¥' + totalAmount.toLocaleString() + '\n' +
+      (selectedPayment === 'card' ? 'PaymentIntent: ' + simPaymentIntent + '\n' : '') +
+      '\n（注文追跡ページへ遷移します）');
 
-    // ゲスト注文完了後: 会員登録促進バナー表示
     showGuestRegBannerIfEnabled();
-    // 口コミポイントバナー表示
     showReviewPointBannerIfEnabled();
+    if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
   }
 }
 
