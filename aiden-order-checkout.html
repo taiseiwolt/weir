@@ -1123,6 +1123,7 @@ let selectedTime = 'now';
 let selectedPayment = null;
 let selectedCouponMode = 'code';
 let appliedCoupon = null;
+let isProcessing = false; // X-16: 連打防止フラグ
 
 // ===================================================================
 // INIT
@@ -1949,9 +1950,17 @@ async function sendOrderEmail(type, orderId, totalAmount, extraData) {
   }
 }
 
+// X-04: beforeunload警告関数
+function preventLeave(e) {
+  e.preventDefault();
+  e.returnValue = '';
+}
+
 async function placeOrder() {
+  // X-16: 連打防止 — 処理中なら即リターン
+  if (isProcessing) return;
+
   if(!checkAllValid(true)) {
-    // Show summary alert
     const alertEl = document.getElementById('orderAlert');
     const missing = [];
     const ln = document.getElementById('custLastName').value.trim();
@@ -1963,11 +1972,19 @@ async function placeOrder() {
     if(!selectedPayment) missing.push('お支払い方法');
     alertEl.textContent = '入力が不足しています: ' + missing.join('、');
     alertEl.classList.add('show');
-    // Scroll to first error
     const firstAlert = document.querySelector('.section-alert.show');
     if(firstAlert) firstAlert.scrollIntoView({ behavior:'smooth', block:'center' });
     return;
   }
+
+  // X-16: ロック開始
+  isProcessing = true;
+  const orderBtn = document.getElementById('btnOrder');
+  orderBtn.disabled = true;
+  orderBtn.textContent = '決済処理中...';
+
+  // X-04: 決済中のページ離脱警告を有効化
+  window.addEventListener('beforeunload', preventLeave);
 
   // Clear any previous alerts
   document.getElementById('orderAlert').classList.remove('show');
@@ -1981,10 +1998,34 @@ async function placeOrder() {
   const totalText = totalEl ? totalEl.textContent.replace(/[^0-9]/g, '') : '0';
   const totalAmount = parseInt(totalText, 10);
 
-  // 注文シミュレーション（全決済方法共通）
-  {
-    const orderBtn = document.querySelector('.order-btn');
-    if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = '決済処理中...'; }
+  try {
+    // X-30: 決済前に品切れ再チェック
+    const cartProductIds = (CHECKOUT_DATA.cartItems || [])
+      .map(ci => ci.product_id || ci.id)
+      .filter(Boolean);
+    if (cartProductIds.length > 0) {
+      const { data: freshProducts, error: stockErr } = await sb
+        .from('products')
+        .select('id, name, sale_status')
+        .in('id', cartProductIds);
+      if (!stockErr && freshProducts) {
+        const soldOutItems = freshProducts.filter(p => p.sale_status !== 'on_sale');
+        if (soldOutItems.length > 0) {
+          const names = soldOutItems.map(p => p.name).join('、');
+          alert('以下の商品が品切れになりました:\n' + names + '\n\nカートから削除してください。');
+          return; // finally で復旧
+        }
+      }
+    }
+
+    // X-03: 冪等性キー — 二重INSERT防止
+    const idempotencyKey = sessionStorage.getItem('aiden_order_idempotency');
+    if (idempotencyKey) {
+      alert('この注文は既に処理中または完了しています。\n画面をリロードして再度お試しください。');
+      return;
+    }
+    const newIdempotencyKey = crypto.randomUUID ? crypto.randomUUID() : ('ORD-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+    sessionStorage.setItem('aiden_order_idempotency', newIdempotencyKey);
 
     const simOrderId = 'ORD-' + Date.now();
     const simPaymentIntent = 'pi_sim_' + Date.now();
@@ -2013,13 +2054,12 @@ async function placeOrder() {
           customer_phone: custPhone,
           member_id: memberId || null,
           notes: '',
-          tracking_token: crypto.randomUUID ? crypto.randomUUID() : simOrderId,
+          tracking_token: newIdempotencyKey,
         })
         .select('id')
         .single();
 
       if (!orderError && orderData) {
-        // 注文明細を保存
         const orderItems = (CHECKOUT_DATA.cartItems || []).map(ci => ({
           order_id: orderData.id,
           product_id: ci.product_id || ci.id || null,
@@ -2043,8 +2083,8 @@ async function placeOrder() {
       const applicationFee = Math.round(totalAmount * feeRate);
 
       if (!confirm('3Dセキュア認証を行います。\n\nPaymentIntent: ' + simPaymentIntent + '\n金額: ¥' + totalAmount.toLocaleString() + '\n手数料（AIden）: ¥' + applicationFee.toLocaleString() + '\n\n認証を完了しますか？')) {
-        if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
-        return;
+        sessionStorage.removeItem('aiden_order_idempotency');
+        return; // finally で復旧
       }
     }
 
@@ -2059,7 +2099,19 @@ async function placeOrder() {
 
     showGuestRegBannerIfEnabled();
     showReviewPointBannerIfEnabled();
-    if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = '注文を確定する'; }
+    // 注文成功 — 冪等性キーは残す（リロード時の二重注文防止）
+
+  } catch (err) {
+    console.error('placeOrder error:', err);
+    alert('注文処理中にエラーが発生しました。\nもう一度お試しください。');
+    sessionStorage.removeItem('aiden_order_idempotency');
+  } finally {
+    // X-16: ロック解除
+    isProcessing = false;
+    orderBtn.disabled = false;
+    orderBtn.textContent = '注文を確定する';
+    // X-04: beforeunload警告を解除
+    window.removeEventListener('beforeunload', preventLeave);
   }
 }
 
