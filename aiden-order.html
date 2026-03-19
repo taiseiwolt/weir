@@ -20,6 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
 :root{
@@ -998,33 +999,33 @@ var BRAND = {primaryColor:'#D32F2F', primaryDark:'#B71C1C'};
 })();
 
 /* ============================================================
-   API CONFIG
+   SUPABASE + STORE LOADING
    ============================================================ */
-var API_BASE = 'https://aiden-jp.net'; // Production domain
+var SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoresFromAPI() {
-  if (!API_BASE) return;
   try {
-    var res = await fetch(API_BASE + '/api/restaurants/stores', { headers: { 'Content-Type': 'application/json' } });
-    if (!res.ok) return;
-    var data = await res.json();
-    if (data.stores && data.stores.length > 0) {
-      STORES = data.stores.map(function(s) {
-        var svcs = s.services || [];
-        return {
-          id: s.slug || s.id,
-          name: s.name,
-          addr: s.address || '',
-          station: '',
-          hours: '',
-          avail: s.is_active ? 'ok' : 'full',
-          hasTakeout: svcs.indexOf('mo_takeout') >= 0,
-          hasDelivery: svcs.indexOf('mo_delivery') >= 0,
-          lat: s.lat || 0,
-          lng: s.lng || 0
-        };
-      });
-    }
+    var { data, error } = await sb
+      .from('stores')
+      .select('id, slug, name, address, status, has_takeout, has_delivery, lat, lng')
+      .eq('status', 'active');
+    if (error || !data || data.length === 0) return;
+    STORES = data.map(function(s) {
+      return {
+        id: s.slug || s.id,
+        name: s.name,
+        addr: s.address || '',
+        station: '',
+        hours: '',
+        avail: 'ok',
+        hasTakeout: !!s.has_takeout,
+        hasDelivery: !!s.has_delivery,
+        lat: s.lat || 0,
+        lng: s.lng || 0
+      };
+    });
   } catch(e) { /* use fallback STORES */ }
 }
 

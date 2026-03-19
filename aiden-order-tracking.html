@@ -320,12 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load store info
     let store = null;
-    if (API_BASE && order.store_id) {
-      try {
-        store = await apiFetch('/api/restaurants/stores/' + order.store_id);
-      } catch(e) { /* fall through */ }
-    }
-    if (!store && order.store_id) {
+    if (order.store_id) {
       const { data } = await sb
         .from('stores')
         .select('*, brands(id, name, primary_color, slug)')

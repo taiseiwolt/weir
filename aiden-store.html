@@ -1046,53 +1046,7 @@ const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoreFromSupabase() {
-  // Try API first
-  if (API_BASE) {
-    try {
-      var apiStore = await apiFetch('/api/restaurants/stores/' + STORE_SLUG);
-      if (apiStore) {
-        STORE.name = apiStore.name;
-        STORE.address = apiStore.address || STORE.address;
-        STORE.phone = apiStore.phone || STORE.phone;
-        if (apiStore.seat_only_reservation != null) STORE.seatOnlyReservation = apiStore.seat_only_reservation;
-        if (apiStore.cancel_no_show != null) STORE.cancel.cancelNoShow = apiStore.cancel_no_show;
-        if (apiStore.cancel_same_day != null) STORE.cancel.cancelSameDay = apiStore.cancel_same_day;
-        if (apiStore.cancel_3days != null) STORE.cancel.cancel3days = apiStore.cancel_3days;
-
-        // Media
-        if (apiStore.media) {
-          var gallery = apiStore.media.filter(function(m){ return m.media_type === 'store_gallery'; });
-          var staff = apiStore.media.filter(function(m){ return m.media_type === 'store_staff'; });
-          if (gallery.length > 0) {
-            STORE.galleryMedia = gallery.map(function(m){ return {type: m.is_video ? 'video' : 'image', imgUrl: m.url, emoji: '', bg: '', isVideo: m.is_video}; });
-            STORE.photoMedia = gallery.map(function(m){ return {imgUrl: m.url, emoji: '', bg: '', isVideo: m.is_video}; });
-          }
-          if (staff.length > 0) STORE._staffFromDB = staff;
-        }
-
-        // Services
-        var svcKeys = apiStore.services || [];
-        STORE.hasTakeout = svcKeys.indexOf('mo_takeout') >= 0;
-        STORE.hasDelivery = svcKeys.indexOf('mo_delivery') >= 0;
-
-        // Menu via API
-        var menuData = await apiFetch('/api/menu/products?brand_id=' + (apiStore.brand_id || ''));
-        if (menuData && menuData.categories && menuData.products) {
-          var newMenu = menuData.categories.map(function(c) {
-            var catProds = menuData.products.filter(function(p) { return p.category_id === c.id; });
-            return { category: c.name, isCourse: false, items: catProds.map(function(p) {
-              var sz = (p.product_sizes || []).sort(function(a,b) { return (a.sort_order||0) - (b.sort_order||0); });
-              return { name: p.name, price: sz.length > 0 ? sz[0].price : (p.price || 0), priceUnit: '', outline: p.description || '', recommended: false, emoji: '🥩', bg: 'linear-gradient(135deg,#2d1f0a,#8b6914)' };
-            })};
-          }).filter(function(c) { return c.items.length > 0; });
-          if (newMenu.length > 0) MENU = newMenu;
-        }
-        return;
-      }
-    } catch(e) { /* fall through to Supabase */ }
-  }
-
-  // Supabase fallback
+  // Direct Supabase
   var {data: storeData} = await sb.from('stores').select('*').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
   STORE.name = storeData.name;

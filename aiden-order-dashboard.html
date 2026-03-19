@@ -1230,21 +1230,11 @@ function startPolling() {
   document.querySelector('.main').style.opacity = '0.4';
   let loaded = false;
 
-  // Try API first
-  if (API_BASE) {
-    try {
-      await loadFromAPI();
-      loaded = true;
-    } catch(e) { /* fall through */ }
-  }
-
-  // Supabase fallback
-  if (!loaded) {
-    try {
-      await loadFromSupabase();
-      loaded = true;
-    } catch(e) { /* fall through */ }
-  }
+  // Load from Supabase
+  try {
+    await loadFromSupabase();
+    loaded = true;
+  } catch(e) { /* fall through */ }
 
   // Demo data fallback
   if (!loaded) {
