@@ -1136,9 +1136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 空カートガード: 商品0件ならメニューページへリダイレクト
   if (!CHECKOUT_DATA.cartItems || CHECKOUT_DATA.cartItems.length === 0) {
-    document.body.style.opacity = '';
-    document.body.style.pointerEvents = '';
-    alert('カートが空です。メニューから商品を追加してください。');
     window.location.href = './aiden-order.html';
     return;
   }
