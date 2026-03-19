@@ -58,6 +58,22 @@ input,select,textarea{font-family:var(--font)}
 .lang-sel{appearance:none;padding:5px 22px 5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:700;background:var(--white);color:var(--text2);cursor:pointer;font-family:var(--font)}
 .lang-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text3);pointer-events:none}
 .hdr-signin{font-size:13px;font-weight:700;color:var(--text2);cursor:pointer}
+/* Sign-in Modal */
+.signin-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.signin-overlay.show{opacity:1;pointer-events:auto}
+.signin-modal{background:#fff;border-radius:16px;width:400px;max-width:92vw;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .25s;position:relative}
+.signin-overlay.show .signin-modal{transform:translateY(0)}
+.signin-close{position:absolute;top:12px;right:16px;font-size:24px;cursor:pointer;color:#999}
+.signin-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:4px}
+.signin-sub{font-size:12px;color:#999;text-align:center;margin-bottom:20px}
+.signin-field{margin-bottom:14px}
+.signin-field label{display:block;font-size:11px;font-weight:600;color:#666;margin-bottom:4px}
+.signin-field input{width:100%;padding:10px 12px;border:1px solid #E0E0E0;border-radius:8px;font-size:14px;font-family:inherit}
+.signin-field input:focus{outline:none;border-color:var(--brand)}
+.signin-error{background:#FFEBEE;color:#C62828;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px}
+.signin-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+.signin-btn:disabled{opacity:.5;cursor:default}
+.signin-alt{font-size:11px;color:#999;text-align:center;margin-top:14px;line-height:1.5}
 .cart-hdr-btn{display:none;align-items:center;gap:6px;background:var(--brand);color:white;border-radius:20px;padding:6px 14px 6px 10px;font-size:13px;font-weight:700;transition:background .15s;cursor:pointer;border:none}
 .cart-hdr-btn.show{display:flex}
 .cart-hdr-btn:hover{background:var(--brand-dark)}
@@ -650,9 +666,30 @@ input,select,textarea{font-family:var(--font)}
       <div class="cart-hdr-badge" id="cart-hdr-badge">0</div>
       <span id="cart-hdr-label">カート</span>
     </button>
-    <span class="hdr-signin" id="hdr-signin">サインイン</span>
+    <span class="hdr-signin" id="hdr-signin" onclick="handleSignIn()">サインイン</span>
   </div>
 </header>
+
+<!-- ===== SIGN-IN MODAL ===== -->
+<div class="signin-overlay" id="signinOverlay" onclick="if(event.target===this)closeSigninModal()">
+  <div class="signin-modal">
+    <div class="signin-close" onclick="closeSigninModal()">&times;</div>
+    <div style="font-size:28px;text-align:center;margin-bottom:8px">🔐</div>
+    <div class="signin-title">ログイン</div>
+    <div class="signin-sub">メールアドレスとパスワードでログイン</div>
+    <div class="signin-field">
+      <label>メールアドレス</label>
+      <input type="email" id="signinEmail" placeholder="mail@example.com">
+    </div>
+    <div class="signin-field">
+      <label>パスワード</label>
+      <input type="password" id="signinPassword" placeholder="パスワード">
+    </div>
+    <div class="signin-error" id="signinError" style="display:none"></div>
+    <button class="signin-btn" id="signinBtn" onclick="doSignin()">ログイン</button>
+    <div class="signin-alt">アカウントをお持ちでない方は、ご注文時に新規登録いただけます。</div>
+  </div>
+</div>
 
 <!-- ===== SCREEN 1: STORE SELECT ===== -->
 <div id="screen-store" class="s-show">
@@ -1225,6 +1262,36 @@ var hlStore        = null;
    t() — Screen2-4 JS が使う翻訳ヘルパー（キーをそのまま返す）
    ============================================================ */
 function t(key){ return key; }
+
+function handleSignIn() {
+  document.getElementById('signinOverlay').classList.add('show');
+}
+function closeSigninModal() {
+  document.getElementById('signinOverlay').classList.remove('show');
+  document.getElementById('signinError').style.display = 'none';
+}
+async function doSignin() {
+  var email = document.getElementById('signinEmail').value.trim();
+  var pass = document.getElementById('signinPassword').value;
+  var errEl = document.getElementById('signinError');
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; errEl.style.display = ''; return; }
+  var btn = document.getElementById('signinBtn');
+  btn.disabled = true; btn.textContent = 'ログイン中...';
+  try {
+    var { data, error } = await sb.auth.signInWithPassword({ email: email, password: pass });
+    if (error) throw error;
+    // Fetch member data
+    var { data: member } = await sb.from('members').select('id').eq('auth_user_id', data.user.id).single();
+    if (member) sessionStorage.setItem('aiden_member_id', member.id);
+    closeSigninModal();
+    document.getElementById('hdr-signin').textContent = '✓ ログイン済';
+    document.getElementById('hdr-signin').style.pointerEvents = 'none';
+  } catch(e) {
+    errEl.textContent = 'ログインに失敗しました。メールアドレスとパスワードを確認してください。';
+    errEl.style.display = '';
+  }
+  btn.disabled = false; btn.textContent = 'ログイン';
+}
 
 /* ============================================================
    L_() — Screen1 の翻訳ヘルパー

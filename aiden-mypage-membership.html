@@ -119,6 +119,36 @@ body { font-family: "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; backg
 .expiry-warn-text { font-size:11px; color:#E65100; line-height:1.5; }
 .expiry-warn-text strong { font-weight:700; }
 
+/* Address Management */
+.addr-mgmt { }
+.addr-list { padding:0 16px; }
+.addr-item { padding:14px 0; border-bottom:1px solid #F5F5F5; }
+.addr-item:last-child { border-bottom:none; }
+.addr-item-header { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.addr-item-label { font-size:12px; font-weight:700; background:var(--silver-bg); color:var(--text); padding:2px 8px; border-radius:4px; }
+.addr-item-default { font-size:10px; font-weight:700; background:var(--green-bg); color:var(--green); padding:2px 8px; border-radius:4px; }
+.addr-item-text { font-size:12px; color:var(--text-sub); line-height:1.6; }
+.addr-item-actions { display:flex; gap:8px; margin-top:8px; }
+.addr-item-actions button { font-size:11px; font-weight:600; padding:4px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; color:var(--text-sub); cursor:pointer; }
+.addr-item-actions button:active { background:#F5F5F5; }
+.addr-item-actions button.del { color:var(--red); border-color:#FFCDD2; }
+.addr-add-btn { width:100%; padding:12px; border:2px dashed var(--border); border-radius:10px; background:none; font-size:13px; font-weight:600; color:var(--primary); cursor:pointer; transition:all .2s; }
+.addr-add-btn:hover { background:var(--primary-light); border-color:var(--primary); }
+
+/* Address Modal */
+.addr-modal-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .25s; }
+.addr-modal-overlay.show { opacity:1; pointer-events:auto; }
+.addr-modal { background:#FFF; border-radius:16px; width:400px; max-width:92vw; max-height:90vh; overflow-y:auto; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.2); transform:translateY(20px); transition:transform .25s; }
+.addr-modal-overlay.show .addr-modal { transform:translateY(0); }
+.addr-modal-close { position:absolute; top:12px; right:16px; font-size:24px; cursor:pointer; color:#999; }
+.addr-modal-title { font-size:16px; font-weight:700; margin-bottom:20px; }
+.addr-field { margin-bottom:14px; }
+.addr-field label { display:block; font-size:11px; font-weight:600; color:var(--text-sub); margin-bottom:4px; }
+.addr-field input, .addr-field select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; }
+.addr-field input:focus, .addr-field select:focus { outline:none; border-color:var(--primary); }
+.addr-save-btn { width:100%; padding:14px; background:var(--primary); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; }
+.addr-save-btn:active { opacity:.8; }
+
 /* Bottom Nav (placeholder) */
 .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:#fff; border-top:1px solid var(--border); display:flex; padding:8px 0 20px; z-index:10; }
 .nav-item { flex:1; text-align:center; font-size:9px; color:var(--text-sub); }
@@ -319,6 +349,69 @@ body { font-family: "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; backg
   </div>
 </div>
 
+<!-- Address Management -->
+<div class="section">
+  <div class="section-title"><span>📍</span>配達先住所</div>
+  <div class="card">
+    <div class="addr-mgmt" id="addrMgmt">
+      <div class="addr-empty" id="addrEmpty">
+        <p style="font-size:12px;color:var(--text-sub);text-align:center;padding:20px 0;">保存済みの住所はありません</p>
+      </div>
+      <div class="addr-list" id="addrList"></div>
+      <div style="padding:12px 16px;">
+        <button class="addr-add-btn" onclick="openAddrModal()">+ 住所を追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Address Modal -->
+<div class="addr-modal-overlay" id="addrModalOverlay" onclick="if(event.target===this)closeAddrModal()">
+  <div class="addr-modal">
+    <div class="addr-modal-close" onclick="closeAddrModal()">&times;</div>
+    <div class="addr-modal-title" id="addrModalTitle">住所を追加</div>
+    <input type="hidden" id="addrEditId" value="">
+    <div class="addr-field">
+      <label>ラベル</label>
+      <select id="addrLabel">
+        <option value="自宅">自宅</option>
+        <option value="職場">職場</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div class="addr-field">
+      <label>郵便番号</label>
+      <input type="text" id="addrPostal" placeholder="000-0000" maxlength="8">
+    </div>
+    <div class="addr-field">
+      <label>都道府県</label>
+      <select id="addrPrefecture">
+        <option value="">選択してください</option>
+        <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
+        <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
+        <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option>
+        <option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option>
+        <option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+        <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option>
+        <option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+      </select>
+    </div>
+    <div class="addr-field">
+      <label>市区町村</label>
+      <input type="text" id="addrCity" placeholder="渋谷区">
+    </div>
+    <div class="addr-field">
+      <label>番地</label>
+      <input type="text" id="addrStreet" placeholder="神宮前1-2-3">
+    </div>
+    <div class="addr-field">
+      <label>建物名・部屋番号（任意）</label>
+      <input type="text" id="addrBuilding" placeholder="○○マンション 101号室">
+    </div>
+    <button class="addr-save-btn" onclick="saveAddress()">保存する</button>
+  </div>
+</div>
+
 <!-- Bottom Nav -->
 <div class="bottom-nav">
   <div class="nav-item"><div class="nav-icon">🏠</div>ホーム</div>
@@ -327,7 +420,12 @@ body { font-family: "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; backg
   <div class="nav-item active"><div class="nav-icon">👤</div>マイページ</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+var SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 function switchHistory(el, type) {
   document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
@@ -339,6 +437,117 @@ function switchHistory(el, type) {
     }
   });
 }
+
+// ===================================================================
+// ADDRESS MANAGEMENT
+// ===================================================================
+var addresses = [];
+
+async function loadAddresses() {
+  var memberId = sessionStorage.getItem('aiden_member_id');
+  if (!memberId) { document.getElementById('addrEmpty').style.display = ''; return; }
+  try {
+    var { data, error } = await sb.from('member_addresses').select('*').eq('member_id', memberId).order('is_default', { ascending: false });
+    if (error) throw error;
+    addresses = data || [];
+    renderAddresses();
+  } catch(e) { console.error('住所読み込みエラー:', e); }
+}
+
+function renderAddresses() {
+  var list = document.getElementById('addrList');
+  var empty = document.getElementById('addrEmpty');
+  list.innerHTML = '';
+  if (addresses.length === 0) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  addresses.forEach(function(a) {
+    var div = document.createElement('div');
+    div.className = 'addr-item' + (a.is_default ? ' default' : '');
+    div.innerHTML =
+      '<div class="addr-item-header">' +
+        '<span class="addr-item-label">' + (a.label || '住所') + '</span>' +
+        (a.is_default ? '<span class="addr-item-default">デフォルト</span>' : '') +
+      '</div>' +
+      '<div class="addr-item-text">〒' + (a.postal_code || '') + ' ' + (a.prefecture || '') + (a.city || '') + (a.street || '') +
+        (a.building ? ' ' + a.building : '') +
+      '</div>' +
+      '<div class="addr-item-actions">' +
+        '<button onclick="editAddress(\'' + a.id + '\')">編集</button>' +
+        (!a.is_default ? '<button onclick="setDefaultAddr(\'' + a.id + '\')">デフォルトに設定</button>' : '') +
+        '<button class="del" onclick="deleteAddress(\'' + a.id + '\')">削除</button>' +
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function openAddrModal(addr) {
+  document.getElementById('addrEditId').value = addr ? addr.id : '';
+  document.getElementById('addrModalTitle').textContent = addr ? '住所を編集' : '住所を追加';
+  document.getElementById('addrLabel').value = addr ? (addr.label || '自宅') : '自宅';
+  document.getElementById('addrPostal').value = addr ? (addr.postal_code || '') : '';
+  document.getElementById('addrPrefecture').value = addr ? (addr.prefecture || '') : '';
+  document.getElementById('addrCity').value = addr ? (addr.city || '') : '';
+  document.getElementById('addrStreet').value = addr ? (addr.street || '') : '';
+  document.getElementById('addrBuilding').value = addr ? (addr.building || '') : '';
+  document.getElementById('addrModalOverlay').classList.add('show');
+}
+function closeAddrModal() { document.getElementById('addrModalOverlay').classList.remove('show'); }
+
+function editAddress(id) {
+  var addr = addresses.find(function(a) { return a.id === id; });
+  if (addr) openAddrModal(addr);
+}
+
+async function saveAddress() {
+  var memberId = sessionStorage.getItem('aiden_member_id');
+  if (!memberId) { alert('ログインが必要です'); return; }
+  var id = document.getElementById('addrEditId').value;
+  var postal = document.getElementById('addrPostal').value.trim();
+  var pref = document.getElementById('addrPrefecture').value;
+  var city = document.getElementById('addrCity').value.trim();
+  var street = document.getElementById('addrStreet').value.trim();
+  if (!pref || !city || !street) { alert('都道府県・市区町村・番地は必須です'); return; }
+  var rec = {
+    member_id: memberId,
+    label: document.getElementById('addrLabel').value,
+    postal_code: postal,
+    prefecture: pref,
+    city: city,
+    street: street,
+    building: document.getElementById('addrBuilding').value.trim(),
+    is_default: addresses.length === 0
+  };
+  try {
+    if (id) {
+      await sb.from('member_addresses').update(rec).eq('id', id);
+    } else {
+      await sb.from('member_addresses').insert(rec);
+    }
+    closeAddrModal();
+    await loadAddresses();
+  } catch(e) { alert('保存に失敗しました'); console.error(e); }
+}
+
+async function setDefaultAddr(id) {
+  var memberId = sessionStorage.getItem('aiden_member_id');
+  if (!memberId) return;
+  try {
+    await sb.from('member_addresses').update({ is_default: false }).eq('member_id', memberId);
+    await sb.from('member_addresses').update({ is_default: true }).eq('id', id);
+    await loadAddresses();
+  } catch(e) { console.error(e); }
+}
+
+async function deleteAddress(id) {
+  if (!confirm('この住所を削除しますか？')) return;
+  try {
+    await sb.from('member_addresses').delete().eq('id', id);
+    await loadAddresses();
+  } catch(e) { alert('削除に失敗しました'); console.error(e); }
+}
+
+// Init
+loadAddresses();
 </script>
 </body>
 </html>

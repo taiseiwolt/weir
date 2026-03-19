@@ -77,6 +77,20 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
 .review-btn{display:none;margin-top:16px;padding:12px 28px;background:var(--brand);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;transition:transform .15s}
 .review-btn:active{transform:scale(.96)}
 
+/* === POST-DELIVERY ACTIONS === */
+.post-delivery-actions{display:none;width:100%;margin-top:16px;gap:10px;flex-direction:column;align-items:center}
+.post-delivery-actions[style*="display: flex"],.post-delivery-actions.show{display:flex!important}
+.post-delivery-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:320px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:transform .15s;font-family:'Poppins','Noto Sans JP',sans-serif}
+.post-delivery-btn:active{transform:scale(.96)}
+.post-delivery-btn.review-link{background:#FFF8E1;color:#F57F17;border:1px solid #FFE082}
+.post-delivery-btn.reorder{background:var(--brand);color:#fff}
+.post-delivery-coupons{width:100%;max-width:320px;background:#F1F8E9;border:1px solid #C5E1A5;border-radius:12px;padding:12px 16px;margin-top:4px}
+.coupon-banner-title{font-size:12px;font-weight:700;color:#33691E;margin-bottom:8px}
+.coupon-banner-list{display:flex;flex-direction:column;gap:6px}
+.coupon-banner-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px}
+.coupon-banner-item .coupon-name{font-weight:600;color:#333}
+.coupon-banner-item .coupon-val{font-weight:700;color:#E65100}
+
 /* === MODAL === */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
 .modal-overlay.show{display:flex}
@@ -158,6 +172,18 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
     <div class="step-bar" id="stepBar"></div>
     <div class="status-disclaimer" id="deliveryDisclaimer" style="display:none">配達時間は状況によって15分程度前後する可能性があります、予めご了承ください</div>
     <button class="review-btn" id="reviewBtn" onclick="openReview()">⭐ 口コミを書く</button>
+    <div class="post-delivery-actions" id="postDeliveryActions" style="display:none">
+      <a class="post-delivery-btn review-link" id="reviewLinkBtn" href="#" target="_blank">
+        <span>📝</span> 口コミを書いてポイントGET
+      </a>
+      <button class="post-delivery-btn reorder" id="reorderBtn" onclick="reorderFromTracking()">
+        <span>🔄</span> もう一度注文する
+      </button>
+      <div class="post-delivery-coupons" id="postDeliveryCoupons" style="display:none">
+        <div class="coupon-banner-title">次回使えるクーポン</div>
+        <div class="coupon-banner-list" id="couponBannerList"></div>
+      </div>
+    </div>
   </div>
   <button class="float-btn btn-chat" onclick="openChat()" title="チャットサポート">💬</button>
   <button class="float-btn btn-receipt" onclick="openReceipt()" title="注文概要">🧾</button>
@@ -485,6 +511,14 @@ function renderTracking() {
 
   document.getElementById('deliveryDisclaimer').style.display = ch==='delivery'&&!isFinal&&!isCancelled ? '' : 'none';
   document.getElementById('reviewBtn').style.display = isFinal&&!isCancelled ? '' : 'none';
+  // Show post-delivery actions
+  var postActions = document.getElementById('postDeliveryActions');
+  if (isFinal && !isCancelled) {
+    postActions.style.display = 'flex';
+    setupPostDeliveryActions();
+  } else {
+    postActions.style.display = 'none';
+  }
   if (isFinal||isCancelled) spinner.style.display = 'none';
 }
 
@@ -764,6 +798,54 @@ function appendChatMsg(m) {
 // REVIEW
 // ===================================================================
 function openReview() { alert('⭐ 口コミ投稿\n\nこの機能は今後実装予定です。'); }
+
+// ===================================================================
+// POST-DELIVERY ACTIONS
+// ===================================================================
+function setupPostDeliveryActions() {
+  var reviewBtn = document.getElementById('reviewLinkBtn');
+  if (storeData && storeData.google_place_id) {
+    reviewBtn.href = 'https://search.google.com/local/writereview?placeid=' + storeData.google_place_id;
+  } else if (storeData && storeData.name) {
+    reviewBtn.href = 'https://www.google.com/search?q=' + encodeURIComponent(storeData.name + ' 口コミ');
+  }
+  loadPostDeliveryCoupons();
+}
+
+function reorderFromTracking() {
+  if (storeData && brandData) {
+    var url = 'aiden-order-store.html?brand=' + (brandData.slug || '') + '&store=' + (storeData.slug || storeData.id);
+    window.location.href = url;
+  } else {
+    window.location.href = 'aiden-order.html';
+  }
+}
+
+async function loadPostDeliveryCoupons() {
+  try {
+    var memberId = sessionStorage.getItem('aiden_member_id');
+    if (!memberId) return;
+    var { data } = await sb.from('member_coupons')
+      .select('*, coupons(*)')
+      .eq('member_id', memberId)
+      .eq('is_used', false)
+      .limit(3);
+    if (!data || data.length === 0) return;
+    var container = document.getElementById('postDeliveryCoupons');
+    var list = document.getElementById('couponBannerList');
+    list.innerHTML = '';
+    data.forEach(function(mc) {
+      var c = mc.coupons;
+      if (!c) return;
+      var div = document.createElement('div');
+      div.className = 'coupon-banner-item';
+      var valText = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value + '引';
+      div.innerHTML = '<span class="coupon-name">' + (c.name || 'クーポン') + '</span><span class="coupon-val">' + valText + '</span>';
+      list.appendChild(div);
+    });
+    container.style.display = '';
+  } catch(e) { console.error('クーポン読み込みエラー:', e); }
+}
 
 // ===================================================================
 // DEMO MODE

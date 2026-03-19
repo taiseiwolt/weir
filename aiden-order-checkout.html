@@ -475,6 +475,10 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .price-row.total .label { font-weight:700; color:var(--text); }
 .price-row.total .value { font-size:18px; font-weight:800; color:var(--brand); }
 .price-row.discount .value { color:var(--danger); }
+.price-row { position:relative; flex-wrap:wrap; }
+.surcharge-info { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background:var(--text-light,#999); color:#fff; font-size:10px; font-weight:700; cursor:pointer; margin-left:4px; vertical-align:middle; }
+.surcharge-tooltip { display:none; width:100%; font-size:11px; color:var(--text-mid); background:#FFF8E1; border:1px solid #FFE082; border-radius:6px; padding:8px 10px; margin-top:4px; line-height:1.5; }
+.surcharge-tooltip.show { display:block; }
 .price-divider { border:none; border-top:1px solid var(--border-light); margin:16px 0; }
 .price-privacy {
   font-size:11px; color:var(--text-light); line-height:1.6;
@@ -887,8 +891,9 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         <span class="value" id="priceDelivery">¥0</span>
       </div>
       <div class="price-row" id="priceSurchargeRow" style="display:none">
-        <span class="label">サービス料</span>
+        <span class="label">サービス料 <span class="surcharge-info" onclick="toggleSurchargeTooltip(event)" title="最低注文金額未満のご注文にはサービス料がかかります">?</span></span>
         <span class="value" id="priceSurcharge">¥0</span>
+        <div class="surcharge-tooltip" id="surchargeTooltip">最低注文金額未満のご注文にはサービス料がかかります。一定金額以上のご注文でサービス料は無料になります。</div>
       </div>
       <div class="price-row discount" id="priceCouponRow" style="display:none">
         <span class="label">クーポン割引</span>
@@ -1524,6 +1529,12 @@ function showCouponApplied(coupon) {
 // ===================================================================
 // PRICE SUMMARY
 // ===================================================================
+function toggleSurchargeTooltip(e) {
+  e.stopPropagation();
+  var tip = document.getElementById('surchargeTooltip');
+  tip.classList.toggle('show');
+}
+
 function updatePriceSummary() {
   const C = CHECKOUT_DATA;
   const subtotal = C.subtotal;

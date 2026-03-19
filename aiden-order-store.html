@@ -157,6 +157,15 @@ img { max-width:100%; display:block; }
   font-size:13px; font-weight:600; margin-bottom:8px;
   align-items:center; gap:8px; line-height:1.5;
 }
+/* Toast notification */
+.toast-notification {
+  position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:#333; color:#fff; padding:12px 20px; border-radius:12px;
+  font-size:13px; font-weight:600; z-index:9999; opacity:0;
+  transition:opacity .3s, transform .3s; pointer-events:none;
+  max-width:90vw; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+.toast-notification.show { opacity:1; transform:translateX(-50%) translateY(0); }
 .closed-banner.show { display:flex; }
 .closed-banner svg { width:18px; height:18px; flex-shrink:0; }
 
@@ -1736,6 +1745,7 @@ function openProduct(itemId) {
 
   document.getElementById('prodQty').textContent = prodQty;
   updateAddCartPrice();
+  updateCartButtonForClosedState();
   document.getElementById('productModal').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -1921,7 +1931,7 @@ function changeProdQty(delta) {
 // CART
 // ===================================================================
 function addToCart() {
-  if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
+  if(isStoreClosed) { showClosedToast(); return; }
   if(!currentProduct) return;
   if(!validateRequiredOptions()) return; // block if required options not met
   const unitPrice = currentProduct.price + calcOptionPrice();
@@ -1941,7 +1951,7 @@ function addToCart() {
 }
 
 function quickAdd(itemId) {
-  if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
+  if(isStoreClosed) { showClosedToast(); return; }
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   // If item has options, open product modal instead
@@ -2356,6 +2366,51 @@ function checkBusinessHours() {
   isStoreClosed = !withinAny;
 }
 
+function getNextOpenTimeText() {
+  var now = new Date();
+  var DAYS = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  var hours = (orderMode === 'delivery') ? STORE_DATA.deliveryHours : STORE_DATA.hours;
+  for (var d = 0; d <= 7; d++) {
+    var checkDay = (now.getDay() + d) % 7;
+    var dayName = DAYS[checkDay];
+    var dayHours = hours.filter(function(h) { return h.day === dayName; });
+    for (var i = 0; i < dayHours.length; i++) {
+      var parts = dayHours[i].time.split(/[–\-]/);
+      if (parts.length < 2) continue;
+      var openMin = parseInt(parts[0].trim().split(':')[0]) * 60 + parseInt(parts[0].trim().split(':')[1]);
+      if (d === 0 && openMin > now.getHours() * 60 + now.getMinutes()) {
+        return '本日 ' + parts[0].trim();
+      }
+      if (d >= 1) {
+        return (d === 1 ? '明日 ' : dayName + ' ') + parts[0].trim();
+      }
+    }
+  }
+  return '';
+}
+
+function showClosedToast() {
+  var nextOpen = getNextOpenTimeText();
+  var msg = '現在営業時間外です';
+  if (nextOpen) msg += '（次回開店: ' + nextOpen + '）';
+  var toast = document.getElementById('toastNotification');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(function() { toast.classList.remove('show'); }, 3000);
+}
+
+function updateCartButtonForClosedState() {
+  var btn = document.getElementById('btnAddCart');
+  if (!btn) return;
+  if (isStoreClosed) {
+    btn.disabled = true;
+    var nextOpen = getNextOpenTimeText();
+    btn.innerHTML = '<span>営業時間外です' + (nextOpen ? '（次回開店: ' + nextOpen + '）' : '') + '</span>';
+  } else {
+    btn.disabled = false;
+  }
+}
+
 function applyClosedMode() {
   var banner = document.getElementById('closedBanner');
   if (banner) banner.classList.add('show');
@@ -2447,7 +2502,7 @@ document.addEventListener('keydown', e => {
 function goToCheckout() {
   // Block checkout if store is closed
   if(isStoreClosed) {
-    alert('現在営業時間外です。営業時間内にご注文ください。');
+    showClosedToast();
     return;
   }
   // Block checkout if out of delivery area and in delivery mode
@@ -2495,6 +2550,7 @@ function goToCheckout() {
   window.location.href = './aiden-order-checkout.html';
 }
 </script>
+<div class="toast-notification" id="toastNotification"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
