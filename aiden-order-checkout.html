@@ -1916,10 +1916,11 @@ async function placeOrder() {
         throw new Error('決済処理中にエラーが発生しました');
       }
 
-      // 3. 決済成功 → confirm-order で注文ステータス更新 + メール送信
+      // 3. 決済成功 → confirm-order で注文レコード作成 + メール送信
       if (paymentIntent.status === 'succeeded') {
+        let confirmData = {};
         try {
-          await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
+          const confirmRes = await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1927,11 +1928,21 @@ async function placeOrder() {
             },
             body: JSON.stringify({ payment_intent_id: paymentIntent.id })
           });
+          if (confirmRes.ok) {
+            confirmData = await confirmRes.json();
+          } else {
+            console.warn('confirm-order returned non-OK:', confirmRes.status);
+          }
         } catch (confirmErr) {
           // confirm-order が失敗しても決済は完了している
           // Webhook でリカバリされるので、遷移は続行
           console.warn('confirm-order call failed (webhook will recover):', confirmErr);
         }
+
+        // confirm-order のレスポンスから tracking_token / display_id を取得
+        const trackingToken = confirmData.tracking_token || piData.tracking_token || '';
+        const displayId = confirmData.display_id || piData.display_id || '';
+        const orderId = confirmData.order_id || piData.order_id || '';
 
         // ── ポイント消費トランザクションを記録 ──
         if (appliedPoints > 0) {
@@ -1944,7 +1955,7 @@ async function placeOrder() {
                 balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
                 source: 'normal',
                 reason: '注文消費（' + paymentIntent.id + '）',
-                order_id: piData.order_id
+                order_id: orderId
               });
             }
           } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
@@ -1954,14 +1965,20 @@ async function placeOrder() {
         sessionStorage.removeItem('aiden_order_idempotency');
 
         // ── sessionStorage にトラッキング情報を保存 ──
-        sessionStorage.setItem('aiden_tracking_token', piData.tracking_token);
-        sessionStorage.setItem('aiden_last_order_id', piData.display_id);
+        sessionStorage.setItem('aiden_tracking_token', trackingToken);
+        sessionStorage.setItem('aiden_last_order_id', displayId);
 
         // ── beforeunload 解除 ──
         window.removeEventListener('beforeunload', preventUnload);
 
         // ── トラッキングページにリダイレクト ──
-        window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(piData.tracking_token);
+        if (trackingToken) {
+          window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+        } else {
+          // tracking_token が取得できなかった場合のフォールバック
+          console.error('tracking_token not available from confirm-order');
+          window.location.href = 'aiden-order-tracking.html';
+        }
         return;
       }
 
