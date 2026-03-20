@@ -276,50 +276,60 @@ document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
   const orderId = params.get('order'); // optional legacy param
+  const piParam = params.get('pi'); // payment_intent_id fallback
 
   // Demo mode: no params
-  if (!token && !orderId) { initDemo(); return; }
+  if (!token && !orderId && !piParam) { initDemo(); return; }
 
-  if (!token) {
+  if (!token && !piParam) {
     showError('URLが無効です', 'token パラメータが必要です。\nThanksメール内のリンクからアクセスしてください。');
     return;
   }
 
+  const orderSelect = `
+    *,
+    order_items(*, products(id, name, image_url, price)),
+    stores!inner(id, name, address, phone, latitude, longitude, brands(id, name, primary_color, slug))
+  `;
+
   try {
     let order = null;
 
-    // Supabase: tracking_token で直接検索（order_items + products を JOIN）
-    const { data, error } = await sb
-      .from('orders')
-      .select(`
-        *,
-        order_items(*, products(id, name, image_url, price)),
-        stores!inner(id, name, address, phone, latitude, longitude, brands(id, name, primary_color, slug))
-      `)
-      .eq('tracking_token', token)
-      .single();
+    // 1. tracking_token で直接検索
+    if (token) {
+      const { data, error } = await sb
+        .from('orders')
+        .select(orderSelect)
+        .eq('tracking_token', token)
+        .single();
 
-    if (error || !data) {
-      // Fallback: display_id + token 併用（旧URLフォーマット対応）
-      if (orderId) {
+      if (!error && data) {
+        order = data;
+      } else if (orderId) {
+        // Fallback: display_id + token 併用（旧URLフォーマット対応）
         const { data: fallback, error: fbErr } = await sb
           .from('orders')
-          .select(`
-            *,
-            order_items(*, products(id, name, image_url, price)),
-            stores!inner(id, name, address, phone, latitude, longitude, brands(id, name, primary_color, slug))
-          `)
+          .select(orderSelect)
           .eq('display_id', orderId)
           .eq('tracking_token', token)
           .single();
         if (!fbErr && fallback) order = fallback;
       }
-      if (!order) {
-        showError('注文が見つかりません', 'URLが正しいかご確認ください。');
-        return;
-      }
-    } else {
-      order = data;
+    }
+
+    // 2. payment_intent_id フォールバック（checkout.htmlからtoken取得できなかった場合）
+    if (!order && piParam) {
+      const { data: piOrder, error: piErr } = await sb
+        .from('orders')
+        .select(orderSelect)
+        .eq('payment_intent_id', piParam)
+        .single();
+      if (!piErr && piOrder) order = piOrder;
+    }
+
+    if (!order) {
+      showError('注文が見つかりません', 'URLが正しいかご確認ください。');
+      return;
     }
 
     // 有効期限チェック

@@ -1919,30 +1919,60 @@ async function placeOrder() {
       // 3. 決済成功 → confirm-order で注文レコード作成 + メール送信
       if (paymentIntent.status === 'succeeded') {
         let confirmData = {};
-        try {
-          const confirmRes = await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({ payment_intent_id: paymentIntent.id })
-          });
-          if (confirmRes.ok) {
-            confirmData = await confirmRes.json();
-          } else {
-            console.warn('confirm-order returned non-OK:', confirmRes.status);
+        const piId = paymentIntent.id;
+        console.log('[checkout] Payment succeeded, PI:', piId);
+
+        // confirm-order 呼び出し（リトライ付き）
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            console.log('[checkout] confirm-order attempt', attempt);
+            const confirmRes = await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({ payment_intent_id: piId })
+            });
+            const bodyText = await confirmRes.text();
+            console.log('[checkout] confirm-order status:', confirmRes.status, 'body:', bodyText);
+            if (confirmRes.ok) {
+              try { confirmData = JSON.parse(bodyText); } catch(e) {}
+              break; // 成功したらリトライ終了
+            }
+            // 非200でもリトライ
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
+          } catch (confirmErr) {
+            console.warn('[checkout] confirm-order attempt', attempt, 'failed:', confirmErr);
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
           }
-        } catch (confirmErr) {
-          // confirm-order が失敗しても決済は完了している
-          // Webhook でリカバリされるので、遷移は続行
-          console.warn('confirm-order call failed (webhook will recover):', confirmErr);
         }
 
-        // confirm-order のレスポンスから tracking_token / display_id を取得
-        const trackingToken = confirmData.tracking_token || piData.tracking_token || '';
-        const displayId = confirmData.display_id || piData.display_id || '';
-        const orderId = confirmData.order_id || piData.order_id || '';
+        // confirm-order のレスポンスから tracking_token を取得
+        let trackingToken = confirmData.tracking_token || '';
+        let displayId = confirmData.display_id || '';
+        let orderId = confirmData.order_id || '';
+        console.log('[checkout] confirmData:', JSON.stringify(confirmData));
+
+        // フォールバック: confirm-orderからtoken取得できなかった場合、DBから直接検索
+        if (!trackingToken) {
+          console.warn('[checkout] tracking_token not from confirm-order, querying DB by payment_intent_id');
+          try {
+            const { data: fbOrder } = await sb
+              .from('orders')
+              .select('id, display_id, tracking_token')
+              .eq('payment_intent_id', piId)
+              .maybeSingle();
+            if (fbOrder && fbOrder.tracking_token) {
+              trackingToken = fbOrder.tracking_token;
+              displayId = fbOrder.display_id || displayId;
+              orderId = fbOrder.id || orderId;
+              console.log('[checkout] DB fallback found:', trackingToken);
+            }
+          } catch(fbErr) {
+            console.warn('[checkout] DB fallback failed:', fbErr);
+          }
+        }
 
         // ── ポイント消費トランザクションを記録 ──
         if (appliedPoints > 0) {
@@ -1954,7 +1984,7 @@ async function placeOrder() {
                 amount: -appliedPoints,
                 balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
                 source: 'normal',
-                reason: '注文消費（' + paymentIntent.id + '）',
+                reason: '注文消費（' + piId + '）',
                 order_id: orderId
               });
             }
@@ -1973,11 +2003,12 @@ async function placeOrder() {
 
         // ── トラッキングページにリダイレクト ──
         if (trackingToken) {
+          console.log('[checkout] Redirecting to tracking with token:', trackingToken);
           window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
         } else {
-          // tracking_token が取得できなかった場合のフォールバック
-          console.error('tracking_token not available from confirm-order');
-          window.location.href = 'aiden-order-tracking.html';
+          // 最終フォールバック: payment_intent_id でtracking.htmlに渡す
+          console.error('[checkout] No tracking_token available, using PI fallback');
+          window.location.href = 'aiden-order-tracking.html?pi=' + encodeURIComponent(piId);
         }
         return;
       }
