@@ -4,22 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AIden 管理マスタ v33.8</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="AIden 管理マスタ">
-    <meta property="og:description" content="AIden管理マスタ - 飲食店向けオールインワンSaaS管理画面">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-admin.html">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="AIden 管理マスタ">
-    <meta name="twitter:description" content="AIden管理マスタ - 飲食店向けオールインワンSaaS管理画面">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="AIden管理マスタ - 飲食店向けオールインワンSaaS管理画面">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{--primary:#1a1a2e;--primary-light:#16213e;--accent:#6c5ce7;--accent-hover:#5a4bd1;--accent-light:#a29bfe;--accent-bg:rgba(108,92,231,.08);--bg:#f5f6fa;--card:#fff;--text:#2d3436;--text-light:#636e72;--border:#e0e0e0;--sidebar-w:240px;--header-h:56px;--success:#00b894;--warning:#fdcb6e;--danger:#d63031;--info:#0984e3}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
@@ -82,58 +71,16 @@
 .ct-right{margin-left:auto;display:flex;gap:8px}
 .cols-3{grid-template-columns:1fr 1fr 1fr}
 @media(max-width:1200px){.stat-row{grid-template-columns:repeat(2,1fr)}.menu-grid{grid-template-columns:repeat(2,1fr)}}
-.loading-overlay{position:fixed;inset:0;background:rgba(245,246,250,.92);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .3s}
-.loading-overlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:13px;font-weight:600;color:var(--text-light)}
-/* ===== LOGIN SCREEN ===== */
-.login-screen{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6c5ce7 0%,#a29bfe 100%);font-family:'Poppins','Noto Sans JP',sans-serif}
-.login-card{background:#fff;border-radius:16px;padding:40px 36px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
-.login-logo{text-align:center;margin-bottom:24px}
-.login-logo .logo-icon{width:48px;height:48px;background:#6c5ce7;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px}
-.login-logo .logo-dot{width:14px;height:14px;background:#fff;border-radius:50%}
-.login-logo h1{font-size:22px;font-weight:700;color:#2d3436;margin:0}
-.login-logo p{font-size:12px;color:#636e72;margin:4px 0 0}
-.login-field{margin-bottom:16px}
-.login-field label{display:block;font-size:12px;font-weight:600;color:#636e72;margin-bottom:6px}
-.login-field input{width:100%;padding:10px 14px;border:1.5px solid #dfe6e9;border-radius:8px;font-size:14px;outline:none;transition:border .2s;box-sizing:border-box}
-.login-field input:focus{border-color:#6c5ce7}
-.login-btn{width:100%;padding:12px;background:#6c5ce7;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;margin-top:4px}
-.login-btn:hover{background:#5b4cdb}
-.login-btn:disabled{background:#b2bec3;cursor:not-allowed}
-.login-error{background:#ffe0e0;color:#d63031;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;display:none}
 </style>
 </head>
 <body>
-<!-- ===== LOGIN SCREEN ===== -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-icon"><div class="logo-dot"></div></div>
-      <h1>AIden</h1>
-      <p>管理マスタ ログイン</p>
-    </div>
-    <div class="login-error" id="loginError"></div>
-    <div class="login-field">
-      <label>メールアドレス</label>
-      <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email">
-    </div>
-    <div class="login-field">
-      <label>パスワード</label>
-      <input type="password" id="loginPassword" placeholder="パスワード" autocomplete="current-password">
-    </div>
-    <button class="login-btn" id="loginBtn" onclick="handleAdminLogin()">ログイン</button>
-  </div>
-</div>
-<div class="loading-overlay" id="loadingOverlay" style="display:none"><div class="loading-spinner"></div><div class="loading-text">データを読み込み中...</div></div>
-<header class="header" id="adminHeader" style="display:none">
+<header class="header">
   <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">AIden</span></div>
   <span class="header-badge">MASTER ADMIN</span>
   <div class="header-search"><span class="si">🔍</span><input type="text" id="globalSearch" placeholder="法人 / ブランド / 店舗を検索（名称 or ID）..." oninput="onSearch(this.value)" onfocus="onSearch(this.value)" autocomplete="off"><div class="sdd" id="searchResults"></div></div>
-  <div class="header-right"><div class="header-user"><div class="avatar" id="userAvatar">T</div><span id="userName">Taisei</span></div><button class="btn-logout" onclick="handleAdminLogout()">ログアウト</button></div>
+  <div class="header-right"><div class="header-user"><div class="avatar">T</div><span>Taisei</span></div><button class="btn-logout" onclick="showToast('🔒 ログアウト')">ログアウト</button></div>
 </header>
-<nav class="sidebar" id="sidebar" style="display:none">
+<nav class="sidebar" id="sidebar">
   <div class="nav-item active" data-page="dashboard" onclick="goTo('dashboard')"><span class="icon">📊</span><span class="label">ダッシュボード</span></div>
   <div class="nav-item" data-page="corps" onclick="goTo('corps')"><span class="icon">🏢</span><span class="label">法人管理</span></div>
   <div class="nav-item" data-page="brands" onclick="goTo('brands')"><span class="icon">🏷️</span><span class="label">ブランド管理</span></div>
@@ -141,53 +88,35 @@
   <div class="nav-item" data-page="users" onclick="goTo('users')"><span class="icon">👤</span><span class="label">ユーザー管理</span></div>
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
   <div class="nav-item" data-page="ai" onclick="goTo('ai')"><span class="icon">🤖</span><span class="label">AI品質管理</span></div>
+  <div class="nav-item" data-page="cost" onclick="goTo('cost')"><span class="icon">💰</span><span class="label">コスト管理</span></div>
+  <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">🧾</span><span class="label">請求管理</span></div>
   <div class="sb-div"></div>
-  <div class="nav-item" data-page="plan-mgmt" onclick="goTo('plan-mgmt')"><span class="icon">📋</span><span class="label">プラン管理</span></div>
-  <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">💰</span><span class="label">請求管理</span></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
-  <div class="nav-item" data-page="support" onclick="goTo('support')"><span class="icon">💬</span><span class="label">サポート管理</span></div>
 </nav>
-<main class="content" id="content" style="display:none"></main>
+<main class="content" id="content"></main>
 <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBody"></div></div>
 <div class="toast" id="toast"></div>
 <script>
 // DATA
-let CORPS=[{id:'CRP-Xk9mPr2',name:'株式会社スミビフーズ',rep:'近重 泰輔',status:'active',created:'2026-01-15',stripe_account_id:null,rep_email:'taisei@sumbibi.com'},{id:'CRP-Pq7mN2k',name:'株式会社麺道楽',rep:'田中 一郎',status:'active',created:'2026-02-01',stripe_account_id:null,rep_email:'tanaka@mendouraku.com'},{id:'CRP-Wy4cR8j',name:'有限会社カフェブリーズ',rep:'佐藤 美咲',status:'trial',created:'2026-03-01',stripe_account_id:null,rep_email:'sato@cafebreeze.com'}];
-let BRANDS=[{id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭',slug:'sumibite',status:'active',mainColor:'#DC3232'},{id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲',slug:'fuuun-ramen',status:'active',mainColor:'#FF6B35'},{id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極',slug:'tsukemen-kiwami',status:'active',mainColor:'#1B4332'},{id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze',slug:'cafe-breeze',status:'trial',mainColor:'#5BA4A4'}];
-let STORES=[{id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',name:'渋谷店',status:'active',addr:'東京都渋谷区道玄坂1-12-5',tel:'03-6452-1234',orders:245,revenue:3680000},{id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',name:'新宿東口店',status:'active',addr:'東京都新宿区新宿3-1-1',tel:'03-5321-0001',orders:312,revenue:4150000},{id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',name:'池袋店',status:'active',addr:'東京都豊島区南池袋1-1-1',tel:'03-5950-0001',orders:198,revenue:2980000},{id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',name:'恵比寿店',status:'active',addr:'東京都渋谷区恵比寿4-5-6',tel:'03-6450-0001',orders:156,revenue:2450000},{id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',name:'六本木店',status:'active',addr:'東京都港区六本木3-2-1',tel:'03-6430-0001',orders:278,revenue:5120000},{id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',name:'銀座店',status:'active',addr:'東京都中央区銀座5-8-1',tel:'03-3571-0001',orders:189,revenue:3900000},{id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',name:'表参道店',status:'active',addr:'東京都渋谷区神宮前4-1-1',tel:'03-5410-0001',orders:134,revenue:2780000},{id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',name:'新宿本店',status:'active',addr:'東京都新宿区新宿3-5-1',tel:'03-5320-0010',orders:520,revenue:3120000},{id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',name:'渋谷店',status:'active',addr:'東京都渋谷区宇田川町2-1',tel:'03-6450-0010',orders:410,revenue:2460000},{id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',name:'代官山店',status:'trial',addr:'東京都渋谷区猿楽町10-1',tel:'03-6455-0001',orders:45,revenue:340000}];
-let ACCOUNTS=[];
-const BANS=[{id:'BAN-tU4tX6n',type:'email',value:'spam@test.com',reason:'不正注文の繰り返し',scope:'global',created:'2026-02-15',by:'Taisei'},{id:'BAN-vW5uY7p',type:'phone',value:'090-0000-0000',reason:'いたずら注文',scope:'global',created:'2026-02-20',by:'Taisei'},{id:'BAN-xY6vZ8q',type:'email',value:'fake@example.com',reason:'なりすまし注文',scope:'guest',created:'2026-03-01',by:'Taisei'}];
+const CORPS=[{id:'CRP-Xk9mPr2',name:'株式会社スミビフーズ',rep:'近重 泰輔',status:'active',created:'2026-01-15',stripe_account_id:null,rep_email:'taisei@sumbibi.com'},{id:'CRP-Pq7mN2k',name:'株式会社麺道楽',rep:'田中 一郎',status:'active',created:'2026-02-01',stripe_account_id:null,rep_email:'tanaka@mendouraku.com'},{id:'CRP-Wy4cR8j',name:'有限会社カフェブリーズ',rep:'佐藤 美咲',status:'trial',created:'2026-03-01',stripe_account_id:null,rep_email:'sato@cafebreeze.com'}];
+const PII_ACCESS_DEFAULTS={member_name:true,member_email:true,member_phone:true,member_address:true,order_history:true,guest_info:false};
+const BRANDS=[{id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭',slug:'sumibite',status:'active',mainColor:'#DC3232',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲',slug:'fuuun-ramen',status:'active',mainColor:'#FF6B35',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極',slug:'tsukemen-kiwami',status:'active',mainColor:'#1B4332',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze',slug:'cafe-breeze',status:'trial',mainColor:'#5BA4A4',pii_access_settings:{...PII_ACCESS_DEFAULTS}}];
+const STORES=[{id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',name:'渋谷店',status:'active',addr:'東京都渋谷区道玄坂1-12-5',tel:'03-6452-1234',orders:245,revenue:3680000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',name:'新宿東口店',status:'active',addr:'東京都新宿区新宿3-1-1',tel:'03-5321-0001',orders:312,revenue:4150000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',name:'池袋店',status:'active',addr:'東京都豊島区南池袋1-1-1',tel:'03-5950-0001',orders:198,revenue:2980000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',name:'恵比寿店',status:'active',addr:'東京都渋谷区恵比寿4-5-6',tel:'03-6450-0001',orders:156,revenue:2450000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',name:'六本木店',status:'active',addr:'東京都港区六本木3-2-1',tel:'03-6430-0001',orders:278,revenue:5120000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',name:'銀座店',status:'active',addr:'東京都中央区銀座5-8-1',tel:'03-3571-0001',orders:189,revenue:3900000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',name:'表参道店',status:'active',addr:'東京都渋谷区神宮前4-1-1',tel:'03-5410-0001',orders:134,revenue:2780000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',name:'新宿本店',status:'active',addr:'東京都新宿区新宿3-5-1',tel:'03-5320-0010',orders:520,revenue:3120000,deliveryRadius:3,deliveryFee:500,minOrder:1000,minOrderPolicy:'surcharge',surchargeMax:1000,prepTime:20,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',name:'渋谷店',status:'active',addr:'東京都渋谷区宇田川町2-1',tel:'03-6450-0010',orders:410,revenue:2460000,deliveryRadius:3,deliveryFee:500,minOrder:1000,minOrderPolicy:'surcharge',surchargeMax:1000,prepTime:20,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',name:'代官山店',status:'trial',addr:'東京都渋谷区猿楽町10-1',tel:'03-6455-0001',orders:45,revenue:340000,deliveryRadius:2,deliveryFee:300,minOrder:800,minOrderPolicy:'surcharge',surchargeMax:800,prepTime:15,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}}];
+const ACCOUNTS=[{id:'ACC-tU7dJ9y',name:'近重 泰輔',email:'taisei@sumbibi.com',role:'owner',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-11'},{id:'ACC-vW8eK2z',name:'山田 太郎',email:'yamada@sumbibi.com',role:'admin',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-10'},{id:'ACC-xY9fL3a',name:'鈴木 花子',email:'suzuki@sumbibi.com',role:'staff',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-09'},{id:'ACC-zA2gM4b',name:'田中 一郎',email:'tanaka@mendouraku.com',role:'owner',corpId:'CRP-Pq7mN2k',status:'active',lastLogin:'2026-03-11'},{id:'ACC-bC3hN5c',name:'佐藤 美咲',email:'sato@cafebreeze.com',role:'owner',corpId:'CRP-Wy4cR8j',status:'active',lastLogin:'2026-03-08'}];
+const BANS=[
+  {id:'BAN-tU4tX6n',email:'spam@test.com',ban_type:'global',store_id:null,store_name:null,reason:'不正注文の繰り返し',reason_cat:'fraud',banned_by:'Taisei',banned_at:'2026-02-15',expires_at:null,is_active:true,unbanned_at:null,unban_reason:null},
+  {id:'BAN-vW5uY7p',email:'troll@example.com',ban_type:'global',store_id:null,store_name:null,reason:'いたずら注文',reason_cat:'prank',banned_by:'Taisei',banned_at:'2026-02-20',expires_at:null,is_active:true,unbanned_at:null,unban_reason:null},
+  {id:'BAN-xY6vZ8q',email:'fake@example.com',ban_type:'store_specific',store_id:'STR-dF5tY7n',store_name:'炭火亭 渋谷店',reason:'なりすまし注文',reason_cat:'fraud',banned_by:'Taisei',banned_at:'2026-03-01',expires_at:'2026-06-01',is_active:true,unbanned_at:null,unban_reason:null},
+  {id:'BAN-aB3kX9m',email:'baduser@gmail.com',ban_type:'store_specific',store_id:'STR-eG6uZ8p',store_name:'炭火亭 新宿東口店',reason:'支払い拒否が複数回',reason_cat:'payment_refusal',banned_by:'Taisei',banned_at:'2026-01-20',expires_at:'2026-03-20',is_active:false,unbanned_at:'2026-03-10',unban_reason:'本人より謝罪連絡あり。再発時は再BAN'},
+  {id:'BAN-cD5eF7g',email:'nuisance@yahoo.co.jp',ban_type:'global',store_id:null,store_name:null,reason:'迷惑行為（スタッフへの暴言）',reason_cat:'harassment',banned_by:'Taisei',banned_at:'2026-03-05',expires_at:'2026-06-05',is_active:true,unbanned_at:null,unban_reason:null}
+];
 // COMPENSATION DATA
-let COMP_POINT_LOG=[];
-let ADMIN_ORDERS=[];
-let REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
-let MEMBERS=[];
+const COMP_POINT_LOG=[{id:'CPT-demo001',memberId:'MBR-dE4jP6d',memberName:'高橋 翔太',amount:500,reason:'配送遅延による補填',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-10'},{id:'CPT-demo002',memberId:'MBR-jK7nS9g',memberName:'渡辺 さくら',amount:300,reason:'商品品質クレーム対応',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-08'},{id:'CPT-demo003',memberId:'MBR-fG5kQ7e',memberName:'中村 あゆみ',amount:200,reason:'システム障害によるポイント消失復旧',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-05'}];
+const ADMIN_ORDERS=[{id:'ORD-1001',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'高橋 翔太',total:5280,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_3kXm9P2abc',date:'2026-03-11',items:[{name:'特選カルビ',qty:2,price:1280},{name:'ハラミ',qty:1,price:980},{name:'石焼ビビンバ',qty:1,price:780}],aidenPointsUsed:0,normalPointsUsed:200},{id:'ORD-1002',storeId:'STR-eG6uZ8p',storeName:'炭火亭 新宿東口店',brandName:'焼肉 炭火亭',customer:'中村 あゆみ',total:3960,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_7jL5wTn6def',date:'2026-03-10',items:[{name:'上ロース',qty:1,price:1480},{name:'牛タン塩',qty:1,price:1180},{name:'冷麺',qty:1,price:880}],aidenPointsUsed:100,normalPointsUsed:300},{id:'ORD-1003',storeId:'STR-nP4aF6v',storeName:'ラーメン風雲 新宿本店',brandName:'ラーメン風雲',customer:'小林 健太',total:1980,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_9qR5bG7wghi',date:'2026-03-09',items:[{name:'味噌ラーメン',qty:1,price:980},{name:'餃子',qty:1,price:480},{name:'チャーシュー丼',qty:1,price:520}],aidenPointsUsed:0,normalPointsUsed:0},{id:'ORD-1004',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'渡辺 さくら',total:8640,status:'done',paymentStatus:'refunded',paymentIntentId:'pi_test_2pQ9vGk2jkl',date:'2026-03-07',items:[{name:'特選カルビ',qty:3,price:1280},{name:'上ロース',qty:2,price:1480},{name:'生ビール',qty:4,price:550}],aidenPointsUsed:300,normalPointsUsed:0},{id:'ORD-1005',storeId:'STR-qR5bG7w',storeName:'ラーメン風雲 渋谷店',brandName:'ラーメン風雲',customer:'伊藤 大地',total:1460,status:'cancelled',paymentStatus:'paid',paymentIntentId:'pi_test_8nV3sHm8mno',date:'2026-03-06',items:[{name:'醤油ラーメン',qty:1,price:880},{name:'唐揚げ',qty:1,price:580}],aidenPointsUsed:0,normalPointsUsed:0}];
+const REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
+const MEMBERS=[{id:'MBR-dE4jP6d',name:'高橋 翔太',email:'takahashi@gmail.com',phone:'090-1234-5678',rank:'ゴールド',points:2450,orders:18,lastOrder:'2026-03-10',joined:'2025-08-15'},{id:'MBR-fG5kQ7e',name:'中村 あゆみ',email:'nakamura@gmail.com',phone:'080-2345-6789',rank:'シルバー',points:890,orders:8,lastOrder:'2026-03-08',joined:'2025-11-20'},{id:'MBR-hJ6mR8f',name:'小林 健太',email:'kobayashi@yahoo.co.jp',phone:'070-3456-7890',rank:'レギュラー',points:320,orders:3,lastOrder:'2026-02-25',joined:'2026-01-10'},{id:'MBR-jK7nS9g',name:'渡辺 さくら',email:'watanabe@icloud.com',phone:'090-4567-8901',rank:'ゴールド',points:3100,orders:24,lastOrder:'2026-03-11',joined:'2025-06-01'},{id:'MBR-kL8pT2h',name:'伊藤 大地',email:'ito.d@gmail.com',phone:'080-5678-9012',rank:'レギュラー',points:150,orders:2,lastOrder:'2026-03-05',joined:'2026-02-20'}];
 const GUESTS=[{id:'GST-mN9qU3j',orderCount:3,lastOrder:'2026-03-10',channel:'takeout'},{id:'GST-pQ2rV4k',orderCount:1,lastOrder:'2026-03-08',channel:'delivery'},{id:'GST-rS3sW5m',orderCount:5,lastOrder:'2026-03-11',channel:'dinein'}];
-let MENU=[];
-// Supabase からメニューを取得（ブランド別）
-async function loadBrandMenu(brandId){
-  try{
-    // カテゴリ取得
-    var catMap={};
-    var{data:cats}=await sb.from('categories').select('id,name');
-    if(cats)cats.forEach(function(c){catMap[c.id]=c.name;});
-    // 商品取得（最小価格をJOIN）
-    var{data:products}=await sb.from('products').select('id,name,description,image_url,category_id,sale_status').eq('brand_id',brandId);
-    if(!products||products.length===0){MENU=[];renderBrandMenu();return;}
-    // 各商品の最小価格を取得
-    var pids=products.map(function(p){return p.id;});
-    var{data:sizes}=await sb.from('product_sizes').select('product_id,price').in('product_id',pids).order('price',{ascending:true});
-    var priceMap={};
-    if(sizes)sizes.forEach(function(s){if(!priceMap[s.product_id])priceMap[s.product_id]=s.price;});
-    // カテゴリ名→絵文字マッピング
-    var catEmoji={'焼肉':'🥩','ご飯もの':'🍚','ご飯・スープ':'🍚','スープ':'🥣','麺':'🍜','つけ麺':'🍜','サラダ':'🥗','ドリンク':'🍺','デザート':'🍰','サイドメニュー':'🥘','サイド':'🥘','おすすめ':'⭐','セットメニュー':'🍱','チキン・揚げ物':'🍗','チゲ・スープ':'🥘','ビビンバ・ご飯':'🍚','トッピング':'➕'};
-    MENU=products.map(function(p){
-      var cn=catMap[p.category_id]||'その他';
-      return{id:p.id,name:p.name,price:priceMap[p.id]||0,cat:cn,emoji:catEmoji[cn]||'🍽',desc:p.description||'',image_url:p.image_url||'',sale_status:p.sale_status||'on_sale'};
-    });
-    renderBrandMenu();
-  }catch(e){console.warn('Menu load error:',e);MENU=[];renderBrandMenu();}
-}
+const MENU=[{id:1,name:'特選カルビ',price:1280,cat:'焼肉',emoji:'🥩',desc:'厳選A5ランク黒毛和牛'},{id:2,name:'ハラミ',price:980,cat:'焼肉',emoji:'🥩',desc:'ジューシーな赤身肉'},{id:3,name:'牛タン塩',price:1180,cat:'焼肉',emoji:'🥩',desc:'厚切りタン'},{id:4,name:'ホルモン盛合せ',price:880,cat:'焼肉',emoji:'🥩',desc:'5種盛り'},{id:5,name:'上ロース',price:1480,cat:'焼肉',emoji:'🥩',desc:'さっぱり上質'},{id:6,name:'石焼ビビンバ',price:780,cat:'ご飯もの',emoji:'🍚',desc:'アツアツ石鍋'},{id:7,name:'カルビクッパ',price:880,cat:'ご飯もの',emoji:'🍚',desc:'旨辛スープご飯'},{id:8,name:'わかめスープ',price:350,cat:'スープ',emoji:'🥣',desc:'定番'},{id:9,name:'冷麺',price:880,cat:'麺',emoji:'🍜',desc:'盛岡冷麺'},{id:10,name:'チョレギサラダ',price:580,cat:'サラダ',emoji:'🥗',desc:'ごま油ドレッシング'},{id:11,name:'生ビール',price:550,cat:'ドリンク',emoji:'🍺',desc:'プレミアムモルツ'}];
 
 // SERVICES MASTER
 const SERVICES=[
@@ -235,161 +164,6 @@ function getCorpForStore(s){const br=getBrandForStore(s);return br?CORPS.find(c=
 const SUPABASE_URL='https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY='sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
-// === SUPABASE DATA MAPPERS ===
-function mapCorp(row){
-  return {
-    id:row.id, name:row.name||'', rep:row.rep||row.representative||'',
-    status:row.status||'active', created:row.created_at?row.created_at.split('T')[0]:'',
-    stripe_account_id:row.stripe_account_id||null, rep_email:row.rep_email||row.email||''
-  };
-}
-function mapBrand(row){
-  return {
-    id:row.id, corpId:row.corp_id, name:row.name||'', slug:row.slug||'',
-    status:row.status||'active', mainColor:row.primary_color||'#6c5ce7'
-  };
-}
-function mapStore(row){
-  return {
-    id:row.id, brandId:row.brand_id, name:row.name||'', status:row.status||'active',
-    addr:row.address||'', tel:row.phone||'', orders:0, revenue:0
-  };
-}
-function mapMember(row,rankMap){
-  var rn=(rankMap&&row.current_rank_id&&rankMap[row.current_rank_id])?rankMap[row.current_rank_id]:'レギュラー';
-  return {
-    id:row.id, name:((row.last_name||'')+' '+(row.first_name||'')).trim()||row.name||'名前未設定',
-    email:row.email||'', phone:row.phone||'', rank:rn, points:0,
-    orders:row.monthly_order_count||0, lastOrder:'', joined:row.created_at?row.created_at.split('T')[0]:''
-  };
-}
-function mapOrder(row,storeMap,brandMap,memberMap){
-  var st=storeMap[row.store_id]||{};
-  var br=st.brandId?brandMap[st.brandId]||{}:{};
-  var mn=memberMap[row.member_id]||'ゲスト';
-  return {
-    id:row.id, storeId:row.store_id,
-    storeName:(br.name?br.name+' ':'')+(st.name||''),
-    brandName:br.name||'', customer:mn, total:row.total_amount||0,
-    status:row.status||'done', paymentStatus:row.payment_status||'paid',
-    paymentIntentId:row.payment_intent_id||'',
-    date:row.created_at?row.created_at.split('T')[0]:'',
-    items:[], aidenPointsUsed:row.aiden_points_used||0, normalPointsUsed:row.normal_points_used||0
-  };
-}
-function mapCompPoint(row,memberMap){
-  return {
-    id:row.id, memberId:row.member_id, memberName:memberMap[row.member_id]||'不明',
-    amount:row.amount||0, reason:row.reason||'', source:row.source||'aiden_compensation',
-    grantedBy:row.granted_by||'', createdAt:row.created_at?row.created_at.split('T')[0]:''
-  };
-}
-function buildRefundLog(rawOrders){
-  return rawOrders.filter(function(o){
-    return o.payment_status==='refunded'||o.payment_status==='partially_refunded';
-  }).map(function(o){
-    return {
-      id:'RFD-'+String(o.id).substring(0,7),orderId:o.id,
-      amount:o.refund_amount||o.total_amount||0, reason:o.refund_reason||'',
-      refundedBy:o.refunded_by||'', createdAt:o.refunded_at?o.refunded_at.split('T')[0]:''
-    };
-  });
-}
-
-// === LOAD DATA FROM SUPABASE ===
-async function loadDataFromSupabase(){
-  var results=await Promise.allSettled([
-    sb.from('corps').select('*'),
-    sb.from('brands').select('*'),
-    sb.from('stores').select('*'),
-    sb.from('accounts').select('*'),
-    sb.from('members').select('*'),
-    sb.from('rank_settings').select('id, rank_name').order('sort_order'),
-    sb.from('orders').select('*, order_items(*)').order('created_at',{ascending:false}).limit(2000),
-    sb.from('point_transactions').select('*').eq('source','aiden_compensation').order('created_at',{ascending:false}),
-    sb.from('service_subscriptions').select('*').eq('is_active',true)
-  ]);
-  var ok=function(i){return results[i].status==='fulfilled'&&results[i].value.data&&!results[i].value.error;};
-  var d=function(i){return results[i].value.data||[];};
-
-  // rank map
-  var rankMap={};
-  if(ok(5)) d(5).forEach(function(r){rankMap[r.id]=r.rank_name;});
-
-  // corps
-  if(ok(0)) CORPS=d(0).map(mapCorp);
-  // brands
-  if(ok(1)) BRANDS=d(1).map(mapBrand);
-  // stores
-  if(ok(2)) STORES=d(2).map(mapStore);
-  // accounts
-  if(ok(3)) ACCOUNTS=d(3).map(function(row){
-    return {
-      id:row.id, name:row.name||'', email:row.email||'',
-      role:row.role||'staff', corpId:row.corp_id||'',
-      brandId:row.brand_id||null, storeId:row.store_id||null,
-      status:row.status||'active',
-      lastLogin:row.last_login?row.last_login.split('T')[0]:'—',
-      created_at:row.created_at||''
-    };
-  });
-  // members
-  if(ok(4)) MEMBERS=d(4).map(function(row){return mapMember(row,rankMap);});
-
-  // build lookup maps
-  var memberMap={};
-  MEMBERS.forEach(function(m){memberMap[m.id]=m.name;});
-  var storeMap={};
-  STORES.forEach(function(s){storeMap[s.id]=s;});
-  var brandMap={};
-  BRANDS.forEach(function(b){brandMap[b.id]=b;});
-
-  // orders + order_items
-  if(ok(6)){
-    var rawOrders=d(6);
-    ADMIN_ORDERS=rawOrders.map(function(row){
-      var o=mapOrder(row,storeMap,brandMap,memberMap);
-      if(row.order_items&&row.order_items.length>0){
-        o.items=row.order_items.map(function(it){
-          return {name:it.product_name||it.name||'商品',qty:it.quantity||1,price:it.unit_price||0};
-        });
-      }
-      return o;
-    });
-    // refund log
-    var rl=buildRefundLog(rawOrders);
-    if(rl.length>0) REFUND_LOG=rl;
-    // aggregate orders/revenue per store
-    var soc={},srv={};
-    rawOrders.forEach(function(o){
-      if(!soc[o.store_id])soc[o.store_id]=0;
-      if(!srv[o.store_id])srv[o.store_id]=0;
-      soc[o.store_id]++;
-      srv[o.store_id]+=(o.total_amount||0);
-    });
-    STORES.forEach(function(s){s.orders=soc[s.id]||0;s.revenue=srv[s.id]||0;});
-  }
-
-  // compensation point log
-  if(ok(7)) COMP_POINT_LOG=d(7).map(function(row){return mapCompPoint(row,memberMap);});
-
-  // service subscriptions
-  if(ok(8)){
-    Object.keys(svcState).forEach(function(k){delete svcState[k];});
-    d(8).forEach(function(row){setSvc(row.entity_id,row.service_key,true);});
-  }
-
-  // aggregate member points
-  try{
-    var ptRes=await sb.from('point_transactions').select('member_id, amount');
-    if(ptRes.data&&ptRes.data.length>0){
-      var pb={};
-      ptRes.data.forEach(function(t){if(!pb[t.member_id])pb[t.member_id]=0;pb[t.member_id]+=t.amount;});
-      MEMBERS.forEach(function(m){if(pb[m.id]!==undefined)m.points=Math.max(0,pb[m.id]);});
-    }
-  }catch(e){/* point aggregation failed */}
-}
 
 // STRIPE CONNECT
 // 手数料率（システム設定 - チャネル別）
@@ -462,9 +236,8 @@ async function createStripeAccount(corpId){
 }
 
 function openStripeDashboard(accountId){
-  // 環境に応じてダッシュボードURLを切替（test or live）
-  const isTest = (typeof STRIPE_MODE !== 'undefined' && STRIPE_MODE === 'live') ? '' : 'test/';
-  window.open('https://dashboard.stripe.com/'+isTest+'connect/accounts/'+accountId,'_blank');
+  // テスト環境の Express ダッシュボードURL
+  window.open('https://dashboard.stripe.com/test/connect/accounts/'+accountId,'_blank');
 }
 
 // SEARCH
@@ -488,7 +261,7 @@ function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSide
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai','plan-mgmt':'plan-mgmt',billing:'billing',compensation:'compensation',support:'support',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -508,22 +281,18 @@ function renderPage(){
   else if(v.type==='users')el.innerHTML=renderUsers();
   else if(v.type==='system')el.innerHTML=renderSystem();
   else if(v.type==='ai')el.innerHTML=renderAI();
-  else if(v.type==='plan-mgmt')el.innerHTML=renderPlanManagement();
+  else if(v.type==='cost')el.innerHTML=renderCostManagement();
   else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
-  else if(v.type==='support')el.innerHTML=renderAdminSupport();
   else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
   // post hooks
-  if(v.type==='plan-mgmt')loadPlanChangeRequests();
-  if(v.type==='billing')loadInvoicesFromSupabase();
   if(v.type==='dashboard')renderDashCharts();
   if(v.type==='ai')renderAICharts();
+  if(v.type==='cost')initCostManagement();
   if(v.type==='brand')initBrandTabs();
   if(v.type==='store')initStoreTabs();
-  if(v.type==='users')loadAdminGuestData();
-  if(v.type==='support')loadAdminSupportData();
 }
 
 // ===== DASHBOARD =====
@@ -571,40 +340,192 @@ function renderUsers(){
   // accounts
   '<div class="tab-content active" id="user-accounts"><div class="card"><div class="card-title">アカウント一覧（Owner/Admin/Staff） <span class="ct-right"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'account\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'account\')">📥 一括登録</button><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>権限</th><th>法人</th><th>ステータス</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+
-  ACCOUNTS.map(a=>{const cp=CORPS.find(c=>c.id===a.corpId);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px" title="'+a.id+'">'+String(a.id).substring(0,8)+'…</code></td><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(cp?cp.name:'')+'</td><td>'+statusBadge(a.status)+'</td><td>'+a.lastLogin+'</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="openEditAccountModal(\''+a.id+'\')">編集</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>';}).join('')+
+  ACCOUNTS.map(a=>{const cp=CORPS.find(c=>c.id===a.corpId);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+a.id+'</code></td><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(cp?cp.name:'')+'</td><td>'+statusBadge(a.status)+'</td><td>'+a.lastLogin+'</td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集\')">編集</button></td></tr>';}).join('')+
   '</tbody></table></div>'+
-  '<div class="card"><div class="card-title">🔐 権限マトリクス <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePermMatrix()">保存</button></span></div>'+buildPermMatrixUI()+'</div></div>'+
+  '<div class="card"><div class="card-title">🔐 権限マトリクス</div><div class="perm-grid"><div class="ph">機能</div><div class="ph" style="text-align:center">Owner</div><div class="ph" style="text-align:center">Admin</div><div class="ph" style="text-align:center">Staff</div><div class="pl">店舗閲覧</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">店舗編集</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">メニュー管理</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">✅</div><div class="pl">売上レポート</div><div class="pc">✅</div><div class="pc">✅</div><div class="pc">❌</div><div class="pl">個人情報閲覧</div><div class="pc">✅</div><div class="pc">⚠️</div><div class="pc">❌</div><div class="pl">アカウント管理</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div><div class="pl">請求・決済</div><div class="pc">✅</div><div class="pc">❌</div><div class="pc">❌</div></div></div></div>'+
   // members
   '<div class="tab-content" id="user-members"><div class="card"><div class="card-title">会員一覧 <span class="ct-right"><span style="font-size:11px;color:var(--text-light)">合計 '+MEMBERS.length+'人</span></span></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>電話番号</th><th>ランク</th><th class="r">ポイント</th><th class="r">注文回数</th><th>最終注文</th><th>登録日</th></tr></thead><tbody>'+
   MEMBERS.map(m=>'<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+m.id+'</code></td><td style="font-weight:600">'+m.name+'</td><td>'+m.email+'</td><td>'+m.phone+'</td><td>'+rankBadge(m.rank)+'</td><td class="r fw-800">'+m.points.toLocaleString()+'</td><td class="r">'+m.orders+'</td><td>'+m.lastOrder+'</td><td>'+m.joined+'</td></tr>').join('')+
   '</tbody></table></div><div class="card"><p style="font-size:11px;color:var(--text-light)">※ ゲスト注文者の個人情報は顧客企業に絶対非提供（仕様確定済み）。注文回数・タイムスタンプのみ閲覧可能。</p></div></div>'+
   // guests
-  '<div class="tab-content" id="user-guests">'+
-  '<div style="display:flex;gap:16px;margin-bottom:16px">' +
-    '<div class="stat-card purple" style="flex:1"><div class="sc-label">総ゲスト注文数</div><div class="sc-val" id="adminGuestTotalOrders">--</div></div>'+
-    '<div class="stat-card green" style="flex:1"><div class="sc-label">ユニークゲスト数</div><div class="sc-val" id="adminGuestUniqueCount">--</div></div>'+
-    '<div class="stat-card blue" style="flex:1"><div class="sc-label">ゲスト注文売上</div><div class="sc-val" id="adminGuestTotalRevenue">--</div></div>'+
-  '</div>'+
-  '<div class="card"><div class="card-title">ゲスト注文者一覧 <span class="ct-right">'+
-    '<label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#fff" title="AIden運営のみPII閲覧可能">'+
-      '<input type="checkbox" id="adminGuestPiiToggle" onchange="toggleAdminGuestPii()" style="accent-color:var(--accent)"> 個人情報を表示'+
-    '</label>'+
-    '<span style="font-size:11px;color:var(--text-light);margin-left:8px" id="adminGuestCount">合計 --件</span>'+
-  '</span></div>'+
-  '<p style="font-size:11px;color:var(--text-light);margin-bottom:16px">※ 通常は個人情報（名前・メール）は非表示です。AIden運営者のみトグルで確認できます。加盟店には絶対に共有されません。</p>'+
-  '<table class="data-table"><thead><tr><th>ゲストID</th><th id="adminGuestColName" style="display:none">氏名</th><th id="adminGuestColEmail" style="display:none">メール</th><th class="r">注文回数</th><th class="r">合計金額</th><th>最終注文日</th><th>店舗</th></tr></thead><tbody id="adminGuestTableBody">'+
-  '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:30px">データを読み込み中...</td></tr>'+
+  '<div class="tab-content" id="user-guests"><div class="card"><div class="card-title">ゲスト注文者 <span class="ct-right"><span style="font-size:11px;color:var(--text-light)">合計 '+GUESTS.length+'件</span></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">※ ゲストの個人情報（名前・メール・電話番号）は表示しません。注文回数とタイムスタンプのみ。</p>'+
+  '<table class="data-table"><thead><tr><th>ゲストID</th><th class="r">注文回数</th><th>最終注文日</th><th>チャネル</th></tr></thead><tbody>'+
+  GUESTS.map(g=>{const ch={takeout:'持ち帰り',delivery:'デリバリー',dinein:'店内注文'};return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+g.id+'</code></td><td class="r fw-800">'+g.orderCount+'</td><td>'+g.lastOrder+'</td><td>'+ch[g.channel]+'</td></tr>';}).join('')+
   '</tbody></table></div></div>'+
   // ban
-  '<div class="tab-content" id="user-ban"><div class="card"><div class="card-title">BAN一覧 <span class="ct-right"><button class="btn btn-danger btn-sm" onclick="openBanModal()">⛔ BAN追加</button></span></div>'+
-  '<table class="data-table"><thead><tr><th>ID</th><th>種別</th><th>対象</th><th>理由</th><th>スコープ</th><th>実行日</th><th>実行者</th><th></th></tr></thead><tbody>'+
-  BANS.map(b=>{const tl=b.type==='email'?'📧 メール':'📱 電話';const sc={global:'var(--danger)',guest:'#e17055',brand:'var(--info)'};return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+tl+'</td><td style="font-weight:600">'+b.value+'</td><td>'+b.reason+'</td><td><span style="color:'+(sc[b.scope]||'#999')+';font-weight:700;font-size:11px">'+b.scope.toUpperCase()+'</span></td><td>'+b.created+'</td><td>'+b.by+'</td><td><button class="btn btn-danger btn-sm" onclick="deleteBan(\''+b.id+'\')">解除</button></td></tr>';}).join('')+
-  '</tbody></table></div><div class="card"><div class="card-title">📋 BANスコープ</div><div style="font-size:12px;line-height:1.8;color:var(--text-light)"><p><strong style="color:var(--danger)">GLOBAL</strong>：全ブランド・全店舗で会員登録・ゲスト注文の両方をブロック</p><p><strong style="color:#e17055">GUEST</strong>：ゲスト注文のみブロック</p><p><strong style="color:var(--info)">BRAND</strong>：特定ブランドのみブロック</p></div></div></div>';
+  '<div class="tab-content" id="user-ban">'+renderBanTab()+'</div>';
 }
-function openBanModal(){openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>⛔ BAN追加</h3><div class="form-grid"><div class="form-group"><label>種別</label><select id="addBanType"><option value="email">メールアドレス</option><option value="phone">電話番号</option></select></div><div class="form-group"><label>スコープ</label><select id="addBanScope"><option value="global">グローバル</option><option value="guest">ゲスト注文のみ</option><option value="brand">特定ブランド</option></select></div><div class="form-group full"><label>対象 <span style="color:var(--danger)">*</span></label><input type="text" id="addBanValue" placeholder="メールまたは電話番号"></div><div class="form-group full"><label>理由 <span style="color:var(--danger)">*</span></label><textarea id="addBanReason" placeholder="BAN理由"></textarea></div></div><div class="btn-group"><button class="btn btn-danger" onclick="saveBan()">BAN実行</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');}
-function saveBan(){const v=document.getElementById('addBanValue').value.trim();const r=document.getElementById('addBanReason').value.trim();if(!v||!r){showToast('⚠️ 対象と理由は必須です');return;}BANS.push({id:genId('BAN-'),type:document.getElementById('addBanType').value,value:v,reason:r,scope:document.getElementById('addBanScope').value,created:new Date().toISOString().split('T')[0],by:'Taisei'});closeModal();showToast('⛔ BANを追加しました');renderPage();}
-function deleteBan(banId){BANS.splice(BANS.findIndex(b=>b.id===banId),1);showToast('🗑 BANを解除しました');renderPage();}
+// ===== BAN MANAGEMENT =====
+let banFilter={type:'all',status:'active',search:''};
+const BAN_REASON_CATS={fraud:'不正注文',prank:'いたずら注文',payment_refusal:'支払い拒否',harassment:'迷惑行為',other:'その他'};
+
+function getBanStatus(b){
+  if(!b.is_active && b.unbanned_at) return 'unbanned';
+  if(b.expires_at && new Date(b.expires_at)<new Date() && b.is_active) return 'expired';
+  if(b.is_active) return 'active';
+  return 'unbanned';
+}
+function banStatusBadge(s){
+  if(s==='active') return '<span class="status status-active">有効</span>';
+  if(s==='unbanned') return '<span class="status" style="background:#dfe6e9;color:#636e72">解除済み</span>';
+  if(s==='expired') return '<span class="status" style="background:#ffeaa7;color:#d68910">期限切れ</span>';
+  return '<span class="status">'+s+'</span>';
+}
+function banTypeBadge(t){
+  if(t==='global') return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#d6303120;color:#d63031">グローバル</span>';
+  return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#0984e320;color:#0984e3">店舗限定</span>';
+}
+
+function renderBanTab(){
+  const filtered=BANS.filter(b=>{
+    if(banFilter.type!=='all' && b.ban_type!==banFilter.type) return false;
+    const st=getBanStatus(b);
+    if(banFilter.status==='active' && st!=='active') return false;
+    if(banFilter.status==='unbanned' && st!=='unbanned') return false;
+    if(banFilter.status==='expired' && st!=='expired') return false;
+    if(banFilter.search){const q=banFilter.search.toLowerCase();if(!b.email.toLowerCase().includes(q)) return false;}
+    return true;
+  });
+  const activeCount=BANS.filter(b=>getBanStatus(b)==='active').length;
+  const globalCount=BANS.filter(b=>b.ban_type==='global'&&getBanStatus(b)==='active').length;
+  const storeCount=BANS.filter(b=>b.ban_type==='store_specific'&&getBanStatus(b)==='active').length;
+
+  return '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)">'+
+    '<div class="stat-card purple"><div class="sc-label">有効BAN数</div><div class="sc-val">'+activeCount+'</div></div>'+
+    '<div class="stat-card" style="border-left-color:var(--danger)"><div class="sc-label">グローバルBAN</div><div class="sc-val">'+globalCount+'</div></div>'+
+    '<div class="stat-card blue"><div class="sc-label">店舗限定BAN</div><div class="sc-val">'+storeCount+'</div></div>'+
+  '</div>'+
+  '<div class="card"><div class="card-title">⛔ BAN一覧 <span class="ct-right"><button class="btn btn-danger btn-sm" onclick="openBanModal()">＋ BANを追加</button></span></div>'+
+  '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">'+
+    '<input class="menu-search" placeholder="🔍 メールアドレスで検索..." style="width:240px" value="'+banFilter.search+'" oninput="banFilter.search=this.value;refreshBanTab()">'+
+    '<select class="menu-search" style="width:auto;padding:7px 10px" onchange="banFilter.type=this.value;refreshBanTab()">'+
+      '<option value="all"'+(banFilter.type==='all'?' selected':'')+'>種別: すべて</option>'+
+      '<option value="global"'+(banFilter.type==='global'?' selected':'')+'>グローバル</option>'+
+      '<option value="store_specific"'+(banFilter.type==='store_specific'?' selected':'')+'>店舗限定</option>'+
+    '</select>'+
+    '<select class="menu-search" style="width:auto;padding:7px 10px" onchange="banFilter.status=this.value;refreshBanTab()">'+
+      '<option value="active"'+(banFilter.status==='active'?' selected':'')+'>ステータス: 有効</option>'+
+      '<option value="unbanned"'+(banFilter.status==='unbanned'?' selected':'')+'>解除済み</option>'+
+      '<option value="expired"'+(banFilter.status==='expired'?' selected':'')+'>期限切れ</option>'+
+      '<option value="all"'+(banFilter.status==='all'?' selected':'')+'>すべて</option>'+
+    '</select>'+
+    '<span style="font-size:11px;color:var(--text-light);margin-left:auto">'+filtered.length+'件表示</span>'+
+  '</div>'+
+  (filtered.length===0?'<div class="empty-state">該当するBANレコードはありません</div>':
+  '<table class="data-table"><thead><tr><th>メールアドレス</th><th>種別</th><th>対象店舗</th><th>理由</th><th>登録日</th><th>期限</th><th>ステータス</th><th></th></tr></thead><tbody>'+
+  filtered.map(b=>{
+    const st=getBanStatus(b);
+    const expStr=b.expires_at?b.expires_at:'無期限';
+    const storeStr=b.ban_type==='store_specific'?(b.store_name||b.store_id):'—';
+    return '<tr style="'+(st!=='active'?'opacity:.6':'')+'"><td style="font-weight:600">'+b.email+'</td><td>'+banTypeBadge(b.ban_type)+'</td><td>'+storeStr+'</td><td><span style="font-size:11px">'+b.reason+'</span></td><td>'+b.banned_at+'</td><td>'+expStr+'</td><td>'+banStatusBadge(st)+'</td><td>'+
+    (st==='active'?'<button class="btn btn-secondary btn-sm" onclick="openUnbanModal(\''+b.id+'\')">解除</button>':
+     (st==='unbanned'?'<span style="font-size:10px;color:var(--text-light)" title="'+(b.unban_reason||'')+'">解除済</span>':'<span style="font-size:10px;color:var(--text-light)">期限切れ</span>'))+
+    '</td></tr>';
+  }).join('')+
+  '</tbody></table>')+
+  '</div>'+
+  '<div class="card"><div class="card-title">📋 BAN種別について</div><div style="font-size:12px;line-height:1.8;color:var(--text-light)">'+
+    '<p><strong style="color:var(--danger)">グローバルBAN</strong>：全加盟店でそのメールアドレスからの注文・会員登録をブロック</p>'+
+    '<p><strong style="color:var(--info)">店舗限定BAN</strong>：指定した店舗のみでブロック（他店舗では注文可能）</p>'+
+  '</div></div>';
+}
+
+function refreshBanTab(){
+  const el=document.getElementById('user-ban');
+  if(el) el.innerHTML=renderBanTab();
+}
+
+function openBanModal(){
+  const storeOpts=STORES.map(s=>{const br=getBrandForStore(s);return '<option value="'+s.id+'">'+(br?br.name+' ':'')+ s.name+'</option>';}).join('');
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>⛔ BANを追加</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group full"><label>メールアドレス <span style="color:var(--danger)">*</span></label><input type="email" id="banEmail" placeholder="example@email.com"></div>'+
+      '<div class="form-group"><label>BAN種別</label><select id="banType" onchange="toggleBanStoreSelect()"><option value="global">グローバルBAN</option><option value="store_specific">店舗限定BAN</option></select></div>'+
+      '<div class="form-group" id="banStoreGroup" style="display:none"><label>対象店舗（複数選択可）</label><select id="banStoreSelect" multiple size="5" style="min-height:100px">'+storeOpts+'</select><div style="font-size:10px;color:var(--text-light);margin-top:4px">Ctrl/Cmd+クリックで複数選択</div></div>'+
+      '<div class="form-group"><label>BAN理由 <span style="color:var(--danger)">*</span></label><select id="banReasonCat"><option value="fraud">不正注文</option><option value="prank">いたずら注文</option><option value="payment_refusal">支払い拒否</option><option value="harassment">迷惑行為</option><option value="other">その他</option></select></div>'+
+      '<div class="form-group full"><label>理由の詳細 <span style="color:var(--danger)">*</span></label><textarea id="banReasonDetail" placeholder="BAN理由の詳細を入力..."></textarea></div>'+
+      '<div class="form-group"><label>期限</label><select id="banExpiry" onchange="toggleBanCustomDate()"><option value="permanent">無期限</option><option value="7">7日間</option><option value="30">30日間</option><option value="90">90日間</option><option value="custom">カスタム日付</option></select></div>'+
+      '<div class="form-group" id="banCustomDateGroup" style="display:none"><label>期限日</label><input type="date" id="banCustomDate"></div>'+
+    '</div>'+
+    '<div style="background:#fff0f0;border:1px solid #fab1a0;border-radius:8px;padding:12px;margin-top:16px;font-size:11px;color:#d63031"><strong>⚠️ 注意:</strong> BANを実行すると、該当メールアドレスからの注文がブロックされます。グローバルBANの場合、全加盟店で適用されます。</div>'+
+    '<div class="btn-group"><button class="btn btn-danger" onclick="saveBan()">⛔ BANを実行</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+
+function toggleBanStoreSelect(){
+  const g=document.getElementById('banStoreGroup');
+  g.style.display=document.getElementById('banType').value==='store_specific'?'':'none';
+}
+function toggleBanCustomDate(){
+  const g=document.getElementById('banCustomDateGroup');
+  g.style.display=document.getElementById('banExpiry').value==='custom'?'':'none';
+}
+
+function saveBan(){
+  const email=document.getElementById('banEmail').value.trim();
+  const reasonDetail=document.getElementById('banReasonDetail').value.trim();
+  if(!email||!email.includes('@')){showToast('⚠️ 有効なメールアドレスを入力してください');return;}
+  if(!reasonDetail){showToast('⚠️ 理由の詳細は必須です');return;}
+
+  const banType=document.getElementById('banType').value;
+  const reasonCat=document.getElementById('banReasonCat').value;
+  const reason=(BAN_REASON_CATS[reasonCat]||'その他')+'：'+reasonDetail;
+  const expiryVal=document.getElementById('banExpiry').value;
+  let expiresAt=null;
+  if(expiryVal==='custom'){
+    expiresAt=document.getElementById('banCustomDate').value;
+    if(!expiresAt){showToast('⚠️ 期限日を選択してください');return;}
+  } else if(expiryVal!=='permanent'){
+    const d=new Date();d.setDate(d.getDate()+parseInt(expiryVal));
+    expiresAt=d.toISOString().split('T')[0];
+  }
+
+  if(banType==='store_specific'){
+    const sel=document.getElementById('banStoreSelect');
+    const selectedStores=Array.from(sel.selectedOptions);
+    if(selectedStores.length===0){showToast('⚠️ 対象店舗を選択してください');return;}
+    // 確認ダイアログ
+    if(!confirm('以下のBANを実行します：\n\nメール: '+email+'\n種別: 店舗限定（'+selectedStores.length+'店舗）\n理由: '+reason+'\n\n実行しますか？')) return;
+    selectedStores.forEach(opt=>{
+      const store=STORES.find(s=>s.id===opt.value);
+      // 重複チェック
+      const dup=BANS.find(b=>b.email===email&&b.ban_type==='store_specific'&&b.store_id===opt.value&&getBanStatus(b)==='active');
+      if(dup){showToast('⚠️ '+email+' は既に '+(store?store.name:opt.value)+' でBAN済みです');return;}
+      BANS.push({id:genId('BAN-'),email:email,ban_type:'store_specific',store_id:opt.value,store_name:store?(getBrandForStore(store)?getBrandForStore(store).name+' ':'')+store.name:opt.value,reason:reason,reason_cat:reasonCat,banned_by:'Taisei',banned_at:new Date().toISOString().split('T')[0],expires_at:expiresAt,is_active:true,unbanned_at:null,unban_reason:null});
+    });
+  } else {
+    // 重複チェック
+    const dup=BANS.find(b=>b.email===email&&b.ban_type==='global'&&getBanStatus(b)==='active');
+    if(dup){showToast('⚠️ '+email+' は既にグローバルBANされています');closeModal();return;}
+    if(!confirm('以下のBANを実行します：\n\nメール: '+email+'\n種別: グローバルBAN（全加盟店）\n理由: '+reason+'\n\n実行しますか？')) return;
+    BANS.push({id:genId('BAN-'),email:email,ban_type:'global',store_id:null,store_name:null,reason:reason,reason_cat:reasonCat,banned_by:'Taisei',banned_at:new Date().toISOString().split('T')[0],expires_at:expiresAt,is_active:true,unbanned_at:null,unban_reason:null});
+  }
+  closeModal();showToast('⛔ BANを追加しました');refreshBanTab();
+}
+
+function openUnbanModal(banId){
+  const b=BANS.find(x=>x.id===banId);if(!b) return;
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>🔓 BAN解除</h3>'+
+    '<div style="background:#f5f6fa;border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px">'+
+      '<div style="margin-bottom:6px"><strong>メール:</strong> '+b.email+'</div>'+
+      '<div style="margin-bottom:6px"><strong>種別:</strong> '+(b.ban_type==='global'?'グローバル':'店舗限定（'+(b.store_name||b.store_id)+'）')+'</div>'+
+      '<div style="margin-bottom:6px"><strong>理由:</strong> '+b.reason+'</div>'+
+      '<div><strong>登録日:</strong> '+b.banned_at+'</div>'+
+    '</div>'+
+    '<div class="form-group full"><label>解除理由 <span style="color:var(--danger)">*</span></label><textarea id="unbanReason" placeholder="BAN解除の理由を入力..."></textarea></div>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="executeUnban(\''+banId+'\')">🔓 解除を実行</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+
+function executeUnban(banId){
+  const reason=document.getElementById('unbanReason').value.trim();
+  if(!reason){showToast('⚠️ 解除理由は必須です');return;}
+  const b=BANS.find(x=>x.id===banId);
+  if(!b) return;
+  b.is_active=false;
+  b.unbanned_at=new Date().toISOString().split('T')[0];
+  b.unban_reason=reason;
+  closeModal();showToast('🔓 BANを解除しました');refreshBanTab();
+}
 
 // ===== SYSTEM =====
 function renderSystem(){
@@ -731,18 +652,7 @@ async function grantCompPoint(memberId){
     amount:amount,reason:reason,source:'aiden_compensation',
     grantedBy:'Taisei',createdAt:new Date().toISOString().split('T')[0]
   });
-  // Supabase: point_transactions に直接INSERT
-  try{
-    var ptRes=await sb.from('point_transactions').insert({
-      member_id:memberId,brand_id:null,amount:amount,
-      reason:reason,source:'aiden_compensation',granted_by:'Taisei'
-    }).select().single();
-    if(ptRes.data){
-      // インメモリのCOMP_POINT_LOGを実データIDで更新
-      COMP_POINT_LOG[COMP_POINT_LOG.length-1].id=ptRes.data.id;
-    }
-  }catch(e){console.warn('point_transactions insert skipped:',e);}
-  // Edge Function呼び出し（追加処理がある場合）
+  // Supabase Edge Function 呼び出し（接続時）
   try{
     await fetch(SUPABASE_URL+'/functions/v1/compensation-point-grant',{
       method:'POST',
@@ -867,6 +777,7 @@ function openRefundModal(orderId){
         '<button class="btn btn-s" onclick="closeModal()">キャンセル</button>'+
       '</div>'
     ));
+
 }
 
 async function executeRefund(orderId){
@@ -917,7 +828,7 @@ function renderCorpPage(c){
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div></div>'+
   '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
-  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="openEditAccountModal(\''+a.id+'\')">編集</button> <button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>').join('')+'</tbody></table></div></div>'+
+  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント</div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
   '<div class="tab-content" id="corp-stores"><div class="card"><div class="card-title">店舗一覧（'+stores.length+'）</div><table class="data-table"><thead><tr><th>ブランド</th><th>店舗名</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+stores.map(s=>{const br=getBrandForStore(s);return '<tr><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+'</tbody></table></div></div>';
 }
@@ -929,7 +840,7 @@ function renderBrandPage(b){
   '<div class="page-header"><div class="page-title">'+b.name+'</div><span class="page-type-badge brand">ブランド</span></div>'+
   '<div class="page-subtitle">'+b.id+' / '+b.slug+' / '+ss.length+'店舗 / '+statusBadge(b.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card purple"><div class="sc-label">店舗数</div><div class="sc-val">'+ss.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+ss.reduce((s,x)=>s+x.orders,0).toLocaleString()+'</div></div></div>'+
-  '<div class="tabs"><div class="tab active" onclick="switchTab(\'brand\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'brand\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'design\')">デザイン</div><div class="tab" onclick="switchTab(\'brand\',this,\'hp\')">HP設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'news\')">ニュース</div><div class="tab" onclick="switchTab(\'brand\',this,\'coupon\')">クーポン</div><div class="tab" onclick="switchTab(\'brand\',this,\'member\')">会員・CRM</div><div class="tab" onclick="switchTab(\'brand\',this,\'menu\')">メニュー管理</div><div class="tab" onclick="switchTab(\'brand\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'brand\',this,\'related\')">法人・店舗</div></div>'+
+  '<div class="tabs"><div class="tab active" onclick="switchTab(\'brand\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'brand\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'design\')">デザイン</div><div class="tab" onclick="switchTab(\'brand\',this,\'hp\')">HP設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'news\')">ニュース</div><div class="tab" onclick="switchTab(\'brand\',this,\'coupon\')">クーポン</div><div class="tab" onclick="switchTab(\'brand\',this,\'member\')">会員・CRM</div><div class="tab" onclick="switchTab(\'brand\',this,\'menu\')">メニュー管理</div><div class="tab" onclick="switchTab(\'brand\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'brand\',this,\'pii\')">個人情報アクセス</div><div class="tab" onclick="switchTab(\'brand\',this,\'related\')">法人・店舗</div></div>'+
   '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" value="'+b.name+'"></div><div class="form-group"><label>スラッグ</label><input type="text" value="'+b.slug+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+b.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント</label><select><option selected>Noto Sans JP</option><option>Noto Serif JP</option></select></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>📷 Instagram</label><input type="url" placeholder=""></div><div class="form-group"><label>🕊 X</label><input type="url" placeholder=""></div><div class="form-group"><label>💬 LINE</label><input type="url" placeholder=""></div><div class="form-group"><label>🎵 TikTok</label><input type="url" placeholder=""></div></div></div></div>'+
   '<div class="tab-content" id="brand-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">法人（'+cp.name+'）でONになっているサービスのみ選択可能です。ここでONにしたサービスは配下店舗で選択できます。</p><div class="svc-grid">'+renderServiceCards(b.id,'brand',cp.id)+'</div></div></div>'+
   '<div class="tab-content" id="brand-design"><div class="card"><div class="card-title">デザイン設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>メインカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="'+b.mainColor+'" style="width:40px;height:36px;border:none;cursor:pointer"><input type="text" value="'+b.mainColor+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px"></div></div><div class="form-group"><label>ヘッダー文字色</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="#FFFFFF" style="width:40px;height:36px;border:none;cursor:pointer"><input type="text" value="#FFFFFF" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px"></div></div></div></div><div class="card"><div class="card-title">ロゴ</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 ドラッグ&ドロップ</div></div></div>'+
@@ -939,17 +850,51 @@ function renderBrandPage(b){
   '<div class="tab-content" id="brand-member"><div class="card"><div class="card-title">会員プログラム <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>プログラム名</label><input type="text" value="'+b.name+' メンバーズ"></div><div class="form-group"><label>ポイント付与率</label><input type="text" value="1%"></div></div></div><div class="card"><div class="card-title">CRM配信</div><div class="toggle-row"><label style="font-size:12px;font-weight:600">メール配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">LINE配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
   '<div class="tab-content" id="brand-menu"><div class="card"><div class="card-title">メニュー管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 新規追加\')">＋ 新規追加</button></span></div><div class="menu-toolbar"><input class="menu-search" placeholder="🔍 商品名で検索..." id="brandMenuSearch" oninput="renderBrandMenu()"><div id="brandMenuCats"></div></div><div class="menu-grid" id="brandMenuGrid"></div></div></div>'+
   '<div class="tab-content" id="brand-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" value="100"></div><div class="form-group"><label>当日（%）</label><input type="number" value="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" value="50"></div></div></div></div>'+
+  '<div class="tab-content" id="brand-pii"><div class="card"><div class="card-title">🔒 個人情報アクセス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePiiAccessSettings(\''+b.id+'\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">加盟店スタッフがエンドユーザーの個人情報にアクセスできる範囲を制御します。設定はこのブランド配下の全店舗に適用されます。</p><div id="piiAccessToggles">'+renderPiiAccessToggles(b)+'</div></div></div>'+
   '<div class="tab-content" id="brand-related"><div class="card"><div class="card-title">所属法人</div><div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div></div><div class="card"><div class="card-title">店舗一覧（'+ss.length+'）</div><div class="link-grid">'+ss.map(s=>'<div class="link-card" onclick="goToStore(\''+s.id+'\')"><div class="lc-icon store">🏪</div><div class="lc-info"><div class="lc-name">'+s.name+'</div><div class="lc-sub">'+s.addr+'</div></div><div class="lc-arrow">›</div></div>').join('')+'</div></div></div>';
 }
 let brandMenuCat='all';
 function renderBrandMenu(){const q=((document.getElementById('brandMenuSearch')||{}).value||'').toLowerCase();const cats=['all',...new Set(MENU.map(m=>m.cat))];const ce=document.getElementById('brandMenuCats');if(ce)ce.innerHTML=cats.map(c=>'<span class="cat-chip'+(brandMenuCat===c?' active':'')+'" onclick="brandMenuCat=\''+c+'\';renderBrandMenu()">'+(c==='all'?'すべて':c)+'</span>').join(' ');let items=MENU;if(brandMenuCat!=='all')items=items.filter(m=>m.cat===brandMenuCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));const ge=document.getElementById('brandMenuGrid');if(ge)ge.innerHTML=items.map(m=>'<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+m.name+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+m.cat+'</div><div class="mcard-desc">'+m.desc+'</div><div class="mcard-footer"><button onclick="showToast(\'📝 編集\')">編集</button></div></div></div>').join('')||'<div class="empty-state">該当なし</div>';}
-function initBrandTabs(){
-  brandMenuCat='all';
-  // Supabase からメニューを読み込み（現在のブランドページのID）
-  if(currentView&&currentView.type==='brand'&&currentView.id){
-    loadBrandMenu(currentView.id);
-  }else{
-    renderBrandMenu();
+function initBrandTabs(){brandMenuCat='all';renderBrandMenu();}
+
+// ===== PII ACCESS SETTINGS =====
+const PII_FIELDS=[
+  {key:'member_name',label:'会員氏名の閲覧',desc:'会員登録された顧客の氏名を閲覧できます',editable:true},
+  {key:'member_email',label:'会員メールアドレスの閲覧',desc:'会員登録された顧客のメールアドレスを閲覧できます',editable:true},
+  {key:'member_phone',label:'会員電話番号の閲覧',desc:'会員登録された顧客の電話番号を閲覧できます',editable:true},
+  {key:'member_address',label:'会員住所の閲覧',desc:'会員登録された顧客の住所を閲覧できます',editable:true},
+  {key:'order_history',label:'注文履歴の閲覧',desc:'顧客の注文履歴は業務上常に閲覧可能です',editable:false,forcedOn:true},
+  {key:'guest_info',label:'ゲスト注文者情報',desc:'',editable:false,forcedOn:false}
+];
+function renderPiiAccessToggles(b){
+  const s=b.pii_access_settings||{...PII_ACCESS_DEFAULTS};
+  return PII_FIELDS.map(f=>{
+    if(f.key==='guest_info'){
+      return '<div class="toggle-row" style="opacity:.6"><div><div style="font-size:12px;font-weight:600">'+f.label+'</div><div style="font-size:10px;color:var(--text-light)">常にOFF</div></div><label class="toggle-sw"><input type="checkbox" disabled><span class="slider" style="cursor:not-allowed"></span></label></div>'+
+        '<div style="background:#fff3e0;border-radius:8px;padding:10px 14px;margin:8px 0 4px;font-size:11px;color:#e17055;display:flex;align-items:center;gap:8px"><span>⚠️</span>ゲスト注文者の個人情報はプラットフォームポリシーにより閲覧不可</div>';
+    }
+    const isOn=f.forcedOn?true:!!s[f.key];
+    const disabled=!f.editable;
+    return '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">'+f.label+(f.forcedOn?' <span style="font-size:9px;color:var(--accent);font-weight:700">常にON</span>':'')+'</div><div style="font-size:10px;color:var(--text-light)">'+f.desc+'</div></div><label class="toggle-sw"><input type="checkbox" '+(isOn?'checked ':'')+' '+(disabled?'disabled ':'')+' onchange="togglePiiAccess(\''+b.id+'\',\''+f.key+'\',this.checked)"><span class="slider"'+(disabled?' style="cursor:not-allowed"':'')+'></span></label></div>';
+  }).join('');
+}
+function togglePiiAccess(brandId,key,val){
+  const b=BRANDS.find(x=>x.id===brandId);
+  if(!b)return;
+  if(!b.pii_access_settings)b.pii_access_settings={...PII_ACCESS_DEFAULTS};
+  b.pii_access_settings[key]=val;
+}
+async function savePiiAccessSettings(brandId){
+  const b=BRANDS.find(x=>x.id===brandId);
+  if(!b)return;
+  const settings=b.pii_access_settings||{...PII_ACCESS_DEFAULTS};
+  try{
+    const{error}=await sb.from('brands').update({pii_access_settings:settings}).eq('id',brandId);
+    if(error)throw error;
+    showToast('✅ 個人情報アクセス設定を保存しました');
+  }catch(e){
+    console.error('PII save error:',e);
+    showToast('⚠️ 保存に失敗しました（ローカル反映済み）');
   }
 }
 
@@ -965,7 +910,7 @@ function renderStorePage(s){
   '<div class="tab-content" id="store-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド（'+(br?br.name:'—')+'）でONになっているサービスのみ選択可能です。</p><div class="svc-grid">'+renderServiceCards(s.id,'store',br?br.id:null)+'</div></div></div>'+
   '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
   '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="text" value="6席"></div><div class="form-group"><label>喫煙</label><select><option selected>全席禁煙</option></select></div><div class="form-group"><label>子連れ</label><select><option selected>同伴不可</option></select></div><div class="form-group"><label>サービス料</label><input type="number" value="10"></div></div></div></div>'+
-  '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" value="5"></div><div class="form-group"><label>配達料金</label><input type="number" value="770"></div><div class="form-group"><label>最低注文額</label><input type="number" value="1500"></div><div class="form-group"><label>調理見積（分）</label><input type="number" value="30"></div></div></div></div>'+
+  '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminDelivery(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" id="adminDeliveryRadius" value="'+(s.deliveryRadius||5)+'"></div><div class="form-group"><label>配達料金（円）</label><input type="number" id="adminDeliveryFee" value="'+(s.deliveryFee||770)+'"></div><div class="form-group"><label>最低注文額（円）</label><input type="number" id="adminMinOrderAmount" value="'+(s.minOrder||1500)+'"></div><div class="form-group"><label>最低注文金額未満時の対応</label><select id="adminMinOrderPolicy" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="surcharge"'+(s.minOrderPolicy==="block"?"":' selected')+'>差額を手数料として加算</option><option value="block"'+(s.minOrderPolicy==="block"?' selected':"")+'>注文を受け付けない</option></select></div><div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="adminSmallOrderMax" value="'+(s.surchargeMax||1500)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限</div></div><div class="form-group"><label>調理見積（分）</label><input type="number" id="adminPrepTime" value="'+(s.prepTime||30)+'"></div></div></div><div class="card"><div class="card-title">少額注文手数料の適用対象</div><div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDinein"'+(s.minOrderApplyTypes&&s.minOrderApplyTypes.dinein?" checked":"")+'> 店内飲食</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderTakeout"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.takeout!==false?" checked":"")+'> テイクアウト</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDelivery"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.delivery!==false?" checked":"")+'> デリバリー</label></div><div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div></div></div>'+
   '<div class="tab-content" id="store-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">空欄 = ブランドデフォルト適用</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>当日（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" placeholder="50"></div></div></div></div>'+
   '<div class="tab-content" id="store-media"><div class="card"><div class="card-title">📸 メディア</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 画像をアップロード</div></div></div>'+
   '<div class="tab-content" id="store-flags"><div class="card"><div class="card-title">機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">席のみ予約</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">お持ち帰り</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">デリバリー</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
@@ -973,6 +918,36 @@ function renderStorePage(s){
   '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody><tr><td>2026-03-10</td><td>ゲスト</td><td>⭐⭐⭐⭐⭐</td><td>最高！</td><td><button class="btn btn-secondary btn-sm">返信</button></td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>'+
   '<div class="tab-content" id="store-related"><div class="card"><div class="card-title">所属法人</div>'+(cp?'<div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div><div class="card"><div class="card-title">所属ブランド</div>'+(br?'<div class="link-card" onclick="goToBrand(\''+br.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+br.name+'</div><div class="lc-sub">'+br.slug+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div></div>';
+}
+async function saveAdminDelivery(storeId){
+  const s=STORES.find(x=>x.id===storeId);
+  if(!s){showToast('❌ 店舗が見つかりません');return;}
+  const deliveryFee=parseInt(document.getElementById('adminDeliveryFee').value)||0;
+  const minOrder=parseInt(document.getElementById('adminMinOrderAmount').value)||0;
+  const minOrderPolicy=document.getElementById('adminMinOrderPolicy').value||'surcharge';
+  const surchargeMax=parseInt(document.getElementById('adminSmallOrderMax').value)||0;
+  const prepTime=parseInt(document.getElementById('adminPrepTime').value)||30;
+  const deliveryRadius=parseInt(document.getElementById('adminDeliveryRadius').value)||5;
+  const minOrderApplyTypes={
+    dinein:document.getElementById('adminMinOrderDinein').checked,
+    takeout:document.getElementById('adminMinOrderTakeout').checked,
+    delivery:document.getElementById('adminMinOrderDelivery').checked
+  };
+  s.deliveryFee=deliveryFee;s.minOrder=minOrder;s.minOrderPolicy=minOrderPolicy;
+  s.surchargeMax=surchargeMax;s.prepTime=prepTime;s.deliveryRadius=deliveryRadius;
+  s.minOrderApplyTypes=minOrderApplyTypes;
+  try{
+    const{error}=await sb.from('stores').update({
+      delivery_fee:deliveryFee,min_order_amount:minOrder,min_order_policy:minOrderPolicy,
+      small_order_surcharge_max:surchargeMax,prep_time_minutes:prepTime,
+      delivery_radius_km:deliveryRadius,min_order_apply_types:minOrderApplyTypes
+    }).eq('id',storeId);
+    if(error)throw error;
+    showToast('✅ 配達設定を保存しました');
+  }catch(e){
+    console.error('saveAdminDelivery error:',e);
+    showToast('✅ 配達設定を保存しました（ローカル）');
+  }
 }
 function initStoreTabs(){
   const DAYS=['月曜','火曜','水曜','木曜','金曜','土曜','日曜'];
@@ -1080,130 +1055,22 @@ function saveStore(){
   closeModal();showToast('✅ 店舗を追加しました');renderPage();
 }
 
-// ===== PERMISSION MATRIX =====
-var PERM_FEATURES=[
-  {key:'store_view',label:'店舗閲覧'},
-  {key:'store_edit',label:'店舗編集'},
-  {key:'menu_manage',label:'メニュー管理'},
-  {key:'order_manage',label:'注文管理'},
-  {key:'sales_report',label:'売上レポート'},
-  {key:'personal_info',label:'個人情報閲覧'},
-  {key:'account_manage',label:'アカウント管理'},
-  {key:'billing',label:'請求・決済'}
-];
-var PERM_DEFAULTS={
-  owner:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,personal_info:true,account_manage:true,billing:true},
-  admin:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,personal_info:false,account_manage:false,billing:false},
-  staff:  {store_view:true,store_edit:false,menu_manage:true,order_manage:true,sales_report:false,personal_info:false,account_manage:false,billing:false}
-};
-var PERM_MATRIX=JSON.parse(JSON.stringify(PERM_DEFAULTS));
-
-function buildPermMatrixUI(){
-  var roles=['owner','admin','staff'];
-  var roleLabels={owner:'Owner',admin:'Admin',staff:'Staff'};
-  var h='<div class="perm-grid" style="grid-template-columns:200px repeat(3,80px)">';
-  h+='<div class="ph">機能</div>';
-  roles.forEach(function(r){h+='<div class="ph" style="text-align:center">'+roleLabels[r]+'</div>';});
-  PERM_FEATURES.forEach(function(f){
-    h+='<div class="pl">'+f.label+'</div>';
-    roles.forEach(function(r){
-      var checked=PERM_MATRIX[r][f.key];
-      var isOwner=r==='owner';
-      h+='<div class="pc"><input type="checkbox" data-role="'+r+'" data-perm="'+f.key+'"'+(checked?' checked':'')+(isOwner?' disabled':'')+' onchange="onPermChange(this)" style="cursor:'+(isOwner?'not-allowed':'pointer')+'"></div>';
-    });
-  });
-  h+='</div>';
-  h+='<p style="font-size:10px;color:var(--text-light);margin-top:8px">Owner権限は常にフルアクセスです。Admin/Staffの権限をカスタマイズできます。</p>';
-  return h;
-}
-function onPermChange(el){
-  var role=el.getAttribute('data-role');
-  var perm=el.getAttribute('data-perm');
-  PERM_MATRIX[role][perm]=el.checked;
-}
-async function savePermMatrix(){
-  showToast('⏳ 権限マトリクスを保存中...');
-  try{
-    var res=await sb.from('permission_matrix').upsert(
-      Object.keys(PERM_MATRIX).map(function(role){return {role:role,permissions:PERM_MATRIX[role]};})
-    ,{onConflict:'role'});
-    if(res.error) throw res.error;
-    showToast('✅ 権限マトリクスを保存しました');
-  }catch(e){
-    console.warn('Permission matrix save (table may not exist yet):', e);
-    showToast('✅ 権限マトリクスを保存しました（ローカル）');
-  }
-}
-
-function accountCorpOptions(sel){return CORPS.map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+c.name+'</option>').join('');}
-function accountBrandOptions(corpId,sel){var bs=BRANDS.filter(b=>b.corpId===corpId);return '<option value="">— 未指定 —</option>'+bs.map(b=>'<option value="'+b.id+'"'+(b.id===sel?' selected':'')+'>'+b.name+'</option>').join('');}
-function accountStoreOptions(brandId,sel){var ss=STORES.filter(s=>s.brandId===brandId);return '<option value="">— 未指定 —</option>'+ss.map(s=>'<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+s.name+'</option>').join('');}
-
 function openAddAccountModal(){
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 アカウント追加</h3>'+
   '<div class="form-grid">'+
   '<div class="form-group"><label>氏名 <span style="color:var(--danger)">*</span></label><input type="text" id="addAccName" placeholder="氏名"></div>'+
   '<div class="form-group"><label>メールアドレス <span style="color:var(--danger)">*</span></label><input type="email" id="addAccEmail" placeholder="example@company.com"></div>'+
   '<div class="form-group"><label>権限 <span style="color:var(--danger)">*</span></label><select id="addAccRole"><option value="staff" selected>Staff</option><option value="admin">Admin</option><option value="owner">Owner</option></select></div>'+
-  '<div class="form-group"><label>所属法人 <span style="color:var(--danger)">*</span></label><select id="addAccCorp" onchange="document.getElementById(\'addAccBrand\').innerHTML=accountBrandOptions(this.value,\'\');document.getElementById(\'addAccStore\').innerHTML=accountStoreOptions(\'\',\'\')">'+accountCorpOptions('')+'</select></div>'+
-  '<div class="form-group"><label>所属ブランド</label><select id="addAccBrand" onchange="document.getElementById(\'addAccStore\').innerHTML=accountStoreOptions(this.value,\'\')"><option value="">— 未指定 —</option></select></div>'+
-  '<div class="form-group"><label>所属店舗</label><select id="addAccStore"><option value="">— 未指定 —</option></select></div>'+
+  '<div class="form-group"><label>所属法人</label><select id="addAccCorp">'+CORPS.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')+'</select></div>'+
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveAccount()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-async function saveAccount(){
+function saveAccount(){
   const name=document.getElementById('addAccName').value.trim();
   const email=document.getElementById('addAccEmail').value.trim();
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  const role=document.getElementById('addAccRole').value;
-  const corpId=document.getElementById('addAccCorp').value;
-  const brandId=document.getElementById('addAccBrand').value||null;
-  const storeId=document.getElementById('addAccStore').value||null;
-  showToast('⏳ 保存中...');
-  var res=await sb.from('accounts').insert({name:name,email:email,role:role,corp_id:corpId,brand_id:brandId,store_id:storeId,status:'active'}).select().single();
-  if(res.error){showToast('❌ '+res.error.message);return;}
-  ACCOUNTS.push({id:res.data.id,name:name,email:email,role:role,corpId:corpId,brandId:brandId,storeId:storeId,status:'active',lastLogin:'—',created_at:res.data.created_at});
+  ACCOUNTS.push({id:genId('ACC-'),name:name,email:email,role:document.getElementById('addAccRole').value,corpId:document.getElementById('addAccCorp').value,status:'active',lastLogin:'—'});
   closeModal();showToast('✅ アカウントを追加しました');renderPage();
-}
-
-function openEditAccountModal(accId){
-  var a=ACCOUNTS.find(x=>x.id===accId);if(!a)return;
-  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>📝 アカウント編集</h3>'+
-  '<div class="form-grid">'+
-  '<div class="form-group"><label>氏名 <span style="color:var(--danger)">*</span></label><input type="text" id="editAccName" value="'+a.name+'"></div>'+
-  '<div class="form-group"><label>メールアドレス <span style="color:var(--danger)">*</span></label><input type="email" id="editAccEmail" value="'+a.email+'"></div>'+
-  '<div class="form-group"><label>権限</label><select id="editAccRole"><option value="staff"'+(a.role==='staff'?' selected':'')+'>Staff</option><option value="admin"'+(a.role==='admin'?' selected':'')+'>Admin</option><option value="owner"'+(a.role==='owner'?' selected':'')+'>Owner</option></select></div>'+
-  '<div class="form-group"><label>所属法人</label><select id="editAccCorp" onchange="document.getElementById(\'editAccBrand\').innerHTML=accountBrandOptions(this.value,\'\');document.getElementById(\'editAccStore\').innerHTML=accountStoreOptions(\'\',\'\')">'+accountCorpOptions(a.corpId)+'</select></div>'+
-  '<div class="form-group"><label>所属ブランド</label><select id="editAccBrand" onchange="document.getElementById(\'editAccStore\').innerHTML=accountStoreOptions(this.value,\'\')">'+accountBrandOptions(a.corpId,a.brandId||'')+'</select></div>'+
-  '<div class="form-group"><label>所属店舗</label><select id="editAccStore">'+accountStoreOptions(a.brandId||'',a.storeId||'')+'</select></div>'+
-  '<div class="form-group"><label>ステータス</label><select id="editAccStatus"><option value="active"'+(a.status==='active'?' selected':'')+'>稼働中</option><option value="suspended"'+(a.status==='suspended'?' selected':'')+'>停止</option></select></div>'+
-  '</div>'+
-  '<div class="btn-group"><button class="btn btn-primary" onclick="updateAccount(\''+accId+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
-}
-async function updateAccount(accId){
-  var name=document.getElementById('editAccName').value.trim();
-  var email=document.getElementById('editAccEmail').value.trim();
-  if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  var role=document.getElementById('editAccRole').value;
-  var corpId=document.getElementById('editAccCorp').value;
-  var brandId=document.getElementById('editAccBrand').value||null;
-  var storeId=document.getElementById('editAccStore').value||null;
-  var status=document.getElementById('editAccStatus').value;
-  showToast('⏳ 保存中...');
-  var res=await sb.from('accounts').update({name:name,email:email,role:role,corp_id:corpId,brand_id:brandId,store_id:storeId,status:status}).eq('id',accId);
-  if(res.error){showToast('❌ '+res.error.message);return;}
-  var a=ACCOUNTS.find(x=>x.id===accId);
-  if(a){a.name=name;a.email=email;a.role=role;a.corpId=corpId;a.brandId=brandId;a.storeId=storeId;a.status=status;}
-  closeModal();showToast('✅ アカウントを更新しました');renderPage();
-}
-async function deleteAccount(accId){
-  var a=ACCOUNTS.find(x=>x.id===accId);if(!a)return;
-  if(!confirm('アカウント「'+a.name+'」を削除しますか？\nこの操作は取り消せません。'))return;
-  showToast('⏳ 削除中...');
-  var res=await sb.from('accounts').delete().eq('id',accId);
-  if(res.error){showToast('❌ '+res.error.message);return;}
-  ACCOUNTS=ACCOUNTS.filter(x=>x.id!==accId);
-  showToast('🗑 アカウントを削除しました');renderPage();
 }
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
@@ -1348,11 +1215,10 @@ function validateBulkRows(dataRows,type){
   return {valid,errors};
 }
 
-async function confirmBulkImport(){
+function confirmBulkImport(){
   if(!_bulkParsed||!_bulkParsed.length){showToast('⚠️ 登録データがありません');return;}
   let added=0;
-  for(var i=0;i<_bulkParsed.length;i++){
-    var item=_bulkParsed[i];
+  _bulkParsed.forEach(item=>{
     if(_bulkType==='corp'){
       CORPS.push({id:genId('CRP-'),name:item.name,rep:item.rep,status:item.status,created:item.created,hp:item.hp,recruit:item.recruit});added++;
     }else if(_bulkType==='brand'){
@@ -1360,957 +1226,852 @@ async function confirmBulkImport(){
     }else if(_bulkType==='store'){
       STORES.push({id:genId('STR-'),brandId:item.brandId,name:item.name,status:item.status,addr:item.addr,tel:item.tel,email:item.email,station:item.station,priceRange:item.priceRange,seats:item.seats,smoking:item.smoking,children:item.children,pets:item.pets,parking:item.parking,lat:item.lat,lng:item.lng,deliveryRadius:item.deliveryRadius,deliveryFee:item.deliveryFee,minOrder:item.minOrder,serviceCharge:item.serviceCharge,orders:0,revenue:0});added++;
     }else if(_bulkType==='account'){
-      var res=await sb.from('accounts').insert({name:item.name,email:item.email,role:item.role,corp_id:item.corpId,status:'active'}).select().single();
-      if(res.data){ACCOUNTS.push({id:res.data.id,name:item.name,email:item.email,role:item.role,corpId:item.corpId,brandId:null,storeId:null,status:'active',lastLogin:'—'});added++;}
+      ACCOUNTS.push({id:genId('ACC-'),name:item.name,email:item.email,role:item.role,corpId:item.corpId,phone:item.phone,status:'active',lastLogin:'—'});added++;
     }
-  }
+  });
   closeModal();
   showToast('✅ '+added+'件を登録しました');
   _bulkParsed=null;_bulkType=null;
   renderPage();
 }
 
-// ===== BILLING (請求管理) =====
-let INVOICES=[
-  {id:'INV-demo001',corpId:'CRP-Xk9mPr2',corpName:'株式会社スミビフーズ',billingPeriod:'2026-02',subtotal:148200,adjustments:-3500,tax:14470,total:159170,status:'draft',dueDate:'2026-03-31',pdfUrl:null,adjustmentDetails:[{reason:'返金控除 (ORD-1004)',amount:-2500},{reason:'AIden原資ポイント控除',amount:-1000}]},
-  {id:'INV-demo002',corpId:'CRP-Pq7mN2k',corpName:'株式会社麺道楽',billingPeriod:'2026-02',subtotal:52400,adjustments:0,tax:5240,total:57640,status:'sent',dueDate:'2026-03-31',pdfUrl:null,adjustmentDetails:[]},
-  {id:'INV-demo003',corpId:'CRP-Xk9mPr2',corpName:'株式会社スミビフーズ',billingPeriod:'2026-01',subtotal:132800,adjustments:-1200,tax:13160,total:144760,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[{reason:'AIden原資ポイント控除',amount:-1200}]},
-  {id:'INV-demo004',corpId:'CRP-Pq7mN2k',corpName:'株式会社麺道楽',billingPeriod:'2026-01',subtotal:48600,adjustments:0,tax:4860,total:53460,status:'paid',dueDate:'2026-02-28',pdfUrl:null,adjustmentDetails:[]}
+// ===== COST MANAGEMENT (コスト管理) =====
+
+// --- Content type definitions ---
+const COST_CONTENT_TYPES=[
+  {key:'monthly_ai_comment',label:'月次AIコメント',model:'Sonnet',costPerUnit:15},
+  {key:'product_comment',label:'商品別コメント',model:'Haiku',costPerUnit:2},
+  {key:'review_reply',label:'口コミ返信下書き',model:'Haiku',costPerUnit:11,hasLimit:true},
+  {key:'sns_content',label:'SNSコンテンツ生成',model:'Haiku',costPerUnit:15,hasLimit:true},
+  {key:'pop_image',label:'POP画像生成',model:'テンプレート+テキスト',costPerUnit:3,hasLimit:true},
+  {key:'competitor_report',label:'競合分析レポート',model:'Sonnet',costPerUnit:39},
+  {key:'line_message',label:'LINE配信文面',model:'Haiku',costPerUnit:8},
+  {key:'hp_content',label:'HP文章生成',model:'Sonnet',costPerUnit:53},
+  {key:'survey_analysis',label:'アンケート分析',model:'Sonnet',costPerUnit:24},
+  {key:'sales_analysis',label:'売上分析',model:'Sonnet',costPerUnit:15},
+  {key:'demand_forecast',label:'需要予測',model:'Sonnet',costPerUnit:17},
+  {key:'voice_ai',label:'音声AIサポーター',model:'Sonnet',costPerUnit:53},
+  {key:'shift_optimization',label:'シフト最適化',model:'Sonnet',costPerUnit:24},
+  {key:'inventory_ai',label:'在庫・発注AI',model:'Haiku',costPerUnit:4}
 ];
 
-// ===== PLAN MANAGEMENT =====
-var PLAN_REQUESTS = [];
-var PLAN_SVC_MAP = {};
+// Plan cost baselines
+const PLAN_COSTS={STD:307,PRO:821,EXPERT:3297};
+const PLAN_ALERT_DEFAULTS={STD:500,PRO:1200,EXPERT:5000};
 
-function planStatusBadge(s) {
-  var m = { pending: {bg:'#ffeaa7',c:'#d68910',l:'承認待ち'}, approved: {bg:'#e6f9f0',c:'#00b894',l:'承認済'}, rejected: {bg:'#fab1a0',c:'#d63031',l:'却下'} };
-  var st = m[s] || {bg:'#dfe6e9',c:'#636e72',l:s};
-  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
-}
+// --- 5 brands (add 1 more to existing 4) ---
+const COST_BRANDS=[
+  {id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭'},
+  {id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲'},
+  {id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極'},
+  {id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze'},
+  {id:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'焼鳥 鳥匠'}
+];
 
-function planDirectionBadge(d) {
-  if (d === 'upgrade') return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#dbeafe;color:#2563eb">⬆ アップグレード</span>';
-  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#f3e8ff;color:#7c3aed">⬇ ダウングレード</span>';
-}
+// --- 15 stores with plans ---
+const COST_STORES=[
+  {id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 渋谷店',plan:'PRO',moRevenue:3680000},
+  {id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 新宿東口店',plan:'EXPERT',moRevenue:4150000},
+  {id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 池袋店',plan:'STD',moRevenue:2980000},
+  {id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 恵比寿店',plan:'PRO',moRevenue:2450000},
+  {id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 六本木店',plan:'EXPERT',moRevenue:5120000},
+  {id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 銀座店',plan:'PRO',moRevenue:3900000},
+  {id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 表参道店',plan:'STD',moRevenue:2780000},
+  {id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲 新宿本店',plan:'PRO',moRevenue:3120000},
+  {id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲 渋谷店',plan:'STD',moRevenue:2460000},
+  {id:'STR-rU8xD5v',brandId:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極 新宿店',plan:'PRO',moRevenue:1890000},
+  {id:'STR-sV9yE6w',brandId:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極 池袋店',plan:'STD',moRevenue:1420000},
+  {id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze 代官山店',plan:'STD',moRevenue:340000},
+  {id:'STR-tW2zF7y',brandId:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze 表参道店',plan:'PRO',moRevenue:520000},
+  {id:'STR-uX3aG8z',brandId:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'鳥匠 恵比寿店',plan:'PRO',moRevenue:1850000},
+  {id:'STR-vY4bH9a',brandId:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'鳥匠 中目黒店',plan:'STD',moRevenue:1240000}
+];
 
-function planBadgeColor(p) {
-  if (p === 'EXPERT') return 'background:#7C3AED;color:#fff';
-  if (p === 'PRO') return 'background:#2563EB;color:#fff';
-  return 'background:#6B7280;color:#fff';
-}
-
-function renderPlanManagement() {
-  var pending = PLAN_REQUESTS.filter(function(r){ return r.status === 'pending'; }).length;
-  return '<div class="page-title">プラン管理</div><div class="page-subtitle">ブランドのプラン変更申請を管理します</div>' +
-    '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)">' +
-      '<div class="stat-card purple"><div class="sc-label">承認待ち</div><div class="sc-val">' + pending + '</div></div>' +
-      '<div class="stat-card green"><div class="sc-label">承認済（今月）</div><div class="sc-val">' + PLAN_REQUESTS.filter(function(r){ return r.status==='approved'; }).length + '</div></div>' +
-      '<div class="stat-card blue"><div class="sc-label">総申請数</div><div class="sc-val">' + PLAN_REQUESTS.length + '</div></div>' +
-    '</div>' +
-    '<div class="card" style="padding:0;overflow:hidden">' +
-      '<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">' +
-        '<select id="planStatusFilter" onchange="filterPlanTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">' +
-          '<option value="">全ステータス</option><option value="pending">承認待ち</option><option value="approved">承認済</option><option value="rejected">却下</option>' +
-        '</select>' +
-      '</div>' +
-      '<table class="data-table"><thead><tr>' +
-        '<th>ブランド</th><th>現プラン</th><th>希望プラン</th><th>種別</th><th>申請者</th><th>申請日</th><th>ステータス</th><th>操作</th>' +
-      '</tr></thead><tbody id="planTableBody">' + renderPlanRows(PLAN_REQUESTS) + '</tbody></table>' +
-    '</div>';
-}
-
-function renderPlanRows(rows) {
-  if (rows.length === 0) return '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-light)">プラン変更申請はありません</td></tr>';
-  return rows.map(function(r) {
-    var brand = BRANDS.find(function(b){ return b.id === r.brand_id; });
-    var brandName = brand ? brand.name : r.brand_id;
-    var dt = r.requested_at ? new Date(r.requested_at).toLocaleDateString('ja-JP') : '-';
-    var actions = '';
-    if (r.status === 'pending') {
-      actions = '<button class="btn btn-p btn-sm" onclick="approvePlanRequest(\'' + r.id + '\')">承認</button> ' +
-                '<button class="btn btn-d btn-sm" onclick="rejectPlanRequest(\'' + r.id + '\')">却下</button>';
-    } else if (r.status === 'approved') {
-      actions = '<span style="font-size:10px;color:var(--text-light)">' + (r.effective_date ? '適用日: ' + r.effective_date : '承認済') + '</span>';
-    } else {
-      actions = '<span style="font-size:10px;color:var(--text-light)">却下済</span>';
-    }
-    return '<tr>' +
-      '<td style="font-weight:600">' + brandName + '</td>' +
-      '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;' + planBadgeColor(r.current_plan) + '">' + r.current_plan + '</span></td>' +
-      '<td><span style="display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;' + planBadgeColor(r.requested_plan) + '">' + r.requested_plan + '</span></td>' +
-      '<td>' + planDirectionBadge(r.direction) + '</td>' +
-      '<td>' + (r.requested_by || '-') + '</td>' +
-      '<td>' + dt + '</td>' +
-      '<td>' + planStatusBadge(r.status) + '</td>' +
-      '<td>' + actions + '</td>' +
-    '</tr>';
-  }).join('');
-}
-
-function filterPlanTable() {
-  var status = document.getElementById('planStatusFilter').value;
-  var filtered = status ? PLAN_REQUESTS.filter(function(r){ return r.status === status; }) : PLAN_REQUESTS;
-  document.getElementById('planTableBody').innerHTML = renderPlanRows(filtered);
-}
-
-async function loadPlanChangeRequests() {
-  try {
-    var { data, error } = await sb.from('plan_change_requests').select('*').order('requested_at', { ascending: false });
-    if (error) throw error;
-    PLAN_REQUESTS = data || [];
-    // Also load service_subscriptions for plan mapping
-    var { data: svcData } = await sb.from('service_subscriptions').select('entity_id, service_key, is_active').eq('entity_type', 'brand').eq('is_active', true);
-    if (svcData) {
-      PLAN_SVC_MAP = {};
-      svcData.forEach(function(s) {
-        if (!PLAN_SVC_MAP[s.entity_id]) PLAN_SVC_MAP[s.entity_id] = [];
-        PLAN_SVC_MAP[s.entity_id].push(s.service_key);
+// --- Generate 3 months of demo cost logs ---
+function generateCostDemoData(){
+  const logs=[];
+  const now=new Date(2026,2,18);// 2026-03-18
+  for(let m=0;m<3;m++){
+    const year=2026,month=2-m;// Mar=2, Feb=1, Jan=0
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    COST_STORES.forEach(store=>{
+      const planMultiplier=store.plan==='EXPERT'?3.5:store.plan==='PRO'?1.8:1;
+      COST_CONTENT_TYPES.forEach(ct=>{
+        // Random usage count weighted by plan
+        let baseCount;
+        if(ct.costPerUnit>=39)baseCount=Math.floor(Math.random()*3*planMultiplier)+1;
+        else if(ct.costPerUnit>=15)baseCount=Math.floor(Math.random()*8*planMultiplier)+2;
+        else baseCount=Math.floor(Math.random()*15*planMultiplier)+3;
+        for(let i=0;i<baseCount;i++){
+          const day=Math.floor(Math.random()*daysInMonth)+1;
+          const d=new Date(year,month,day);
+          if(d>now)continue;
+          logs.push({
+            store_id:store.id,brand_id:store.brandId,corp_id:store.corpId,
+            content_type:ct.key,model:ct.model,
+            estimated_cost_jpy:ct.costPerUnit,
+            created_at:d.toISOString()
+          });
+        }
       });
+    });
+  }
+  return logs;
+}
+let COST_LOGS=generateCostDemoData();
+let COST_REAL_LOGS=[];
+let _costDataSource='demo'; // 'demo' or 'real'
+
+// --- Load real data from ai_usage_logs ---
+async function loadRealCostLogs(){
+  try{
+    const from=new Date(2026,0,1).toISOString();
+    const{data,error}=await sb.from('ai_usage_logs').select('*').gte('created_at',from).order('created_at',{ascending:false}).limit(5000);
+    if(error){console.warn('ai_usage_logs load error:',error.message);return;}
+    if(!data||data.length===0){console.log('No real ai_usage_logs data, using demo');return;}
+    // Map feature_type to content_type keys & find matching cost info
+    const ftMap={sales_analysis:'sales_analysis',review_reply:'review_reply',sns_content:'sns_content',pop_image:'pop_image',monthly_comment:'monthly_ai_comment'};
+    COST_REAL_LOGS=data.map(function(r){
+      const ctKey=ftMap[r.feature_type]||r.feature_type;
+      const ct=COST_CONTENT_TYPES.find(function(c){return c.key===ctKey;});
+      // Try to find store/brand info from COST_STORES
+      const store=COST_STORES.find(function(s){return s.id===r.store_id;});
+      return{
+        store_id:r.store_id,
+        brand_id:r.brand_id,
+        corp_id:store?store.corpId:(r.corp_id||''),
+        content_type:ctKey,
+        model:ct?ct.model:'Sonnet',
+        estimated_cost_jpy:r.api_cost_yen||( ct?ct.costPerUnit:0),
+        created_at:r.created_at,
+        action:r.action||'generate'
+      };
+    });
+    if(COST_REAL_LOGS.length>0){
+      _costDataSource='real';
+      // Merge: keep demo data as base, append real data
+      COST_LOGS=generateCostDemoData().concat(COST_REAL_LOGS);
+      if(typeof refreshCostData==='function')refreshCostData();
+      showToast('📊 実データを読み込みました（'+COST_REAL_LOGS.length+'件）');
     }
-    var tbody = document.getElementById('planTableBody');
-    if (tbody) tbody.innerHTML = renderPlanRows(PLAN_REQUESTS);
-  } catch(e) {
-    console.warn('Plan requests load error:', e);
-  }
+  }catch(e){console.warn('loadRealCostLogs error:',e);}
 }
 
-async function approvePlanRequest(id) {
-  var req = PLAN_REQUESTS.find(function(r){ return r.id === id; });
-  if (!req) return;
-  if (!confirm(req.requested_plan + ' へのプラン変更を承認しますか？')) return;
+// --- Cost filter state ---
+let costFilter={
+  period:'thisMonth',
+  customFrom:null,customTo:null,
+  granularity:'store', // corp / brand / store
+  corpId:'all',brandId:'all',storeId:'all'
+};
 
-  try {
-    var today = new Date().toISOString().split('T')[0];
-    var effectiveDate = req.direction === 'downgrade' ? req.effective_date : today;
+// Alert settings per store
+const costAlerts={};
+COST_STORES.forEach(s=>{costAlerts[s.id]=PLAN_ALERT_DEFAULTS[s.plan];});
 
-    // 1. Update request status
-    var { error: updateErr } = await sb.from('plan_change_requests').update({
-      status: 'approved',
-      approved_at: new Date().toISOString(),
-      effective_date: effectiveDate,
-      approved_by: 'Admin'
-    }).eq('id', id);
-    if (updateErr) throw updateErr;
+// Helper: filter logs by period
+function getFilteredCostLogs(){
+  const now=new Date(2026,2,18);
+  let from,to;
+  if(costFilter.period==='thisMonth'){from=new Date(2026,2,1);to=now;}
+  else if(costFilter.period==='lastMonth'){from=new Date(2026,1,1);to=new Date(2026,1,28);}
+  else if(costFilter.period==='3months'){from=new Date(2026,0,1);to=now;}
+  else if(costFilter.period==='custom'&&costFilter.customFrom&&costFilter.customTo){from=new Date(costFilter.customFrom);to=new Date(costFilter.customTo);to.setHours(23,59,59);}
+  else{from=new Date(2026,2,1);to=now;}
 
-    // 2. For upgrades: update service_subscriptions immediately
-    if (req.direction === 'upgrade') {
-      await updateBrandPlanSubscriptions(req.brand_id, req.current_plan, req.requested_plan);
-      // 3. Add adjustment to invoices (prorated)
-      await addProratedAdjustment(req.brand_id, req.current_plan, req.requested_plan);
-    }
-    // For downgrades: effective on effective_date (pg_cron handles)
-
-    // 4. Send notification email via Resend
-    await sendPlanApprovalEmail(req);
-
-    showToast('✅ プラン変更申請を承認しました');
-    await loadPlanChangeRequests();
-  } catch(e) {
-    console.error('Approve error:', e);
-    showToast('⚠️ 承認処理に失敗しました: ' + (e.message || ''));
-  }
+  return COST_LOGS.filter(l=>{
+    const d=new Date(l.created_at);
+    if(d<from||d>to)return false;
+    if(costFilter.corpId!=='all'&&l.corp_id!==costFilter.corpId)return false;
+    if(costFilter.brandId!=='all'&&l.brand_id!==costFilter.brandId)return false;
+    if(costFilter.storeId!=='all'&&l.store_id!==costFilter.storeId)return false;
+    return true;
+  });
 }
 
-async function rejectPlanRequest(id) {
-  var req = PLAN_REQUESTS.find(function(r){ return r.id === id; });
-  if (!req) return;
-  if (!confirm('この申請を却下しますか？')) return;
-  try {
-    var { error } = await sb.from('plan_change_requests').update({
-      status: 'rejected', approved_at: new Date().toISOString(), approved_by: 'Admin'
-    }).eq('id', id);
-    if (error) throw error;
-    showToast('申請を却下しました');
-    await loadPlanChangeRequests();
-  } catch(e) {
-    console.error('Reject error:', e);
-    showToast('⚠️ 却下処理に失敗しました');
-  }
+// Get this month's logs (for summary)
+function getThisMonthLogs(){
+  const from=new Date(2026,2,1),to=new Date(2026,2,18);
+  return COST_LOGS.filter(l=>{const d=new Date(l.created_at);return d>=from&&d<=to;});
+}
+function getLastMonthLogs(){
+  const from=new Date(2026,1,1),to=new Date(2026,1,28);
+  return COST_LOGS.filter(l=>{const d=new Date(l.created_at);return d>=from&&d<=to;});
 }
 
-async function updateBrandPlanSubscriptions(brandId, oldPlan, newPlan) {
-  var keyMap = { STANDARD: 'ai_std', PRO: 'ai_pro', EXPERT: 'ai_expert' };
-  var oldKey = keyMap[oldPlan];
-  var newKey = keyMap[newPlan];
-  // Deactivate old
-  if (oldKey) {
-    await sb.from('service_subscriptions').update({ is_active: false })
-      .eq('entity_type', 'brand').eq('entity_id', brandId).eq('service_key', oldKey);
+// --- Main render ---
+function renderCostManagement(){
+  return '<div class="page-title">コスト管理</div><div class="page-subtitle">AIコスト（LLM API費用等）を店舗/ブランド/法人単位でトラッキング</div>'+
+  renderCostFilterBar()+
+  '<div id="costSummaryCards">'+renderCostSummaryCards()+'</div>'+
+  '<div class="card" id="costChartCard"><div class="card-title">📈 コスト推移 <span class="ct-right">'+
+    '<select id="costChartScale" onchange="updateCostChart()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit"><option value="daily">日別</option><option value="weekly">週別</option><option value="monthly" selected>月別</option></select>'+
+  '</span></div><div style="position:relative;height:320px"><canvas id="costChart"></canvas></div></div>'+
+  '<div id="costContentTable">'+renderCostContentTable()+'</div>'+
+  '<div id="costStoreTable">'+renderCostStoreTable()+'</div>'+
+  '<div id="costAlertSection">'+renderCostAlertSection()+'</div>';
+}
+
+// (A) Filter bar
+function renderCostFilterBar(){
+  let corpOpts='<option value="all">全法人</option>'+CORPS.map(c=>'<option value="'+c.id+'"'+(costFilter.corpId===c.id?' selected':'')+'>'+c.name+'</option>').join('');
+  let brandOpts='<option value="all">全ブランド</option>'+COST_BRANDS.map(b=>'<option value="'+b.id+'"'+(costFilter.brandId===b.id?' selected':'')+'>'+b.name+'</option>').join('');
+  let storeOpts='<option value="all">全店舗</option>'+COST_STORES.map(s=>'<option value="'+s.id+'"'+(costFilter.storeId===s.id?' selected':'')+'>'+s.name+'</option>').join('');
+  const pSel=costFilter.period;
+  return '<div class="card" style="padding:14px 20px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">期間:</span>'+
+      '<select id="costPeriod" onchange="onCostPeriodChange()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+
+        '<option value="thisMonth"'+(pSel==='thisMonth'?' selected':'')+'>今月</option>'+
+        '<option value="lastMonth"'+(pSel==='lastMonth'?' selected':'')+'>先月</option>'+
+        '<option value="3months"'+(pSel==='3months'?' selected':'')+'>過去3ヶ月</option>'+
+        '<option value="custom"'+(pSel==='custom'?' selected':'')+'>カスタム</option>'+
+      '</select></div>'+
+    '<div id="costCustomRange" style="display:'+(pSel==='custom'?'flex':'none')+';align-items:center;gap:4px">'+
+      '<input type="date" id="costFrom" value="'+(costFilter.customFrom||'2026-01-01')+'" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">'+
+      '<span style="font-size:11px;color:var(--text-light)">〜</span>'+
+      '<input type="date" id="costTo" value="'+(costFilter.customTo||'2026-03-18')+'" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">粒度:</span>'+
+      '<select id="costGranularity" onchange="costFilter.granularity=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+
+        '<option value="corp"'+(costFilter.granularity==='corp'?' selected':'')+'>法人単位</option>'+
+        '<option value="brand"'+(costFilter.granularity==='brand'?' selected':'')+'>ブランド単位</option>'+
+        '<option value="store"'+(costFilter.granularity==='store'?' selected':'')+'>店舗単位</option>'+
+      '</select></div>'+
+    '<select id="costCorpFilter" onchange="costFilter.corpId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+corpOpts+'</select>'+
+    '<select id="costBrandFilter" onchange="costFilter.brandId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+brandOpts+'</select>'+
+    '<select id="costStoreFilter" onchange="costFilter.storeId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+storeOpts+'</select>'+
+    '<button class="btn btn-p btn-sm" onclick="refreshCostData()">適用</button>'+
+  '</div></div>';
+}
+
+function onCostPeriodChange(){
+  const v=document.getElementById('costPeriod').value;
+  costFilter.period=v;
+  document.getElementById('costCustomRange').style.display=v==='custom'?'flex':'none';
+  if(v==='custom'){
+    costFilter.customFrom=document.getElementById('costFrom').value;
+    costFilter.customTo=document.getElementById('costTo').value;
   }
-  // Activate or insert new
-  var { data: existing } = await sb.from('service_subscriptions').select('id')
-    .eq('entity_type', 'brand').eq('entity_id', brandId).eq('service_key', newKey).limit(1);
-  if (existing && existing.length > 0) {
-    await sb.from('service_subscriptions').update({ is_active: true, activated_at: new Date().toISOString() }).eq('id', existing[0].id);
+  refreshCostData();
+}
+
+function refreshCostData(){
+  if(costFilter.period==='custom'){
+    costFilter.customFrom=document.getElementById('costFrom').value;
+    costFilter.customTo=document.getElementById('costTo').value;
+  }
+  document.getElementById('costSummaryCards').innerHTML=renderCostSummaryCards();
+  document.getElementById('costContentTable').innerHTML=renderCostContentTable();
+  document.getElementById('costStoreTable').innerHTML=renderCostStoreTable();
+  document.getElementById('costAlertSection').innerHTML=renderCostAlertSection();
+  updateCostChart();
+}
+
+// (B) Summary cards
+function renderCostSummaryCards(){
+  const thisM=getThisMonthLogs();
+  const lastM=getLastMonthLogs();
+  const thisTotal=thisM.reduce((s,l)=>s+l.estimated_cost_jpy,0);
+  const lastTotal=lastM.reduce((s,l)=>s+l.estimated_cost_jpy,0);
+  const pctChange=lastTotal>0?((thisTotal-lastTotal)/lastTotal*100):0;
+  const arrow=pctChange>=0?'↑':'↓';
+  const pctColor=pctChange>=0?'var(--danger)':'var(--success)';
+
+  // Most expensive store
+  const storeMap={};
+  thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
+  let topStore={name:'—',cost:0};
+  Object.entries(storeMap).forEach(([sid,cost])=>{
+    if(cost>topStore.cost){const s=COST_STORES.find(x=>x.id===sid);topStore={name:s?s.name:'—',cost};}
+  });
+
+  // Most expensive content type
+  const ctMap={};
+  thisM.forEach(l=>{ctMap[l.content_type]=(ctMap[l.content_type]||0)+l.estimated_cost_jpy;});
+  let topCt={name:'—',cost:0};
+  Object.entries(ctMap).forEach(([key,cost])=>{
+    if(cost>topCt.cost){const ct=COST_CONTENT_TYPES.find(x=>x.key===key);topCt={name:ct?ct.label:'—',cost};}
+  });
+
+  // Count real logs in this month
+  var realCount=0;
+  if(COST_REAL_LOGS.length>0){var mStart=new Date(2026,2,1).toISOString();COST_REAL_LOGS.forEach(function(l){if(l.created_at>=mStart)realCount++;});}
+  var realSub=realCount>0?' (実データ '+realCount+'件含む)':'';
+
+  return '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
+    '<div class="stat-card purple"><div class="sc-label">今月のAIコスト合計</div><div class="sc-val">'+Y(thisTotal)+'</div><div class="sc-sub">'+thisM.length+'回の利用'+realSub+'</div></div>'+
+    '<div class="stat-card '+(pctChange>=0?'orange':'green')+'"><div class="sc-label">前月比</div><div class="sc-val" style="color:'+pctColor+'">'+arrow+' '+Math.abs(pctChange).toFixed(1)+'%</div><div class="sc-sub">先月: '+Y(lastTotal)+'</div></div>'+
+    '<div class="stat-card blue"><div class="sc-label">最高コスト店舗</div><div class="sc-val" style="font-size:16px">'+topStore.name+'</div><div class="sc-sub">'+Y(topStore.cost)+'</div></div>'+
+    '<div class="stat-card green"><div class="sc-label">最高コストAI機能</div><div class="sc-val" style="font-size:16px">'+topCt.name+'</div><div class="sc-sub">'+Y(topCt.cost)+'</div></div>'+
+  '</div>';
+}
+
+// (D) Content type breakdown table
+function renderCostContentTable(){
+  const logs=getFilteredCostLogs();
+  const map={};
+  COST_CONTENT_TYPES.forEach(ct=>{map[ct.key]={count:0,total:0};});
+  logs.forEach(l=>{if(map[l.content_type]){map[l.content_type].count++;map[l.content_type].total+=l.estimated_cost_jpy;}});
+
+  const rows=COST_CONTENT_TYPES.map(ct=>{
+    const d=map[ct.key];
+    const avg=d.count>0?(d.total/d.count).toFixed(0):0;
+    const limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';
+    return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'var(--accent)20;color:var(--accent)':ct.model.includes('Haiku')?'#00b89420;color:#00b894':'#e1705520;color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';
+  });
+
+  // Sort by total cost desc
+  const sorted=COST_CONTENT_TYPES.map(ct=>({ct,total:map[ct.key].total})).sort((a,b)=>b.total-a.total);
+  const sortedRows=sorted.map(({ct})=>{
+    const d=map[ct.key];
+    const avg=d.count>0?(d.total/d.count).toFixed(0):0;
+    const limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';
+    return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'rgba(108,92,231,.12);color:var(--accent)':ct.model.includes('Haiku')?'rgba(0,184,148,.12);color:#00b894':'rgba(225,112,85,.12);color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';
+  });
+
+  // Count regenerates from real logs
+  var regenMap={};
+  COST_REAL_LOGS.forEach(function(l){if(l.action==='regenerate'){regenMap[l.content_type]=(regenMap[l.content_type]||0)+1;}});
+
+  return '<div class="card"><div class="card-title">🤖 AI機能別コスト内訳</div>'+
+    '<table class="dt"><thead><tr><th>AI機能</th><th>モデル</th><th class="r">利用回数</th><th class="r">再生成</th><th class="r">合計コスト</th><th class="r">平均コスト/回</th><th class="r">上限設定</th></tr></thead><tbody>'+
+    sorted.map(function(item){var ct=item.ct;var d=map[ct.key];var avg=d.count>0?(d.total/d.count).toFixed(0):0;var regen=regenMap[ct.key]||0;var limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'rgba(108,92,231,.12);color:var(--accent)':ct.model.includes('Haiku')?'rgba(0,184,148,.12);color:#00b894':'rgba(225,112,85,.12);color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r" style="color:#888">'+(regen>0?regen+'回':'—')+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';}).join('')+
+    '</tbody></table></div>';
+}
+
+// (E) Store cost table
+function renderCostStoreTable(){
+  const thisM=getThisMonthLogs();
+  const storeMap={};
+  thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
+
+  const rows=COST_STORES.map(s=>{
+    const cost=storeMap[s.id]||0;
+    const planCost=PLAN_COSTS[s.plan]||0;
+    const diff=cost-planCost;
+    const isOver=diff>0;
+    const alertLimit=costAlerts[s.id]||PLAN_ALERT_DEFAULTS[s.plan];
+    const alertPct=cost/alertLimit*100;
+    const alertColor=alertPct>=100?'var(--danger)':alertPct>=80?'#e17055':'var(--success)';
+    const grossProfit=Math.round(s.moRevenue*0.0062);
+    return {s,cost,planCost,diff,isOver,alertPct,alertColor,grossProfit};
+  }).sort((a,b)=>b.cost-a.cost);
+
+  // Count API calls per store for heavy user detection
+  const storeCallMap={};
+  thisM.forEach(l=>{storeCallMap[l.store_id]=(storeCallMap[l.store_id]||0)+1;});
+  const callCounts=Object.values(storeCallMap).sort((a,b)=>b-a);
+  const heavyThreshold=callCounts.length>=3?callCounts[2]:callCounts[0]||0; // top 3
+
+  const trs=rows.map(r=>{
+    const calls=storeCallMap[r.s.id]||0;
+    const isHeavy=calls>=heavyThreshold&&calls>0;
+    const rowStyle=r.isOver?'background:rgba(214,48,49,.05)':isHeavy?'background:rgba(108,92,231,.04)':'';
+    const heavyBadge=isHeavy?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(108,92,231,.12);color:var(--accent)">🔥 ヘビーユーザー</span>':'';
+    return '<tr style="'+rowStyle+'"><td>'+r.s.name+heavyBadge+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-bg);color:var(--accent)">'+r.s.plan+'</span></td><td class="r" style="font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--text)')+'">'+Y(r.cost)+'</td><td class="r">'+Y(r.planCost)+'</td><td class="r" style="font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--success)')+'">'+
+    (r.diff>=0?'+':'')+Y(r.diff)+'</td><td class="r">'+Y(r.s.moRevenue)+'</td><td class="r">'+Y(r.grossProfit)+'</td><td class="r" style="font-size:11px">'+calls+'回</td><td><div style="width:60px;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden"><div style="width:'+Math.min(r.alertPct,100)+'%;height:100%;background:'+r.alertColor+';border-radius:3px"></div></div></td></tr>';
+  });
+
+  const srcBadge=_costDataSource==='real'?'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(0,184,148,.12);color:#00b894">🟢 実データ接続中</span>':'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(225,112,85,.12);color:#e17055">デモデータ</span>';
+  return '<div class="card"><div class="card-title">🏪 店舗別コスト一覧 '+srcBadge+' <span class="ct-right"><button class="btn btn-s btn-sm" onclick="downloadCostCSV()">📥 CSVダウンロード</button></span></div>'+
+    '<table class="dt"><thead><tr><th>店舗名</th><th>プラン</th><th class="r">今月AIコスト</th><th class="r">プラン原価</th><th class="r">差額</th><th class="r">MO売上</th><th class="r">粗利</th><th class="r">API呼出</th><th>使用率</th></tr></thead><tbody>'+
+    trs.join('')+
+    '</tbody></table></div>';
+}
+
+// CSV download
+function downloadCostCSV(){
+  const thisM=getThisMonthLogs();
+  const storeMap={};
+  thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
+  let csv='店舗名,プラン,今月AIコスト,プラン原価,差額,MO売上,粗利\n';
+  COST_STORES.forEach(s=>{
+    const cost=storeMap[s.id]||0;
+    const planCost=PLAN_COSTS[s.plan]||0;
+    const diff=cost-planCost;
+    const gp=Math.round(s.moRevenue*0.0062);
+    csv+=s.name+','+s.plan+','+cost+','+planCost+','+diff+','+s.moRevenue+','+gp+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='aiden_cost_report_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();URL.revokeObjectURL(url);
+  showToast('📥 CSVをダウンロードしました');
+}
+
+// (F) Alert settings
+function renderCostAlertSection(){
+  const thisM=getThisMonthLogs();
+  const storeMap={};
+  thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
+
+  const rows=COST_STORES.map(s=>{
+    const cost=storeMap[s.id]||0;
+    const limit=costAlerts[s.id]||PLAN_ALERT_DEFAULTS[s.plan];
+    const pct=Math.round(cost/limit*100);
+    let alertBadge='';
+    if(pct>=100)alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(214,48,49,.12);color:var(--danger)">🔴 上限超過</span>';
+    else if(pct>=80)alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(225,112,85,.12);color:#e17055">🟠 80%到達</span>';
+    else alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(0,184,148,.12);color:var(--success)">正常</span>';
+    return '<tr><td>'+s.name+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-bg);color:var(--accent)">'+s.plan+'</span></td><td class="r">'+Y(cost)+'</td><td class="r"><input type="number" value="'+limit+'" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;text-align:right" onchange="costAlerts[\''+s.id+'\']=Number(this.value);refreshCostData()"></td><td class="r">'+pct+'%</td><td>'+alertBadge+'</td></tr>';
+  });
+
+  return '<div class="card"><div class="card-title">🚨 アラート設定 <span class="ct-right"><button class="btn btn-p btn-sm" onclick="showToast(\'✅ アラート設定を保存しました\')">保存</button></span></div>'+
+    '<div style="font-size:11px;color:var(--text-light);margin-bottom:12px">店舗ごとの月間AIコスト上限を設定できます。デフォルト: STD ¥500 / PRO ¥1,200 / EXPERT ¥5,000</div>'+
+    '<table class="dt"><thead><tr><th>店舗名</th><th>プラン</th><th class="r">今月コスト</th><th class="r">上限 (¥)</th><th class="r">消化率</th><th>ステータス</th></tr></thead><tbody>'+
+    rows.join('')+
+    '</tbody></table></div>';
+}
+
+// (C) Chart.js cost trend chart
+let costChartInstance=null;
+function initCostManagement(){
+  updateCostChart();
+  loadRealCostLogs();
+}
+
+function updateCostChart(){
+  const canvas=document.getElementById('costChart');
+  if(!canvas)return;
+  if(costChartInstance){costChartInstance.destroy();costChartInstance=null;}
+
+  const scaleEl=document.getElementById('costChartScale');
+  const scale=scaleEl?scaleEl.value:'monthly';
+  const logs=getFilteredCostLogs();
+
+  let labels=[],datasets=[];
+
+  if(scale==='daily'){
+    // Daily for current period
+    const dayMap={};
+    logs.forEach(l=>{
+      const d=new Date(l.created_at);
+      const key=(d.getMonth()+1)+'/'+d.getDate();
+      dayMap[key]=(dayMap[key]||0)+l.estimated_cost_jpy;
+    });
+    // Sort by date
+    const sortedKeys=Object.keys(dayMap).sort((a,b)=>{
+      const [am,ad]=a.split('/').map(Number),[bm,bd]=b.split('/').map(Number);
+      return am===bm?ad-bd:am-bm;
+    });
+    labels=sortedKeys;
+    datasets=[{label:'AIコスト (¥)',data:sortedKeys.map(k=>dayMap[k]),borderColor:'#6c5ce7',backgroundColor:'rgba(108,92,231,.1)',fill:true,tension:.3,pointRadius:2}];
+  } else if(scale==='weekly'){
+    // Group by week
+    const weekMap={};
+    logs.forEach(l=>{
+      const d=new Date(l.created_at);
+      const startOfYear=new Date(d.getFullYear(),0,1);
+      const weekNum=Math.ceil(((d-startOfYear)/86400000+startOfYear.getDay()+1)/7);
+      const key=d.getMonth()+1+'月W'+weekNum;
+      weekMap[key]=(weekMap[key]||0)+l.estimated_cost_jpy;
+    });
+    const sortedKeys=Object.keys(weekMap);
+    labels=sortedKeys;
+    datasets=[{label:'AIコスト (¥)',data:sortedKeys.map(k=>weekMap[k]),borderColor:'#6c5ce7',backgroundColor:'rgba(108,92,231,.1)',fill:true,tension:.3,pointRadius:3}];
   } else {
-    await sb.from('service_subscriptions').insert({ entity_type: 'brand', entity_id: brandId, service_key: newKey, is_active: true, activated_at: new Date().toISOString() });
+    // Monthly
+    const monthMap={'1月':0,'2月':0,'3月':0};
+    logs.forEach(l=>{
+      const d=new Date(l.created_at);
+      const key=(d.getMonth()+1)+'月';
+      if(monthMap[key]!==undefined)monthMap[key]+=l.estimated_cost_jpy;
+    });
+    labels=Object.keys(monthMap);
+    datasets=[{label:'AIコスト (¥)',data:Object.values(monthMap),borderColor:'#6c5ce7',backgroundColor:'rgba(108,92,231,.15)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#6c5ce7'}];
   }
-  // Also handle CRM / competing features that come with higher plans
-  if (newPlan === 'PRO' || newPlan === 'EXPERT') {
-    var crmKeys = ['crm_pro'];
-    for (var i = 0; i < crmKeys.length; i++) {
-      var { data: ex } = await sb.from('service_subscriptions').select('id')
-        .eq('entity_type','brand').eq('entity_id',brandId).eq('service_key',crmKeys[i]).limit(1);
-      if (ex && ex.length > 0) {
-        await sb.from('service_subscriptions').update({ is_active: true }).eq('id', ex[0].id);
-      } else {
-        await sb.from('service_subscriptions').insert({ entity_type:'brand', entity_id:brandId, service_key:crmKeys[i], is_active:true, activated_at:new Date().toISOString() });
+
+  // Plan cost reference lines (monthly totals for all stores)
+  const storeCount=COST_STORES.length;
+  const stdLine=PLAN_COSTS.STD*COST_STORES.filter(s=>s.plan==='STD').length;
+  const proLine=PLAN_COSTS.PRO*COST_STORES.filter(s=>s.plan==='PRO').length;
+  const expLine=PLAN_COSTS.EXPERT*COST_STORES.filter(s=>s.plan==='EXPERT').length;
+  const totalPlanLine=stdLine+proLine+expLine;
+
+  // Add plan lines only for monthly view
+  if(scale==='monthly'){
+    datasets.push({label:'想定原価ライン (全店合計)',data:labels.map(()=>totalPlanLine),borderColor:'rgba(214,48,49,.5)',borderDash:[6,4],pointRadius:0,fill:false,borderWidth:2});
+
+    // Per-plan lines
+    datasets.push({label:'STD原価 (¥'+PLAN_COSTS.STD+' × '+COST_STORES.filter(s=>s.plan==='STD').length+'店)',data:labels.map(()=>stdLine),borderColor:'rgba(9,132,227,.4)',borderDash:[4,4],pointRadius:0,fill:false,borderWidth:1});
+    datasets.push({label:'PRO原価 (¥'+PLAN_COSTS.PRO+' × '+COST_STORES.filter(s=>s.plan==='PRO').length+'店)',data:labels.map(()=>proLine),borderColor:'rgba(0,184,148,.4)',borderDash:[4,4],pointRadius:0,fill:false,borderWidth:1});
+    datasets.push({label:'EXPERT原価 (¥'+PLAN_COSTS.EXPERT+' × '+COST_STORES.filter(s=>s.plan==='EXPERT').length+'店)',data:labels.map(()=>expLine),borderColor:'rgba(225,112,85,.4)',borderDash:[4,4],pointRadius:0,fill:false,borderWidth:1});
+  }
+
+  costChartInstance=new Chart(canvas,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:10,family:'Poppins, Noto Sans JP'},usePointStyle:true,padding:12}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': ¥'+ctx.parsed.y.toLocaleString();}}}
+      },
+      scales:{
+        y:{beginAtZero:true,ticks:{callback:function(v){return '¥'+v.toLocaleString();},font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{ticks:{font:{size:10}},grid:{display:false}}
       }
     }
-  }
+  });
 }
 
-async function addProratedAdjustment(brandId, oldPlan, newPlan) {
-  var priceMap = { STANDARD: 0, PRO: 4980, EXPERT: 9800 };
-  var diff = priceMap[newPlan] - priceMap[oldPlan];
-  if (diff <= 0) return;
-  var today = new Date();
-  var daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  var remainDays = daysInMonth - today.getDate();
-  var prorated = Math.round(diff * remainDays / daysInMonth);
-  // Find or create draft invoice for this brand's corp
-  var brand = BRANDS.find(function(b){ return b.id === brandId; });
-  if (!brand) return;
-  var corp = CORPS.find(function(c){ return c.id === brand.corpId; });
-  if (!corp) return;
-  var period = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0');
-  var inv = INVOICES.find(function(i){ return i.corpId === corp.id && i.billingPeriod === period && i.status === 'draft'; });
-  if (inv) {
-    inv.adjustments += prorated;
-    inv.adjustmentDetails.push({ reason: 'プランアップグレード日割(' + oldPlan + '→' + newPlan + ')', amount: prorated });
-    inv.tax = Math.round((inv.subtotal + inv.adjustments) * 0.1);
-    inv.total = inv.subtotal + inv.adjustments + inv.tax;
+// ===== 請求管理（BILLING） =====
+
+// Demo invoice data
+const INVOICES=[
+  {id:'INV-202602',brandId:'BRD-aB3kX9m',brandName:'焼肉 炭火亭',month:'2026-02-01',baseAmount:22940,adjustmentTotal:0,total:22940,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-10'},
+  {id:'INV-202602-2',brandId:'BRD-Tn6jL5w',brandName:'ラーメン風雲',month:'2026-02-01',baseAmount:9800,adjustmentTotal:0,total:9800,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-08'},
+  {id:'INV-202602-3',brandId:'BRD-Hm8nV3s',brandName:'Cafe Breeze',month:'2026-02-01',baseAmount:2100,adjustmentTotal:0,total:2100,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-05'},
+  {id:'INV-202603',brandId:'BRD-aB3kX9m',brandName:'焼肉 炭火亭',month:'2026-03-01',baseAmount:25800,adjustmentTotal:0,total:25800,status:'draft',issuedAt:null,paidAt:null},
+  {id:'INV-202603-2',brandId:'BRD-Tn6jL5w',brandName:'ラーメン風雲',month:'2026-03-01',baseAmount:10500,adjustmentTotal:0,total:10500,status:'draft',issuedAt:null,paidAt:null},
+  {id:'INV-202603-3',brandId:'BRD-Hm8nV3s',brandName:'Cafe Breeze',month:'2026-03-01',baseAmount:2300,adjustmentTotal:0,total:2300,status:'draft',issuedAt:null,paidAt:null}
+];
+
+// Invoice adjustments
+const INVOICE_ADJUSTMENTS=[
+  {id:'ADJ-demo001',invoiceId:'INV-202602',brandId:'BRD-aB3kX9m',type:'credit',amount:500,reason:'3/5 システム障害による手数料返還',category:'fee_refund',targetMonth:'2026-02-01',createdBy:'Taisei',createdAt:'2026-03-01'},
+  {id:'ADJ-demo002',invoiceId:null,brandId:'BRD-aB3kX9m',type:'credit',amount:1200,reason:'AIden原資ポイント精算（2月消費分）',category:'point_settlement',targetMonth:'2026-03-01',createdBy:'Taisei',createdAt:'2026-03-10'},
+  {id:'ADJ-demo003',invoiceId:null,brandId:'BRD-Tn6jL5w',type:'debit',amount:3000,reason:'追加カスタマイズ費用',category:'other',targetMonth:'2026-03-01',createdBy:'Taisei',createdAt:'2026-03-12'}
+];
+
+// Adjustment filter state
+let adjFilter={targetMonth:'',category:'all',brandId:'all'};
+
+// Category labels
+const ADJ_CATEGORIES={compensation:'障害補填',fee_refund:'手数料返還',point_settlement:'AIden原資ポイント精算',other:'その他'};
+const ADJ_CAT_COLORS={compensation:'#d63031',fee_refund:'#0984e3',point_settlement:'#e17055',other:'#636e72'};
+
+// Deadline check: 調整登録の締切 = 翌月の3営業日前
+function getAdjDeadline(targetMonth){
+  const d=new Date(targetMonth);
+  d.setMonth(d.getMonth()+1);// 翌月1日
+  let bizDays=0;
+  const deadline=new Date(d);
+  // 翌月1日から3営業日前を算出 = 翌月1日の3営業日前
+  // → 前月末から逆算して3営業日前
+  deadline.setDate(deadline.getDate()-1);// 前月末日
+  bizDays=0;
+  while(bizDays<3){
+    const dow=deadline.getDay();
+    if(dow!==0&&dow!==6)bizDays++;
+    if(bizDays<3)deadline.setDate(deadline.getDate()-1);
   }
+  return deadline;
 }
 
-async function sendPlanApprovalEmail(req) {
-  try {
-    var brand = BRANDS.find(function(b){ return b.id === req.brand_id; });
-    var brandName = brand ? brand.name : req.brand_id;
-    var corp = brand ? CORPS.find(function(c){ return c.id === brand.corpId; }) : null;
-    var toEmail = corp && corp.rep_email ? corp.rep_email : null;
-    if (!toEmail) { console.warn('No email for brand corp'); return; }
-    var subject = '【AIden】プラン変更が承認されました';
-    var body = brandName + ' 様\n\nプラン変更申請が承認されました。\n\n' +
-      '変更内容: ' + req.current_plan + ' → ' + req.requested_plan + '\n' +
-      (req.direction === 'upgrade' ? '適用日: 本日より\n' : '適用日: ' + req.effective_date + '\n') +
-      '\n今後ともAIdenをよろしくお願いいたします。\n\nAIden運営チーム';
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer re_RxHKiDAj_FNETYeckXbsvJosdpApSx4y5', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'AIden <noreply@aiden-jp.net>', to: [toEmail], subject: subject, text: body })
+function isAdjDeadlinePassed(targetMonth){
+  const deadline=getAdjDeadline(targetMonth);
+  return new Date()>deadline;
+}
+
+function formatMonth(dateStr){
+  const d=new Date(dateStr);
+  return d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+}
+
+// Recalculate invoice totals based on adjustments
+function recalcInvoiceAdjustments(){
+  INVOICES.forEach(inv=>{
+    const adjs=INVOICE_ADJUSTMENTS.filter(a=>a.brandId===inv.brandId&&a.targetMonth===inv.month);
+    let adjTotal=0;
+    adjs.forEach(a=>{
+      if(a.type==='credit')adjTotal-=a.amount;
+      else adjTotal+=a.amount;
     });
-  } catch(e) { console.warn('Email send error:', e); }
+    inv.adjustmentTotal=adjTotal;
+    inv.total=inv.baseAmount+adjTotal;
+  });
 }
+recalcInvoiceAdjustments();
 
-function billingStatusBadge(s){
-  var m={draft:{bg:'#ffeaa7',c:'#d68910',l:'下書き'},sent:{bg:'#74b9ff',c:'#0984e3',l:'送付済'},paid:{bg:'#e6f9f0',c:'#00b894',l:'入金済'}};
-  var st=m[s]||{bg:'#dfe6e9',c:'#636e72',l:s};
-  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
+// Available target months for filter/form
+function toLocalDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function getAvailableMonths(){
+  const months=new Set();
+  INVOICES.forEach(i=>months.add(i.month));
+  INVOICE_ADJUSTMENTS.forEach(a=>months.add(a.targetMonth));
+  // Add current and next month
+  const now=new Date();
+  const cur=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+  const nxtD=new Date(now.getFullYear(),now.getMonth()+1,1);
+  const nxt=nxtD.getFullYear()+'-'+String(nxtD.getMonth()+1).padStart(2,'0')+'-01';
+  months.add(cur);months.add(nxt);
+  return Array.from(months).sort().reverse();
 }
 
 function renderBilling(){
-  var totalDraft=INVOICES.filter(function(i){return i.status==='draft';}).length;
-  var totalSent=INVOICES.filter(function(i){return i.status==='sent';}).length;
-  var totalPaid=INVOICES.filter(function(i){return i.status==='paid';}).length;
-  var totalAmount=INVOICES.reduce(function(s,i){return s+i.total;},0);
-  return '<div class="page-title">請求管理</div><div class="page-subtitle">加盟店向け月次請求書の一覧・ステータス管理</div>'+
-  '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
-    '<div class="stat-card orange"><div class="sc-label">下書き</div><div class="sc-val">'+totalDraft+'</div></div>'+
-    '<div class="stat-card blue"><div class="sc-label">送付済</div><div class="sc-val">'+totalSent+'</div></div>'+
-    '<div class="stat-card green"><div class="sc-label">入金済</div><div class="sc-val">'+totalPaid+'</div></div>'+
-    '<div class="stat-card purple"><div class="sc-label">請求総額</div><div class="sc-val">'+Y(totalAmount)+'</div></div>'+
-  '</div>'+
+  return '<div class="page-title">請求管理</div><div class="page-subtitle">月次請求書の管理・調整項目の登録</div>'+
   '<div class="tabs" id="billingTabs">'+
-    '<div class="tab active" onclick="switchTab(\'billing\',this,\'list\')">請求書一覧</div>'+
-    '<div class="tab" onclick="switchTab(\'billing\',this,\'generate\')">請求書生成</div>'+
+    '<div class="tab active" onclick="switchTab(\'billing\',this,\'invoices\')">🧾 請求書一覧</div>'+
+    '<div class="tab" onclick="switchTab(\'billing\',this,\'adjustments\')">📝 調整項目</div>'+
   '</div>'+
-  '<div class="tab-content active" id="billing-list">'+renderBillingList()+'</div>'+
-  '<div class="tab-content" id="billing-generate">'+renderBillingGenerate()+'</div>';
+  '<div class="tab-content active" id="billing-invoices">'+renderBillingInvoicesTab()+'</div>'+
+  '<div class="tab-content" id="billing-adjustments">'+renderBillingAdjustmentsTab()+'</div>';
 }
 
-function renderBillingList(){
-  return '<div class="card" style="padding:0;overflow:hidden">'+
-    '<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">'+
-      '<select id="billingCorpFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全法人</option>'+
-      CORPS.map(function(c){return '<option value="'+c.id+'">'+c.name+'</option>';}).join('')+'</select>'+
-      '<select id="billingPeriodFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全期間</option><option value="2026-03">2026年3月</option><option value="2026-02">2026年2月</option><option value="2026-01">2026年1月</option></select>'+
-      '<select id="billingStatusFilter" onchange="filterBillingTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全ステータス</option><option value="draft">下書き</option><option value="sent">送付済</option><option value="paid">入金済</option></select>'+
-    '</div>'+
-    '<table class="data-table"><thead><tr><th>請求ID</th><th>法人</th><th>対象月</th><th class="r">手数料小計</th><th class="r">調整</th><th class="r">税</th><th class="r">合計</th><th>ステータス</th><th>支払期日</th><th>操作</th></tr></thead>'+
-    '<tbody id="billingTableBody">'+renderBillingRows(INVOICES)+'</tbody></table></div>';
-}
-
-function renderBillingRows(invoices){
-  return invoices.map(function(inv){
-    var nextAction='';
-    if(inv.status==='draft') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'sent\')">送付</button>';
-    else if(inv.status==='sent') nextAction='<button class="btn btn-p btn-sm" onclick="updateInvoiceStatus(\''+inv.id+'\',\'paid\')">入金確認</button>';
-    else nextAction='<span style="font-size:10px;color:var(--text-light)">完了</span>';
-    var pdfBtn=inv.pdfUrl
-      ?'<a href="'+inv.pdfUrl+'" target="_blank" class="btn btn-sm" style="background:#6c5ce720;color:#6c5ce7;font-size:10px;text-decoration:none;padding:3px 8px;border-radius:4px;cursor:pointer">PDF</a>'
-      :'<button class="btn btn-sm" style="background:#6c5ce720;color:#6c5ce7;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer" onclick="generateInvoicePdf(\''+inv.id+'\')">PDF生成</button>';
-    var emailBtn='<button class="btn btn-sm" style="background:#e17055;color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer" onclick="sendInvoiceEmail(\''+inv.id+'\')">メール送信</button>';
-    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+inv.id.substring(0,12)+'</code></td>'+
-      '<td style="font-weight:600">'+inv.corpName+'</td>'+
-      '<td>'+inv.billingPeriod+'</td>'+
-      '<td class="r">'+Y(inv.subtotal)+'</td>'+
-      '<td class="r" style="color:'+(inv.adjustments<0?'var(--danger)':'var(--text)')+'">'+Y(inv.adjustments)+'</td>'+
-      '<td class="r">'+Y(inv.tax)+'</td>'+
+// --- 請求書一覧タブ ---
+function renderBillingInvoicesTab(){
+  const invStatusBadge=function(s){
+    if(s==='paid')return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#e6f9f0;color:#00b894">支払済</span>';
+    if(s==='issued')return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#dfe6e9;color:#636e72">発行済</span>';
+    return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#ffeaa7;color:#d68910">下書き</span>';
+  };
+  const rows=INVOICES.slice().sort((a,b)=>b.month.localeCompare(a.month)||a.brandName.localeCompare(b.brandName)).map(function(inv){
+    const adjBadge=inv.adjustmentTotal!==0?
+      '<span style="font-size:11px;font-weight:700;color:'+(inv.adjustmentTotal<0?'var(--success)':'var(--danger)')+'"> ('+(inv.adjustmentTotal>0?'+':'')+Y(inv.adjustmentTotal)+')</span>':'';
+    return '<tr>'+
+      '<td style="font-family:monospace;font-size:11px">'+inv.id+'</td>'+
+      '<td style="font-weight:600">'+inv.brandName+'</td>'+
+      '<td>'+formatMonth(inv.month)+'</td>'+
+      '<td class="r">'+Y(inv.baseAmount)+'</td>'+
+      '<td class="r">'+adjBadge+'</td>'+
       '<td class="r" style="font-weight:700">'+Y(inv.total)+'</td>'+
-      '<td>'+billingStatusBadge(inv.status)+'</td>'+
-      '<td>'+(inv.dueDate||'—')+'</td>'+
-      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">'+nextAction+pdfBtn+emailBtn+
-        '<button class="btn btn-s btn-sm" onclick="openInvoiceDetail(\''+inv.id+'\')">詳細</button></div></td></tr>';
-  }).join('');
-}
-
-function filterBillingTable(){
-  var cf=document.getElementById('billingCorpFilter').value;
-  var pf=document.getElementById('billingPeriodFilter').value;
-  var sf=document.getElementById('billingStatusFilter').value;
-  var filtered=INVOICES.filter(function(inv){
-    if(cf&&inv.corpId!==cf)return false;
-    if(pf&&inv.billingPeriod!==pf)return false;
-    if(sf&&inv.status!==sf)return false;
-    return true;
+      '<td>'+invStatusBadge(inv.status)+'</td>'+
+      '<td>'+(inv.issuedAt||'—')+'</td>'+
+      '<td><button class="btn btn-s btn-sm" onclick="showInvoiceDetail(\''+inv.id+'\')">詳細</button></td>'+
+    '</tr>';
   });
-  document.getElementById('billingTableBody').innerHTML=renderBillingRows(filtered);
+  return '<div class="card"><div class="card-title">🧾 請求書一覧 <span class="ct-right"><button class="btn btn-p btn-sm" onclick="generateMonthlyInvoices()">📄 月次請求書生成</button></span></div>'+
+    '<table class="dt"><thead><tr><th>請求書ID</th><th>ブランド</th><th>対象月</th><th class="r">基本金額</th><th class="r">調整額</th><th class="r">合計</th><th>ステータス</th><th>発行日</th><th>操作</th></tr></thead><tbody>'+
+    rows.join('')+'</tbody></table></div>';
 }
 
-function updateInvoiceStatus(invId,newStatus){
-  var inv=INVOICES.find(function(i){return i.id===invId;});
-  if(!inv)return;
-  var labels={sent:'送付済',paid:'入金済'};
-  if(!confirm('請求書 '+inv.id+' のステータスを「'+labels[newStatus]+'」に変更しますか？'))return;
-  inv.status=newStatus;
-  // Supabase更新
-  sb.from('invoices').update({status:newStatus}).eq('id',invId).then(function(){}).catch(function(e){console.warn('Invoice status update failed:',e);});
-  showToast('✅ ステータスを「'+labels[newStatus]+'」に変更しました');
+// --- 調整項目タブ ---
+function renderBillingAdjustmentsTab(){
+  // Filter bar
+  const months=getAvailableMonths();
+  let monthOpts='<option value="">全期間</option>'+months.map(function(m){return '<option value="'+m+'"'+(adjFilter.targetMonth===m?' selected':'')+'>'+formatMonth(m)+'</option>';}).join('');
+  let catOpts='<option value="all">全カテゴリ</option>'+Object.keys(ADJ_CATEGORIES).map(function(k){return '<option value="'+k+'"'+(adjFilter.category===k?' selected':'')+'>'+ADJ_CATEGORIES[k]+'</option>';}).join('');
+  let brandOpts='<option value="all">全ブランド</option>'+BRANDS.map(function(b){return '<option value="'+b.id+'"'+(adjFilter.brandId===b.id?' selected':'')+'>'+b.name+'</option>';}).join('');
+
+  const filterBar='<div class="card" style="padding:14px 20px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">対象月:</span>'+
+      '<select id="adjMonthFilter" onchange="adjFilter.targetMonth=this.value;refreshAdjList()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+monthOpts+'</select></div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">カテゴリ:</span>'+
+      '<select id="adjCatFilter" onchange="adjFilter.category=this.value;refreshAdjList()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+catOpts+'</select></div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">ブランド:</span>'+
+      '<select id="adjBrandFilter" onchange="adjFilter.brandId=this.value;refreshAdjList()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+brandOpts+'</select></div>'+
+    '<button class="btn btn-p btn-sm" onclick="openAddAdjustmentModal()">＋ 調整追加</button>'+
+  '</div></div>';
+
+  return filterBar+'<div id="adjListContainer">'+renderAdjListTable()+'</div>';
+}
+
+function renderAdjListTable(){
+  let filtered=INVOICE_ADJUSTMENTS.slice();
+  if(adjFilter.targetMonth)filtered=filtered.filter(function(a){return a.targetMonth===adjFilter.targetMonth;});
+  if(adjFilter.category!=='all')filtered=filtered.filter(function(a){return a.category===adjFilter.category;});
+  if(adjFilter.brandId!=='all')filtered=filtered.filter(function(a){return a.brandId===adjFilter.brandId;});
+  filtered.sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
+
+  if(filtered.length===0)return '<div class="card"><div class="empty">調整項目がありません</div></div>';
+
+  // Summary
+  let totalCredit=0,totalDebit=0;
+  filtered.forEach(function(a){if(a.type==='credit')totalCredit+=a.amount;else totalDebit+=a.amount;});
+  const summaryCards='<div class="stat-row" style="grid-template-columns:repeat(3,1fr)">'+
+    '<div class="stat-card purple"><div class="sc-label">調整項目数</div><div class="sc-val">'+filtered.length+'</div></div>'+
+    '<div class="stat-card green"><div class="sc-label">控除合計</div><div class="sc-val" style="color:var(--success)">-'+Y(totalCredit)+'</div></div>'+
+    '<div class="stat-card orange"><div class="sc-label">付加合計</div><div class="sc-val" style="color:var(--danger)">+'+Y(totalDebit)+'</div></div>'+
+  '</div>';
+
+  const rows=filtered.map(function(a){
+    const brand=BRANDS.find(function(b){return b.id===a.brandId;});
+    const brandName=brand?brand.name:'—';
+    const typeBadge=a.type==='credit'?
+      '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#e6f9f0;color:#00b894">控除</span>':
+      '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#fab1a0;color:#d63031">付加</span>';
+    const catColor=ADJ_CAT_COLORS[a.category]||'#636e72';
+    const catBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+catColor+'15;color:'+catColor+'">'+ADJ_CATEGORIES[a.category]+'</span>';
+    const amountStr=a.type==='credit'?'-'+Y(a.amount):'+'+Y(a.amount);
+    const amountColor=a.type==='credit'?'var(--success)':'var(--danger)';
+    return '<tr>'+
+      '<td style="font-weight:600">'+brandName+'</td>'+
+      '<td>'+typeBadge+'</td>'+
+      '<td class="r" style="font-weight:700;color:'+amountColor+'">'+amountStr+'</td>'+
+      '<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+a.reason+'">'+a.reason+'</td>'+
+      '<td>'+catBadge+'</td>'+
+      '<td>'+formatMonth(a.targetMonth)+'</td>'+
+      '<td>'+a.createdBy+'</td>'+
+      '<td style="font-size:11px;color:var(--text-light)">'+a.createdAt+'</td>'+
+    '</tr>';
+  });
+
+  return summaryCards+
+    '<div class="card"><div class="card-title">📝 調整項目一覧</div>'+
+    '<table class="dt"><thead><tr><th>ブランド</th><th>種別</th><th class="r">金額</th><th>理由</th><th>カテゴリ</th><th>対象月</th><th>登録者</th><th>登録日</th></tr></thead><tbody>'+
+    rows.join('')+'</tbody></table></div>';
+}
+
+function refreshAdjList(){
+  const c=document.getElementById('adjListContainer');
+  if(c)c.innerHTML=renderAdjListTable();
+}
+
+// --- 調整追加モーダル ---
+function openAddAdjustmentModal(){
+  const months=getAvailableMonths();
+  const now=new Date();
+  const curMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+
+  let brandOpts=BRANDS.map(function(b){return '<option value="'+b.id+'">'+b.name+'</option>';}).join('');
+  let monthOpts=months.map(function(m){
+    const isPast=isAdjDeadlinePassed(m);
+    return '<option value="'+m+'"'+(m===curMonth?' selected':'')+'>'+formatMonth(m)+(isPast?' ⚠️ 締切超過':'')+'</option>';
+  }).join('');
+
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>📝 請求書調整の追加</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>ブランド <span style="color:var(--danger)">*</span></label>'+
+        '<select id="adjBrand">'+brandOpts+'</select></div>'+
+      '<div class="form-group"><label>対象月 <span style="color:var(--danger)">*</span></label>'+
+        '<select id="adjTargetMonth" onchange="checkAdjDeadline()">'+monthOpts+'</select></div>'+
+      '<div class="form-group"><label>種別 <span style="color:var(--danger)">*</span></label>'+
+        '<select id="adjType"><option value="credit">控除（値引き・補填）</option><option value="debit">付加（追加請求）</option></select></div>'+
+      '<div class="form-group"><label>カテゴリ <span style="color:var(--danger)">*</span></label>'+
+        '<select id="adjCategory"><option value="compensation">障害補填</option><option value="fee_refund">手数料返還</option><option value="point_settlement">AIden原資ポイント精算</option><option value="other">その他</option></select></div>'+
+      '<div class="form-group"><label>金額（円） <span style="color:var(--danger)">*</span></label>'+
+        '<input type="number" id="adjAmount" min="1" placeholder="例: 500"></div>'+
+      '<div class="form-group full"><label>理由 <span style="color:var(--danger)">*</span></label>'+
+        '<textarea id="adjReason" placeholder="調整の理由を入力..."></textarea></div>'+
+    '</div>'+
+    '<div id="adjDeadlineWarning"></div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-p" onclick="saveAdjustment()">登録</button>'+
+      '<button class="btn btn-s" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+  checkAdjDeadline();
+}
+
+function checkAdjDeadline(){
+  const month=document.getElementById('adjTargetMonth').value;
+  const warn=document.getElementById('adjDeadlineWarning');
+  if(!warn)return;
+  if(isAdjDeadlinePassed(month)){
+    const dl=getAdjDeadline(month);
+    warn.innerHTML='<div style="margin-top:14px;padding:12px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e17055;line-height:1.6">'+
+      '⚠️ <strong>'+formatMonth(month)+'</strong> の調整登録締切（'+dl.toLocaleDateString('ja-JP')+'）を過ぎています。登録は可能ですが、既に発行済みの請求書には自動反映されません。</div>';
+  } else {
+    warn.innerHTML='';
+  }
+}
+
+function saveAdjustment(){
+  const brandId=document.getElementById('adjBrand').value;
+  const targetMonth=document.getElementById('adjTargetMonth').value;
+  const type=document.getElementById('adjType').value;
+  const category=document.getElementById('adjCategory').value;
+  const amount=parseInt(document.getElementById('adjAmount').value);
+  const reason=document.getElementById('adjReason').value.trim();
+
+  if(!brandId||!targetMonth||!amount||amount<=0||!reason){
+    showToast('⚠️ 必須項目をすべて入力してください');return;
+  }
+
+  const adj={
+    id:genId('ADJ-'),
+    invoiceId:null,
+    brandId:brandId,
+    type:type,
+    amount:amount,
+    reason:reason,
+    category:category,
+    targetMonth:targetMonth,
+    createdBy:'Taisei',
+    createdAt:new Date().toISOString().split('T')[0]
+  };
+  INVOICE_ADJUSTMENTS.push(adj);
+  recalcInvoiceAdjustments();
+
+  // Supabase保存（接続時）
+  try{
+    sb.from('invoice_adjustments').insert({
+      brand_id:brandId,type:type,amount:amount,reason:reason,
+      category:category,target_month:targetMonth,created_by:'Taisei'
+    }).then(function(){});
+  }catch(e){}
+
+  closeModal();
+  const brand=BRANDS.find(function(b){return b.id===brandId;});
+  showToast('✅ 調整項目を追加しました（'+(brand?brand.name:'')+' / '+(type==='credit'?'-':'+')+Y(amount)+'）');
   renderPage();
 }
 
-function openInvoiceDetail(invId){
-  var inv=INVOICES.find(function(i){return i.id===invId;});
+// --- 請求書詳細モーダル ---
+function showInvoiceDetail(invId){
+  const inv=INVOICES.find(function(i){return i.id===invId;});
   if(!inv)return;
-  var adjHtml='';
-  if(inv.adjustmentDetails&&inv.adjustmentDetails.length>0){
-    adjHtml='<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">調整項目内訳</div>'+
-      '<table class="dt"><thead><tr><th>理由</th><th class="r">金額</th></tr></thead><tbody>'+
-      inv.adjustmentDetails.map(function(a){
-        return '<tr><td style="font-size:11px">'+a.reason+'</td><td class="r" style="color:var(--danger);font-weight:700">'+Y(a.amount)+'</td></tr>';
-      }).join('')+'</tbody></table></div>';
+  const adjs=INVOICE_ADJUSTMENTS.filter(function(a){return a.brandId===inv.brandId&&a.targetMonth===inv.month;});
+
+  let adjRows='';
+  if(adjs.length===0){
+    adjRows='<div class="empty" style="padding:16px">この請求書に対する調整項目はありません</div>';
+  } else {
+    adjRows='<table class="dt"><thead><tr><th>種別</th><th>カテゴリ</th><th class="r">金額</th><th>理由</th></tr></thead><tbody>'+
+    adjs.map(function(a){
+      const typeBadge=a.type==='credit'?
+        '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#e6f9f0;color:#00b894">控除</span>':
+        '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#fab1a0;color:#d63031">付加</span>';
+      const amountStr=a.type==='credit'?'-'+Y(a.amount):'+'+Y(a.amount);
+      return '<tr><td>'+typeBadge+'</td><td>'+ADJ_CATEGORIES[a.category]+'</td><td class="r" style="font-weight:700;color:'+(a.type==='credit'?'var(--success)':'var(--danger)')+'">'+amountStr+'</td><td style="font-size:11px">'+a.reason+'</td></tr>';
+    }).join('')+'</tbody></table>';
   }
+
   openModal(
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<h3>💰 請求書詳細</h3>'+
-    '<div style="margin-bottom:16px;padding:14px;background:#f5f6fa;border-radius:10px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-        '<span style="font-weight:700;font-size:14px">'+inv.corpName+'</span>'+billingStatusBadge(inv.status)+
-      '</div>'+
-      '<div style="font-size:11px;color:var(--text-light)">対象月: '+inv.billingPeriod+' / 期日: '+inv.dueDate+'</div>'+
+    '<h3>🧾 請求書詳細</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">請求書ID</div><div style="font-weight:700;font-family:monospace">'+inv.id+'</div></div>'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">ブランド</div><div style="font-weight:700">'+inv.brandName+'</div></div>'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">対象月</div><div style="font-weight:700">'+formatMonth(inv.month)+'</div></div>'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">ステータス</div><div style="font-weight:700">'+(inv.status==='paid'?'支払済':inv.status==='issued'?'発行済':'下書き')+'</div></div>'+
     '</div>'+
-    '<table class="dt" style="margin-bottom:0"><tbody>'+
-      '<tr><td>手数料小計（税抜）</td><td class="r" style="font-weight:700">'+Y(inv.subtotal)+'</td></tr>'+
-      '<tr><td>調整額</td><td class="r" style="color:'+(inv.adjustments<0?'var(--danger)':'var(--text)')+';font-weight:700">'+Y(inv.adjustments)+'</td></tr>'+
-      '<tr><td>消費税（10%）</td><td class="r">'+Y(inv.tax)+'</td></tr>'+
-      '<tr style="font-size:14px;font-weight:800"><td>請求合計</td><td class="r" style="color:var(--accent)">'+Y(inv.total)+'</td></tr>'+
-    '</tbody></table>'+
-    adjHtml+
-    '<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;margin-bottom:8px">調整項目を手動追加</div>'+
-      '<div class="form-grid"><div class="form-group"><label>理由</label><input type="text" id="adjReason" placeholder="例: 追加手数料"></div>'+
-      '<div class="form-group"><label>金額（円）</label><input type="number" id="adjAmount" placeholder="例: -500"></div></div>'+
-      '<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="addAdjustment(\''+inv.id+'\')">追加</button>'+
+    '<div style="margin-bottom:16px">'+
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>基本金額</span><span style="font-weight:700">'+Y(inv.baseAmount)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>調整額</span><span style="font-weight:700;color:'+(inv.adjustmentTotal<0?'var(--success)':inv.adjustmentTotal>0?'var(--danger)':'var(--text)')+'">'+(inv.adjustmentTotal>0?'+':'')+Y(inv.adjustmentTotal)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800"><span>合計</span><span>'+Y(inv.total)+'</span></div>'+
     '</div>'+
-    '<div class="btn-group" style="margin-top:16px">'+
-      (inv.pdfUrl
-        ?'<a href="'+inv.pdfUrl+'" target="_blank" class="btn btn-p" style="text-decoration:none">PDF請求書をダウンロード</a>'
-        :'<button class="btn btn-p" onclick="generateInvoicePdf(\''+inv.id+'\')">PDF請求書を生成</button>')+
-      '<button class="btn" style="background:#e17055;color:#fff" onclick="sendInvoiceEmail(\''+inv.id+'\')">請求メールを送信</button>'+
-      '<button class="btn btn-s" onclick="closeModal()">閉じる</button></div>'
+    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">📝 調整項目</div>'+adjRows
   );
 }
 
-async function generateInvoicePdf(invId){
-  var inv=INVOICES.find(function(i){return i.id===invId;});
-  if(!inv)return;
-  if(!confirm(inv.corpName+' の請求書PDFを生成しますか？'))return;
-  showToast('⏳ PDF生成中...');
-  try{
-    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-invoice-pdf',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({invoice_id:invId})
-    });
-    var data=await res.json();
-    if(data.error){showToast('PDF生成エラー: '+data.error);return;}
-    inv.pdfUrl=data.pdf_url;
-    showToast('✅ PDF請求書を生成しました');
-    renderPage();
-  }catch(e){showToast('PDF生成エラー: '+e.message);}
-}
+// --- 月次請求書生成 ---
+function generateMonthlyInvoices(){
+  // 当月の請求書を生成（調整項目を反映）
+  const now=new Date();
+  const curMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+  const drafts=INVOICES.filter(function(i){return i.month===curMonth&&i.status==='draft';});
 
-async function sendInvoiceEmail(invId){
-  var inv=INVOICES.find(function(i){return i.id===invId;});
-  if(!inv)return;
-  if(!confirm(inv.corpName+' に請求書メールを送信しますか？'))return;
-  showToast('⏳ メール送信中...');
-  try{
-    // PDFが未生成なら先に生成
-    if(!inv.pdfUrl){
-      showToast('⏳ PDF未生成のため先に生成します...');
-      var pdfRes=await fetch(SUPABASE_URL+'/functions/v1/generate-invoice-pdf',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-        body:JSON.stringify({invoice_id:invId})
-      });
-      var pdfData=await pdfRes.json();
-      if(pdfData.pdf_url) inv.pdfUrl=pdfData.pdf_url;
-    }
-    var res=await fetch(SUPABASE_URL+'/functions/v1/send-invoice-email',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({invoice_id:invId})
-    });
-    var data=await res.json();
-    if(data.error){showToast('メール送信エラー: '+data.error);return;}
-    inv.status='sent';
-    showToast('✅ '+data.sent_to+' にメール送信しました');
-    renderPage();
-  }catch(e){showToast('メール送信エラー: '+e.message);}
-}
-
-function addAdjustment(invId){
-  var inv=INVOICES.find(function(i){return i.id===invId;});
-  if(!inv)return;
-  var reason=document.getElementById('adjReason').value.trim();
-  var amount=parseInt(document.getElementById('adjAmount').value);
-  if(!reason||isNaN(amount)){showToast('⚠️ 理由と金額を入力してください');return;}
-  inv.adjustmentDetails.push({reason:reason,amount:amount});
-  inv.adjustments+=amount;
-  var taxable=inv.subtotal+inv.adjustments;
-  inv.tax=Math.round(Math.max(0,taxable)*0.10);
-  inv.total=taxable+inv.tax;
-  // Supabase更新
-  sb.from('invoices').update({adjustments:inv.adjustments,adjustment_details:inv.adjustmentDetails,tax:inv.tax,total:inv.total}).eq('id',invId).then(function(){}).catch(function(e){console.warn('Adjustment update failed:',e);});
-  closeModal();
-  showToast('✅ 調整項目を追加しました');
-  renderPage();
-}
-
-function renderBillingGenerate(){
-  return '<div class="card"><div class="card-title">📄 月次請求書の一括生成</div>'+
-    '<p style="font-size:12px;color:var(--text-light);margin-bottom:16px">指定した対象月の注文を集計し、法人別に請求書を自動生成します。</p>'+
-    '<div class="form-grid">'+
-      '<div class="form-group"><label>対象月</label><select id="genBillingPeriod">'+
-        '<option value="2026-02">2026年2月</option><option value="2026-01">2026年1月</option><option value="2025-12">2025年12月</option></select></div>'+
-    '</div>'+
-    '<div style="margin-top:12px;padding:12px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e17055;line-height:1.6">'+
-      '⚠️ この操作で以下が実行されます:<br>'+
-      '1. 対象期間の全注文から手数料（application_fee_amount）を法人別に集計<br>'+
-      '2. 返金済み注文の手数料を控除<br>'+
-      '3. AIden原資ポイント消費分を控除<br>'+
-      '4. 消費税10%を加算<br>'+
-      '5. invoicesテーブルにステータス「下書き」で保存<br>'+
-      '6. 各請求書のPDFを自動生成しStorageにアップロード<br>'+
-      '7. 法人担当者へ請求書メールを自動送信'+
-    '</div>'+
-    '<div class="btn-group"><button class="btn btn-p" onclick="generateMonthlyInvoices()">請求書を生成</button></div>'+
-    '<div id="genBillingResult" style="margin-top:16px"></div>'+
-  '</div>';
-}
-
-async function generateMonthlyInvoices(){
-  var period=document.getElementById('genBillingPeriod').value;
-  if(!confirm(period+' の月次請求書を生成しますか？'))return;
-  showToast('⏳ 請求書を生成中...');
-  try{
-    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-monthly-invoice',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({billing_period:period})
-    });
-    var data=await res.json();
-    if(data.error){
-      document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#fab1a0;border-radius:8px;color:#d63031;font-size:12px">エラー: '+data.error+'</div>';
-      return;
-    }
-    var pdfEmailInfo='';
-    if(data.pdf_email_results&&data.pdf_email_results.length>0){
-      pdfEmailInfo='<div style="margin-top:8px;font-size:11px;line-height:1.6">'+data.pdf_email_results.map(function(r){
-        return '<div>'+r.corp_name+': PDF='+r.pdf+' / Email='+r.email+'</div>';
-      }).join('')+'</div>';
-    }
-    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#e6f9f0;border-radius:8px;color:#00b894;font-size:12px">✅ '+data.invoices_created+'件の請求書を生成しました（'+data.billing_period+'）'+pdfEmailInfo+'</div>';
-    // リロード
-    await loadInvoicesFromSupabase();
-    renderPage();
-  }catch(e){
-    document.getElementById('genBillingResult').innerHTML='<div style="padding:12px;background:#fab1a0;border-radius:8px;color:#d63031;font-size:12px">エラー: '+e.message+'</div>';
-  }
-}
-
-async function loadInvoicesFromSupabase(){
-  try{
-    var res=await sb.from('invoices').select('*').order('created_at',{ascending:false});
-    if(res.data&&res.data.length>0){
-      var corpMap={};
-      CORPS.forEach(function(c){corpMap[c.id]=c.name;});
-      INVOICES=res.data.map(function(row){
-        return {
-          id:row.id,corpId:row.corp_id,corpName:corpMap[row.corp_id]||'不明',
-          billingPeriod:row.billing_period||(row.billing_period_start?row.billing_period_start.substring(0,7):''),
-          subtotal:row.subtotal||0,adjustments:row.adjustments||0,tax:row.tax||0,total:row.total||0,
-          status:row.status||'draft',dueDate:row.due_date||'',pdfUrl:row.pdf_url||null,
-          adjustmentDetails:row.adjustment_details||[]
-        };
-      });
-    }
-  }catch(e){console.warn('Invoice load failed:',e);}
-}
-
-// ===== GUEST ORDER PII MANAGEMENT =====
-let _adminGuestData = [];
-let _adminGuestPiiVisible = false;
-
-async function loadAdminGuestData() {
-  try {
-    // 集計ビューから取得（PII不含）
-    const { data: summaries, error: sErr } = await sb.from('guest_order_summaries').select('*');
-    if (sErr) throw sErr;
-
-    _adminGuestData = summaries || [];
-
-    const totalOrders = _adminGuestData.reduce((s, r) => s + (r.order_count || 0), 0);
-    const uniqueGuests = new Set(_adminGuestData.map(r => r.guest_identifier)).size;
-    const totalRevenue = _adminGuestData.reduce((s, r) => s + (parseFloat(r.total_amount) || 0), 0);
-
-    const el1 = document.getElementById('adminGuestTotalOrders');
-    const el2 = document.getElementById('adminGuestUniqueCount');
-    const el3 = document.getElementById('adminGuestTotalRevenue');
-    const el4 = document.getElementById('adminGuestCount');
-    if (el1) el1.textContent = totalOrders.toLocaleString();
-    if (el2) el2.textContent = uniqueGuests.toLocaleString();
-    if (el3) el3.textContent = Y(totalRevenue);
-    if (el4) el4.textContent = '合計 ' + uniqueGuests + '件';
-
-    renderAdminGuestTable();
-  } catch (e) {
-    console.warn('Admin guest data load error:', e);
-    // フォールバック: ローカルデモデータ
-    renderAdminGuestTableFallback();
-  }
-}
-
-function renderAdminGuestTable() {
-  const tbody = document.getElementById('adminGuestTableBody');
-  if (!tbody) return;
-
-  if (_adminGuestData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:30px">ゲスト注文データがまだありません</td></tr>';
-    return;
+  if(drafts.length===0){
+    showToast('⚠️ 生成対象の下書き請求書がありません');return;
   }
 
-  // ゲストIDでグループ化
-  const grouped = {};
-  _adminGuestData.forEach(r => {
-    const gid = r.guest_identifier ? r.guest_identifier.substring(0, 12) : 'unknown';
-    if (!grouped[gid]) grouped[gid] = { id: gid, full: r.guest_identifier, count: 0, amount: 0, last: '', stores: [] };
-    grouped[gid].count += r.order_count || 0;
-    grouped[gid].amount += parseFloat(r.total_amount) || 0;
-    if (r.last_order_at && r.last_order_at > (grouped[gid].last || '')) grouped[gid].last = r.last_order_at;
-    if (r.store_name) grouped[gid].stores.push(r.store_name);
+  // 調整項目を反映して発行
+  drafts.forEach(function(inv){
+    const adjs=INVOICE_ADJUSTMENTS.filter(function(a){return a.brandId===inv.brandId&&a.targetMonth===inv.month;});
+    let adjTotal=0;
+    const adjLines=[];
+    adjs.forEach(function(a){
+      if(a.type==='credit'){adjTotal-=a.amount;adjLines.push(ADJ_CATEGORIES[a.category]+'：'+a.reason+' -'+Y(a.amount));}
+      else{adjTotal+=a.amount;adjLines.push(ADJ_CATEGORIES[a.category]+'：'+a.reason+' +'+Y(a.amount));}
+      a.invoiceId=inv.id;
+    });
+    inv.adjustmentTotal=adjTotal;
+    inv.total=inv.baseAmount+adjTotal;
+    inv.status='issued';
+    inv.issuedAt=new Date().toISOString().split('T')[0];
   });
 
-  const rows = Object.values(grouped).sort((a, b) => b.amount - a.amount);
-  const showPii = _adminGuestPiiVisible;
-
-  tbody.innerHTML = rows.map(g => {
-    const dt = g.last ? g.last.split('T')[0] : '--';
-    const stores = [...new Set(g.stores)].join(', ') || '--';
-    return '<tr>' +
-      '<td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px" title="' + (g.full || '') + '">GST-' + g.id + '</code></td>' +
-      (showPii ? '<td style="font-weight:600;color:var(--danger)">※DB参照</td>' : '') +
-      (showPii ? '<td style="color:var(--danger)">※DB参照</td>' : '') +
-      '<td class="r" style="font-weight:700">' + g.count.toLocaleString() + '</td>' +
-      '<td class="r" style="font-weight:700">' + Y(g.amount) + '</td>' +
-      '<td>' + dt + '</td>' +
-      '<td>' + stores + '</td>' +
-    '</tr>';
-  }).join('');
-}
-
-function renderAdminGuestTableFallback() {
-  // ローカルデモデータで表示
-  const el1 = document.getElementById('adminGuestTotalOrders');
-  const el2 = document.getElementById('adminGuestUniqueCount');
-  const el3 = document.getElementById('adminGuestTotalRevenue');
-  const el4 = document.getElementById('adminGuestCount');
-  const total = GUESTS.reduce((s,g)=>s+g.orderCount,0);
-  if (el1) el1.textContent = total.toLocaleString();
-  if (el2) el2.textContent = GUESTS.length.toLocaleString();
-  if (el3) el3.textContent = '--';
-  if (el4) el4.textContent = '合計 ' + GUESTS.length + '件';
-
-  const tbody = document.getElementById('adminGuestTableBody');
-  if (!tbody) return;
-  const ch = {takeout:'持ち帰り',delivery:'デリバリー',dinein:'店内注文'};
-  tbody.innerHTML = GUESTS.map(g => {
-    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">' + g.id + '</code></td>' +
-      '<td class="r" style="font-weight:700">' + g.orderCount + '</td>' +
-      '<td class="r" style="font-weight:700">--</td>' +
-      '<td>' + g.lastOrder + '</td>' +
-      '<td>' + (ch[g.channel] || g.channel) + '</td>' +
-    '</tr>';
-  }).join('');
-}
-
-function toggleAdminGuestPii() {
-  _adminGuestPiiVisible = document.getElementById('adminGuestPiiToggle').checked;
-  const colName = document.getElementById('adminGuestColName');
-  const colEmail = document.getElementById('adminGuestColEmail');
-  if (colName) colName.style.display = _adminGuestPiiVisible ? '' : 'none';
-  if (colEmail) colEmail.style.display = _adminGuestPiiVisible ? '' : 'none';
-  renderAdminGuestTable();
-}
-
-// ===== AUTH: Supabase Auth + accounts ロール確認 =====
-let adminAuthUser=null;
-let adminAccount=null;
-
-async function handleAdminLogin(){
-  var btn=document.getElementById('loginBtn');
-  var errEl=document.getElementById('loginError');
-  btn.disabled=true;btn.textContent='ログイン中...';
-  errEl.style.display='none';
-  var email=document.getElementById('loginEmail').value.trim();
-  var password=document.getElementById('loginPassword').value;
-  if(!email||!password){
-    errEl.textContent='メールアドレスとパスワードを入力してください';errEl.style.display='block';
-    btn.disabled=false;btn.textContent='ログイン';return;
-  }
-  try{
-    var{data,error:authErr}=await sb.auth.signInWithPassword({email:email,password:password});
-    if(authErr)throw authErr;
-    adminAuthUser=data.user;
-    // accounts テーブルでロール確認（owner or admin のみ許可）
-    var{data:acct,error:acctErr}=await sb.from('accounts').select('*').eq('email',email).single();
-    if(acctErr||!acct){
-      await sb.auth.signOut();
-      throw new Error('このアカウントには管理権限がありません');
-    }
-    if(acct.role!=='owner'&&acct.role!=='admin'){
-      await sb.auth.signOut();
-      throw new Error('管理マスタへのアクセスには owner または admin ロールが必要です');
-    }
-    adminAccount=acct;
-    showAdminUI();
-  }catch(e){
-    errEl.textContent=e.message||'ログインに失敗しました';
-    errEl.style.display='block';
-    btn.disabled=false;btn.textContent='ログイン';
-  }
-}
-
-async function handleAdminLogout(){
-  await sb.auth.signOut();
-  adminAuthUser=null;adminAccount=null;
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('adminHeader').style.display='none';
-  document.getElementById('sidebar').style.display='none';
-  document.getElementById('content').style.display='none';
-}
-
-async function showAdminUI(){
-  // ログイン画面を非表示、管理画面を表示
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('adminHeader').style.display='';
-  document.getElementById('sidebar').style.display='';
-  document.getElementById('content').style.display='';
-  document.getElementById('loadingOverlay').style.display='';
-  // ヘッダーにユーザー名を反映
-  if(adminAccount){
-    var nm=adminAccount.name||adminAuthUser.email.split('@')[0];
-    document.getElementById('userName').textContent=nm;
-    document.getElementById('userAvatar').textContent=nm.charAt(0).toUpperCase();
-  }
-  // データ読み込み
-  try{await loadDataFromSupabase();}catch(e){console.warn('Supabase load failed, using defaults:',e);}
-  var ov=document.getElementById('loadingOverlay');
-  if(ov){ov.classList.add('hide');setTimeout(function(){ov.style.display='none';},400);}
+  showToast('✅ '+drafts.length+'件の請求書を発行しました（調整項目反映済み）');
   renderPage();
-}
-
-// セッション復元チェック
-async function checkExistingSession(){
-  var{data:{session}}=await sb.auth.getSession();
-  if(session&&session.user){
-    adminAuthUser=session.user;
-    var{data:acct}=await sb.from('accounts').select('*').eq('email',session.user.email).single();
-    if(acct&&(acct.role==='owner'||acct.role==='admin')){
-      adminAccount=acct;
-      showAdminUI();
-      return;
-    }
-    await sb.auth.signOut();
-  }
-  // セッションなし → ログイン画面表示
-  document.getElementById('loginScreen').style.display='flex';
-}
-
-// Enterキーでログイン
-document.getElementById('loginPassword').addEventListener('keydown',function(e){if(e.key==='Enter')handleAdminLogin();});
-document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginPassword').focus();});
-
-// ===== SUPPORT MANAGEMENT (CS-1 + CS-3) =====
-var _adminSupportTab='tickets';
-var _adminTicketFilter={brand:'',status:'',type:''};
-var _adminCurrentTicketId=null;
-var _adminTicketRealtimeCh=null;
-var _adminFaqTab='common';
-var _adminEditFaqId=null;
-
-function renderAdminSupport(){
-  return '<div class="page-title">サポート管理</div><div class="page-subtitle">全顧客からの問い合わせとFAQを管理します</div>'+
-  '<div class="tabs" style="margin-bottom:16px"><button class="tab active" onclick="switchAdminSupportTab(\'tickets\',this)">チケット一覧</button><button class="tab" onclick="switchAdminSupportTab(\'faq\',this)">FAQ管理</button></div>'+
-  '<div id="adminSupportTickets">'+
-    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
-      '<select id="adminFilterBrand" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全ブランド</option></select>'+
-      '<select id="adminFilterStatus" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全ステータス</option><option value="open">未対応</option><option value="in_progress">対応中</option><option value="resolved">解決済み</option><option value="closed">クローズ</option></select>'+
-      '<select id="adminFilterType" onchange="adminTicketFilterChange()" style="padding:8px;border:1px solid var(--border);border-radius:6px"><option value="">全種別</option><option value="realtime">リアルタイム</option><option value="ticket">チケット</option></select>'+
-    '</div>'+
-    '<div class="card" style="padding:0;overflow:hidden"><table class="data-table"><thead><tr><th>ID</th><th>ブランド</th><th>種別</th><th>カテゴリ</th><th>件名</th><th>最終更新</th><th>ステータス</th><th></th></tr></thead><tbody id="adminTicketBody"><tr><td colspan="8">読み込み中...</td></tr></tbody></table></div>'+
-  '</div>'+
-  '<div id="adminSupportFaq" style="display:none">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-      '<div class="tabs"><button class="tab active" onclick="switchAdminFaqTab(\'common\',this)">共通FAQ</button><button class="tab" onclick="switchAdminFaqTab(\'brand\',this)">ブランド別</button></div>'+
-      '<button class="btn btn-primary" id="adminAddFaqBtn" onclick="openAdminFaqModal()">＋ FAQ追加</button>'+
-    '</div>'+
-    '<div class="card" style="padding:0;overflow:hidden"><table class="data-table"><thead><tr><th>カテゴリ</th><th>ブランド</th><th>質問</th><th>回答</th><th>並び順</th><th>有効</th><th></th></tr></thead><tbody id="adminFaqBody"><tr><td colspan="7">読み込み中...</td></tr></tbody></table></div>'+
-  '</div>';
-}
-
-function switchAdminSupportTab(tab,el){
-  _adminSupportTab=tab;
-  if(el){el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');}
-  document.getElementById('adminSupportTickets').style.display=tab==='tickets'?'':'none';
-  document.getElementById('adminSupportFaq').style.display=tab==='faq'?'':'none';
-  if(tab==='tickets')loadAdminTickets();
-  if(tab==='faq')loadAdminFaqs();
-}
-
-async function loadAdminSupportData(){
-  // Populate brand filter
-  var sel=document.getElementById('adminFilterBrand');
-  if(sel){
-    var opts='<option value="">全ブランド</option>';
-    BRANDS.forEach(function(b){opts+='<option value="'+b.id+'">'+b.name+'</option>';});
-    sel.innerHTML=opts;
-  }
-  loadAdminTickets();
-}
-
-function adminTicketFilterChange(){
-  _adminTicketFilter.brand=document.getElementById('adminFilterBrand').value;
-  _adminTicketFilter.status=document.getElementById('adminFilterStatus').value;
-  _adminTicketFilter.type=document.getElementById('adminFilterType').value;
-  loadAdminTickets();
-}
-
-async function loadAdminTickets(){
-  var tbody=document.getElementById('adminTicketBody');
-  if(!tbody)return;
-  tbody.innerHTML='<tr><td colspan="8">読み込み中...</td></tr>';
-  try{
-    var q=sb.from('support_tickets').select('*, brands(name)').order('updated_at',{ascending:false}).limit(100);
-    if(_adminTicketFilter.brand)q=q.eq('brand_id',_adminTicketFilter.brand);
-    if(_adminTicketFilter.status)q=q.eq('status',_adminTicketFilter.status);
-    if(_adminTicketFilter.type)q=q.eq('type',_adminTicketFilter.type);
-    var{data,error}=await q;
-    if(error)throw error;
-    if(!data||data.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:24px">チケットがありません</td></tr>';return;}
-    var catL={order_payment:'注文・決済',settings:'設定・操作',billing:'契約・請求',feature_request:'機能リクエスト'};
-    var typeL={realtime:'リアルタイム',ticket:'チケット'};
-    var stL={open:'未対応',in_progress:'対応中',resolved:'解決済み',closed:'クローズ'};
-    var stC={open:'background:#fff3cd;color:#856404',in_progress:'background:#cce5ff;color:#004085',resolved:'background:#d4edda;color:#155724',closed:'background:#e2e3e5;color:#383d41'};
-    tbody.innerHTML=data.map(function(t){
-      var d=new Date(t.updated_at);var ds=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-      var bn=t.brands?t.brands.name:'-';
-      return '<tr><td style="font-family:monospace;font-size:11px">'+t.id.substring(0,8)+'</td><td>'+bn+'</td>'+
-        '<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;'+(t.type==='realtime'?'background:#fee;color:#c00':'background:#e3f2fd;color:#1565c0')+'">'+typeL[t.type]+'</span></td>'+
-        '<td>'+(catL[t.category]||t.category)+'</td>'+
-        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.subject+'</td>'+
-        '<td style="font-size:12px">'+ds+'</td>'+
-        '<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;'+stC[t.status]+'">'+(stL[t.status]||t.status)+'</span></td>'+
-        '<td><button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent)" onclick="openAdminTicket(\''+t.id+'\')">詳細</button></td></tr>';
-    }).join('');
-  }catch(e){console.error(e);tbody.innerHTML='<tr><td colspan="8">読み込みエラー</td></tr>';}
-}
-
-async function openAdminTicket(ticketId){
-  _adminCurrentTicketId=ticketId;
-  try{
-    var{data:ticket}=await sb.from('support_tickets').select('*, brands(name)').eq('id',ticketId).single();
-    var{data:msgs}=await sb.from('support_messages').select('*').eq('ticket_id',ticketId).order('created_at',{ascending:true});
-    var catL={order_payment:'注文・決済',settings:'設定・操作',billing:'契約・請求',feature_request:'機能リクエスト'};
-    var stL={open:'未対応',in_progress:'対応中',resolved:'解決済み',closed:'クローズ'};
-    var bn=ticket.brands?ticket.brands.name:'';
-    var msgsHtml='';
-    if(msgs&&msgs.length>0){
-      msgsHtml=msgs.map(function(m){
-        var isAiden=m.sender_type==='aiden';
-        var d=new Date(m.created_at);
-        var tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-        return '<div style="display:flex;justify-content:'+(isAiden?'flex-end':'flex-start')+';margin-bottom:8px">'+
-          '<div style="max-width:75%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;background:'+(isAiden?'var(--accent)':'#e8e8e8')+';color:'+(isAiden?'#fff':'#333')+'">'+
-          '<div>'+m.message.replace(/</g,'&lt;')+'</div>'+
-          '<div style="font-size:10px;opacity:0.7;margin-top:4px;text-align:right">'+tm+'</div></div></div>';
-      }).join('');
-    }else{msgsHtml='<div style="text-align:center;color:#999;padding:30px">メッセージなし</div>';}
-    var statusBtns='';
-    if(ticket.status!=='resolved'&&ticket.status!=='closed'){
-      statusBtns='<button class="btn btn-sm" style="background:#d4edda;color:#155724" onclick="updateAdminTicketStatus(\'resolved\')">解決済み</button> '+
-        '<button class="btn btn-sm" style="background:#e2e3e5;color:#383d41" onclick="updateAdminTicketStatus(\'closed\')">クローズ</button>';
-    }
-    var html='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'+
-      '<div><div style="font-size:16px;font-weight:700">'+ticket.subject+'</div><div style="font-size:12px;color:var(--text-light);margin-top:4px">'+bn+' | '+(catL[ticket.category]||'')+' | '+(stL[ticket.status]||'')+'</div></div>'+
-      '<div style="display:flex;gap:6px;align-items:center">'+statusBtns+'<button class="btn btn-sm" onclick="closeModal()">✕</button></div></div>'+
-      '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;max-height:350px;overflow-y:auto;background:#fafafa;margin-bottom:12px" id="adminTicketMsgs">'+msgsHtml+'</div>'+
-      '<div style="display:flex;gap:8px"><input type="text" id="adminTicketReply" placeholder="返信を入力..." style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px" onkeydown="if(event.key===\'Enter\')sendAdminTicketReply()"><button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="sendAdminTicketReply()">送信</button></div>';
-    openModal(html);
-    // Subscribe realtime
-    if(ticket.type==='realtime'){
-      if(_adminTicketRealtimeCh){sb.removeChannel(_adminTicketRealtimeCh);}
-      _adminTicketRealtimeCh=sb.channel('admin-ticket-'+ticketId)
-        .on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages',filter:'ticket_id=eq.'+ticketId},function(pl){
-          var m=pl.new;var isAiden=m.sender_type==='aiden';
-          var d=new Date(m.created_at);var tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-          var container=document.getElementById('adminTicketMsgs');if(!container)return;
-          var div=document.createElement('div');
-          div.style.cssText='display:flex;justify-content:'+(isAiden?'flex-end':'flex-start')+';margin-bottom:8px';
-          div.innerHTML='<div style="max-width:75%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;background:'+(isAiden?'var(--accent)':'#e8e8e8')+';color:'+(isAiden?'#fff':'#333')+'"><div>'+m.message.replace(/</g,'&lt;')+'</div><div style="font-size:10px;opacity:0.7;margin-top:4px;text-align:right">'+tm+'</div></div>';
-          container.appendChild(div);container.scrollTop=container.scrollHeight;
-        }).subscribe();
-    }
-  }catch(e){console.error(e);openModal('<div>読み込みエラー</div>');}
-}
-
-async function sendAdminTicketReply(){
-  var input=document.getElementById('adminTicketReply');
-  var msg=input.value.trim();if(!msg||!_adminCurrentTicketId)return;
-  input.value='';
-  try{
-    await sb.from('support_messages').insert({ticket_id:_adminCurrentTicketId,sender_type:'aiden',message:msg});
-    await sb.from('support_tickets').update({status:'in_progress'}).eq('id',_adminCurrentTicketId).in('status',['open']);
-    // Reload for non-realtime
-    openAdminTicket(_adminCurrentTicketId);
-  }catch(e){console.error(e);alert('送信失敗');}
-}
-
-async function updateAdminTicketStatus(newStatus){
-  if(!_adminCurrentTicketId)return;
-  try{
-    await sb.from('support_tickets').update({status:newStatus}).eq('id',_adminCurrentTicketId);
-    closeModal();loadAdminTickets();
-    if(_adminTicketRealtimeCh){sb.removeChannel(_adminTicketRealtimeCh);_adminTicketRealtimeCh=null;}
-  }catch(e){console.error(e);alert('更新失敗');}
-}
-
-// FAQ management
-function switchAdminFaqTab(tab,el){
-  _adminFaqTab=tab;
-  if(el){el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');}
-  document.getElementById('adminAddFaqBtn').style.display=tab==='common'?'':'none';
-  loadAdminFaqs();
-}
-
-async function loadAdminFaqs(){
-  var tbody=document.getElementById('adminFaqBody');
-  if(!tbody)return;
-  tbody.innerHTML='<tr><td colspan="7">読み込み中...</td></tr>';
-  try{
-    var q=sb.from('faqs').select('*, brands(name)').order('sort_order',{ascending:true});
-    if(_adminFaqTab==='common')q=q.eq('is_common',true);
-    else q=q.eq('is_common',false);
-    var{data,error}=await q;
-    if(error)throw error;
-    if(!data||data.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#999;padding:24px">FAQがありません</td></tr>';return;}
-    var catL={order:'注文',delivery:'配達',payment:'支払',other:'その他'};
-    tbody.innerHTML=data.map(function(f){
-      var bn=f.brands?f.brands.name:(f.is_common?'共通':'-');
-      var prev=f.answer.length>30?f.answer.substring(0,30)+'...':f.answer;
-      var acts=_adminFaqTab==='common'
-        ?'<button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent)" onclick="openAdminFaqModal(\''+f.id+'\')">編集</button> <button class="btn btn-sm" style="background:#fee;color:#c00" onclick="deleteAdminFaq(\''+f.id+'\')">削除</button>'
-        :'<span style="font-size:11px;color:#999">ブランド管理</span>';
-      return '<tr><td>'+(catL[f.category]||f.category)+'</td><td>'+bn+'</td>'+
-        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+f.question+'</td>'+
-        '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:12px">'+prev+'</td>'+
-        '<td>'+f.sort_order+'</td>'+
-        '<td>'+(f.is_active?'<span style="color:var(--success)">有効</span>':'<span style="color:#999">無効</span>')+'</td>'+
-        '<td>'+acts+'</td></tr>';
-    }).join('');
-  }catch(e){console.error(e);tbody.innerHTML='<tr><td colspan="7">読み込みエラー</td></tr>';}
-}
-
-function openAdminFaqModal(faqId){
-  _adminEditFaqId=faqId||null;
-  if(faqId){
-    sb.from('faqs').select('*').eq('id',faqId).single().then(function(res){
-      var f=res.data;
-      if(!f)return;
-      openModal(renderFaqForm(f));
-    });
-  }else{
-    openModal(renderFaqForm(null));
-  }
-}
-
-function renderFaqForm(f){
-  var title=f?'FAQ編集':'FAQ追加';
-  return '<div style="font-size:16px;font-weight:700;margin-bottom:16px">'+title+'</div>'+
-    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">カテゴリ</label>'+
-    '<select id="adminFaqCat" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px">'+
-    '<option value="order"'+(f&&f.category==='order'?' selected':'')+'>注文について</option>'+
-    '<option value="delivery"'+(f&&f.category==='delivery'?' selected':'')+'>配達について</option>'+
-    '<option value="payment"'+(f&&f.category==='payment'?' selected':'')+'>支払について</option>'+
-    '<option value="other"'+(f&&f.category==='other'?' selected':'')+'>その他</option></select></div>'+
-    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">質問</label>'+
-    '<input type="text" id="adminFaqQ" value="'+(f?f.question.replace(/"/g,'&quot;'):'')+'" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px"></div>'+
-    '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">回答</label>'+
-    '<textarea id="adminFaqA" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;resize:vertical">'+(f?f.answer:'')+'</textarea></div>'+
-    '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">並び順</label>'+
-    '<input type="number" id="adminFaqSort" value="'+(f?f.sort_order:0)+'" min="0" style="width:100px;padding:10px;border:1px solid var(--border);border-radius:6px"></div>'+
-    '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-sm" onclick="closeModal()">キャンセル</button>'+
-    '<button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="saveAdminFaq()">保存</button></div>';
-}
-
-async function saveAdminFaq(){
-  var cat=document.getElementById('adminFaqCat').value;
-  var q=document.getElementById('adminFaqQ').value.trim();
-  var a=document.getElementById('adminFaqA').value.trim();
-  var sort=parseInt(document.getElementById('adminFaqSort').value)||0;
-  if(!q||!a){alert('質問と回答を入力してください');return;}
-  try{
-    var payload={brand_id:null,category:cat,question:q,answer:a,sort_order:sort,is_common:true,is_active:true};
-    if(_adminEditFaqId){
-      await sb.from('faqs').update(payload).eq('id',_adminEditFaqId);
-    }else{
-      await sb.from('faqs').insert(payload);
-    }
-    closeModal();loadAdminFaqs();
-  }catch(e){console.error(e);alert('保存失敗: '+e.message);}
-}
-
-async function deleteAdminFaq(faqId){
-  if(!confirm('このFAQを削除しますか？'))return;
-  try{
-    await sb.from('faqs').delete().eq('id',faqId);
-    loadAdminFaqs();
-  }catch(e){console.error(e);alert('削除失敗');}
 }
 
 // INIT
-checkExistingSession();
+renderPage();
 </script>
 </body>
 </html>

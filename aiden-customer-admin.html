@@ -1182,10 +1182,34 @@ content.innerHTML = `
     <div class="card" data-bulk-section="deliveryFee" data-bulk-label="モバイルオーダー料金設定">
       <div class="card-title">💰 モバイルオーダー料金設定</div>
       <div class="form-grid">
-        <div class="form-group"><label>配達料金（円）</label><input type="number" value="300" min="0" step="50"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※未入力の場合ブランドデフォルト値を使用</div></div>
-        <div class="form-group"><label>最低注文金額（円）</label><input type="number" value="1000" min="0" step="100"></div>
-        <div class="form-group"><label>少量注文追加料金（円）</label><input type="number" value="200" min="0" step="50"></div>
-        <div class="form-group"><label>テイクアウト手数料（円）</label><input type="number" value="0" min="0" step="50"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※0の場合は手数料なし</div></div>
+        <div class="form-group"><label>配達料金（円）</label><input type="number" id="deliveryFeeInput" value="300" min="0" step="50"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※未入力の場合ブランドデフォルト値を使用</div></div>
+        <div class="form-group"><label>最低注文金額（円）</label><input type="number" id="minOrderAmountInput" value="1000" min="0" step="100"></div>
+        <div class="form-group">
+          <label>最低注文金額未満時の対応</label>
+          <select id="minOrderPolicyInput" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%">
+            <option value="surcharge">差額を手数料として加算</option>
+            <option value="block">注文を受け付けない</option>
+          </select>
+        </div>
+        <div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="smallOrderSurchargeMaxInput" value="1500" min="0" step="50"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限になります</div></div>
+        <div class="form-group"><label>テイクアウト手数料（円）</label><input type="number" id="takeoutFeeInput" value="0" min="0" step="50"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※0の場合は手数料なし</div></div>
+      </div>
+
+      <!-- 注文タイプ別ON/OFF -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:10px">少額注文手数料の適用対象</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="minOrderApplyDinein" style="accent-color:var(--accent);width:16px;height:16px"> 店内飲食
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="minOrderApplyTakeout" checked style="accent-color:var(--accent);width:16px;height:16px"> テイクアウト
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="minOrderApplyDelivery" checked style="accent-color:var(--accent);width:16px;height:16px"> デリバリー
+          </label>
+        </div>
+        <div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div>
       </div>
     </div>
 
@@ -4901,6 +4925,7 @@ function openSingleStoreEditGeneric(selectorId, editId, targetId, storeName) {
   if(editId === 'storeDeliveryEdit') {
     const areaCard = document.getElementById('deliveryAreaCard');
     if(areaCard) areaCard.style.display = '';
+    if(store) loadDeliveryForm(store);
     setTimeout(()=>{ initDeliveryMap(); }, 100);
   }
 }
@@ -5156,9 +5181,15 @@ async function loadAdminFromSupabase() {
         access: '', genre: s.genre || '焼肉', subGenre: '', price: '', desc: '', lat: s.lat || 0, lng: s.lng || 0,
         hoursOpen: '11:00', hoursClose: '22:00', delOpen: '11:30', delClose: '21:00',
         seats: 80, smoking: '完全禁煙', parking: true, kids: true, pets: false,
-        payment: 'Card/QR/電子マネー/交通系IC/現金', delivery: true, takeout: true, reservation: true,
+        payment: 'Card/QR/電子マネー/交通系IC/現金', delivery: s.has_delivery !== false, takeout: s.has_takeout !== false, reservation: true,
         status: s.status === 'open' ? '営業中' : s.status === 'closed' ? '閉店' : '営業時間外',
-        radius: '3.0km', delFee: '¥300', minOrder: '¥1,000', cookTime: '20分', delTime: '15〜40分',
+        radius: (s.delivery_radius_km || 3) + 'km',
+        delFee: s.delivery_fee != null ? s.delivery_fee : 300,
+        minOrderAmount: s.min_order_amount != null ? s.min_order_amount : 1500,
+        minOrderPolicy: s.min_order_policy || 'surcharge',
+        smallOrderSurchargeMax: s.small_order_surcharge_max != null ? s.small_order_surcharge_max : 1500,
+        minOrderApplyTypes: s.min_order_apply_types || { dinein: false, takeout: true, delivery: true },
+        cookTime: (s.prep_time_minutes || 20) + '分', delTime: '15〜40分',
         headerImg: 3, thumbImg: 1, galleryImg: 8, heroImg: 1, staffImg: 2, menuPatternId: 'mp1'
       }));
     }
@@ -5648,7 +5679,9 @@ function proceedToStep2(editId) {
     if(firstStore) renderMediaGrids(firstStore);
   }
   if(editId === 'storeDeliveryEdit') {
-    // Don't init map in bulk mode
+    // Don't init map in bulk mode, but load form data from first store
+    const firstStore = STORES.find(s => s.id === currentEditStoreIds[0]);
+    if(firstStore) loadDeliveryForm(firstStore);
   }
 }
 
@@ -6089,8 +6122,59 @@ function confirmTimeEstimate() {
   showToast('✅ 時間見積を確定しました');
 }
 
-function saveDelivery() {
-  showToast('✅ 配達・お持ち帰り設定を保存しました');
+function loadDeliveryForm(store) {
+  const el = id => document.getElementById(id);
+  if(el('deliveryFeeInput')) el('deliveryFeeInput').value = store.delFee != null ? store.delFee : 300;
+  if(el('minOrderAmountInput')) el('minOrderAmountInput').value = store.minOrderAmount != null ? store.minOrderAmount : 1500;
+  if(el('minOrderPolicyInput')) el('minOrderPolicyInput').value = store.minOrderPolicy || 'surcharge';
+  if(el('smallOrderSurchargeMaxInput')) el('smallOrderSurchargeMaxInput').value = store.smallOrderSurchargeMax != null ? store.smallOrderSurchargeMax : 1500;
+  if(el('takeoutFeeInput')) el('takeoutFeeInput').value = 0;
+  const applyTypes = store.minOrderApplyTypes || { dinein: false, takeout: true, delivery: true };
+  if(el('minOrderApplyDinein')) el('minOrderApplyDinein').checked = !!applyTypes.dinein;
+  if(el('minOrderApplyTakeout')) el('minOrderApplyTakeout').checked = !!applyTypes.takeout;
+  if(el('minOrderApplyDelivery')) el('minOrderApplyDelivery').checked = !!applyTypes.delivery;
+}
+
+async function saveDelivery() {
+  const targets = STORES.filter(s => currentEditStoreIds.includes(s.id));
+  if(targets.length === 0) { alert('対象店舗が見つかりません'); return; }
+
+  const deliveryFee = parseInt(document.getElementById('deliveryFeeInput').value) || 0;
+  const minOrderAmount = parseInt(document.getElementById('minOrderAmountInput').value) || 0;
+  const minOrderPolicy = document.getElementById('minOrderPolicyInput').value || 'surcharge';
+  const smallOrderSurchargeMax = parseInt(document.getElementById('smallOrderSurchargeMaxInput').value) || 0;
+  const minOrderApplyTypes = {
+    dinein: document.getElementById('minOrderApplyDinein').checked,
+    takeout: document.getElementById('minOrderApplyTakeout').checked,
+    delivery: document.getElementById('minOrderApplyDelivery').checked
+  };
+
+  // Update local STORES
+  targets.forEach(store => {
+    store.delFee = deliveryFee;
+    store.minOrderAmount = minOrderAmount;
+    store.minOrderPolicy = minOrderPolicy;
+    store.smallOrderSurchargeMax = smallOrderSurchargeMax;
+    store.minOrderApplyTypes = minOrderApplyTypes;
+  });
+
+  // Persist to Supabase
+  try {
+    for (const store of targets) {
+      const { error } = await sb.from('stores').update({
+        delivery_fee: deliveryFee,
+        min_order_amount: minOrderAmount,
+        min_order_policy: minOrderPolicy,
+        small_order_surcharge_max: smallOrderSurchargeMax,
+        min_order_apply_types: minOrderApplyTypes
+      }).eq('id', store.id);
+      if (error) throw error;
+    }
+    showToast('✅ 配達・お持ち帰り設定を保存しました');
+  } catch (e) {
+    console.error('saveDelivery error:', e);
+    showToast('❌ 保存に失敗しました: ' + (e.message || e));
+  }
   closeStoreEdit('storeDeliverySelector','storeDeliveryEdit');
 }
 

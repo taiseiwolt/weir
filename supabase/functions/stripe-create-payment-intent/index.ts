@@ -1,5 +1,4 @@
-// Supabase Edge Function: Stripe PaymentIntent 作成（Connect 対応）
-// 注文レコードは決済成功後に confirm-order で作成する
+// Supabase Edge Function: Stripe PaymentIntent 作成 + 注文レコード作成（Connect 対応）
 // POST /functions/v1/stripe-create-payment-intent
 //
 // 環境変数（Supabase Dashboard > Edge Functions > Secrets で設定）:
@@ -18,6 +17,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const AIDEN_FEE_RATES: Record<string, number> = {
   dinein: 0.038,
   takeout: 0.040,
+  pickup: 0.040,
   delivery: 0.040,
 }
 
@@ -78,7 +78,7 @@ serve(async (req) => {
       if (productIds.length > 0) {
         const { data: products } = await supabase
           .from('products')
-          .select('id, price, name, is_sold_out')
+          .select('id, name, sale_status')
           .in('id', productIds)
 
         if (products) {
@@ -87,8 +87,8 @@ serve(async (req) => {
           }
         }
 
-        // 品切れチェック
-        const soldOut = products?.filter(p => p.is_sold_out)
+        // 品切れチェック（sale_status が 'sold_out' の商品）
+        const soldOut = products?.filter(p => p.sale_status === 'sold_out')
         if (soldOut && soldOut.length > 0) {
           return new Response(
             JSON.stringify({
@@ -100,18 +100,46 @@ serve(async (req) => {
         }
       }
 
-      // サーバー側で合計金額を計算
+      // サーバー側で合計金額を計算（productsテーブルにpriceカラムがないためunit_priceを使用）
       let subtotal = 0
       for (const item of cart_items) {
-        const product = productMap[item.product_id]
-        const unitPrice = product ? product.price : (item.unit_price || 0)
+        const unitPrice = item.unit_price || 0
         subtotal += unitPrice * (item.quantity || 1)
       }
 
-      // 配達料・サービス料
-      const channel = order_type || 'takeout'
+      // 配達料・最低注文サーチャージ（order_type: 'takeout' → DB上は 'pickup' に変換）
+      const rawChannel = order_type || 'takeout'
+      const channel = rawChannel === 'takeout' ? 'pickup' : rawChannel
       const deliveryFee = channel === 'delivery' ? (storeRow.delivery_fee || 0) : 0
-      const surcharge = 0 // サービス料はstore設定から取得（将来対応）
+
+      // 最低注文金額チェック（注文タイプ別の適用判定を含む）
+      const minOrder = storeRow.min_order_amount || 0
+      const minOrderPolicy = storeRow.min_order_policy || 'surcharge'
+      const applyTypes = storeRow.min_order_apply_types || { dinein: false, takeout: true, delivery: true }
+
+      // 注文タイプに対して最低注文金額が適用されるか判定
+      const channelToApplyKey: Record<string, string> = { dinein: 'dinein', pickup: 'takeout', delivery: 'delivery' }
+      const applyKey = channelToApplyKey[channel] || 'takeout'
+      const isMinOrderApplied = applyTypes[applyKey] !== false
+
+      let surcharge = 0
+      if (isMinOrderApplied && minOrder > 0 && subtotal < minOrder) {
+        if (minOrderPolicy === 'block') {
+          return new Response(
+            JSON.stringify({ error: `最低注文金額（¥${minOrder.toLocaleString()}）を満たしていません。あと¥${(minOrder - subtotal).toLocaleString()}分の商品を追加してください。` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // surcharge mode: 差額を手数料として加算（上限あり）
+        const diff = minOrder - subtotal
+        const maxSurcharge = storeRow.small_order_surcharge_max || minOrder
+        surcharge = Math.min(diff, maxSurcharge)
+      }
+
+      // サービス料: 商品小計の10%、50円単位で切り上げ
+      const serviceChargeRate = 0.10
+      const rawServiceCharge = subtotal * serviceChargeRate
+      const serviceFee = Math.ceil(rawServiceCharge / 50) * 50
 
       // クーポン割引
       const discount = coupon_discount || 0
@@ -119,8 +147,10 @@ serve(async (req) => {
       // ポイント利用
       const pointsDiscount = points_used || 0
 
-      // 合計金額
-      const totalAmount = Math.max(subtotal + deliveryFee + surcharge - discount - pointsDiscount, 0)
+      // 合計金額（Stripe JPYは正の整数が必要）
+      const totalAmount = Math.round(Math.max(subtotal + deliveryFee + surcharge + serviceFee - discount - pointsDiscount, 0))
+
+      console.log('Amount calculation:', { subtotal, deliveryFee, surcharge, serviceFee, discount, pointsDiscount, totalAmount, productIds, productMapKeys: Object.keys(productMap), cartItemCount: cart_items.length })
 
       if (totalAmount <= 0) {
         return new Response(
@@ -161,46 +191,10 @@ serve(async (req) => {
         }
       }
 
-      // メタデータ（confirm-order でカート情報を復元するために保存）
+      // メタデータ
       params['metadata[store_id]'] = store_id
       params['metadata[order_type]'] = channel
       if (idempotency_key) params['metadata[idempotency_key]'] = idempotency_key
-      if (guest_info) {
-        params['metadata[guest_first_name]'] = guest_info.first_name || ''
-        params['metadata[guest_last_name]'] = guest_info.last_name || ''
-        params['metadata[guest_email]'] = guest_info.email || ''
-        params['metadata[guest_phone]'] = guest_info.phone || ''
-      }
-      // cart_items をJSON文字列で保存（Stripe metadata は各値500文字制限があるため圧縮）
-      const cartItemsForMeta = cart_items.map((item: any) => ({
-        pid: item.product_id || null,
-        pn: (productMap[item.product_id]?.name || item.product_name || '').slice(0, 30),
-        q: item.quantity || 1,
-        up: productMap[item.product_id]?.price || item.unit_price || 0,
-        opt: item.options || null,
-      }))
-      const cartJson = JSON.stringify(cartItemsForMeta)
-      // 500文字制限: 超える場合はoptionsを削除して再試行
-      if (cartJson.length > 500) {
-        const trimmed = cartItemsForMeta.map((i: any) => ({ ...i, opt: null }))
-        params['metadata[cart_items_json]'] = JSON.stringify(trimmed).slice(0, 500)
-      } else {
-        params['metadata[cart_items_json]'] = cartJson
-      }
-      if (delivery_address) {
-        params['metadata[delivery_address_json]'] = JSON.stringify(delivery_address)
-      }
-      params['metadata[points_used]'] = String(points_used || 0)
-      params['metadata[aiden_points_used]'] = String(aiden_points_used || 0)
-      params['metadata[normal_points_used]'] = String(normal_points_used || 0)
-      params['metadata[coupon_discount]'] = String(coupon_discount || 0)
-      if (member_id) params['metadata[member_id]'] = member_id
-      params['metadata[delivery_fee]'] = String(deliveryFee)
-      params['metadata[estimated_minutes]'] = String(
-        channel === 'delivery'
-          ? (storeRow.delivery_time_min || 60)
-          : (storeRow.prep_time_minutes || 30)
-      )
 
       const stripeHeaders: Record<string, string> = {
         'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
@@ -227,11 +221,64 @@ serve(async (req) => {
 
       const pi = await stripeRes.json()
 
-      // 6. レスポンス返却（orders/order_items へのINSERTは行わない — confirm-order で実行）
+      // 6. orders テーブルに INSERT（payment_status='pending'）
+      const orderPayload = {
+        store_id,
+        order_type: channel,
+        tracking_status: 'placed',
+        payment_status: 'pending',
+        total_amount: totalAmount,
+        payment_intent_id: pi.id,
+        customer_name: guest_info ? `${guest_info.last_name} ${guest_info.first_name}` : null,
+        customer_email: guest_info?.email || null,
+        customer_phone: guest_info?.phone || null,
+        estimated_minutes: channel === 'delivery'
+          ? (storeRow.delivery_time_min || 60)
+          : (storeRow.prep_time_minutes || 30),
+        delivery_address: delivery_address
+          ? `${delivery_address.prefecture}${delivery_address.city}${delivery_address.address}${delivery_address.building ? ' ' + delivery_address.building : ''}`
+          : null,
+        aiden_points_used: aiden_points_used || 0,
+        normal_points_used: normal_points_used || 0,
+        member_id: member_id || null,
+        channel: 'aiden',
+      }
+
+      const { data: orderRow, error: orderErr } = await supabase
+        .from('orders')
+        .insert(orderPayload)
+        .select('id, display_id, tracking_token')
+        .single()
+
+      if (orderErr) {
+        console.error('Order insert error:', orderErr)
+        return new Response(
+          JSON.stringify({ error: '注文の作成に失敗しました: ' + orderErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // 7. order_items テーブルに INSERT
+      if (cart_items.length > 0) {
+        const orderItems = cart_items.map((item: any) => ({
+          order_id: orderRow.id,
+          product_id: item.product_id || null,
+          product_name: productMap[item.product_id]?.name || item.product_name || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          options: item.options || null,
+        }))
+        await supabase.from('order_items').insert(orderItems)
+      }
+
+      // 8. レスポンス返却
       return new Response(
         JSON.stringify({
           client_secret: pi.client_secret,
           payment_intent_id: pi.id,
+          order_id: orderRow.id,
+          display_id: orderRow.display_id,
+          tracking_token: orderRow.tracking_token,
           amount: totalAmount,
           application_fee_amount: applicationFee,
           transfer_destination: stripeAccountId || null,
