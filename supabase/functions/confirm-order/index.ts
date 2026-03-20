@@ -1,11 +1,11 @@
-// Supabase Edge Function: 決済成功後の注文ステータス更新
+// Supabase Edge Function: 決済成功後の注文レコード作成 + メール送信
 // POST /functions/v1/confirm-order
 //
-// PaymentIntent が succeeded になった後、orders.payment_status を 'paid' に更新し、
-// Thanksメールを送信する。
+// PaymentIntent が succeeded であることを Stripe API で検証した上で、
+// orders + order_items テーブルにINSERTし、Thanksメールを送信する。
 //
-// Stripe Webhook (payment_intent.succeeded) でも同じ処理を行うが、
-// フロント→Edge Function の同期呼び出しも併用して即時遷移を実現する。
+// ※ 旧フローでは create-payment-intent 時に pending で INSERT していたが、
+//   新フローでは決済完了後にここで初めて INSERT する。
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -57,37 +57,100 @@ serve(async (req) => {
       )
     }
 
-    // 2. orders テーブルの payment_status を 'paid' に更新
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    const { data: orderRow, error: updateErr } = await supabase
+    // 2. 冪等性チェック: 同じ payment_intent_id で既に注文が存在する場合はスキップ
+    const { data: existingOrder } = await supabase
       .from('orders')
-      .update({ payment_status: 'paid' })
+      .select('id, display_id, tracking_token')
       .eq('payment_intent_id', payment_intent_id)
-      .select('id, display_id, tracking_token, customer_email, customer_name, store_id, order_type, total_amount')
+      .maybeSingle()
+
+    if (existingOrder) {
+      // 既に作成済み（Webhook等で先に処理された場合）
+      return new Response(
+        JSON.stringify({
+          success: true,
+          order_id: existingOrder.id,
+          display_id: existingOrder.display_id,
+          tracking_token: existingOrder.tracking_token,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // 3. metadata からカート情報を復元
+    const meta = pi.metadata || {}
+    const cartItems = meta.cart_items_json ? JSON.parse(meta.cart_items_json) : []
+    const deliveryAddress = meta.delivery_address_json ? JSON.parse(meta.delivery_address_json) : null
+
+    const guestInfo = {
+      first_name: meta.guest_first_name || '',
+      last_name: meta.guest_last_name || '',
+      email: meta.guest_email || '',
+      phone: meta.guest_phone || '',
+    }
+
+    // 4. orders テーブルに INSERT（ここで初めてDBに注文レコードが作られる）
+    const orderPayload = {
+      store_id: meta.store_id,
+      order_type: meta.order_type || 'takeout',
+      tracking_status: 'placed',
+      payment_status: 'paid',
+      total_amount: pi.amount,
+      payment_intent_id: pi.id,
+      customer_name: guestInfo.last_name && guestInfo.first_name
+        ? `${guestInfo.last_name} ${guestInfo.first_name}`
+        : (guestInfo.last_name || guestInfo.first_name || null),
+      customer_email: guestInfo.email || null,
+      customer_phone: guestInfo.phone || null,
+      estimated_minutes: parseInt(meta.estimated_minutes) || 30,
+      delivery_address: deliveryAddress
+        ? `${deliveryAddress.prefecture || ''}${deliveryAddress.city || ''}${deliveryAddress.address || ''}${deliveryAddress.building ? ' ' + deliveryAddress.building : ''}`
+        : null,
+      aiden_points_used: parseInt(meta.aiden_points_used) || 0,
+      normal_points_used: parseInt(meta.normal_points_used) || 0,
+      member_id: meta.member_id || null,
+      channel: 'aiden',
+    }
+
+    const { data: orderRow, error: orderErr } = await supabase
+      .from('orders')
+      .insert(orderPayload)
+      .select('id, display_id, tracking_token')
       .single()
 
-    if (updateErr) {
-      console.error('Order update error:', updateErr)
+    if (orderErr) {
+      console.error('Order insert error:', orderErr)
       return new Response(
-        JSON.stringify({ error: '注文ステータスの更新に失敗しました' }),
+        JSON.stringify({ error: '注文の作成に失敗しました: ' + orderErr.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 3. Thanksメール送信（非同期、失敗しても注文は有効）
-    try {
-      // 注文商品を取得
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select('product_name, quantity, unit_price')
-        .eq('order_id', orderRow.id)
+    // 5. order_items テーブルに INSERT
+    if (cartItems.length > 0) {
+      const orderItems = cartItems.map((item: any) => ({
+        order_id: orderRow.id,
+        product_id: item.pid || null,
+        product_name: item.pn || '',
+        quantity: item.q || 1,
+        unit_price: item.up || 0,
+        options: item.opt || null,
+      }))
+      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
+      if (itemsErr) {
+        console.error('Order items insert error:', itemsErr)
+      }
+    }
 
+    // 6. Thanksメール送信（非同期、失敗しても注文は有効）
+    try {
       // 店舗名を取得
       const { data: storeRow } = await supabase
         .from('stores')
         .select('name')
-        .eq('id', orderRow.store_id)
+        .eq('id', meta.store_id)
         .single()
 
       await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
@@ -100,15 +163,15 @@ serve(async (req) => {
           order_id: orderRow.id,
           tracking_token: orderRow.tracking_token,
           display_id: orderRow.display_id,
-          customer_email: orderRow.customer_email,
-          customer_name: orderRow.customer_name,
+          customer_email: guestInfo.email,
+          customer_name: `${guestInfo.last_name} ${guestInfo.first_name}`.trim(),
           store_name: storeRow?.name || '',
-          order_type: orderRow.order_type,
-          total_amount: orderRow.total_amount,
-          items: (orderItems || []).map(i => ({
-            name: i.product_name,
-            qty: i.quantity,
-            price: i.unit_price,
+          order_type: meta.order_type,
+          total_amount: pi.amount,
+          items: cartItems.map((i: any) => ({
+            name: i.pn,
+            qty: i.q,
+            price: i.up,
           })),
         }),
       })
@@ -116,6 +179,7 @@ serve(async (req) => {
       console.warn('Order email skipped:', emailErr)
     }
 
+    // 7. レスポンス
     return new Response(
       JSON.stringify({
         success: true,

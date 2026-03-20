@@ -1838,7 +1838,7 @@ async function placeOrder() {
       }
       const idempotencyKey = sessionStorage.getItem('aiden_order_idempotency');
 
-      // 1. Edge Function で PaymentIntent 作成 + 注文レコード作成（サーバー側で金額再計算）
+      // 1. Edge Function で PaymentIntent 作成（サーバー側で金額再計算、注文レコードはまだ作らない）
       const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
         method: 'POST',
         headers: {
@@ -1898,16 +1898,40 @@ async function placeOrder() {
       );
 
       if (stripeError) {
+        // 決済失敗 → 失敗ログを記録（fire-and-forget）
+        try {
+          fetch(SUPABASE_URL + '/functions/v1/log-payment-failure', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({
+              store_id: CHECKOUT_DATA.storeId,
+              email: document.getElementById('custEmail').value.trim(),
+              phone: document.getElementById('custPhone').value.trim(),
+              order_type: channel,
+              total_amount: piData.amount,
+              payment_intent_id: piData.payment_intent_id,
+              failure_reason: stripeError.message || stripeError.type || 'unknown',
+              card_last4: null,
+              card_brand: null,
+              idempotency_key: idempotencyKey
+            })
+          }).catch(e => console.warn('Payment failure log skipped:', e));
+        } catch(logErr) { console.warn('Payment failure log skipped:', logErr); }
+
         if (stripeError.type === 'card_error' || stripeError.type === 'validation_error') {
           throw new Error(stripeError.message);
         }
         throw new Error('決済処理中にエラーが発生しました');
       }
 
-      // 3. 決済成功 → confirm-order で注文ステータス更新 + メール送信
+      // 3. 決済成功 → confirm-order で注文レコード作成 + メール送信
       if (paymentIntent.status === 'succeeded') {
+        let confirmData = {};
         try {
-          await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
+          const confirmRes = await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1915,6 +1939,10 @@ async function placeOrder() {
             },
             body: JSON.stringify({ payment_intent_id: paymentIntent.id })
           });
+          confirmData = await confirmRes.json();
+          if (!confirmRes.ok) {
+            console.error('confirm-order error:', confirmData);
+          }
         } catch (confirmErr) {
           // confirm-order が失敗しても決済は完了している
           // Webhook でリカバリされるので、遷移は続行
@@ -1925,14 +1953,14 @@ async function placeOrder() {
         if (appliedPoints > 0) {
           try {
             const memberId = sessionStorage.getItem('aiden_member_id');
-            if (memberId) {
+            if (memberId && confirmData.order_id) {
               await sb.from('point_transactions').insert({
                 member_id: memberId,
                 amount: -appliedPoints,
                 balance_after: CHECKOUT_DATA.userPoints - appliedPoints,
                 source: 'normal',
                 reason: '注文消費（' + paymentIntent.id + '）',
-                order_id: piData.order_id
+                order_id: confirmData.order_id
               });
             }
           } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
@@ -1942,14 +1970,21 @@ async function placeOrder() {
         sessionStorage.removeItem('aiden_order_idempotency');
 
         // ── sessionStorage にトラッキング情報を保存 ──
-        sessionStorage.setItem('aiden_tracking_token', piData.tracking_token);
-        sessionStorage.setItem('aiden_last_order_id', piData.display_id);
+        const trackingToken = confirmData.tracking_token || '';
+        const displayId = confirmData.display_id || '';
+        sessionStorage.setItem('aiden_tracking_token', trackingToken);
+        sessionStorage.setItem('aiden_last_order_id', displayId);
 
         // ── beforeunload 解除 ──
         window.removeEventListener('beforeunload', preventUnload);
 
         // ── トラッキングページにリダイレクト ──
-        window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(piData.tracking_token);
+        if (trackingToken) {
+          window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+        } else {
+          // confirm-order が失敗した場合でも決済は成功しているので、注文完了画面へ
+          window.location.href = 'aiden-order.html';
+        }
         return;
       }
 
