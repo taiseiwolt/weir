@@ -165,6 +165,19 @@ const SUPABASE_URL='https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY='sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// AUDIT LOG
+async function logAudit(action,targetTable,targetId,details){
+  try{
+    await sb.from('audit_logs').insert({
+      user_email:'taisei@sumbibi.com',
+      action:action,
+      target_table:targetTable,
+      target_id:targetId||null,
+      details:details||null
+    });
+  }catch(e){console.error('audit log error:',e);}
+}
+
 // STRIPE CONNECT
 // 手数料率（システム設定 - チャネル別）
 const AIDEN_FEE_RATES={takeout:0.040,dinein:0.038,delivery:0.040};
@@ -892,6 +905,7 @@ async function savePiiAccessSettings(brandId){
     const{error}=await sb.from('brands').update({pii_access_settings:settings}).eq('id',brandId);
     if(error)throw error;
     showToast('✅ 個人情報アクセス設定を保存しました');
+    logAudit('update_service_settings','brands',brandId,{type:'pii_access_settings',settings});
   }catch(e){
     console.error('PII save error:',e);
     showToast('⚠️ 保存に失敗しました（ローカル反映済み）');
@@ -944,9 +958,11 @@ async function saveAdminDelivery(storeId){
     }).eq('id',storeId);
     if(error)throw error;
     showToast('✅ 配達設定を保存しました');
+    logAudit('update_store_settings','stores',storeId,{deliveryFee,minOrder,minOrderPolicy,surchargeMax,prepTime,deliveryRadius,minOrderApplyTypes});
   }catch(e){
     console.error('saveAdminDelivery error:',e);
     showToast('✅ 配達設定を保存しました（ローカル）');
+    logAudit('update_store_settings','stores',storeId,{deliveryFee,minOrder,local_only:true});
   }
 }
 function initStoreTabs(){
@@ -994,7 +1010,9 @@ function toggleSvc(entityId,key,level){
     stores.forEach(s=>setSvc(s.id,key,false));
   }
   renderPage();
-  showToast(cur?'❌ '+SERVICES.find(s=>s.key===key).name+' をOFFにしました':'✅ '+SERVICES.find(s=>s.key===key).name+' をONにしました');
+  const svcName=SERVICES.find(s=>s.key===key).name;
+  showToast(cur?'❌ '+svcName+' をOFFにしました':'✅ '+svcName+' をONにしました');
+  logAudit('update_service_settings','services',null,{entityId,service:key,level,enabled:!cur,serviceName:svcName});
 }
 
 // ===== ID GENERATOR =====
@@ -1069,7 +1087,11 @@ function saveAccount(){
   const name=document.getElementById('addAccName').value.trim();
   const email=document.getElementById('addAccEmail').value.trim();
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  ACCOUNTS.push({id:genId('ACC-'),name:name,email:email,role:document.getElementById('addAccRole').value,corpId:document.getElementById('addAccCorp').value,status:'active',lastLogin:'—'});
+  const role=document.getElementById('addAccRole').value;
+  const corpId=document.getElementById('addAccCorp').value;
+  const newId=genId('ACC-');
+  ACCOUNTS.push({id:newId,name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
+  logAudit('add_account','accounts',null,{name,email,role,corpId});
   closeModal();showToast('✅ アカウントを追加しました');renderPage();
 }
 

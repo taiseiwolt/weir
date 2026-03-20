@@ -4846,6 +4846,7 @@ function saveBasicInfo() {
 
   renderStoreTable('storeBasicTable');
   showToast('✅ ' + store.name + ' の基本情報を保存しました');
+  logAudit('update_store_settings', 'stores', store.id, {name: store.name, address: store.address, phone: store.phone});
   closeStoreEdit('storeBasicSelector', 'storeBasicSingleEdit');
 }
 
@@ -5065,6 +5066,19 @@ function generateId(length) {
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzQ1NTYsImV4cCI6MjA4NzE1MDU1Nn0.OBrQDSoC_0fbKtRUdQHg3fnTXZjtwphmcI9k05Ss2d8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== AUDIT LOG =====
+async function logAudit(action, targetTable, targetId, details) {
+  try {
+    await sb.from('audit_logs').insert({
+      user_email: (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : 'unknown',
+      action: action,
+      target_table: targetTable,
+      target_id: targetId || null,
+      details: details || null
+    });
+  } catch(e) { console.error('audit log error:', e); }
+}
 
 // ===== AUTH STATE =====
 let CURRENT_AUTH_USER = null; // auth.users record
@@ -5290,6 +5304,7 @@ async function loadAdminFromSupabase() {
     const {data: mbrs, error: mbrErr} = await sb.from('members').select('*').order('created_at', {ascending: false});
     if (mbrErr) errors.push('会員: ' + mbrErr.message);
     if (mbrs && mbrs.length > 0) {
+      logAudit('view_member', 'members', null, {count: mbrs.length});
       MEMBERS = mbrs.map(m => {
         // ランク: current_rank_id → rank_settings 参照（admin.html と同じロジック）
         const rankName = (m.current_rank_id && memberRankMap[m.current_rank_id]) ? memberRankMap[m.current_rank_id] : 'レギュラー';
@@ -6171,6 +6186,7 @@ async function saveDelivery() {
       if (error) throw error;
     }
     showToast('✅ 配達・お持ち帰り設定を保存しました');
+    targets.forEach(function(store) { logAudit('update_store_settings', 'stores', store.id, {deliveryFee, minOrderAmount, minOrderPolicy, smallOrderSurchargeMax}); });
   } catch (e) {
     console.error('saveDelivery error:', e);
     showToast('❌ 保存に失敗しました: ' + (e.message || e));
@@ -8852,6 +8868,7 @@ async function saveStaffAccount() {
     STAFF_ACCOUNTS.unshift(res.data);
     closeModal();
     showToast('スタッフを追加しました');
+    logAudit('add_account', 'staff_accounts', res.data.id, {name: name, email: email, role: role});
     renderStaffAccountsTable();
   } catch(e) {
     showToast('エラー: ' + (e.message || e));
@@ -8891,6 +8908,7 @@ async function updateStaffAccount(staffId) {
     if (sa) { sa.display_name = name; sa.role = role; sa.store_id = storeId; sa.status = status; }
     closeModal();
     showToast('スタッフ情報を更新しました');
+    logAudit('update_account', 'staff_accounts', staffId, {name: name, role: role, storeId: storeId, status: status});
     renderStaffAccountsTable();
   } catch(e) {
     showToast('エラー: ' + (e.message || e));
@@ -8907,6 +8925,7 @@ async function deleteStaffAccount(staffId) {
     if (res.error) throw res.error;
     STAFF_ACCOUNTS = STAFF_ACCOUNTS.filter(function(x){ return x.id !== staffId; });
     showToast('スタッフを削除しました');
+    logAudit('delete_account', 'staff_accounts', staffId, {name: sa.display_name, email: sa.email});
     renderStaffAccountsTable();
   } catch(e) {
     showToast('エラー: ' + (e.message || e));
@@ -9086,6 +9105,7 @@ function changeProductPoolStatus(itemId, val) {
   MENU_PATTERNS.forEach(mp => mpAllItems(mp).forEach(it => { if(it.itemId === itemId) { it.status = val; it.suspendUntil = ''; } }));
   const prod = PRODUCTS.find(p => p.itemId === itemId);
   addChangeLog('販売状態一括変更', '商品「'+(prod?prod.name:'')+'」('+itemId+')→'+val);
+  logAudit('update_order_status', 'products', null, {itemId: itemId, name: prod ? prod.name : '', new_status: val});
   markDirty();
   renderProductPool();
   showToast('販売状態を変更しました');
@@ -11290,6 +11310,7 @@ function exportMemberCsv() {
     ? 'CSVエクスポート（個人情報マスキング適用済み）を開始しました'
     : 'CSVエクスポート（個人情報を含む）を開始しました';
   showToast('📥 ' + msg);
+  logAudit('export_data', 'members', null, {masked: masked, member_count: MEMBERS.length});
 }
 
 // Render on page show
