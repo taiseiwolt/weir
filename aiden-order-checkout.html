@@ -1408,7 +1408,11 @@ function goBackToMenu() {
   try {
     sessionStorage.setItem('aiden_cart_restore', JSON.stringify(storeCart));
   } catch(e) { /* ignored */ }
-  const menuUrl = CHECKOUT_DATA.menuPageUrl || './aiden-order-store.html';
+  let menuUrl = CHECKOUT_DATA.menuPageUrl || './aiden-order-store.html';
+  const sid = CHECKOUT_DATA.storeId || new URLSearchParams(window.location.search).get('store_id');
+  if (sid && !menuUrl.includes('store_id=')) {
+    menuUrl += (menuUrl.includes('?') ? '&' : '?') + 'store_id=' + encodeURIComponent(sid);
+  }
   window.location.href = menuUrl;
 }
 
