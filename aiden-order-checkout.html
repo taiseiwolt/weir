@@ -1996,6 +1996,28 @@ async function placeOrder() {
       if (orderBtn) { orderBtn.disabled = false; orderBtn.style.opacity = ''; }
       if (orderBtnText) orderBtnText.textContent = 'クレジットカード/デビットカードで注文';
       window.removeEventListener('beforeunload', preventUnload);
+
+      // 決済失敗ログをサーバーに記録
+      try {
+        fetch(SUPABASE_URL + '/functions/v1/log-payment-failure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            store_id: CHECKOUT_DATA.storeId || null,
+            email: document.getElementById('custEmail')?.value?.trim() || null,
+            phone: document.getElementById('custPhone')?.value?.trim() || null,
+            order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
+            total_amount: CHECKOUT_DATA.totalAmount || null,
+            payment_intent_id: piData?.payment_intent_id || null,
+            failure_reason: e.message || 'Unknown error',
+            idempotency_key: sessionStorage.getItem('aiden_order_idempotency') || null
+          })
+        }).catch(logErr => console.warn('log-payment-failure skipped:', logErr));
+      } catch (logErr) { /* fire-and-forget */ }
+
       return;
     }
   } else {
