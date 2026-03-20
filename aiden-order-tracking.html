@@ -288,8 +288,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const orderSelect = `
     *,
-    order_items(*, products(id, name, image_url, price)),
-    stores!inner(id, name, address, phone, latitude, longitude, brands(id, name, primary_color, slug))
+    order_items(*, products(id, name, image_url)),
+    stores!inner(id, name, address, phone, lat, lng, brands(id, name, primary_color))
   `;
 
   try {
@@ -386,8 +386,8 @@ function showError(title, sub) {
 // MAP
 // ===================================================================
 function initMap() {
-  const lat = storeData?.latitude || 35.6595;
-  const lng = storeData?.longitude || 139.7004;
+  const lat = storeData?.lat || 35.6595;
+  const lng = storeData?.lng || 139.7004;
 
   map = L.map('map', { center:[lat,lng], zoom:15, zoomControl:false, attributionControl:false });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
@@ -412,7 +412,7 @@ function updateDriverMarker(lat, lng) {
   });
   if (driverMarker) { driverMarker.setLatLng([lat,lng]); }
   else { driverMarker = L.marker([lat,lng], { icon:icon }).addTo(map); }
-  const bounds = L.latLngBounds([[storeData?.latitude||35.6595, storeData?.longitude||139.7004],[lat,lng]]);
+  const bounds = L.latLngBounds([[storeData?.lat||35.6595, storeData?.lng||139.7004],[lat,lng]]);
   map.fitBounds(bounds, { padding:[50,50] });
 }
 
@@ -831,7 +831,7 @@ function initDemo() {
       { product_name:'ナムル盛り合わせ', quantity:1, unit_price:620 },
     ]
   };
-  storeData = { name:'焼肉 炭火亭 渋谷店', address:'東京都渋谷区神南1-20-5', phone:'03-1234-5678', latitude:35.6595, longitude:139.7004 };
+  storeData = { name:'焼肉 炭火亭 渋谷店', address:'東京都渋谷区神南1-20-5', phone:'03-1234-5678', lat:35.6595, lng:139.7004 };
   brandData = { name:'炭火亭', primary_color:'#D32F2F' };
 
   document.getElementById('loadingScreen').style.display = 'none';
