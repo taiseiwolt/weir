@@ -4,23 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>モバイルオーダー | 炭火亭</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="モバイルオーダー | 炭火亭">
-    <meta property="og:description" content="炭火亭のモバイルオーダー - 注文完了・履歴確認">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-order.html">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="モバイルオーダー | 炭火亭">
-    <meta name="twitter:description" content="炭火亭のモバイルオーダー - 注文完了・履歴確認">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="炭火亭のモバイルオーダー - 注文完了・履歴確認">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
 :root{
@@ -58,22 +45,6 @@ input,select,textarea{font-family:var(--font)}
 .lang-sel{appearance:none;padding:5px 22px 5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:700;background:var(--white);color:var(--text2);cursor:pointer;font-family:var(--font)}
 .lang-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text3);pointer-events:none}
 .hdr-signin{font-size:13px;font-weight:700;color:var(--text2);cursor:pointer}
-/* Sign-in Modal */
-.signin-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
-.signin-overlay.show{opacity:1;pointer-events:auto}
-.signin-modal{background:#fff;border-radius:16px;width:400px;max-width:92vw;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .25s;position:relative}
-.signin-overlay.show .signin-modal{transform:translateY(0)}
-.signin-close{position:absolute;top:12px;right:16px;font-size:24px;cursor:pointer;color:#999}
-.signin-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:4px}
-.signin-sub{font-size:12px;color:#999;text-align:center;margin-bottom:20px}
-.signin-field{margin-bottom:14px}
-.signin-field label{display:block;font-size:11px;font-weight:600;color:#666;margin-bottom:4px}
-.signin-field input{width:100%;padding:10px 12px;border:1px solid #E0E0E0;border-radius:8px;font-size:14px;font-family:inherit}
-.signin-field input:focus{outline:none;border-color:var(--brand)}
-.signin-error{background:#FFEBEE;color:#C62828;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px}
-.signin-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
-.signin-btn:disabled{opacity:.5;cursor:default}
-.signin-alt{font-size:11px;color:#999;text-align:center;margin-top:14px;line-height:1.5}
 .cart-hdr-btn{display:none;align-items:center;gap:6px;background:var(--brand);color:white;border-radius:20px;padding:6px 14px 6px 10px;font-size:13px;font-weight:700;transition:background .15s;cursor:pointer;border:none}
 .cart-hdr-btn.show{display:flex}
 .cart-hdr-btn:hover{background:var(--brand-dark)}
@@ -666,30 +637,9 @@ input,select,textarea{font-family:var(--font)}
       <div class="cart-hdr-badge" id="cart-hdr-badge">0</div>
       <span id="cart-hdr-label">カート</span>
     </button>
-    <span class="hdr-signin" id="hdr-signin" onclick="handleSignIn()">サインイン</span>
+    <span class="hdr-signin" id="hdr-signin">サインイン</span>
   </div>
 </header>
-
-<!-- ===== SIGN-IN MODAL ===== -->
-<div class="signin-overlay" id="signinOverlay" onclick="if(event.target===this)closeSigninModal()">
-  <div class="signin-modal">
-    <div class="signin-close" onclick="closeSigninModal()">&times;</div>
-    <div style="font-size:28px;text-align:center;margin-bottom:8px">🔐</div>
-    <div class="signin-title">ログイン</div>
-    <div class="signin-sub">メールアドレスとパスワードでログイン</div>
-    <div class="signin-field">
-      <label>メールアドレス</label>
-      <input type="email" id="signinEmail" placeholder="mail@example.com">
-    </div>
-    <div class="signin-field">
-      <label>パスワード</label>
-      <input type="password" id="signinPassword" placeholder="パスワード">
-    </div>
-    <div class="signin-error" id="signinError" style="display:none"></div>
-    <button class="signin-btn" id="signinBtn" onclick="doSignin()">ログイン</button>
-    <div class="signin-alt">アカウントをお持ちでない方は、ご注文時に新規登録いただけます。</div>
-  </div>
-</div>
 
 <!-- ===== SCREEN 1: STORE SELECT ===== -->
 <div id="screen-store" class="s-show">
@@ -1036,38 +986,7 @@ var BRAND = {primaryColor:'#D32F2F', primaryDark:'#B71C1C'};
 })();
 
 /* ============================================================
-   SUPABASE + STORE LOADING
-   ============================================================ */
-var SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
-var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function loadStoresFromAPI() {
-  try {
-    var { data, error } = await sb
-      .from('stores')
-      .select('id, slug, name, address, status, has_takeout, has_delivery, lat, lng')
-      .eq('status', 'active');
-    if (error || !data || data.length === 0) return;
-    STORES = data.map(function(s) {
-      return {
-        id: s.slug || s.id,
-        name: s.name,
-        addr: s.address || '',
-        station: '',
-        hours: '',
-        avail: 'ok',
-        hasTakeout: !!s.has_takeout,
-        hasDelivery: !!s.has_delivery,
-        lat: s.lat || 0,
-        lng: s.lng || 0
-      };
-    });
-  } catch(e) { /* use fallback STORES */ }
-}
-
-/* ============================================================
-   STORES — fallback demo data
+   STORES — aiden-brand-stores.html と同期
    avail: "ok"|"few" = 注文可, "full" = 受付停止
    ============================================================ */
 var STORES = [
@@ -1262,36 +1181,6 @@ var hlStore        = null;
    t() — Screen2-4 JS が使う翻訳ヘルパー（キーをそのまま返す）
    ============================================================ */
 function t(key){ return key; }
-
-function handleSignIn() {
-  document.getElementById('signinOverlay').classList.add('show');
-}
-function closeSigninModal() {
-  document.getElementById('signinOverlay').classList.remove('show');
-  document.getElementById('signinError').style.display = 'none';
-}
-async function doSignin() {
-  var email = document.getElementById('signinEmail').value.trim();
-  var pass = document.getElementById('signinPassword').value;
-  var errEl = document.getElementById('signinError');
-  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; errEl.style.display = ''; return; }
-  var btn = document.getElementById('signinBtn');
-  btn.disabled = true; btn.textContent = 'ログイン中...';
-  try {
-    var { data, error } = await sb.auth.signInWithPassword({ email: email, password: pass });
-    if (error) throw error;
-    // Fetch member data
-    var { data: member } = await sb.from('members').select('id').eq('auth_user_id', data.user.id).single();
-    if (member) sessionStorage.setItem('aiden_member_id', member.id);
-    closeSigninModal();
-    document.getElementById('hdr-signin').textContent = '✓ ログイン済';
-    document.getElementById('hdr-signin').style.pointerEvents = 'none';
-  } catch(e) {
-    errEl.textContent = 'ログインに失敗しました。メールアドレスとパスワードを確認してください。';
-    errEl.style.display = '';
-  }
-  btn.disabled = false; btn.textContent = 'ログイン';
-}
 
 /* ============================================================
    L_() — Screen1 の翻訳ヘルパー
@@ -2589,69 +2478,9 @@ function downloadReceipt(){
 var toastTimer=null;
 
 /* =====================================================
-   GEOLOCATION
-   ===================================================== */
-function requestGeolocation() {
-  // Check localStorage for previous permission state
-  var geoState = localStorage.getItem('aiden_geo_permission');
-  if (geoState === 'denied') {
-    // User previously denied — show address input option, don't re-ask
-    return;
-  }
-
-  if (!navigator.geolocation) return;
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      // Permission granted
-      userLat = pos.coords.latitude;
-      userLng = pos.coords.longitude;
-      localStorage.setItem('aiden_geo_permission', 'granted');
-
-      // Re-render store list sorted by distance
-      renderStoreList();
-
-      // Center map on user location
-      if (mainMap) {
-        mainMap.setView([userLat, userLng], 13);
-        // Add user marker
-        if (!userMarker) {
-          var userIcon = L.divIcon({
-            html: '<div style="width:14px;height:14px;background:#4285F4;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
-            className: ''
-          });
-          userMarker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 1000 }).addTo(mainMap);
-        }
-      }
-
-      showToast('📍 現在地を取得しました');
-    },
-    function(err) {
-      // Permission denied or error
-      localStorage.setItem('aiden_geo_permission', 'denied');
-      // Default store list is already shown
-    },
-    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
-  );
-}
-
-/* =====================================================
    INIT
    ===================================================== */
-(async function() {
-  await loadStoresFromAPI();
-  renderStoreList();
-  // Request geolocation after initial render
-  requestGeolocation();
-})();
 
 </script>
-<footer style="background:#f5f5f5;padding:16px 20px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee">
-  <a href="./aiden-terms-enduser.html" style="color:#666;margin:0 8px;text-decoration:underline">利用規約</a>
-  <a href="./aiden-privacy-enduser.html" style="color:#666;margin:0 8px;text-decoration:underline">プライバシーポリシー</a>
-  <div style="margin-top:8px;font-size:11px;color:#aaa">Powered by AIden</div>
-</footer>
 </body>
 </html>
