@@ -98,6 +98,9 @@ serve(async (req) => {
       tracking_status: 'placed',
       payment_status: 'paid',
       total_amount: pi.amount,
+      delivery_fee: parseInt(meta.delivery_fee) || 0,
+      service_fee: parseInt(meta.service_fee) || 0,
+      surcharge_amount: parseInt(meta.surcharge_amount) || 0,
       payment_intent_id: pi.id,
       customer_name: guestInfo.last_name && guestInfo.first_name
         ? `${guestInfo.last_name} ${guestInfo.first_name}`

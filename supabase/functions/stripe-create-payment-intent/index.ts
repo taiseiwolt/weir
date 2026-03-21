@@ -55,6 +55,13 @@ serve(async (req) => {
 
     // ── 新フロー（cart_items ベース）──
     if (cart_items && store_id) {
+      // カート空チェック
+      if (!Array.isArray(cart_items) || cart_items.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'カートが空です。商品を追加してください。' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
       // 1. 店舗情報取得（Stripe Connect Account ID含む）
@@ -100,10 +107,34 @@ serve(async (req) => {
         }
       }
 
-      // サーバー側で合計金額を計算（productsテーブルにpriceカラムがないためunit_priceを使用）
+      // サーバー側で合計金額を計算（product_sizesテーブルから価格を検証）
+      // product_sizes から全商品の価格を取得して検証
+      let priceMap: Record<string, number[]> = {}
+      if (productIds.length > 0) {
+        const { data: sizes } = await supabase
+          .from('product_sizes')
+          .select('product_id, price')
+          .in('product_id', productIds)
+        if (sizes) {
+          for (const s of sizes) {
+            if (!priceMap[s.product_id]) priceMap[s.product_id] = []
+            priceMap[s.product_id].push(s.price)
+          }
+        }
+      }
+
       let subtotal = 0
       for (const item of cart_items) {
         const unitPrice = item.unit_price || 0
+        // クライアント送信価格がDB登録価格と一致するか検証
+        const validPrices = priceMap[item.product_id]
+        if (validPrices && validPrices.length > 0 && !validPrices.includes(unitPrice)) {
+          console.error('Price mismatch:', { product_id: item.product_id, client_price: unitPrice, valid_prices: validPrices })
+          return new Response(
+            JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         subtotal += unitPrice * (item.quantity || 1)
       }
 
@@ -194,6 +225,9 @@ serve(async (req) => {
       // メタデータ
       params['metadata[store_id]'] = store_id
       params['metadata[order_type]'] = channel
+      params['metadata[delivery_fee]'] = String(deliveryFee)
+      params['metadata[service_fee]'] = String(serviceFee)
+      params['metadata[surcharge_amount]'] = String(surcharge)
       if (idempotency_key) params['metadata[idempotency_key]'] = idempotency_key
 
       const stripeHeaders: Record<string, string> = {
@@ -228,6 +262,9 @@ serve(async (req) => {
         tracking_status: 'placed',
         payment_status: 'pending',
         total_amount: totalAmount,
+        delivery_fee: deliveryFee,
+        service_fee: serviceFee,
+        surcharge_amount: surcharge,
         payment_intent_id: pi.id,
         customer_name: guest_info ? `${guest_info.last_name} ${guest_info.first_name}` : null,
         customer_email: guest_info?.email || null,
