@@ -1363,6 +1363,10 @@ function updatePriceSummary() {
   }
   CHECKOUT_DATA.aidenPointsUsed = _aidenPointsUsed;
   CHECKOUT_DATA.normalPointsUsed = _normalPointsUsed;
+  // DI-01: 手数料内訳を保存（注文INSERT時に使用）
+  CHECKOUT_DATA.lastDeliveryFee = delivery;
+  CHECKOUT_DATA.lastServiceFee = serviceFee;
+  CHECKOUT_DATA.lastSurchargeAmount = surcharge;
 
   const total = Math.max(0, subtotal + delivery + surcharge + serviceFee - couponDiscount - pointDiscount);
 
@@ -1837,6 +1841,7 @@ async function placeOrder() {
     const preventUnload = function(e) { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', preventUnload);
 
+    let piData = null;
     try {
       const channel = mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout');
       const customerLastName = document.getElementById('custLastName').value.trim();
@@ -1897,7 +1902,7 @@ async function placeOrder() {
         throw new Error(err.error || '決済処理に失敗しました');
       }
 
-      const piData = await res.json();
+      piData = await res.json();
 
       if (!piData.client_secret) {
         throw new Error('決済情報の取得に失敗しました');
@@ -1959,7 +1964,7 @@ async function placeOrder() {
           console.warn('[checkout] tracking_token not from confirm-order, querying DB by payment_intent_id');
           try {
             const { data: fbOrder } = await sb
-              .from('orders')
+              .from('orders_public_view')
               .select('id, display_id, tracking_token')
               .eq('payment_intent_id', piId)
               .maybeSingle();
@@ -2041,10 +2046,12 @@ async function placeOrder() {
             email: document.getElementById('custEmail')?.value?.trim() || null,
             phone: document.getElementById('custPhone')?.value?.trim() || null,
             order_type: mode === 'delivery' ? 'delivery' : (mode === 'dinein' ? 'dinein' : 'takeout'),
-            total_amount: CHECKOUT_DATA.totalAmount || null,
+            total_amount: totalAmount || null,
             payment_intent_id: piData?.payment_intent_id || null,
             failure_reason: e.message || 'Unknown error',
-            idempotency_key: sessionStorage.getItem('aiden_order_idempotency') || null
+            idempotency_key: sessionStorage.getItem('aiden_order_idempotency') || null,
+            card_last4: e.payment_method?.card?.last4 || null,
+            card_brand: e.payment_method?.card?.brand || null
           })
         }).catch(logErr => console.warn('log-payment-failure skipped:', logErr));
       } catch (logErr) { /* fire-and-forget */ }
@@ -2067,6 +2074,9 @@ async function placeOrder() {
         order_type: channel,
         tracking_status: 'placed',
         total_amount: totalAmount,
+        delivery_fee: CHECKOUT_DATA.lastDeliveryFee || 0,
+        service_fee: CHECKOUT_DATA.lastServiceFee || 0,
+        surcharge_amount: CHECKOUT_DATA.lastSurchargeAmount || 0,
         payment_method: pm.id,
         customer_name: customerName,
         customer_email: customerEmail,
@@ -2126,15 +2136,17 @@ async function placeOrder() {
             'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
           },
           body: JSON.stringify({
-            order_id: orderRow.id,
-            tracking_token: orderRow.tracking_token,
-            display_id: orderRow.display_id,
-            customer_email: customerEmail,
+            type: 'confirmation',
+            to: customerEmail,
+            order_id: orderRow.display_id || orderRow.id,
             customer_name: customerName,
             store_name: CHECKOUT_DATA.storeName,
-            order_type: channel,
-            total_amount: totalAmount,
+            brand_name: CHECKOUT_DATA.brandName || CHECKOUT_DATA.storeName,
+            order_mode: channel,
             items: (CHECKOUT_DATA.cartItems || []).map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+            subtotal: subtotal,
+            delivery_fee: lastDeliveryFee || 0,
+            total: totalAmount,
           })
         });
       } catch(emailErr) { console.warn('Order email skipped:', emailErr); }

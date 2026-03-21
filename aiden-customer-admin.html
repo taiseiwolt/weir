@@ -6176,12 +6176,14 @@ async function saveDelivery() {
   // Persist to Supabase
   try {
     for (const store of targets) {
+      const deliveryRadiusKm = parseFloat(document.getElementById('deliveryRadiusInput').value) || 3;
       const { error } = await sb.from('stores').update({
         delivery_fee: deliveryFee,
         min_order_amount: minOrderAmount,
         min_order_policy: minOrderPolicy,
         small_order_surcharge_max: smallOrderSurchargeMax,
-        min_order_apply_types: minOrderApplyTypes
+        min_order_apply_types: minOrderApplyTypes,
+        delivery_radius_km: deliveryRadiusKm
       }).eq('id', store.id);
       if (error) throw error;
     }
@@ -7590,17 +7592,86 @@ function sdBuildCompareOptions() {
   sel.value = defaults[p] || 'none';
 }
 
-function sdUpdateDashboard() {
+async function sdUpdateDashboard() {
   const d = _sdDemoData[_sdPeriod] || _sdDemoData.week;
-  document.getElementById('sdKpiSales').textContent = d.sales;
-  document.getElementById('sdKpiOrders').textContent = d.orders;
-  document.getElementById('sdKpiAvg').textContent = d.avg;
-  document.getElementById('sdKpiCancel').textContent = d.cancel;
-  document.getElementById('sdKpiSalesDelta').textContent = d.salesD;
-  document.getElementById('sdKpiOrdersDelta').textContent = d.ordersD;
-  document.getElementById('sdKpiAvgDelta').textContent = d.avgD;
-  document.getElementById('sdKpiCancelDelta').textContent = d.cancelD;
-  document.getElementById('sdDailyTitle').textContent = d.title;
+
+  // --- Live KPI from Supabase orders ---
+  try {
+    const now = new Date();
+    let timeMin, timeMax, periodLabel;
+    const p = _sdPeriod;
+    if (p === 'today') {
+      timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      timeMax = now.toISOString();
+      periodLabel = '今日';
+    } else if (p === 'yesterday') {
+      const y = new Date(now); y.setDate(y.getDate() - 1);
+      timeMin = new Date(y.getFullYear(), y.getMonth(), y.getDate()).toISOString();
+      timeMax = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59).toISOString();
+      periodLabel = '昨日';
+    } else if (p === 'week') {
+      const dow = now.getDay() || 7;
+      const mon = new Date(now); mon.setDate(mon.getDate() - dow + 1);
+      timeMin = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate()).toISOString();
+      timeMax = now.toISOString();
+      periodLabel = '今週';
+    } else if (p === 'month') {
+      timeMin = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      timeMax = now.toISOString();
+      periodLabel = '今月';
+    } else {
+      const cs = document.getElementById('sdCustomStart')?.value;
+      const ce = document.getElementById('sdCustomEnd')?.value;
+      if (cs && ce) {
+        timeMin = new Date(cs).toISOString();
+        timeMax = new Date(ce + 'T23:59:59').toISOString();
+        periodLabel = 'カスタム';
+      } else {
+        timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString();
+        timeMax = now.toISOString();
+        periodLabel = '直近7日';
+      }
+    }
+
+    // Determine store filter
+    const storeFilter = document.getElementById('sdStoreFilter')?.value;
+    let query = sb.from('orders').select('total_amount, delivery_fee, service_fee, status, created_at').gte('created_at', timeMin).lte('created_at', timeMax);
+    if (storeFilter && storeFilter !== 'all') {
+      query = query.eq('store_id', storeFilter);
+    }
+    const { data: orders, error } = await query;
+    if (!error && orders) {
+      const nonCancelled = orders.filter(o => o.status !== 'cancelled');
+      const cancelled = orders.filter(o => o.status === 'cancelled');
+      const totalSales = nonCancelled.reduce((s, o) => s + (o.total_amount || 0), 0);
+      const orderCount = nonCancelled.length;
+      const avgOrder = orderCount > 0 ? Math.round(totalSales / orderCount) : 0;
+      const cancelRate = orders.length > 0 ? ((cancelled.length / orders.length) * 100).toFixed(1) : '0.0';
+      document.getElementById('sdKpiSales').textContent = '¥' + totalSales.toLocaleString();
+      document.getElementById('sdKpiOrders').textContent = orderCount.toLocaleString();
+      document.getElementById('sdKpiAvg').textContent = '¥' + avgOrder.toLocaleString();
+      document.getElementById('sdKpiCancel').textContent = cancelRate + '%';
+      document.getElementById('sdKpiSalesDelta').textContent = periodLabel + '・実データ';
+      document.getElementById('sdKpiOrdersDelta').textContent = '';
+      document.getElementById('sdKpiAvgDelta').textContent = '';
+      document.getElementById('sdKpiCancelDelta').textContent = '';
+      document.getElementById('sdDailyTitle').textContent = d.title;
+    } else {
+      throw error || new Error('No data');
+    }
+  } catch(e) {
+    console.warn('sdUpdateDashboard live data fallback:', e);
+    // Fallback to demo data
+    document.getElementById('sdKpiSales').textContent = d.sales;
+    document.getElementById('sdKpiOrders').textContent = d.orders;
+    document.getElementById('sdKpiAvg').textContent = d.avg;
+    document.getElementById('sdKpiCancel').textContent = d.cancel;
+    document.getElementById('sdKpiSalesDelta').textContent = d.salesD;
+    document.getElementById('sdKpiOrdersDelta').textContent = d.ordersD;
+    document.getElementById('sdKpiAvgDelta').textContent = d.avgD;
+    document.getElementById('sdKpiCancelDelta').textContent = d.cancelD;
+    document.getElementById('sdDailyTitle').textContent = d.title;
+  }
 
   // Year note
   const comp = document.getElementById('sdCompare').value;
@@ -9101,14 +9172,25 @@ function renderProductPool() {
   }).join('');
 }
 
-function changeProductPoolStatus(itemId, val) {
+async function changeProductPoolStatus(itemId, val) {
   MENU_PATTERNS.forEach(mp => mpAllItems(mp).forEach(it => { if(it.itemId === itemId) { it.status = val; it.suspendUntil = ''; } }));
   const prod = PRODUCTS.find(p => p.itemId === itemId);
   addChangeLog('販売状態一括変更', '商品「'+(prod?prod.name:'')+'」('+itemId+')→'+val);
-  logAudit('update_order_status', 'products', null, {itemId: itemId, name: prod ? prod.name : '', new_status: val});
+
+  // Persist to Supabase: update menu_pattern_items status
+  const statusMap = {'販売中':'active','品切れ':'soldout','終売':'discontinued'};
+  const dbStatus = statusMap[val] || 'active';
+  try {
+    const { error } = await sb.from('menu_pattern_items').update({ status: dbStatus }).eq('product_id', itemId);
+    if (error) throw error;
+    logAudit('update_product_status', 'menu_pattern_items', null, {itemId, name: prod ? prod.name : '', new_status: val, db_status: dbStatus});
+    showToast('✅ 販売状態を変更しました');
+  } catch(e) {
+    console.error('changeProductPoolStatus DB error:', e);
+    showToast('❌ DB保存に失敗しました: ' + (e.message || e));
+  }
   markDirty();
   renderProductPool();
-  showToast('販売状態を変更しました');
 }
 
 function editProductPool(itemId) {
@@ -9511,7 +9593,7 @@ function previewMenuItemImage(file) {
 
 function closeMenuItemModal() { document.getElementById('menuModal').classList.remove('show'); editingItemIdx = -1; document.getElementById('menuItemIdInput').disabled = false; window._editingFromPool = false; window._editingPoolItemId = null; }
 
-function saveMenuItem() {
+async function saveMenuItem() {
   const itemId = document.getElementById('menuItemIdInput').value.trim();
   const name = document.getElementById('menuItemNameInput').value.trim();
   const price = parseInt(document.getElementById('menuItemPriceInput').value) || 0;
@@ -9529,15 +9611,63 @@ function saveMenuItem() {
       // Update existing
       const prodIdx = PRODUCTS.findIndex(p => p.itemId === window._editingPoolItemId);
       if(prodIdx >= 0) { Object.assign(PRODUCTS[prodIdx], prodData); }
+
+      // Persist to Supabase: update product name and flags
+      try {
+        const catRow = CATEGORIES.find(c => c.name === category);
+        const { error: prodErr } = await sb.from('products').update({
+          name: name,
+          category_id: catRow ? catRow.id : undefined,
+          dine_in: prodData.dineIn,
+          takeout: prodData.takeout,
+          delivery: prodData.delivery
+        }).eq('id', window._editingPoolItemId);
+        if (prodErr) throw prodErr;
+        // Update default size price
+        const { error: sizeErr } = await sb.from('product_sizes').update({ price: price }).eq('product_id', window._editingPoolItemId).order('sort_order', {ascending: true}).limit(1);
+        if (sizeErr) console.warn('Size update warning:', sizeErr);
+        logAudit('update_product', 'products', window._editingPoolItemId, {name, price, category});
+        showToast('✅ 商品を更新しました');
+      } catch(e) {
+        console.error('saveMenuItem DB error:', e);
+        showToast('❌ DB保存に失敗: ' + (e.message || e));
+      }
       addChangeLog('商品編集', '商品「'+name+'」('+itemId+')を更新');
-      showToast('✅ 商品を更新しました');
     } else {
       // New product to pool only
       const existingProd = PRODUCTS.find(p => p.itemId === itemId);
       if(existingProd) { alert('商品ID「'+itemId+'」は既に使用されています'); return; }
       PRODUCTS.push(prodData);
+
+      // Persist to Supabase: insert new product
+      try {
+        const catRow = CATEGORIES.find(c => c.name === category);
+        const { data: newProd, error: prodErr } = await sb.from('products').insert({
+          name: name,
+          brand_id: BRAND_ID,
+          category_id: catRow ? catRow.id : null,
+          dine_in: prodData.dineIn,
+          takeout: prodData.takeout,
+          delivery: prodData.delivery
+        }).select().single();
+        if (prodErr) throw prodErr;
+        // Insert default size with price
+        await sb.from('product_sizes').insert({
+          product_id: newProd.id,
+          name: 'default',
+          price: price,
+          sort_order: 1
+        });
+        // Update local itemId to match DB
+        const addedProd = PRODUCTS[PRODUCTS.length - 1];
+        addedProd.itemId = newProd.id;
+        logAudit('create_product', 'products', newProd.id, {name, price, category});
+        showToast('✅ 商品を登録しました');
+      } catch(e) {
+        console.error('saveMenuItem insert error:', e);
+        showToast('❌ DB保存に失敗: ' + (e.message || e));
+      }
       addChangeLog('商品新規登録', '商品「'+name+'」('+itemId+')をプールに登録');
-      showToast('✅ 商品を登録しました');
     }
     window._editingFromPool = false;
     window._editingPoolItemId = null;
@@ -9567,6 +9697,14 @@ function saveMenuItem() {
   if(editingItemIdx >= 0) {
     const prodIdx = PRODUCTS.findIndex(p => p.itemId === itemId);
     if(prodIdx >= 0) { Object.assign(PRODUCTS[prodIdx], prodData); }
+    // Persist update to Supabase
+    try {
+      const catRow = CATEGORIES.find(c => c.name === category);
+      await sb.from('products').update({ name, category_id: catRow ? catRow.id : undefined, dine_in: prodData.dineIn, takeout: prodData.takeout, delivery: prodData.delivery }).eq('id', itemId);
+      const { error: sizeErr } = await sb.from('product_sizes').update({ price }).eq('product_id', itemId).order('sort_order', {ascending: true}).limit(1);
+      if (sizeErr) console.warn('Size update warning:', sizeErr);
+      logAudit('update_product', 'products', itemId, {name, price, category});
+    } catch(e) { console.error('saveMenuItem pattern update error:', e); }
     addChangeLog('商品編集', '商品「'+name+'」('+itemId+')を更新');
     showToast('✅ 商品を更新しました');
   } else {
