@@ -257,6 +257,52 @@
 
 ---
 
+## デプロイ後再テスト結果（2026-03-21 追記）
+
+### デプロイ内容
+- git push: `7747746` (fix: Day3テスト修正 - fee保存・価格検証・空カートバリデーション)
+- Edge Function deploy: `stripe-create-payment-intent` ✅, `confirm-order` ✅
+- Vercel deploy: `aiden-jp.net` ✅ (トラッキングページUI修正含む)
+
+### 追加修正: トラッキングページUI（ボタン重なり解消）
+- **問題**: 💬/🧾ボタンが`position: fixed; bottom: 28px`で配達時間説明テキストと重なっていた
+- **修正**: ボタンをfixed配置からフロー内のflex配置（`.action-btns`コンテナ）に変更
+- tracking-contentのpadding-bottom: 100px → 28pxに調整
+- スマホ(375px)・デスクトップ両方で重なりなし確認済み
+
+### 再テスト結果
+
+| テストID | 内容 | 結果 | 詳細 |
+|---------|------|------|------|
+| DI-02 | fee保存確認 | ✅ PASS | ORD-sy0dT5Q: delivery_fee=0, service_fee=150, surcharge_amount=220 正しく保存 |
+| ER-02 | 空カートブロック | ✅ PASS | HTTP 400「カートが空です。商品を追加してください。」 |
+| E4-03 | 改ざん価格拒否 | ✅ PASS | 100円改ざん→HTTP 400「商品価格が正しくありません。」 |
+| E4-03+ | 正規価格通過 | ✅ PASS | 1280円→HTTP 200 PaymentIntent作成成功 |
+| UI | ボタン重なり | ✅ PASS | aiden-jp.net本番でスマホ表示確認済み |
+
+### DI-02 金額検算
+- 特選カルビ x1 = ¥1,280
+- delivery_fee = ¥0 (takeout)
+- service_fee = ¥150 (1280×10% = 128 → 50円単位切り上げ = 150)
+- surcharge_amount = ¥220 (最低注文1500 - 1280 = 220)
+- total_amount = ¥1,650 (1280 + 0 + 150 + 220 = 1650) ✓
+
+### クリーンアップ必要事項
+以下のテスト注文をSupabase Dashboard SQL Editorで削除:
+```sql
+DELETE FROM orders WHERE id IN (
+  '2798ade3-8a0c-4821-90f9-3ff06110707b',  -- ORD-0cSN1St (空カートテスト)
+  '221b8461-d3b8-499a-b6cd-594265bfb5a1'   -- ORD-sy0dT5Q (正規価格テスト)
+);
+```
+
+### 修正ファイル一覧（追加）
+| ファイル | 修正内容 | 関連テスト |
+|---------|---------|-----------|
+| `aiden-order-tracking.html` | ボタンをfixed→フロー内flex配置に変更 | UI重なり |
+
+---
+
 ## 未実装機能一覧（SKIPとなったもの）
 
 | 機能 | 関連テスト | 優先度 |
