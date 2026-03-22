@@ -23,7 +23,7 @@ const FROM_EMAIL = 'noreply@aiden-jp.net'
 const FROM_NAME = 'AIden監視'
 
 // Access Token の期限（固定値）
-const ACCESS_TOKEN_EXPIRY = new Date('2026-04-15T00:00:00Z')
+const ACCESS_TOKEN_EXPIRY = new Date('2026-06-20T00:00:00Z')
 
 // Supabase Free tier limits
 const DB_SIZE_LIMIT_MB = 500     // Free: 500MB
@@ -384,7 +384,7 @@ function checkAccessTokenExpiry(): CheckResult {
   return {
     checkType: 'access_token_expiry',
     label: 'Access Token期限',
-    currentValue: `残り${daysRemaining}日（期限: 2026-04-15）`,
+    currentValue: `残り${daysRemaining}日（期限: 2026-06-20）`,
     warningThreshold: '残り14日以内',
     criticalThreshold: '残り7日以内',
     severity,
