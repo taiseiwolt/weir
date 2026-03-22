@@ -6,7 +6,9 @@ import { authenticateRequest, requireAuth } from '../_lib/auth.js';
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  const pathSegments = req.query.path || [];
+  // Vercel catch-all [...path] populates req.query['...path'] as string or array
+  const rawPath = req.query.path || req.query['...path'] || [];
+  const pathSegments = Array.isArray(rawPath) ? rawPath : rawPath.split('/');
 
   // /api/members/login
   if (pathSegments[0] === 'login' && !pathSegments[1]) {
@@ -26,6 +28,16 @@ export default async function handler(req, res) {
   // /api/members/register
   if (pathSegments[0] === 'register') {
     return handleRegister(req, res);
+  }
+
+  // /api/members/resend-verification
+  if (pathSegments[0] === 'resend-verification') {
+    return handleResendVerification(req, res);
+  }
+
+  // /api/members/withdraw
+  if (pathSegments[0] === 'withdraw') {
+    return handleWithdraw(req, res);
   }
 
   // /api/members/[id]/card
@@ -55,12 +67,33 @@ async function handleLogin(req, res) {
     const { data: authData, error: authError } = await anonClient.auth.signInWithPassword({ email, password });
 
     if (authError) {
+      // Check if user exists but is unverified (Supabase blocks signIn for unconfirmed users)
+      const { data: { users } } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+      // Use admin API to check specific user
+      const { data: userList } = await supabase.from('members').select('auth_user_id').eq('email', email).limit(1);
+      if (userList && userList.length > 0) {
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userList[0].auth_user_id);
+        if (authUser && !authUser.email_confirmed_at) {
+          return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
+        }
+        // Check withdrawal status
+        const { data: memberCheck } = await supabase.from('members').select('withdrawal_status').eq('auth_user_id', userList[0].auth_user_id).single();
+        if (memberCheck && memberCheck.withdrawal_status === 'withdrawn') {
+          return error(res, 'このアカウントは退会済みです。', 403, 'ACCOUNT_WITHDRAWN');
+        }
+      }
       return error(res, 'メールアドレスまたはパスワードが正しくありません', 401);
+    }
+
+    // Double-check email verification (for edge cases)
+    if (!authData.user.email_confirmed_at) {
+      await anonClient.auth.signOut();
+      return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
     }
 
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('id, first_name, last_name, email, phone, gender, address_prefecture, address_city, address_street, address_building, stripe_customer_id')
+      .select('id, first_name, last_name, email, phone, gender, address_prefecture, address_city, address_street, address_building, stripe_customer_id, withdrawal_status')
       .eq('auth_user_id', authData.user.id)
       .single();
 
@@ -68,11 +101,18 @@ async function handleLogin(req, res) {
       return error(res, '会員情報が見つかりません', 404);
     }
 
+    // Check withdrawal status
+    if (member.withdrawal_status === 'withdrawn') {
+      await anonClient.auth.signOut();
+      return error(res, 'このアカウントは退会済みです。', 403, 'ACCOUNT_WITHDRAWN');
+    }
+
+    const { withdrawal_status, ...memberData } = member;
     return ok(res, {
       access_token: authData.session.access_token,
       refresh_token: authData.session.refresh_token,
       expires_in: authData.session.expires_in,
-      member,
+      member: memberData,
     });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
@@ -85,12 +125,12 @@ async function handleRegister(req, res) {
 
   const {
     email, password, first_name, last_name, phone,
-    gender, birth_date,
+    gender, birth_date, brand_id,
     address_prefecture, address_city, address_street, address_building,
   } = req.body || {};
 
-  if (!email || !password || !first_name || !last_name || !phone) {
-    return error(res, '必須項目が不足しています（メール、パスワード、姓、名、電話番号）');
+  if (!email || !password || !first_name || !last_name || !phone || !brand_id) {
+    return error(res, '必須項目が不足しています（メール、パスワード、姓、名、電話番号、ブランドID）');
   }
   if (password.length < 8) {
     return error(res, 'パスワードは8文字以上で設定してください');
@@ -100,10 +140,12 @@ async function handleRegister(req, res) {
   }
 
   try {
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html';
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: false,
+      user_metadata: { redirect_url: redirectUrl },
     });
 
     if (authError) {
@@ -115,7 +157,8 @@ async function handleRegister(req, res) {
 
     const authUserId = authData.user.id;
 
-    const memberData = { auth_user_id: authUserId, first_name, last_name, email, phone };
+    const memberData = { auth_user_id: authUserId, first_name, last_name, email, phone, name: (last_name || '') + ' ' + (first_name || '') };
+    if (brand_id) memberData.brand_id = brand_id;
     if (gender) memberData.gender = gender;
     if (birth_date) memberData.birth_date = birth_date;
     if (address_prefecture) memberData.address_prefecture = address_prefecture;
@@ -544,5 +587,145 @@ async function handleLineCallback(req, res) {
     return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#' + fragment);
   } catch (e) {
     return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=server_error');
+  }
+}
+
+// --- Resend Verification Email ---
+async function handleResendVerification(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const { email } = req.body || {};
+  if (!email) return error(res, 'メールアドレスを入力してください');
+
+  try {
+    // Find user by email via admin API
+    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    if (listError) return error(res, 'ユーザー検索に失敗しました', 500);
+
+    const user = users.find(u => u.email === email);
+    if (!user) return error(res, 'アカウントが見つかりません', 404);
+
+    if (user.email_confirmed_at) {
+      return error(res, 'このメールアドレスは既に認証済みです');
+    }
+
+    // Check registration age - only allow resend within 60 minutes of registration
+    const createdAt = new Date(user.created_at);
+    const now = new Date();
+    const minutesSinceRegistration = (now - createdAt) / (1000 * 60);
+    if (minutesSinceRegistration > 60) {
+      return error(res, '認証期限（60分）が切れています。再度会員登録をお願いいたします。', 410, 'VERIFICATION_EXPIRED');
+    }
+
+    // Use Supabase Admin API to generate a new confirmation link
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: email,
+      options: {
+        redirectTo: (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html',
+      },
+    });
+
+    if (linkError) {
+      return error(res, '認証メールの再送に失敗しました: ' + linkError.message, 500);
+    }
+
+    return ok(res, { message: '認証メールを再送しました。' });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Withdraw (Account Deletion) ---
+async function handleWithdraw(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  try {
+    // Get member info
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('id, auth_user_id, withdrawal_status')
+      .eq('auth_user_id', auth.user.id)
+      .single();
+
+    if (memberError || !member) return error(res, '会員情報が見つかりません', 404);
+    if (member.withdrawal_status === 'withdrawn') return error(res, '既に退会済みです');
+
+    // Check for active orders
+    const { data: activeOrders } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('member_id', member.id)
+      .not('status', 'in', '("completed","cancelled")')
+      .limit(1);
+
+    if (activeOrders && activeOrders.length > 0) {
+      return error(res, '進行中の注文があるため退会できません。注文が完了してから再度お試しください。', 409, 'ACTIVE_ORDERS_EXIST');
+    }
+
+    // 1. Expire all points
+    const { data: pointBalance } = await supabase
+      .from('point_transactions')
+      .select('amount, expires_at')
+      .eq('member_id', member.id);
+
+    if (pointBalance) {
+      let balance = 0;
+      const now = new Date();
+      pointBalance.forEach(t => {
+        if (t.amount > 0 && t.expires_at && new Date(t.expires_at) < now) return;
+        balance += t.amount;
+      });
+      balance = Math.max(0, balance);
+
+      if (balance > 0) {
+        // Get brand_id from any existing transaction
+        const { data: anyTxn } = await supabase
+          .from('point_transactions')
+          .select('brand_id')
+          .eq('member_id', member.id)
+          .limit(1)
+          .single();
+
+        await supabase.from('point_transactions').insert({
+          member_id: member.id,
+          brand_id: anyTxn?.brand_id || null,
+          amount: -balance,
+          balance_after: 0,
+          source: 'normal',
+          reason: '退会によるポイント失効',
+        });
+      }
+    }
+
+    // 2. Invalidate unused coupons
+    await supabase
+      .from('member_coupons')
+      .update({ is_used: true, used_at: new Date().toISOString() })
+      .eq('member_id', member.id)
+      .eq('is_used', false);
+
+    // 3. Delete delivery addresses (from orders table address fields are retained for legal reasons)
+    // Members table address fields will be anonymized later (Phase 3)
+
+    // 4. Update withdrawal status
+    await supabase
+      .from('members')
+      .update({
+        withdrawal_status: 'withdrawn',
+        withdrawal_requested_at: new Date().toISOString(),
+        withdrawal_completed_at: new Date().toISOString(),
+      })
+      .eq('id', member.id);
+
+    // 5. Sign out all sessions via admin
+    await supabase.auth.admin.signOut(auth.user.id, 'global');
+
+    return ok(res, { message: '退会が完了しました。ご利用ありがとうございました。' });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
   }
 }

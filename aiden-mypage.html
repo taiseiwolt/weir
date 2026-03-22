@@ -111,6 +111,36 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 .membership-link:hover{background:var(--brand-light)}
 
 .empty-note{text-align:center;padding:20px;color:var(--text-light);font-size:12px}
+
+/* Withdrawal */
+.withdraw-section{margin:40px 16px 16px;text-align:center;padding-top:24px;border-top:1px solid var(--border)}
+.withdraw-btn{font-size:12px;color:#999;background:none;border:none;cursor:pointer;padding:8px 16px;text-decoration:underline}
+.withdraw-btn:hover{color:#E53935}
+
+/* Withdrawal Modal */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-backdrop.active{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:400px;width:90%;max-height:90vh;overflow-y:auto;padding:28px 24px}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:16px;text-align:center}
+.modal-warn{background:#FFF3E0;border:1px solid #FFE0B2;border-radius:10px;padding:14px;margin-bottom:16px}
+.modal-warn-item{font-size:12px;color:#E65100;line-height:1.7;display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.modal-warn-item:last-child{margin-bottom:0}
+.modal-warn-item-icon{flex-shrink:0}
+.modal-actions{display:flex;gap:12px;margin-top:20px}
+.modal-actions button{flex:1;padding:14px;border-radius:12px;font-size:14px;font-weight:700;border:none;cursor:pointer}
+.modal-cancel{background:#F5F5F5;color:var(--text)}
+.modal-cancel:hover{background:#E0E0E0}
+.modal-confirm{background:#E53935;color:#fff}
+.modal-confirm:hover{background:#C62828}
+.modal-confirm:disabled{opacity:.5;cursor:not-allowed}
+.modal-error{display:none;background:#FFEBEE;border:1px solid #E53935;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#E53935;text-align:center}
+
+/* Withdrawal Complete */
+.withdraw-complete{display:none;text-align:center;padding:60px 24px}
+.withdraw-complete-icon{font-size:48px;margin-bottom:16px}
+.withdraw-complete-title{font-size:20px;font-weight:800;margin-bottom:12px}
+.withdraw-complete-desc{font-size:13px;color:var(--text-sub);line-height:1.8;margin-bottom:32px}
+.withdraw-complete-link{display:inline-block;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;color:#fff;background:var(--brand);text-decoration:none}
 </style>
 </head>
 <body>
@@ -184,6 +214,49 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
   <a href="./aiden-membership.html" class="membership-link" id="membershipLink">
     📋 会員プログラム詳細を見る
   </a>
+
+  <!-- Withdrawal -->
+  <div class="withdraw-section">
+    <button class="withdraw-btn" id="withdrawBtn" onclick="showWithdrawModal()">退会する</button>
+  </div>
+</div>
+
+<!-- Withdrawal Confirmation Modal -->
+<div class="modal-backdrop" id="withdrawModal">
+  <div class="modal">
+    <div class="modal-title">退会の確認</div>
+    <div class="modal-warn">
+      <div class="modal-warn-item">
+        <span class="modal-warn-item-icon">💰</span>
+        <span>ポイント残高（<strong id="withdrawPointBalance">0</strong>pt）は即時失効します</span>
+      </div>
+      <div class="modal-warn-item">
+        <span class="modal-warn-item-icon">📋</span>
+        <span>退会後90日間はデータを保持し、その後匿名化されます</span>
+      </div>
+      <div class="modal-warn-item">
+        <span class="modal-warn-item-icon">🧾</span>
+        <span>注文履歴は法令上7年間保持されます（個人情報との紐付けは解除されます）</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeWithdrawModal()">キャンセル</button>
+      <button class="modal-confirm" id="confirmWithdrawBtn" onclick="executeWithdraw()">退会する</button>
+    </div>
+    <div class="modal-error" id="withdrawError"></div>
+  </div>
+</div>
+
+<!-- Withdrawal Complete -->
+<div class="withdraw-complete" id="withdrawComplete">
+  <div class="withdraw-complete-icon">👋</div>
+  <div class="withdraw-complete-title">退会が完了しました</div>
+  <div class="withdraw-complete-desc">
+    ご利用ありがとうございました。<br>
+    90日間はデータを保持しております。<br>
+    またのご利用をお待ちしております。
+  </div>
+  <a href="./" class="withdraw-complete-link">トップページへ</a>
 </div>
 
 <script>
@@ -375,6 +448,81 @@ function fmtDate(d) {
     console.error('MyPage load error:', e);
   }
 })();
+
+// === Withdrawal Functions ===
+var currentPointBalance = 0;
+
+function showWithdrawModal() {
+  // Set point balance in modal
+  var balanceEl = document.getElementById('pointBalance');
+  currentPointBalance = parseInt(balanceEl ? balanceEl.textContent.replace(/,/g, '') : '0') || 0;
+  document.getElementById('withdrawPointBalance').textContent = currentPointBalance.toLocaleString();
+  document.getElementById('withdrawError').style.display = 'none';
+  document.getElementById('withdrawModal').classList.add('active');
+}
+
+function closeWithdrawModal() {
+  document.getElementById('withdrawModal').classList.remove('active');
+}
+
+// Close modal on backdrop click
+document.getElementById('withdrawModal').addEventListener('click', function(e) {
+  if (e.target === this) closeWithdrawModal();
+});
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeWithdrawModal();
+});
+
+async function executeWithdraw() {
+  var btn = document.getElementById('confirmWithdrawBtn');
+  var errEl = document.getElementById('withdrawError');
+  btn.disabled = true;
+  btn.textContent = '処理中...';
+  errEl.style.display = 'none';
+
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    if (!session) {
+      showWithdrawError('セッションが切れています。再度ログインしてください。');
+      return;
+    }
+
+    var resp = await fetch('https://aiden-jp.net/api/members/withdraw', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+    });
+    var data = await resp.json();
+
+    if (resp.ok) {
+      // Sign out locally
+      await sb.auth.signOut();
+      sessionStorage.removeItem('aiden_member_id');
+
+      // Show completion screen
+      closeWithdrawModal();
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('withdrawComplete').style.display = '';
+    } else {
+      showWithdrawError(data.error || '退会処理に失敗しました');
+    }
+  } catch (e) {
+    showWithdrawError('通信エラーが発生しました');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '退会する';
+}
+
+function showWithdrawError(msg) {
+  var el = document.getElementById('withdrawError');
+  el.textContent = msg;
+  el.style.display = '';
+}
 </script>
 </body>
 </html>

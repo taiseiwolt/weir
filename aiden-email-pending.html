@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>認証メール送信完了 | AIden</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --brand: #D32F2F;
+  --brand-dark: #B71C1C;
+  --text: #212121;
+  --text-sub: #757575;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #E0E0E0;
+  --font: 'Noto Sans JP', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+.container{max-width:440px;width:100%;padding:24px;text-align:center}
+.icon{font-size:64px;margin-bottom:16px}
+.title{font-size:22px;font-weight:800;margin-bottom:12px}
+.desc{font-size:14px;color:var(--text-sub);line-height:1.8;margin-bottom:8px}
+.email-display{font-size:15px;font-weight:700;color:var(--brand);margin:12px 0 24px;word-break:break-all}
+.info-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;text-align:left}
+.info-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:13px;color:var(--text-sub);line-height:1.6}
+.info-item:last-child{margin-bottom:0}
+.info-item-icon{flex-shrink:0;font-size:16px}
+.resend-btn{display:inline-block;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;color:var(--brand);background:transparent;border:2px solid var(--brand);cursor:pointer;transition:all .2s}
+.resend-btn:hover{background:var(--brand);color:#fff}
+.resend-btn:disabled{opacity:.5;cursor:not-allowed;border-color:var(--border);color:var(--text-sub)}
+.resend-msg{font-size:12px;color:var(--text-sub);margin-top:12px;min-height:20px}
+.resend-msg.success{color:#2E7D32}
+.resend-msg.error{color:#E53935}
+.home-link{display:inline-block;margin-top:20px;font-size:13px;color:var(--text-sub)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="icon">📧</div>
+  <div class="title">認証メールを送信しました</div>
+  <div class="desc">以下のメールアドレスに認証メールをお送りしました。</div>
+  <div class="email-display" id="emailDisplay">-</div>
+  <div class="info-box">
+    <div class="info-item">
+      <span class="info-item-icon">⏰</span>
+      <span>60分以内にメール内のURLをクリックして登録を完了してください</span>
+    </div>
+    <div class="info-item">
+      <span class="info-item-icon">📁</span>
+      <span>メールが届かない場合は迷惑メールフォルダをご確認ください</span>
+    </div>
+    <div class="info-item">
+      <span class="info-item-icon">🔒</span>
+      <span>認証完了後にログインが可能になります</span>
+    </div>
+  </div>
+  <button class="resend-btn" id="resendBtn" onclick="resendEmail()">認証メールを再送する</button>
+  <div class="resend-msg" id="resendMsg"></div>
+  <div><a href="./" class="home-link">トップページへ戻る</a></div>
+</div>
+<script>
+var API_BASE = 'https://aiden-jp.net';
+var email = '';
+var resendCount = 0;
+var MAX_RESEND = 3;
+
+(function init() {
+  var params = new URLSearchParams(window.location.search);
+  email = params.get('email') || '';
+  if (email) {
+    // Mask email for display
+    var parts = email.split('@');
+    var local = parts[0];
+    var masked = local.length > 2 ? local[0] + '***' + local[local.length - 1] : local[0] + '***';
+    document.getElementById('emailDisplay').textContent = masked + '@' + parts[1];
+  }
+})();
+
+async function resendEmail() {
+  if (!email) {
+    showMsg('メールアドレスが不明です。再度会員登録をお試しください。', 'error');
+    return;
+  }
+  if (resendCount >= MAX_RESEND) {
+    showMsg('再送上限（' + MAX_RESEND + '回）に達しました。', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('resendBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  try {
+    var resp = await fetch(API_BASE + '/api/members/resend-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email }),
+    });
+    var data = await resp.json();
+
+    if (resp.ok) {
+      resendCount++;
+      showMsg('認証メールを再送しました（' + resendCount + '/' + MAX_RESEND + '回）', 'success');
+    } else {
+      if (data.code === 'VERIFICATION_EXPIRED') {
+        showMsg('認証期限が切れています。再度会員登録をお願いします。', 'error');
+      } else {
+        showMsg(data.error || '再送に失敗しました', 'error');
+      }
+    }
+  } catch (e) {
+    showMsg('通信エラーが発生しました', 'error');
+  }
+
+  btn.disabled = resendCount >= MAX_RESEND;
+  btn.textContent = '認証メールを再送する';
+}
+
+function showMsg(text, type) {
+  var el = document.getElementById('resendMsg');
+  el.textContent = text;
+  el.className = 'resend-msg ' + type;
+}
+</script>
+</body>
+</html>

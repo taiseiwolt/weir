@@ -43,6 +43,8 @@ export function ok(res, data, status = 200) {
 /**
  * Send error response.
  */
-export function error(res, message, status = 400) {
-  return res.status(status).json({ error: message });
+export function error(res, message, status = 400, code = null) {
+  const body = { error: message };
+  if (code) body.code = code;
+  return res.status(status).json(body);
 }

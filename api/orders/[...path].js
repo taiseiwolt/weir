@@ -9,7 +9,8 @@ const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  const pathSegments = req.query.path || [];
+  const rawPath = req.query.path || req.query['...path'] || [];
+  const pathSegments = Array.isArray(rawPath) ? rawPath : rawPath.split('/');
 
   // /api/orders/__root (rewritten from /api/orders)
   if (pathSegments[0] === '__root' || pathSegments.length === 0) {

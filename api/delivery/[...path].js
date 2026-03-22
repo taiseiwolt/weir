@@ -3,7 +3,8 @@ import { handleCors, ok, error } from '../_lib/response.js';
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  const pathSegments = req.query.path || [];
+  const rawPath = req.query.path || req.query['...path'] || [];
+  const pathSegments = Array.isArray(rawPath) ? rawPath : rawPath.split('/');
   const action = pathSegments[0];
 
   if (action === 'quote') {

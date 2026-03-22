@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メール認証完了 | AIden</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand: #D32F2F;
+  --brand-dark: #B71C1C;
+  --text: #212121;
+  --text-sub: #757575;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --font: 'Noto Sans JP', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+.container{max-width:440px;width:100%;padding:24px;text-align:center}
+.icon{font-size:64px;margin-bottom:16px}
+.title{font-size:22px;font-weight:800;margin-bottom:12px}
+.desc{font-size:14px;color:var(--text-sub);line-height:1.8;margin-bottom:32px}
+.login-btn{display:inline-block;padding:16px 48px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:var(--brand);text-decoration:none;transition:background .2s}
+.login-btn:hover{background:var(--brand-dark);text-decoration:none}
+.error-container{display:none}
+.error-icon{font-size:64px;margin-bottom:16px}
+.error-title{font-size:22px;font-weight:800;margin-bottom:12px;color:#E53935}
+.error-desc{font-size:14px;color:var(--text-sub);line-height:1.8;margin-bottom:32px}
+.home-link{display:inline-block;margin-top:16px;font-size:13px;color:var(--text-sub)}
+</style>
+</head>
+<body>
+<div class="container" id="successContainer">
+  <div class="icon">✅</div>
+  <div class="title">会員登録が完了しました</div>
+  <div class="desc">
+    メールアドレスの認証が完了しました。<br>
+    AIdenをご利用いただけます。
+  </div>
+  <a href="./aiden-order-checkout.html#login" class="login-btn">ログインする</a>
+  <div><a href="./" class="home-link">トップページへ</a></div>
+</div>
+<div class="container error-container" id="errorContainer">
+  <div class="error-icon">⚠️</div>
+  <div class="error-title">認証に失敗しました</div>
+  <div class="error-desc" id="errorMessage">
+    認証リンクが無効か、有効期限が切れています。<br>
+    再度会員登録をお願いいたします。
+  </div>
+  <a href="./aiden-membership.html" class="login-btn" style="background:#757575">会員登録ページへ</a>
+</div>
+<script>
+(function() {
+  // Supabase Auth redirects with hash fragment containing access_token on success
+  // or error/error_description on failure
+  var hash = window.location.hash.substring(1);
+  var params = new URLSearchParams(hash);
+
+  if (params.get('error') || params.get('error_description')) {
+    document.getElementById('successContainer').style.display = 'none';
+    document.getElementById('errorContainer').style.display = '';
+    var errMsg = params.get('error_description') || params.get('error') || '';
+    if (errMsg.includes('expired')) {
+      document.getElementById('errorMessage').innerHTML = '認証リンクの有効期限が切れています。<br>再度会員登録をお願いいたします。';
+    }
+  }
+  // Clean up URL hash
+  if (window.history.replaceState) {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+})();
+</script>
+</body>
+</html>
