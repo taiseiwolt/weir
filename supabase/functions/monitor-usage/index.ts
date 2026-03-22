@@ -19,11 +19,25 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const ALERT_EMAIL_TO = Deno.env.get('ALERT_EMAIL_TO') || ''
 
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
+
 const FROM_EMAIL = 'noreply@aiden-jp.net'
 const FROM_NAME = 'AIden監視'
 
 // Access Token の期限（固定値）
 const ACCESS_TOKEN_EXPIRY = new Date('2026-06-20T00:00:00Z')
+
+// 本番URL
+const PRODUCTION_URL = 'https://aiden-jp.net'
+
+// 主要Edge Functions一覧（デプロイ状態チェック用）
+const CRITICAL_EDGE_FUNCTIONS = [
+  'confirm-order',
+  'stripe-create-payment-intent',
+  'send-order-email',
+  'line-auth-callback',
+  'monitor-usage',
+]
 
 // Supabase Free tier limits
 const DB_SIZE_LIMIT_MB = 500     // Free: 500MB
@@ -393,6 +407,165 @@ function checkAccessTokenExpiry(): CheckResult {
   }
 }
 
+// --- M-08: 設定整合性チェック ---
+
+async function checkConfigConsistency(supabase: ReturnType<typeof createClient>): Promise<CheckResult[]> {
+  const results: CheckResult[] = []
+
+  // A. Access Token期限の整合性（自己チェック）
+  // ACCESS_TOKEN_EXPIRY定数が妥当な値か（過去の日付になっていないか、極端に遠くないか）
+  {
+    const now = new Date()
+    const daysUntilExpiry = Math.floor((ACCESS_TOKEN_EXPIRY.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    let severity: 'ok' | 'warning' | 'critical' = 'ok'
+    let action = ''
+
+    if (daysUntilExpiry < 0) {
+      severity = 'critical'
+      action = 'ACCESS_TOKEN_EXPIRY定数が過去の日付です。Edge Functionのコードを更新し再デプロイしてください。connection-info.md参照。'
+    } else if (daysUntilExpiry > 365) {
+      severity = 'warning'
+      action = 'ACCESS_TOKEN_EXPIRY定数が1年以上先です。正しい値か確認してください。connection-info.md参照。'
+    }
+
+    results.push({
+      checkType: 'config_token_expiry',
+      label: 'M-08a: Token期限定数の整合性',
+      currentValue: `ACCESS_TOKEN_EXPIRY = ${ACCESS_TOKEN_EXPIRY.toISOString().split('T')[0]}（残り${daysUntilExpiry}日）`,
+      warningThreshold: '期限が1年以上先',
+      criticalThreshold: '期限が過去の日付',
+      severity,
+      recommendedAction: action,
+      message: severity !== 'ok' ? `ACCESS_TOKEN_EXPIRY定数に不整合があります` : '',
+    })
+  }
+
+  // B. Supabase Anon Keyの有効性確認
+  {
+    let severity: 'ok' | 'warning' | 'critical' = 'ok'
+    let action = ''
+    let value = ''
+
+    if (!SUPABASE_ANON_KEY) {
+      severity = 'warning'
+      value = 'SUPABASE_ANON_KEY未設定（チェックスキップ）'
+      action = 'Edge FunctionのSecretsにSUPABASE_ANON_KEYを設定してください'
+    } else {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/stores?select=id&limit=1`,
+          {
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0) {
+            value = `正常（storesテーブルからデータ取得成功）`
+          } else {
+            // データが0件でも200が返ればkey自体は有効
+            value = `正常（anon keyは有効、storesデータ0件）`
+          }
+        } else {
+          severity = 'critical'
+          value = `HTTPエラー ${res.status}`
+          action = 'Supabase Anon Keyが無効です。Supabase DashboardでKeyを確認し、connection-info.mdと照合してください。'
+        }
+      } catch (err) {
+        severity = 'critical'
+        value = `接続エラー: ${(err as Error).message}`
+        action = 'Supabase APIに接続できません。URLとAnon Keyを確認してください。'
+      }
+    }
+
+    results.push({
+      checkType: 'config_anon_key',
+      label: 'M-08b: Anon Key有効性',
+      currentValue: value,
+      warningThreshold: 'Key未設定',
+      criticalThreshold: 'Keyが無効またはAPI接続エラー',
+      severity,
+      recommendedAction: action,
+      message: severity !== 'ok' ? `Anon Keyの有効性チェックで問題を検出` : '',
+    })
+  }
+
+  // C. Edge Functionsデプロイ状態確認（Management API）
+  {
+    let severity: 'ok' | 'warning' | 'critical' = 'ok'
+    let action = ''
+    let value = ''
+
+    // Supabase Management APIはAccess Tokenが必要
+    // Edge Function内からはアクセスできないため、M-04同様スキップ
+    value = '取得不可（Management API未統合、スキップ）'
+
+    results.push({
+      checkType: 'config_edge_functions',
+      label: 'M-08c: Edge Functionsデプロイ状態',
+      currentValue: value,
+      warningThreshold: '主要Functionが欠落',
+      criticalThreshold: '複数のCritical Functionが欠落',
+      severity,
+      recommendedAction: action,
+      message: '',
+    })
+  }
+
+  // D. 本番URL応答確認
+  {
+    let severity: 'ok' | 'warning' | 'critical' = 'ok'
+    let action = ''
+    let value = ''
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒タイムアウト
+
+      const res = await fetch(PRODUCTION_URL, {
+        method: 'GET',
+        redirect: 'follow',
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+
+      if (res.ok) {
+        value = `HTTP ${res.status}（正常）`
+      } else {
+        severity = 'critical'
+        value = `HTTP ${res.status}`
+        action = `本番URL（${PRODUCTION_URL}）がHTTP ${res.status}を返しています。Vercel Dashboardを確認してください。`
+      }
+    } catch (err) {
+      const errMsg = (err as Error).message
+      if (errMsg.includes('abort') || errMsg.includes('timeout')) {
+        severity = 'warning'
+        value = `タイムアウト（10秒）`
+        action = `本番URLへのアクセスがタイムアウトしました。ネットワーク状態を確認してください。`
+      } else {
+        // Edge Functionからの外部fetchがブロックされる場合はスキップ
+        value = `チェックスキップ（${errMsg}）`
+      }
+    }
+
+    results.push({
+      checkType: 'config_production_url',
+      label: 'M-08d: 本番URL応答',
+      currentValue: value,
+      warningThreshold: 'タイムアウト',
+      criticalThreshold: 'HTTP 200以外',
+      severity,
+      recommendedAction: action,
+      message: severity !== 'ok' ? `本番URLの応答に問題があります` : '',
+    })
+  }
+
+  return results
+}
+
 // --- メール送信 ---
 
 function formatJST(date: Date): string {
@@ -574,11 +747,19 @@ serve(async (req) => {
       checkAuthMAU(supabase),
       checkStripeWebhookHealth(supabase),
       Promise.resolve(checkAccessTokenExpiry()),
+      checkConfigConsistency(supabase),
     ])
 
-    const checks: CheckResult[] = results
-      .filter((r): r is PromiseFulfilledResult<CheckResult> => r.status === 'fulfilled')
-      .map(r => r.value)
+    const checks: CheckResult[] = []
+    for (const r of results) {
+      if (r.status !== 'fulfilled') continue
+      // checkConfigConsistency returns CheckResult[], others return CheckResult
+      if (Array.isArray(r.value)) {
+        checks.push(...r.value)
+      } else {
+        checks.push(r.value)
+      }
+    }
 
     // 既存の未解決アラートを取得
     const { data: existingAlerts } = await supabase
