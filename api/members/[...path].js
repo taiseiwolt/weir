@@ -35,6 +35,16 @@ export default async function handler(req, res) {
     return handleResendVerification(req, res);
   }
 
+  // /api/members/reset-password
+  if (pathSegments[0] === 'reset-password') {
+    return handleResetPassword(req, res);
+  }
+
+  // /api/members/update-password
+  if (pathSegments[0] === 'update-password') {
+    return handleUpdatePassword(req, res);
+  }
+
   // /api/members/withdraw
   if (pathSegments[0] === 'withdraw') {
     return handleWithdraw(req, res);
@@ -633,6 +643,71 @@ async function handleResendVerification(req, res) {
     return ok(res, { message: '認証メールを再送しました。' });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Reset Password (Send Reset Email) ---
+async function handleResetPassword(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const { email } = req.body || {};
+  if (!email) return error(res, 'メールアドレスを入力してください');
+
+  try {
+    const anonClient = createAnonClient();
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-password-reset.html';
+
+    const { error: resetError } = await anonClient.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+
+    if (resetError) {
+      return error(res, 'パスワードリセットメールの送信に失敗しました', 500);
+    }
+
+    // Always return success to prevent email enumeration
+    return ok(res, { message: 'パスワードリセットメールを送信しました。メールをご確認ください。' });
+  } catch (e) {
+    return error(res, 'サーバーエラー', 500);
+  }
+}
+
+// --- Update Password (Set New Password) ---
+async function handleUpdatePassword(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const { access_token, refresh_token, password } = req.body || {};
+  if (!access_token || !password) return error(res, 'パラメータが不足しています');
+
+  if (password.length < 8) {
+    return error(res, 'パスワードは8文字以上で入力してください');
+  }
+
+  try {
+    const anonClient = createAnonClient();
+
+    // Set session from the recovery tokens
+    const { error: sessionError } = await anonClient.auth.setSession({
+      access_token,
+      refresh_token,
+    });
+
+    if (sessionError) {
+      return error(res, 'リセットリンクが無効か、有効期限が切れています', 401);
+    }
+
+    // Update the password
+    const { error: updateError } = await anonClient.auth.updateUser({
+      password,
+    });
+
+    if (updateError) {
+      return error(res, 'パスワードの更新に失敗しました: ' + updateError.message, 500);
+    }
+
+    return ok(res, { message: 'パスワードを更新しました。新しいパスワードでログインしてください。' });
+  } catch (e) {
+    return error(res, 'サーバーエラー', 500);
   }
 }
 
