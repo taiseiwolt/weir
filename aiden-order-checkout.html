@@ -746,7 +746,6 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 // ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzQ1NTYsImV4cCI6MjA4NzE1MDU1Nn0.OBrQDSoC_0fbKtRUdQHg3fnTXZjtwphmcI9k05Ss2d8';
 const STORE_SLUG   = 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1797,7 +1796,7 @@ async function placeOrder() {
   try {
     const banRes = await fetch(SUPABASE_URL + '/functions/v1/check-ban-status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
       body: JSON.stringify({ email: banCheckEmail, store_id: banCheckStoreId })
     });
     if (banRes.ok) {
@@ -1860,7 +1859,7 @@ async function placeOrder() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          'Authorization': 'Bearer ' + SUPABASE_KEY
         },
         body: JSON.stringify({
           store_id: CHECKOUT_DATA.storeId,
@@ -1935,7 +1934,7 @@ async function placeOrder() {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                'Authorization': 'Bearer ' + SUPABASE_KEY
               },
               body: JSON.stringify({ payment_intent_id: piId })
             });
@@ -2039,7 +2038,7 @@ async function placeOrder() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+            'Authorization': 'Bearer ' + SUPABASE_KEY
           },
           body: JSON.stringify({
             store_id: CHECKOUT_DATA.storeId || null,
@@ -2133,7 +2132,7 @@ async function placeOrder() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+            'Authorization': 'Bearer ' + SUPABASE_KEY
           },
           body: JSON.stringify({
             type: 'confirmation',

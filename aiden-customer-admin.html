@@ -5064,8 +5064,8 @@ function generateId(length) {
 // ===== CORP DATA =====
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzQ1NTYsImV4cCI6MjA4NzE1MDU1Nn0.OBrQDSoC_0fbKtRUdQHg3fnTXZjtwphmcI9k05Ss2d8';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== AUDIT LOG =====
 async function logAudit(action, targetTable, targetId, details) {
@@ -6765,7 +6765,7 @@ async function renderStripeStatus() {
     try {
       const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-onboarding', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
         body: JSON.stringify({ stripe_account_id: CORP.stripe_account_id })
       });
       if (res.ok) {
@@ -6816,7 +6816,7 @@ async function startStripeOnboarding() {
   try {
     const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
       body: JSON.stringify({
         corp_id: CORP.id,
         business_name: CORP.name,
@@ -6853,7 +6853,7 @@ async function refreshStripeOnboarding() {
   try {
     const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-onboarding', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
       body: JSON.stringify({ stripe_account_id: CORP.stripe_account_id })
     });
 
@@ -15589,7 +15589,7 @@ async function grManualFetch() {
     if (typeof showToast === 'function') showToast('口コミ取得を開始しました...');
     var res = await fetch(SUPABASE_URL + '/functions/v1/google-reviews-collector', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: '{}',
     });
     if (res.ok) {
