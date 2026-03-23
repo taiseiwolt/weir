@@ -575,6 +575,9 @@ const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// XSS protection: escape user-supplied strings before inserting into HTML
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 // Channel mapping: Supabase value -> display name
 const CH_MAP = {aiden:'AIden', aiden_qr:'AIden QR', ubereats:'Uber Eats', demaecan:'出前館', wolt:'Wolt', menu:'menu'};
 // Order type mapping: Supabase value -> dashboard value
@@ -769,16 +772,16 @@ function doPause(m){document.getElementById("pmenu").classList.remove("open");is
 
 // ===== RENDER ORDER ROW =====
 function rowHtml(o){
-  const st=S[o.s],isum=o.items.map(i=>i.n+'×'+i.q).join(', '),short=isum.length>40?isum.substring(0,40)+'…':isum;
+  const st=S[o.s],isum=o.items.map(i=>escH(i.n)+'×'+i.q).join(', '),short=isum.length>40?isum.substring(0,40)+'…':isum;
   const nxt=NX[o.s];
-  let btn='';if(nxt){const bc={new:'abtn-new',cooking:'abtn-cooking',ready:'abtn-ready'}[o.s];btn=`<button class="abtn ${bc}" onclick="event.stopPropagation();doAction('${o.id}')">${nxt}</button>`;}
-  return`<tr class="orow${o.s==='new'?' is-new':''}" onclick="openDetail('${o.id}')">
+  let btn='';if(nxt){const bc={new:'abtn-new',cooking:'abtn-cooking',ready:'abtn-ready'}[o.s];btn=`<button class="abtn ${bc}" onclick="event.stopPropagation();doAction('${escH(o.id)}')">${nxt}</button>`;}
+  return`<tr class="orow${o.s==='new'?' is-new':''}" onclick="openDetail('${escH(o.id)}')">
     <td><span class="spill" style="background:${st.b};color:${st.c}">${st.l}${o.s==='new'?'<span class="pulse-dot"></span>':''}</span></td>
-    <td class="oid">#${o.id}</td>
+    <td class="oid">#${escH(o.id)}</td>
     <td><div class="tcell"><span class="temoji">${TI[o.t]}</span><span class="tname">${TL[o.t]}</span></div></td>
     <td>${chHtml(o.ch)}</td>
     <td><span class="isum">${short}</span></td>
-    <td class="tval">${o.tm}</td>
+    <td class="tval">${escH(o.tm)}</td>
     <td class="ttotal">${Y(o.tot)}</td>
     <td>${btn}</td></tr>`;
 }
@@ -849,15 +852,15 @@ async function doAction(id){
 function openDetail(id){
   const o=O.find(x=>x.id===id);if(!o)return;
   const st=S[o.s],nxt=NX[o.s];
-  let h=`<div class="p-head"><span class="p-oid">#${o.id}</span><button class="p-close" onclick="closeDetail()">✕</button></div>
+  let h=`<div class="p-head"><span class="p-oid">#${escH(o.id)}</span><button class="p-close" onclick="closeDetail()">✕</button></div>
     <div class="p-meta"><span class="spill" style="background:${st.b};color:${st.c}">${st.l}</span>
     <span class="p-tag">${TI[o.t]} ${TL[o.t]}</span>${chHtmlPopup(o.ch)}
-    <span class="p-tag">⏰ ${o.tm}</span></div>
+    <span class="p-tag">⏰ ${escH(o.tm)}</span></div>
     <div class="p-sect"><div class="p-sect-title">お客さま</div>
-    <div class="p-row"><span class="p-dim">名前</span><span>${o.cust}</span></div>
-    <div class="p-row"><span class="p-dim">電話</span><span><a href="tel:${o.phone}" style="color:#DC3232;text-decoration:none">${o.phone}</a></span></div></div>
+    <div class="p-row"><span class="p-dim">名前</span><span>${escH(o.cust)}</span></div>
+    <div class="p-row"><span class="p-dim">電話</span><span><a href="tel:${escH(o.phone)}" style="color:#DC3232;text-decoration:none">${escH(o.phone)}</a></span></div></div>
     <div class="p-sect"><div class="p-sect-title">注文内容</div>
-    ${o.items.map(it=>`<div class="p-item"><span class="p-iname">${it.n}</span><span class="p-iqty">×${it.q}</span><span class="p-iprc">${Y(it.p*it.q)}</span>${it.op&&it.op.length?'<div class="p-iop">'+it.op.join(', ')+'</div>':''}</div>`).join('')}</div>
+    ${o.items.map(it=>`<div class="p-item"><span class="p-iname">${escH(it.n)}</span><span class="p-iqty">×${it.q}</span><span class="p-iprc">${Y(it.p*it.q)}</span>${it.op&&it.op.length?'<div class="p-iop">'+it.op.map(x=>escH(x)).join(', ')+'</div>':''}</div>`).join('')}</div>
     <div class="p-total"><span>合計金額</span><span>${Y(o.tot)}</span></div>`;
   if(nxt){const bc={new:'abtn-new',cooking:'abtn-cooking',ready:'abtn-ready'}[o.s];h+=`<div class="p-actions"><button class="abtn ${bc}" onclick="doAction('${o.id}');closeDetail()">${nxt}</button></div>`;}
   if(o.s!=='done'&&o.s!=='cancelled')h+=`<div class="cancel-sect"><button class="cancel-btn-full" onclick="closeDetail();openCancel('${o.id}')">この注文をキャンセル</button><div class="cancel-warn">⚠ お客さまに自動通知されます</div></div>`;
@@ -929,7 +932,7 @@ function simulateOrder(){
   const tot=items.reduce((s,it)=>s+it.p*it.q,0);
   const o={id:String(++oCtr).padStart(4,'0'),date:new Date(),s:'new',t,ch,items,tot,tm:fmtT(new Date(Date.now()+35*6e4)),phone:'080-0000-0000',cust:'新規テスト',note:''};
   O.unshift(o);
-  document.getElementById("nInfo").innerHTML=`#${o.id} | ${TL[t]} | ${ch}<br>${items.map(i=>i.n+'×'+i.q).join(', ')}<br><strong>${Y(tot)}</strong>`;
+  document.getElementById("nInfo").innerHTML=`#${escH(o.id)} | ${TL[t]} | ${escH(ch)}<br>${items.map(i=>escH(i.n)+'×'+i.q).join(', ')}<br><strong>${Y(tot)}</strong>`;
   document.getElementById("nOv").classList.add("open");document.getElementById("nPop").classList.add("open");
   document.getElementById("nAccept").onclick=()=>{o.s='cooking';closeNotif();rOrders();renderHistory();};
   document.getElementById("nReject").onclick=()=>{o.s='cancelled';closeNotif();rOrders();renderHistory();};
@@ -963,12 +966,12 @@ function renderHistory(){
   const f=getHFiltered();
   if(hView==='orders'){document.getElementById('hOrderView').style.display='';document.getElementById('hProdView').style.display='none';
     const sorted=[...f].sort((a,b)=>{if(hSortKey==='id')return(parseInt(a.id)-parseInt(b.id))*hSortDir;if(hSortKey==='date')return(a.date-b.date)*hSortDir;if(hSortKey==='total')return(a.tot-b.tot)*hSortDir;return 0;});
-    document.getElementById('hOrderBody').innerHTML=sorted.map(o=>{const st=S[o.s];const isum=o.items.map(i=>i.n+'×'+i.q).join(', '),short=isum.length>35?isum.substring(0,35)+'…':isum;
-      return`<tr onclick="openDetail('${o.id}')"><td class="oid">#${o.id}</td><td>${fmtDT(o.date)}</td><td>${TL[o.t]}</td><td>${chHtml(o.ch)}</td><td><span class="isum">${short}</span></td><td><span class="spill" style="background:${st.b};color:${st.c}">${st.l}</span></td><td class="ttotal">${Y(o.tot)}</td></tr>`;}).join('');
+    document.getElementById('hOrderBody').innerHTML=sorted.map(o=>{const st=S[o.s];const isum=o.items.map(i=>escH(i.n)+'×'+i.q).join(', '),short=isum.length>35?isum.substring(0,35)+'…':isum;
+      return`<tr onclick="openDetail('${escH(o.id)}')"><td class="oid">#${escH(o.id)}</td><td>${fmtDT(o.date)}</td><td>${TL[o.t]}</td><td>${chHtml(o.ch)}</td><td><span class="isum">${short}</span></td><td><span class="spill" style="background:${st.b};color:${st.c}">${st.l}</span></td><td class="ttotal">${Y(o.tot)}</td></tr>`;}).join('');
   }else{document.getElementById('hOrderView').style.display='none';document.getElementById('hProdView').style.display='';
     const map={};done.forEach(o=>o.items.forEach(it=>{if(!map[it.n])map[it.n]={name:it.n,cat:it.cat,qty:0,rev:0};map[it.n].qty+=it.q;map[it.n].rev+=it.p*it.q;}));
     let prods=Object.values(map);prods.sort((a,b)=>b.rev-a.rev);
-    document.getElementById('hProdBody').innerHTML=prods.map((p,i)=>{const rc=i<3?`rank-${i+1}`:'';return`<tr><td><span class="product-rank ${rc}">${i+1}</span></td><td><strong>${p.name}</strong></td><td>${p.cat}</td><td>${p.qty}個</td><td class="ttotal">${Y(p.rev)}</td><td class="ttotal">${Y(p.qty?Math.round(p.rev/p.qty):0)}</td></tr>`;}).join('');
+    document.getElementById('hProdBody').innerHTML=prods.map((p,i)=>{const rc=i<3?`rank-${i+1}`:'';return`<tr><td><span class="product-rank ${rc}">${i+1}</span></td><td><strong>${escH(p.name)}</strong></td><td>${escH(p.cat)}</td><td>${p.qty}個</td><td class="ttotal">${Y(p.rev)}</td><td class="ttotal">${Y(p.qty?Math.round(p.rev/p.qty):0)}</td></tr>`;}).join('');
   }
   document.getElementById('noData').style.display=f.length?'none':'';
 }
@@ -976,14 +979,14 @@ function renderHistory(){
 // ===== MENU =====
 function renderMenu(){
   const cats=['all',...new Set(MENU.map(m=>m.cat))];
-  document.getElementById('menuCats').innerHTML=cats.map(c=>`<div class="mcat${mCat===c?' active':''}" onclick="mCat='${c}';renderMenu()">${c==='all'?'すべて':c}</div>`).join('');
+  document.getElementById('menuCats').innerHTML=cats.map(c=>`<div class="mcat${mCat===c?' active':''}" onclick="mCat='${escH(c)}';renderMenu()">${c==='all'?'すべて':escH(c)}</div>`).join('');
   const q=(document.getElementById('menuSearch').value||'').toLowerCase();
   let items=MENU;if(mCat!=='all')items=items.filter(m=>m.cat===mCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));
   document.getElementById('menuGrid').innerHTML=items.map(m=>`
     <div class="mcard${m.avail?'':' sold-out'}">
       <div class="mcard-img">${m.emoji}<div class="sold-badge">品切れ</div>
         <div class="stock-sw"><label><input type="checkbox" ${m.avail?'checked':''} onchange="toggleStock(${m.id},this.checked)"><span class="sw-track"></span></label></div>
-      </div><div class="mcard-body"><div class="mcard-name">${m.name}</div><div class="mcard-meta"><span class="mcard-price">${Y(m.price)}</span><span class="mcard-cat">${m.cat}</span></div></div></div>`).join('');
+      </div><div class="mcard-body"><div class="mcard-name">${escH(m.name)}</div><div class="mcard-meta"><span class="mcard-price">${Y(m.price)}</span><span class="mcard-cat">${escH(m.cat)}</span></div></div></div>`).join('');
 }
 function toggleStock(id,v){const m=MENU.find(x=>x.id===id);if(m){m.avail=v;showToast(v?`✅ ${m.name} 販売再開`:`🚫 ${m.name} 品切れ`);renderMenu();}}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
