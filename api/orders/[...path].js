@@ -9,32 +9,39 @@ const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
+  // Support both catch-all path segments and query-based rewrites
   const rawPath = req.query.path || req.query['...path'] || [];
-  const pathSegments = Array.isArray(rawPath) ? rawPath : rawPath.split('/');
+  const pathSegments = Array.isArray(rawPath) ? rawPath : (rawPath ? rawPath.split('/') : []);
+
+  // Query-based routing (from vercel.json rewrites: ?id=xxx&action=yyy)
+  const qId = req.query.id;
+  const qAction = req.query.action;
+  const orderId = pathSegments[0] || qId;
+  const action = pathSegments[1] || qAction;
 
   // /api/orders/__root (rewritten from /api/orders)
-  if (pathSegments[0] === '__root' || pathSegments.length === 0) {
+  if (orderId === '__root' || (!orderId && !qId)) {
     return handleOrdersRoot(req, res);
   }
 
   // /api/orders/[id]/confirm
-  if (pathSegments[1] === 'confirm') {
-    return handleConfirm(req, res, pathSegments[0]);
+  if (action === 'confirm') {
+    return handleConfirm(req, res, orderId);
   }
 
   // /api/orders/[id]/cancel
-  if (pathSegments[1] === 'cancel') {
-    return handleCancel(req, res, pathSegments[0]);
+  if (action === 'cancel') {
+    return handleCancel(req, res, orderId);
   }
 
   // /api/orders/[id]/status
-  if (pathSegments[1] === 'status') {
-    return handleStatus(req, res, pathSegments[0]);
+  if (action === 'status') {
+    return handleStatus(req, res, orderId);
   }
 
   // /api/orders/[id]
-  if (pathSegments[0]) {
-    return handleOrderDetail(req, res, pathSegments[0]);
+  if (orderId) {
+    return handleOrderDetail(req, res, orderId);
   }
 
   return error(res, 'Not found', 404);
