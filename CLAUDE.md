@@ -256,6 +256,44 @@ aiden-demo/
 
 ---
 
+## 法務文書ガードレール
+
+### 法務文書作成・修正時の必須チェック
+
+法務文書（契約書、覚書、規約、ポリシー、特約）を作成・修正する場合、以下を必ず実行すること:
+
+1. **曖昧表現チェック**: 以下の表現が含まれていないか全文スキャンし、含まれている場合は断定表現または具体的な数値・期限に置き換える
+   - 「原則」「原則として」→ 断定表現に（例: 「加盟店が負担する」）
+   - 「一般的に」「通常」→ 具体的な条件に
+   - 「合理的な」→ 基準を明記するか、不要なら削除
+   - 「速やかに」「遅滞なく」→ 具体的な日数に（例: 「7営業日以内に」）
+   - 「重大な」→ 基準を定義
+   - 「必要に応じて」→ 条件を明記
+   - 「可能な限り」→ 義務か努力かを明確に
+   - 「適切な」「適当な」→ 基準を明記
+   - 「概ね」「おおむね」→ 具体的な範囲に
+
+2. **AIdenリスクチェック**: 作成した条項がAIden側のリスクにならないか確認。特に:
+   - コスト負担が曖昧になっていないか
+   - 免責範囲が狭すぎないか
+   - 期限や上限が未設定になっていないか
+
+3. **外部弁護士確認推奨の明示**: リスクが高い条項には `<!-- ※外部弁護士の確認を推奨 -->` コメントを付記
+
+4. **完了報告に曖昧表現チェック結果を含める**: 「曖昧表現チェック: 検出0件」または「検出N件、全て修正済み」を報告に含める
+
+### エージェント横断の品質チェック
+
+CC依頼の実装時、以下の領域にまたがる場合は各観点を考慮すること:
+
+- **法務文書** → Legal Director, Compliance Checker, Privacy Officerの観点
+- **決済関連** → Stripe Integrator, Fee Reconciler, Finance Managerの観点
+- **セキュリティ** → Security Auditor, Privacy Officerの観点
+- **顧客向けUI/UX** → Frontend Builder, CSS Designer, POC Plannerの観点
+- **データ設計** → Supabase Architect, Data Engineer, Data Quality Checkerの観点
+
+---
+
 ## Work Style Rules
 
 ### Communication
@@ -297,3 +335,26 @@ aiden-demo/
 - JST (Asia/Tokyo) を基準とする
 - DBのtimestamp: UTC保存 → 表示時にJST変換
 - pg_cronのスケジュール: UTCで設定する（JST深夜3時 = UTC 18:00前日）
+
+---
+
+## Agent Teams Configuration
+
+### 有効化
+settings.json に CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1" を設定済み。
+
+### QA Team (aiden-qa-team)
+- リーダー: QA Lead（タスク登録・結果集約・最終レポート）
+- チームメイト: auto-tester / chrome-visual / chrome-destructive / db-verifier / critical-observer
+- 出力先: ~/Desktop/aiden-demo/qa-results/{agent-name}/
+- 通信ルール:
+  - バグ発見 → QA Lead に即報告（DM）
+  - DB関連バグ → db-verifier にも同時にDM
+  - ブロードキャスト = クリティカルバグ（決済・個人情報系）のみ
+  - chrome-visual と chrome-destructive は同一ページ同時テスト禁止（QA Leadがタスクリストで制御）
+- テスト用データには `_test_` プレフィックスを付与（本番データ汚染防止）
+
+### 共通ルール
+- ブロードキャストは最小限（トークンコスト削減）
+- 各チームメイトは完了時にサマリをQA Leadに報告
+- テスト用データには `_test_` プレフィックスを付与
