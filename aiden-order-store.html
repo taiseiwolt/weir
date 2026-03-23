@@ -742,7 +742,7 @@ img { max-width:100%; display:block; }
       <span>注文を見る</span>
       <span id="headerCartTotal">¥0</span>
     </button>
-    <button class="btn-signin">サインイン</button>
+    <button class="btn-signin" onclick="window.location.href='aiden-order-checkout.html?store_id='+new URLSearchParams(location.search).get('store_id')+'#signin'">サインイン</button>
   </div>
 </header>
 

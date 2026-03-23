@@ -443,9 +443,32 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <span class="header-title">注文の最終確認</span>
   </div>
   <div class="header-right">
-    <button class="btn-signin">サインイン</button>
+    <button class="btn-signin" onclick="openSigninModal()">サインイン</button>
   </div>
 </header>
+
+<!-- ===== SIGNIN MODAL ===== -->
+<div id="signinOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
+  <div style="background:#FFF;border-radius:16px;padding:32px;width:92%;max-width:400px;position:relative;">
+    <button onclick="closeSigninModal()" style="position:absolute;top:12px;right:16px;font-size:24px;color:#888;cursor:pointer;background:none;border:none;">&times;</button>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;" id="signinTitle">ログイン</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:20px;" id="signinSubtitle">メールアドレスとパスワードでログイン</p>
+    <div id="signinError" style="display:none;background:#FFF0F0;border:1px solid #E74C3C;color:#E74C3C;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;"></div>
+    <div id="signinSuccess" style="display:none;background:#F0FFF0;border:1px solid #2ECC71;color:#27AE60;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;"></div>
+    <form id="signinForm" onsubmit="handleSignin(event)">
+      <input id="signinEmail" type="email" placeholder="メールアドレス" required style="width:100%;padding:12px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;margin-bottom:12px;">
+      <input id="signinPassword" type="password" placeholder="パスワード" required minlength="6" style="width:100%;padding:12px;border:1px solid #E5E5E5;border-radius:8px;font-size:14px;margin-bottom:16px;">
+      <button id="signinBtn" type="submit" style="width:100%;padding:14px;background:var(--brand);color:#FFF;font-size:15px;font-weight:700;border-radius:10px;cursor:pointer;">ログイン</button>
+    </form>
+    <div style="text-align:center;margin-top:16px;">
+      <button id="switchToSignup" onclick="switchSigninMode('signup')" style="font-size:13px;color:var(--brand);font-weight:600;background:none;border:none;cursor:pointer;">アカウントをお持ちでない方 → 新規登録</button>
+      <button id="switchToLogin" onclick="switchSigninMode('login')" style="display:none;font-size:13px;color:var(--brand);font-weight:600;background:none;border:none;cursor:pointer;">アカウントをお持ちの方 → ログイン</button>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <button onclick="handleForgotPassword()" style="font-size:12px;color:#888;background:none;border:none;cursor:pointer;">パスワードを忘れた方</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== HERO ===== -->
 <section class="hero">
@@ -746,7 +769,9 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 // ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const STORE_SLUG   = 'sumibite-shibuya';
+const _urlParams = new URLSearchParams(window.location.search);
+const STORE_ID     = _urlParams.get('store_id') || sessionStorage.getItem('aiden_store_id') || '';
+const STORE_SLUG   = _urlParams.get('store_slug') || 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================================================================
@@ -818,11 +843,13 @@ async function loadCheckoutData() {
 
   // 2. Supabaseから店舗設定を取得して上書き
   try {
-    const { data: storeRow } = await sb
-      .from('stores')
-      .select('*, brands(id, name, corp_id)')
-      .eq('slug', STORE_SLUG)
-      .single();
+    let storeQuery = sb.from('stores').select('*, brands(id, name, corp_id)');
+    if (STORE_ID) {
+      storeQuery = storeQuery.eq('id', STORE_ID);
+    } else {
+      storeQuery = storeQuery.eq('slug', STORE_SLUG);
+    }
+    const { data: storeRow } = await storeQuery.single();
 
     if (storeRow) {
       CHECKOUT_DATA.storeName  = storeRow.name || CHECKOUT_DATA.storeName;
@@ -2162,6 +2189,101 @@ async function placeOrder() {
     }
   }
 }
+// ===== SIGNIN MODAL =====
+let signinMode = 'login';
+function openSigninModal() {
+  document.getElementById('signinOverlay').style.display = 'flex';
+  document.getElementById('signinError').style.display = 'none';
+  document.getElementById('signinSuccess').style.display = 'none';
+}
+function closeSigninModal() {
+  document.getElementById('signinOverlay').style.display = 'none';
+}
+function switchSigninMode(mode) {
+  signinMode = mode;
+  const title = document.getElementById('signinTitle');
+  const subtitle = document.getElementById('signinSubtitle');
+  const btn = document.getElementById('signinBtn');
+  const toSignup = document.getElementById('switchToSignup');
+  const toLogin = document.getElementById('switchToLogin');
+  document.getElementById('signinError').style.display = 'none';
+  document.getElementById('signinSuccess').style.display = 'none';
+  if (mode === 'signup') {
+    title.textContent = '新規会員登録';
+    subtitle.textContent = 'メールアドレスとパスワードで登録';
+    btn.textContent = '会員登録';
+    toSignup.style.display = 'none';
+    toLogin.style.display = 'inline';
+  } else {
+    title.textContent = 'ログイン';
+    subtitle.textContent = 'メールアドレスとパスワードでログイン';
+    btn.textContent = 'ログイン';
+    toSignup.style.display = 'inline';
+    toLogin.style.display = 'none';
+  }
+}
+async function handleSignin(e) {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const password = document.getElementById('signinPassword').value;
+  const btn = document.getElementById('signinBtn');
+  const errEl = document.getElementById('signinError');
+  const successEl = document.getElementById('signinSuccess');
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = signinMode === 'signup' ? '登録中...' : 'ログイン中...';
+  try {
+    if (signinMode === 'signup') {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      successEl.textContent = '認証メールを送信しました。メール内のリンクをクリックして登録を完了してください。';
+      successEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '会員登録';
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // ログイン成功: member_id をセッションに保存
+      const { data: member } = await sb.from('members').select('id').eq('auth_user_id', data.user.id).single();
+      if (member) sessionStorage.setItem('aiden_member_id', member.id);
+      closeSigninModal();
+      // UIを更新
+      const signinBtn = document.querySelector('.btn-signin');
+      if (signinBtn) { signinBtn.textContent = email.split('@')[0]; signinBtn.onclick = null; }
+    }
+  } catch (err) {
+    const msg = err.message === 'Invalid login credentials'
+      ? 'メールアドレスまたはパスワードが正しくありません'
+      : err.message || '認証エラーが発生しました';
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = signinMode === 'signup' ? '会員登録' : 'ログイン';
+  }
+}
+async function handleForgotPassword() {
+  const email = document.getElementById('signinEmail').value.trim();
+  if (!email) { alert('メールアドレスを入力してください'); return; }
+  const successEl = document.getElementById('signinSuccess');
+  const errEl = document.getElementById('signinError');
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/aiden-mypage.html' });
+    if (error) throw error;
+    successEl.textContent = 'パスワードリセットメールを送信しました。メールをご確認ください。';
+    successEl.style.display = 'block';
+    errEl.style.display = 'none';
+  } catch (err) {
+    errEl.textContent = err.message || 'リセットメールの送信に失敗しました';
+    errEl.style.display = 'block';
+  }
+}
+// #signin ハッシュで自動表示
+if (window.location.hash === '#signin') { document.addEventListener('DOMContentLoaded', () => openSigninModal()); }
+// ESCキーで閉じる
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSigninModal(); });
+// オーバーレイクリックで閉じる
+document.getElementById('signinOverlay')?.addEventListener('click', (e) => { if (e.target.id === 'signinOverlay') closeSigninModal(); });
 </script>
 </body>
 </html>
