@@ -657,8 +657,8 @@ function buildDashboardOrder(ord, idx) {
     t, ch, items,
     tot: ord.total_amount || items.reduce((s, it) => s + it.p * it.q, 0),
     tm: fmtT(new Date(d.getTime() + (25 + Math.floor(Math.random() * 30)) * 6e4)),
-    phone: ord.customer_phone || `090-${String(Math.floor(Math.random() * 9000) + 1000)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-    cust: ord.customer_name || (ord.customer_last_name ? ord.customer_last_name + ' ' + (ord.customer_first_name || '') : ''),
+    phone: '',
+    cust: '',
     note: ord.notes || '',
     paymentStatus: ord.payment_status,
   };
@@ -713,7 +713,8 @@ async function loadFromSupabase() {
   }
 
   // 3. Load orders with items
-  const {data: orders} = await sb.from('orders').select('*, order_items(*)').eq('store_id', STORE_ID).order('created_at', {ascending: false});
+  const orderCols = 'id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, estimated_delivery_at, channel, member_id, notes, created_at, updated_at, pickup_at, order_items(id, product_id, product_name, size_id, quantity, unit_price, subtotal)';
+  const {data: orders} = await sb.from('orders').select(orderCols).eq('store_id', STORE_ID).order('created_at', {ascending: false});
   if (!orders || orders.length === 0) throw new Error('No orders');
 
   O = orders.map((ord, idx) => buildDashboardOrder(ord, idx));
@@ -1136,7 +1137,7 @@ function startRealtime() {
             } catch(e) { /* fall through */ }
           }
           if (!fullOrder) {
-            const { data } = await sb.from('orders').select('*, order_items(*)').eq('id', payload.new.id).single();
+            const { data } = await sb.from('orders').select('id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, channel, member_id, notes, created_at, updated_at, order_items(id, product_id, product_name, size_id, quantity, unit_price, subtotal)').eq('id', payload.new.id).single();
             fullOrder = data;
           }
           if (fullOrder) {

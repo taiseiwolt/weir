@@ -10,6 +10,9 @@
   ],
   "rewrites": [
     { "source": "/api/orders", "destination": "/api/orders/__root" },
+    { "source": "/api/orders/:id/status", "destination": "/api/orders/:id/status" },
+    { "source": "/api/orders/:id/confirm", "destination": "/api/orders/:id/confirm" },
+    { "source": "/api/orders/:id/cancel", "destination": "/api/orders/:id/cancel" },
     { "source": "/api/chat", "destination": "/api/chat/__root" },
     { "source": "/", "destination": "/aiden-brand-sushiro.html" },
     { "source": "/legal", "destination": "/legal/index.html" },

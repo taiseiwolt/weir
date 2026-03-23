@@ -6,7 +6,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { getCorsHeaders, corsPreflightResponse } from '../_shared/auth.ts'
+import { getCorsHeaders, corsPreflightResponse, verifyJwt, verifyServiceRole } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -18,7 +18,29 @@ serve(async (req) => {
 
   const corsHeaders = getCorsHeaders(req)
 
-  // 認証スキップ: 決済失敗のログ記録のみ（機密データなし）
+  // 認証: service_role_key, JWT, または anon key のいずれかを要求
+  // anon key はフロントの決済失敗ログ記録で使用される
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: 'Authorization ヘッダーがありません' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+  const token = authHeader.replace('Bearer ', '')
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+  const isAnon = token === anonKey
+  const isService = verifyServiceRole(req)
+
+  if (!isAnon && !isService) {
+    const { user, error: authError } = await verifyJwt(req)
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: authError || '認証が必要です' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+  }
 
   try {
     const body = await req.json()
