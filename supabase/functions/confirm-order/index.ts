@@ -50,7 +50,7 @@ serve(async (req) => {
 
     const pi = await stripeRes.json()
 
-    if (pi.status !== 'succeeded') {
+    if (pi.status !== 'succeeded' && pi.status !== 'requires_capture') {
       return new Response(
         JSON.stringify({ error: '決済が完了していません（status: ' + pi.status + '）' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

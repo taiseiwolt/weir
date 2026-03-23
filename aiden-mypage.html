@@ -327,7 +327,16 @@ function fmtDate(d) {
   try {
     // Check auth
     const { data: { session } } = await sb.auth.getSession();
-    const memberId = sessionStorage.getItem('aiden_member_id');
+    let memberId = sessionStorage.getItem('aiden_member_id');
+
+    // sessionStorageにmember_idがなくてもauth sessionがあればDBから取得
+    if (session && !memberId) {
+      const { data: memberRow } = await sb.from('members').select('id').eq('auth_user_id', session.user.id).maybeSingle();
+      if (memberRow) {
+        memberId = memberRow.id;
+        sessionStorage.setItem('aiden_member_id', memberId);
+      }
+    }
 
     if (!session || !memberId) {
       document.getElementById('loginPrompt').style.display = '';

@@ -127,13 +127,34 @@ serve(async (req) => {
       for (const item of cart_items) {
         const unitPrice = item.unit_price || 0
         // クライアント送信価格がDB登録価格と一致するか検証
+        // トッピング/オプション付き注文: unit_price = base_price + toppings のため、
+        // オプションがある場合はベース価格以上であることを検証
         const validPrices = priceMap[item.product_id]
-        if (validPrices && validPrices.length > 0 && !validPrices.includes(unitPrice)) {
-          console.error('Price mismatch:', { product_id: item.product_id, client_price: unitPrice, valid_prices: validPrices })
-          return new Response(
-            JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        if (validPrices && validPrices.length > 0) {
+          const minBasePrice = Math.min(...validPrices)
+          const hasOptions = item.options && (
+            (Array.isArray(item.options) && item.options.length > 0) ||
+            (typeof item.options === 'object' && Object.keys(item.options).length > 0)
           )
+          if (hasOptions) {
+            // トッピング付き: ベース価格以上であること
+            if (unitPrice < minBasePrice) {
+              console.error('Price below base:', { product_id: item.product_id, client_price: unitPrice, min_base: minBasePrice })
+              return new Response(
+                JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          } else {
+            // トッピングなし: ベース価格と完全一致
+            if (!validPrices.includes(unitPrice)) {
+              console.error('Price mismatch:', { product_id: item.product_id, client_price: unitPrice, valid_prices: validPrices })
+              return new Response(
+                JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          }
         }
         subtotal += unitPrice * (item.quantity || 1)
       }

@@ -972,6 +972,9 @@ const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const STORE_SLUG   = 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// XSS protection: escape user/DB-supplied strings before inserting into HTML
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 // ===================================================================
 // DATA - populated from Supabase (fallback: demo data below)
 // ===================================================================
@@ -1545,12 +1548,12 @@ function initStoreData() {
   // Store detail modal
   document.getElementById('storeModalName').textContent = S.storeName;
   document.getElementById('storeModalDesc').textContent = S.storeDescription;
-  document.getElementById('storeModalAddress').innerHTML = S.address + '<br>' + S.zip;
+  document.getElementById('storeModalAddress').innerHTML = escH(S.address) + '<br>' + escH(S.zip);
 
   // Hours tables
-  const hoursHtml = S.hours.map(h => `<tr><td>${h.day}</td><td>${h.time}</td></tr>`).join('');
+  const hoursHtml = S.hours.map(h => `<tr><td>${escH(h.day)}</td><td>${escH(h.time)}</td></tr>`).join('');
   document.getElementById('storeModalHours').innerHTML = hoursHtml;
-  const deliveryHoursHtml = S.deliveryHours.map(h => `<tr><td>${h.day}</td><td>${h.time}</td></tr>`).join('');
+  const deliveryHoursHtml = S.deliveryHours.map(h => `<tr><td>${escH(h.day)}</td><td>${escH(h.time)}</td></tr>`).join('');
   document.getElementById('storeModalDeliveryHours').innerHTML = deliveryHoursHtml;
 
   // Delivery info
@@ -1586,8 +1589,8 @@ function renderTabs() {
   const more = visibleCats.slice(MAX_VISIBLE_TABS);
 
   scroll.innerHTML = visible.map((c,i) =>
-    `<div class="tab-item ${i===0?'active':''}" data-cat="${c.id}" onclick="scrollToCat('${c.id}',this)">
-      ${c.name}${c.emoji?' '+c.emoji:''}
+    `<div class="tab-item ${i===0?'active':''}" data-cat="${escH(c.id)}" onclick="scrollToCat('${escH(c.id)}',this)">
+      ${escH(c.name)}${c.emoji?' '+escH(c.emoji):''}
     </div>`
   ).join('');
 
@@ -1597,7 +1600,7 @@ function renderTabs() {
   if(more.length > 0) {
     moreCount.textContent = more.length;
     dropdown.innerHTML = more.map(c =>
-      `<div class="tab-more-item" onclick="scrollToCat('${c.id}');toggleMoreDropdown()">${c.name}${c.emoji?' '+c.emoji:''}</div>`
+      `<div class="tab-more-item" onclick="scrollToCat('${escH(c.id)}');toggleMoreDropdown()">${escH(c.name)}${c.emoji?' '+escH(c.emoji):''}</div>`
     ).join('');
   } else {
     moreBtn.style.display = 'none';
@@ -1677,10 +1680,10 @@ function renderMenu(filterText) {
 
     html += `<section class="category-section" id="cat-${cat.id}" data-cat="${cat.id}">
       <div class="category-header">
-        <h2 class="category-title">${cat.name}${cat.emoji?' '+cat.emoji:''}
+        <h2 class="category-title">${escH(cat.name)}${cat.emoji?' '+escH(cat.emoji):''}
           <span class="category-count">${items.length}結果</span>
         </h2>
-        ${cat.desc ? `<p class="category-desc">${cat.desc.replace(/\n/g,'<br>')}</p>` : ''}
+        ${cat.desc ? `<p class="category-desc">${escH(cat.desc).replace(/\n/g,'<br>')}</p>` : ''}
       </div>
       <div class="menu-grid">
         ${items.map(i => renderMenuCard(i)).join('')}
@@ -1708,32 +1711,32 @@ function renderMenuCard(item) {
   const inCart = getCartQty(item.id);
   const tagHtml = item.tags.map(t => {
     const labels = { popular:'人気', limited:'期間限定', seasonal:'季節限定', recommend:'おすすめ', discount:'割引中', unavailable: item.unavailableLabel||'提供時間外' };
-    return `<span class="tag tag-${t}">${labels[t]||t}</span>`;
+    return `<span class="tag tag-${escH(t)}">${escH(labels[t]||t)}</span>`;
   }).join('');
 
   const qtyControl = inCart > 0
     ? `<div class="menu-card-qty">
-        <button onclick="event.stopPropagation();quickQty('${item.id}',-1)">−</button>
+        <button onclick="event.stopPropagation();quickQty('${escH(item.id)}',-1)">−</button>
         <span>${inCart}</span>
-        <button onclick="event.stopPropagation();quickQty('${item.id}',1)">+</button>
+        <button onclick="event.stopPropagation();quickQty('${escH(item.id)}',1)">+</button>
       </div>`
-    : `<div class="menu-card-add" onclick="event.stopPropagation();quickAdd('${item.id}')">+</div>`;
+    : `<div class="menu-card-add" onclick="event.stopPropagation();quickAdd('${escH(item.id)}')">+</div>`;
 
   const priceHtml = item.originalPrice
     ? `<span class="menu-card-price-original">¥${item.originalPrice.toLocaleString()}</span> <span class="menu-card-price">¥${item.price.toLocaleString()}</span>`
     : `<span class="menu-card-price">¥${item.price.toLocaleString()}</span>`;
 
-  return `<div class="menu-card" onclick="openProduct('${item.id}')">
+  return `<div class="menu-card" onclick="openProduct('${escH(item.id)}')">
     <div class="menu-card-body">
-      <div class="menu-card-name">${item.name}</div>
-      <div class="menu-card-desc">${item.desc}</div>
+      <div class="menu-card-name">${escH(item.name)}</div>
+      <div class="menu-card-desc">${escH(item.desc)}</div>
       <div class="menu-card-bottom">
         ${priceHtml}
         <div class="menu-card-tags">${tagHtml}</div>
       </div>
     </div>
     <div class="menu-card-img">
-      <img src="${item.img}" alt="${item.name}" loading="lazy">
+      <img src="${escH(item.img)}" alt="${escH(item.name)}" loading="lazy">
       ${qtyControl}
     </div>
   </div>`;
@@ -1773,7 +1776,7 @@ function openProduct(itemId) {
   const tagsEl = document.getElementById('prodTags');
   tagsEl.innerHTML = item.tags.map(t => {
     const labels = { popular:'人気', limited:'期間限定', seasonal:'季節限定', recommend:'おすすめ', discount:'割引中' };
-    return `<span class="tag tag-${t}">${labels[t]||t}</span>`;
+    return `<span class="tag tag-${escH(t)}">${escH(labels[t]||t)}</span>`;
   }).join('');
 
   // Price
@@ -1827,35 +1830,35 @@ function renderOptionGroup(og) {
   let choicesHtml = '';
   if(og.type === 'radio') {
     choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-radio" data-group="${og.id}" data-idx="${ci}" onclick="selectRadio('${og.id}',${ci})">
+      `<div class="option-radio" data-group="${escH(og.id)}" data-idx="${ci}" onclick="selectRadio('${escH(og.id)}',${ci})">
         <div class="option-radio-left">
           <div class="option-radio-circle"></div>
-          <span class="option-name">${c.name}</span>
+          <span class="option-name">${escH(c.name)}</span>
         </div>
         <span class="option-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : c.price < 0 ? '−¥'+Math.abs(c.price).toLocaleString() : ''}</span>
       </div>`
     ).join('');
   } else if(og.type === 'checkbox') {
     choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-checkbox" data-group="${og.id}" data-idx="${ci}" onclick="toggleCheckbox('${og.id}',${ci})">
+      `<div class="option-checkbox" data-group="${escH(og.id)}" data-idx="${ci}" onclick="toggleCheckbox('${escH(og.id)}',${ci})">
         <div class="option-checkbox-left">
           <div class="option-checkbox-box">✓</div>
-          <span class="option-name">${c.name}</span>
+          <span class="option-name">${escH(c.name)}</span>
         </div>
         <span class="option-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : c.price < 0 ? '−¥'+Math.abs(c.price).toLocaleString() : ''}</span>
       </div>`
     ).join('');
   } else if(og.type === 'counter') {
     choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-counter" data-group="${og.id}" data-idx="${ci}">
+      `<div class="option-counter" data-group="${escH(og.id)}" data-idx="${ci}">
         <div class="option-counter-left">
-          <span class="option-counter-name">${c.name}</span>
+          <span class="option-counter-name">${escH(c.name)}</span>
           <span class="option-counter-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : '無料'}</span>
         </div>
         <div class="option-counter-ctrl">
-          <button onclick="changeCounter('${og.id}',${ci},-1)" id="cnt-minus-${og.id}-${ci}">−</button>
-          <span id="cnt-val-${og.id}-${ci}">0</span>
-          <button onclick="changeCounter('${og.id}',${ci},1)" id="cnt-plus-${og.id}-${ci}">+</button>
+          <button onclick="changeCounter('${escH(og.id)}',${ci},-1)" id="cnt-minus-${escH(og.id)}-${ci}">−</button>
+          <span id="cnt-val-${escH(og.id)}-${ci}">0</span>
+          <button onclick="changeCounter('${escH(og.id)}',${ci},1)" id="cnt-plus-${escH(og.id)}-${ci}">+</button>
         </div>
       </div>`
     ).join('');
@@ -1863,7 +1866,7 @@ function renderOptionGroup(og) {
 
   return `<div class="option-group">
     <div class="option-group-header">
-      <span class="option-group-title">${og.title}</span>
+      <span class="option-group-title">${escH(og.title)}</span>
       ${reqLabel}
     </div>
     ${hint}
@@ -2078,11 +2081,11 @@ function updateFreeDeliveryProgress() {
     orderSection.classList.toggle('achieved', achieved);
     document.getElementById('orderFdFill').style.width = pct + '%';
     if(achieved) {
-      document.getElementById('orderFdText').innerHTML = '🎉 <b>' + S.freeDeliveryLabel + '</b>が適用されました！';
+      document.getElementById('orderFdText').innerHTML = '🎉 <b>' + escH(S.freeDeliveryLabel) + '</b>が適用されました！';
       document.getElementById('orderFdIcon').textContent = '✅';
       document.getElementById('orderFdHint').textContent = '¥' + threshold.toLocaleString() + '以上のご注文で配達料が無料です';
     } else {
-      document.getElementById('orderFdText').innerHTML = 'あと <b>¥' + remaining.toLocaleString() + '</b> で' + S.freeDeliveryLabel + '！';
+      document.getElementById('orderFdText').innerHTML = 'あと <b>¥' + remaining.toLocaleString() + '</b> で' + escH(S.freeDeliveryLabel) + '！';
       document.getElementById('orderFdIcon').textContent = '🚚';
       document.getElementById('orderFdHint').textContent = '¥' + threshold.toLocaleString() + '以上のご注文で配達料が無料になります';
     }
@@ -2096,11 +2099,11 @@ function updateFreeDeliveryProgress() {
     floatEl.classList.toggle('achieved', achieved);
     document.getElementById('floatFdFill').style.width = pct + '%';
     if(achieved) {
-      document.getElementById('floatFdText').innerHTML = '🎉 <b>' + S.freeDeliveryLabel + '</b>が適用されました！';
+      document.getElementById('floatFdText').innerHTML = '🎉 <b>' + escH(S.freeDeliveryLabel) + '</b>が適用されました！';
       document.getElementById('floatFdIcon').textContent = '✅';
       document.getElementById('floatFdHint').textContent = '¥' + threshold.toLocaleString() + '以上のご注文で配達料が無料です';
     } else {
-      document.getElementById('floatFdText').innerHTML = 'あと <b>¥' + remaining.toLocaleString() + '</b> で' + S.freeDeliveryLabel + '！';
+      document.getElementById('floatFdText').innerHTML = 'あと <b>¥' + remaining.toLocaleString() + '</b> で' + escH(S.freeDeliveryLabel) + '！';
       document.getElementById('floatFdIcon').textContent = '🚚';
       document.getElementById('floatFdHint').textContent = '¥' + threshold.toLocaleString() + '以上のご注文で配達料が無料になります';
     }
@@ -2205,14 +2208,14 @@ function renderOrderItems() {
     const optText = buildOptionText(c, item);
     const tagHtml = item.tags.filter(t=>t!=='unavailable').map(t => {
       const labels = { popular:'人気', limited:'期間限定', recommend:'おすすめ', discount:'割引中' };
-      return `<span class="tag tag-${t}" style="font-size:9px;padding:1px 4px;">${labels[t]||t}</span>`;
+      return `<span class="tag tag-${escH(t)}" style="font-size:9px;padding:1px 4px;">${escH(labels[t]||t)}</span>`;
     }).join('');
 
     return `<div class="order-item">
-      <img class="order-item-img" src="${item.img}" alt="${item.name}">
+      <img class="order-item-img" src="${escH(item.img)}" alt="${escH(item.name)}">
       <div class="order-item-info">
-        <div class="order-item-name">${item.name}</div>
-        ${optText ? `<div class="order-item-options">${optText}</div>` : ''}
+        <div class="order-item-name">${escH(item.name)}</div>
+        ${optText ? `<div class="order-item-options">${escH(optText)}</div>` : ''}
         ${tagHtml ? `<div class="order-item-tags">${tagHtml}</div>` : ''}
         <div class="order-item-price">¥${(c.unitPrice * c.qty).toLocaleString()}</div>
       </div>
@@ -2308,11 +2311,11 @@ function renderRecommendations() {
   }
   document.getElementById('orderRecommend').style.display = '';
   document.getElementById('recommendScroll').innerHTML = candidates.map(i =>
-    `<div class="recommend-card" onclick="quickAdd('${i.id}');openOrderModal()">
-      <img class="recommend-card-img" src="${i.img}" alt="${i.name}" loading="lazy">
+    `<div class="recommend-card" onclick="quickAdd('${escH(i.id)}');openOrderModal()">
+      <img class="recommend-card-img" src="${escH(i.img)}" alt="${escH(i.name)}" loading="lazy">
       <div class="recommend-card-add">+</div>
       <div class="recommend-card-price">¥${i.price.toLocaleString()}</div>
-      <div class="recommend-card-name">${i.name}</div>
+      <div class="recommend-card-name">${escH(i.name)}</div>
     </div>`
   ).join('');
 }
