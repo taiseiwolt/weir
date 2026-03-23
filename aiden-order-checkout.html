@@ -2279,7 +2279,13 @@ async function handleForgotPassword() {
   }
 }
 // #signin ハッシュで自動表示
-if (window.location.hash === '#signin') { document.addEventListener('DOMContentLoaded', () => openSigninModal()); }
+if (window.location.hash === '#signin') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => openSigninModal());
+  } else {
+    openSigninModal();
+  }
+}
 // ESCキーで閉じる
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSigninModal(); });
 // オーバーレイクリックで閉じる
