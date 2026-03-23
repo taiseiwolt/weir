@@ -407,6 +407,83 @@ function checkAccessTokenExpiry(): CheckResult {
   }
 }
 
+// --- M-10: Google Places API使用量チェック ---
+
+async function checkGooglePlacesApiUsage(supabase: ReturnType<typeof createClient>): Promise<CheckResult> {
+  // competitor_collection_config の is_active を確認
+  const { data: activeConfigs } = await supabase
+    .from('competitor_collection_config')
+    .select('id')
+    .eq('is_active', true)
+    .limit(1)
+
+  if (!activeConfigs || activeConfigs.length === 0) {
+    return {
+      checkType: 'google_places_api',
+      label: 'M-10: Google Places API使用量',
+      currentValue: '競合収集が無効（is_active=false）のためスキップ',
+      warningThreshold: '$150/月',
+      criticalThreshold: '$180/月',
+      severity: 'ok',
+      recommendedAction: '',
+      message: '',
+    }
+  }
+
+  // 今月のAPI呼び出し数を推定（competitor_storesのlast_collected_atから）
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  // 今月更新された competitor_stores の数 = Place Details API 呼び出し数の概算
+  const { count: detailsCalls } = await supabase
+    .from('competitor_stores')
+    .select('*', { count: 'exact', head: true })
+    .gte('last_collected_at', firstOfMonth)
+
+  // google_places の今月の更新数 = Nearby Search + Place Details (既存システム)
+  const { count: placesCalls } = await supabase
+    .from('google_places')
+    .select('*', { count: 'exact', head: true })
+    .gte('last_fetched_at', firstOfMonth)
+
+  // collection_progress の今月完了数 = Nearby Search 呼び出し数（bg-collector）
+  const { count: gridCalls } = await supabase
+    .from('collection_progress')
+    .select('*', { count: 'exact', head: true })
+    .gte('fetched_at', firstOfMonth)
+
+  // コスト推定
+  // Nearby Search: $32/1,000 req
+  // Place Details (Advanced): $25/1,000 req
+  const nearbySearchCalls = (gridCalls || 0) + Math.ceil((detailsCalls || 0) / 20) // competitor nearby calls
+  const placeDetailsCalls = (detailsCalls || 0) + Math.ceil((placesCalls || 0) * 0.1) // reviews-collector details
+  const estimatedCost = (nearbySearchCalls * 0.032) + (placeDetailsCalls * 0.025)
+
+  const warningCost = 150
+  const criticalCost = 180
+
+  let severity: 'ok' | 'warning' | 'critical' = 'ok'
+  let action = ''
+  if (estimatedCost >= criticalCost) {
+    severity = 'critical'
+    action = '即座にAPI使用量を削減: (1) bg-collectorの日次リクエスト上限を下げる (2) competitor収集を隔週に変更 (3) Place Detailsのfieldsをbasicのみに絞る'
+  } else if (estimatedCost >= warningCost) {
+    severity = 'warning'
+    action = 'Google Places APIの月間使用量が増加中。bg-collectorのリクエスト上限の調整を検討'
+  }
+
+  return {
+    checkType: 'google_places_api',
+    label: 'M-10: Google Places API使用量',
+    currentValue: `推定$${estimatedCost.toFixed(1)}/月 (Nearby: ${nearbySearchCalls}回, Details: ${placeDetailsCalls}回)`,
+    warningThreshold: `$${warningCost}/月`,
+    criticalThreshold: `$${criticalCost}/月`,
+    severity,
+    recommendedAction: action,
+    message: severity !== 'ok' ? `Google Places APIの推定コストが${severity === 'critical' ? 'Critical' : 'Warning'}閾値を超えています` : '',
+  }
+}
+
 // --- M-08: 設定整合性チェック ---
 
 async function checkConfigConsistency(supabase: ReturnType<typeof createClient>): Promise<CheckResult[]> {
@@ -748,6 +825,7 @@ serve(async (req) => {
       checkStripeWebhookHealth(supabase),
       Promise.resolve(checkAccessTokenExpiry()),
       checkConfigConsistency(supabase),
+      checkGooglePlacesApiUsage(supabase),
     ])
 
     const checks: CheckResult[] = []
