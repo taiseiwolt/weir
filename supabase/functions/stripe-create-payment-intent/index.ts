@@ -2,9 +2,9 @@
 // POST /functions/v1/stripe-create-payment-intent
 //
 // 環境変数（Supabase Dashboard > Edge Functions > Secrets で設定）:
-//   STRIPE_SECRET_KEY: sk_test_xxx
-//   SUPABASE_URL: https://xxx.supabase.co
-//   SUPABASE_SERVICE_ROLE_KEY: eyJxxx
+//   STRIPE_SECRET_KEY
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_ROLE_KEY
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -204,15 +204,16 @@ serve(async (req) => {
         }
       }
 
-      // 4. 手数料計算
+      // 4. 手数料計算（割引前の商品小計に対して計算 — CLAUDE.md仕様準拠）
       const feeRate = AIDEN_FEE_RATES[channel] || 0.040
-      const applicationFee = Math.round(totalAmount * feeRate)
+      const applicationFee = Math.round(subtotal * feeRate)
 
-      // 5. Stripe PaymentIntent 作成
+      // 5. Stripe PaymentIntent 作成（authorize-on-order → capture-on-delivery）
       const params: Record<string, string> = {
         'amount': String(totalAmount),
         'currency': 'jpy',
         'payment_method_types[0]': 'card',
+        'capture_method': 'manual',
       }
 
       if (stripeAccountId) {
