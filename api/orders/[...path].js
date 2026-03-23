@@ -9,18 +9,25 @@ const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  // Support both catch-all path segments and query-based rewrites
+  // Query-based routing (from vercel.json rewrites: ?id=xxx&action=yyy)
+  // Priority: query params > catch-all path segments
+  const qId = req.query.id;
+  const qAction = req.query.action;
+
+  // If rewrites provided id/action query params, use those directly
+  if (qId) {
+    if (qAction === 'status') return handleStatus(req, res, qId);
+    if (qAction === 'confirm') return handleConfirm(req, res, qId);
+    if (qAction === 'cancel') return handleCancel(req, res, qId);
+    return handleOrderDetail(req, res, qId);
+  }
+
+  // Fallback: catch-all path segments
   const rawPath = req.query.path || req.query['...path'] || [];
   const pathSegments = Array.isArray(rawPath) ? rawPath : (rawPath ? rawPath.split('/') : []);
 
-  // Query-based routing (from vercel.json rewrites: ?id=xxx&action=yyy)
-  const qId = req.query.id;
-  const qAction = req.query.action;
-  const orderId = pathSegments[0] || qId;
-  const action = pathSegments[1] || qAction;
-
   // /api/orders/__root (rewritten from /api/orders)
-  if (orderId === '__root' || (!orderId && !qId)) {
+  if (pathSegments[0] === '__root' || pathSegments.length === 0) {
     return handleOrdersRoot(req, res);
   }
 
