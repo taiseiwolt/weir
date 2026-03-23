@@ -13,6 +13,9 @@ const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// 注文金額上限（円）— 環境変数で上書き可能
+const MAX_ORDER_AMOUNT = parseInt(Deno.env.get('MAX_ORDER_AMOUNT') || '50000', 10)
+
 // AIden プラットフォーム手数料率
 const AIDEN_FEE_RATES: Record<string, number> = {
   dinein: 0.038,
@@ -211,6 +214,14 @@ serve(async (req) => {
         )
       }
 
+      // 注文金額上限チェック
+      if (totalAmount > MAX_ORDER_AMOUNT) {
+        return new Response(
+          JSON.stringify({ error: `1回のご注文は${MAX_ORDER_AMOUNT.toLocaleString()}円までとなります` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       // 3. Stripe Connect Account ID を取得
       let stripeAccountId: string | null = null
       const corpId = storeRow.brands?.corp_id
@@ -235,6 +246,8 @@ serve(async (req) => {
         'currency': 'jpy',
         'payment_method_types[0]': 'card',
         'capture_method': 'manual',
+        // 3D Secure 自動判定: Radar がリスク高と判断した場合のみ 3DS 認証を要求
+        'payment_method_options[card][request_three_d_secure]': 'automatic',
       }
 
       if (stripeAccountId) {
@@ -301,6 +314,7 @@ serve(async (req) => {
         normal_points_used: normal_points_used || 0,
         member_id: member_id || null,
         channel: 'aiden',
+        card_fingerprint: null,
       }
 
       const { data: orderRow, error: orderErr } = await supabase

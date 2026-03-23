@@ -14,6 +14,10 @@ const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// 同一カード注文頻度制限
+const CARD_RATE_LIMIT_WINDOW_HOURS = 1
+const CARD_RATE_LIMIT_MAX_ORDERS = 5
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -59,7 +63,40 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 2. 冪等性チェック: 同じ payment_intent_id で既に注文が存在する場合はスキップ
+    // 2. カードfingerprint取得 + 頻度制限チェック
+    let cardFingerprint: string | null = null
+    if (pi.payment_method) {
+      try {
+        const pmRes = await fetch(`https://api.stripe.com/v1/payment_methods/${pi.payment_method}`, {
+          headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+        })
+        if (pmRes.ok) {
+          const pm = await pmRes.json()
+          cardFingerprint = pm.card?.fingerprint || null
+        }
+      } catch (e) {
+        console.warn('Failed to fetch payment method:', e)
+      }
+    }
+
+    if (cardFingerprint) {
+      const windowStart = new Date(Date.now() - CARD_RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
+      const { count } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('card_fingerprint', cardFingerprint)
+        .gte('created_at', windowStart)
+        .not('payment_status', 'eq', 'failed')
+
+      if (count !== null && count >= CARD_RATE_LIMIT_MAX_ORDERS) {
+        return new Response(
+          JSON.stringify({ error: '短時間に多数のご注文がありました。しばらくしてから再度お試しください' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // 3. 冪等性チェック: 同じ payment_intent_id で既に注文が存在する場合はスキップ
     const { data: existingOrder } = await supabase
       .from('orders')
       .select('id, display_id, tracking_token')
@@ -115,6 +152,7 @@ serve(async (req) => {
       normal_points_used: parseInt(meta.normal_points_used) || 0,
       member_id: meta.member_id || null,
       channel: 'aiden',
+      card_fingerprint: cardFingerprint,
     }
 
     const { data: orderRow, error: orderErr } = await supabase

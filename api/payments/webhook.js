@@ -5,6 +5,33 @@ export const config = {
   api: { bodyParser: false }, // Raw body needed for Stripe signature verification
 };
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ALERT_EMAIL = 'support@aiden-jp.net';
+
+async function sendAlertEmail(subject, htmlBody) {
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set, skipping alert email');
+    return;
+  }
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'AIden Alert <noreply@aiden-jp.net>',
+        to: [ALERT_EMAIL],
+        subject,
+        html: htmlBody,
+      }),
+    });
+  } catch (e) {
+    console.error('Alert email failed:', e.message);
+  }
+}
+
 async function getRawBody(req) {
   const chunks = [];
   for await (const chunk of req) {
@@ -63,7 +90,6 @@ export default async function handler(req, res) {
         const charge = event.data.object;
         const pi = charge.payment_intent;
         if (pi) {
-          // Find order by payment_intent_id
           const { data: order } = await supabase
             .from('orders')
             .select('id')
@@ -77,6 +103,87 @@ export default async function handler(req, res) {
               .eq('id', order.id);
           }
         }
+        break;
+      }
+
+      case 'charge.dispute.created': {
+        const dispute = event.data.object;
+        const chargeId = dispute.charge;
+        const piId = dispute.payment_intent;
+        const amount = dispute.amount;
+        const reason = dispute.reason;
+
+        // audit_logs に記録
+        await supabase.from('audit_logs').insert({
+          action: 'chargeback_dispute_created',
+          details: {
+            dispute_id: dispute.id,
+            charge_id: chargeId,
+            payment_intent_id: piId,
+            amount,
+            reason,
+            currency: dispute.currency,
+          },
+        });
+
+        // 該当注文のステータスを 'disputed' に更新
+        if (piId) {
+          const { data: order } = await supabase
+            .from('orders')
+            .select('id, display_id, store_id')
+            .eq('payment_intent_id', piId)
+            .single();
+
+          if (order) {
+            await supabase
+              .from('orders')
+              .update({ payment_status: 'disputed' })
+              .eq('id', order.id);
+
+            await sendAlertEmail(
+              '【AIden 緊急】チャージバック発生',
+              `<h2>チャージバック発生通知</h2>
+               <p><strong>Dispute ID:</strong> ${dispute.id}</p>
+               <p><strong>注文ID:</strong> ${order.display_id || order.id}</p>
+               <p><strong>金額:</strong> ¥${amount?.toLocaleString()}</p>
+               <p><strong>理由:</strong> ${reason}</p>
+               <p><strong>PaymentIntent:</strong> ${piId}</p>
+               <p>Stripeダッシュボードで確認してください。</p>`
+            );
+          }
+        }
+        break;
+      }
+
+      case 'radar.early_fraud_warning.created': {
+        const warning = event.data.object;
+        const chargeId = warning.charge;
+        const piId = warning.payment_intent;
+        const fraudType = warning.fraud_type;
+
+        // audit_logs に記録
+        await supabase.from('audit_logs').insert({
+          action: 'radar_fraud_warning',
+          details: {
+            warning_id: warning.id,
+            charge_id: chargeId,
+            payment_intent_id: piId,
+            fraud_type: fraudType,
+            actionable: warning.actionable,
+          },
+        });
+
+        // メール通知
+        await sendAlertEmail(
+          '【AIden 警告】不正利用の疑い検知',
+          `<h2>Radar 不正利用警告</h2>
+           <p><strong>Warning ID:</strong> ${warning.id}</p>
+           <p><strong>Charge ID:</strong> ${chargeId}</p>
+           <p><strong>PaymentIntent:</strong> ${piId || 'N/A'}</p>
+           <p><strong>不正タイプ:</strong> ${fraudType}</p>
+           <p><strong>対応可能:</strong> ${warning.actionable ? 'はい' : 'いいえ'}</p>
+           <p>Stripeダッシュボードで確認してください。</p>`
+        );
         break;
       }
     }
