@@ -769,7 +769,10 @@ async function handleWithdraw(req, res) {
     // Log to audit
     await supabase.from('audit_logs').insert({
       member_id: member.id,
+      user_email: member.email,
       action: 'withdrawal_requested',
+      target_table: 'members',
+      target_id: member.id,
       details: { scheduled_at: scheduledAt.toISOString() },
     });
 
@@ -810,7 +813,7 @@ async function handleWithdrawCancel(req, res) {
   try {
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('id, auth_user_id, withdrawal_status')
+      .select('id, auth_user_id, email, withdrawal_status')
       .eq('auth_user_id', auth.user.id)
       .single();
 
@@ -832,7 +835,10 @@ async function handleWithdrawCancel(req, res) {
     // Log to audit
     await supabase.from('audit_logs').insert({
       member_id: member.id,
+      user_email: member.email,
       action: 'withdrawal_cancelled',
+      target_table: 'members',
+      target_id: member.id,
       details: {},
     });
 

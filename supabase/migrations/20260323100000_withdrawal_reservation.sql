@@ -33,7 +33,7 @@ DECLARE
   v_brand_id UUID;
 BEGIN
   FOR v_member IN
-    SELECT m.id, m.auth_user_id, m.withdrawal_scheduled_at
+    SELECT m.id, m.auth_user_id, m.email, m.withdrawal_scheduled_at
     FROM members m
     WHERE m.withdrawal_status = 'pending'
       AND m.withdrawal_scheduled_at IS NOT NULL
@@ -74,8 +74,8 @@ BEGIN
     WHERE id = v_member.id;
 
     -- 4. Log to audit
-    INSERT INTO audit_logs (member_id, action, details)
-    VALUES (v_member.id, 'withdrawal_completed', jsonb_build_object(
+    INSERT INTO audit_logs (member_id, user_email, action, target_table, target_id, details)
+    VALUES (v_member.id, v_member.email, 'withdrawal_completed', 'members', v_member.id, jsonb_build_object(
       'points_expired', v_balance,
       'scheduled_at', v_member.withdrawal_scheduled_at
     ));
