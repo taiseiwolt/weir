@@ -26,6 +26,7 @@ const corsHeaders = {
 }
 
 // Place Details で取得するフィールド（コスト最適化）
+// reviews を除外: Advanced→Basic扱いで月$50削減。レビューは google-reviews-collector-weekly で別途取得。
 const PLACE_DETAILS_FIELDS = [
   'id',
   'displayName',
@@ -35,7 +36,6 @@ const PLACE_DETAILS_FIELDS = [
   'userRatingCount',
   'priceLevel',
   'types',
-  'reviews',
   'currentOpeningHours',
   'websiteUri',
   'nationalPhoneNumber',
