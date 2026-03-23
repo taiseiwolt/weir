@@ -1948,7 +1948,7 @@ async function placeOrder() {
       }
 
       // 3. 決済成功 → confirm-order で注文レコード作成 + メール送信
-      if (paymentIntent.status === 'succeeded') {
+      if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture') {
         let confirmData = {};
         const piId = paymentIntent.id;
         console.log('[checkout] Payment succeeded, PI:', piId);
