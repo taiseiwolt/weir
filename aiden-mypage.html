@@ -144,6 +144,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 .withdraw-cancel-btn:hover{background:#FFF3E0}
 .withdraw-cancel-btn:disabled{opacity:.5;cursor:not-allowed}
 
+/* Email Verification Banner (Phase 3) */
+.verification-banner{display:flex;gap:12px;align-items:flex-start;background:#FFF3E0;border:1px solid #FFB74D;border-radius:12px;padding:16px;margin:16px 16px 0}
+.verification-banner-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.verification-banner-content{flex:1}
+.verification-banner-title{font-size:14px;font-weight:700;color:#E65100;margin-bottom:4px}
+.verification-banner-text{font-size:12px;color:#BF360C;margin-bottom:10px;line-height:1.5}
+.verification-banner-btn{padding:8px 20px;border-radius:8px;font-size:12px;font-weight:700;background:#E65100;color:#fff;border:none;cursor:pointer}
+.verification-banner-btn:hover{background:#BF360C}
+.verification-banner-btn:disabled{opacity:.5;cursor:not-allowed}
+.verification-banner-close{background:none;border:none;font-size:20px;color:#BF360C;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
+.verification-banner-msg{font-size:11px;margin-top:6px;padding:6px 10px;border-radius:6px}
+
 /* Withdrawal Complete */
 .withdraw-complete{display:none;text-align:center;padding:60px 24px}
 .withdraw-complete-icon{font-size:48px;margin-bottom:16px}
@@ -173,6 +185,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 
 <!-- Main content (shown when logged in) -->
 <div id="mainContent" style="display:none">
+
+  <!-- Email Verification Banner (Phase 3) -->
+  <div class="verification-banner" id="verificationBanner" style="display:none">
+    <div class="verification-banner-icon">📧</div>
+    <div class="verification-banner-content">
+      <div class="verification-banner-title">メール認証をお願いします</div>
+      <div class="verification-banner-text" id="verificationBannerText">メールアドレスの認証がまだ完了していません。</div>
+      <button class="verification-banner-btn" id="verificationResendBtn" onclick="resendVerificationFromBanner()">認証メールを再送する</button>
+      <div class="verification-banner-msg" id="verificationBannerMsg" style="display:none"></div>
+    </div>
+    <button class="verification-banner-close" onclick="document.getElementById('verificationBanner').style.display='none'">&times;</button>
+  </div>
 
   <!-- Expiry Warning -->
   <div class="expiry-warn" id="expiryWarn" style="display:none">
@@ -319,6 +343,9 @@ function fmtDate(d) {
       document.getElementById('mainContent').style.display = 'none';
       return;
     }
+
+    // Phase 3: Check email verification status
+    checkVerificationStatus(session.access_token, member.email);
 
     const brandId = member.brand_id;
     document.getElementById('membershipLink').href = './aiden-membership.html?brand_id=' + brandId;
@@ -600,6 +627,71 @@ function showWithdrawError(msg) {
   var el = document.getElementById('withdrawError');
   el.textContent = msg;
   el.style.display = '';
+}
+
+// ===================================================================
+// EMAIL VERIFICATION BANNER (Phase 3)
+// ===================================================================
+var _verifyEmail = '';
+
+async function checkVerificationStatus(accessToken, email) {
+  _verifyEmail = email;
+  try {
+    const resp = await fetch('/api/members/verification-status', {
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+    });
+    const data = await resp.json();
+    if (data.success && data.data && !data.data.email_verified) {
+      var banner = document.getElementById('verificationBanner');
+      var textEl = document.getElementById('verificationBannerText');
+      if (data.data.grace && data.data.grace.grace_expires_at) {
+        var expiry = new Date(data.data.grace.grace_expires_at);
+        var now = new Date();
+        if (expiry > now) {
+          var days = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+          textEl.textContent = 'メールアドレスの認証がまだ完了していません。あと' + days + '日以内に認証をお願いします。';
+        } else {
+          textEl.textContent = 'メール認証の猶予期間が終了しています。認証を完了してください。';
+        }
+      } else {
+        textEl.textContent = 'メールアドレスの認証がまだ完了していません。';
+      }
+      banner.style.display = 'flex';
+    }
+  } catch (e) {}
+}
+
+async function resendVerificationFromBanner() {
+  var btn = document.getElementById('verificationResendBtn');
+  var msgEl = document.getElementById('verificationBannerMsg');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+  msgEl.style.display = 'none';
+  try {
+    var resp = await fetch('/api/members/resend-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _verifyEmail }),
+    });
+    var data = await resp.json();
+    msgEl.style.display = 'block';
+    if (data.success) {
+      msgEl.style.background = '#E8F5E9';
+      msgEl.style.color = '#2E7D32';
+      msgEl.textContent = '認証メールを再送しました。メールをご確認ください。（' + data.data.resend_count + '/' + data.data.max_resend + '回）';
+    } else {
+      msgEl.style.background = '#FCE4EC';
+      msgEl.style.color = '#C62828';
+      msgEl.textContent = data.error || '再送に失敗しました。';
+    }
+  } catch (e) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#FCE4EC';
+    msgEl.style.color = '#C62828';
+    msgEl.textContent = 'エラーが発生しました。';
+  }
+  btn.disabled = false;
+  btn.textContent = '認証メールを再送する';
 }
 </script>
 </body>

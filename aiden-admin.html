@@ -180,6 +180,55 @@ async function logAudit(action,targetTable,targetId,details){
   }catch(e){console.error('audit log error:',e);}
 }
 
+// ===== BULK VERIFICATION EMAIL (Phase 3) =====
+async function checkUnverifiedCount() {
+  try {
+    const { count, error } = await sb.from('members')
+      .select('id', { count: 'exact', head: true })
+      .is('verification_grace_sent_at', null);
+    const statusEl = document.getElementById('bulkVerifyStatus');
+    if (statusEl) {
+      statusEl.innerHTML = '未通知の未認証会員: <strong>' + (count || 0) + '件</strong>';
+    }
+  } catch (e) {}
+}
+async function sendBulkVerificationEmails() {
+  const btn = document.getElementById('bulkVerifyBtn');
+  const resultEl = document.getElementById('bulkVerifyResult');
+  if (!btn) return;
+  if (!confirm('未認証の既存会員に認証メールを一括送信します。よろしいですか？')) return;
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+  resultEl.style.display = 'none';
+  try {
+    const resp = await fetch('/api/members/bulk-send-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: JSON.stringify({ batch_size: 100 }),
+    });
+    const data = await resp.json();
+    resultEl.style.display = 'block';
+    if (data.success) {
+      resultEl.style.background = '#e8f5e9';
+      resultEl.style.color = '#2e7d32';
+      resultEl.innerHTML = '✅ ' + data.data.message + (data.data.total_remaining > 0 ? '<br>残り: ' + data.data.total_remaining + '件' : '');
+      showToast('✅ 認証メール送信完了');
+      checkUnverifiedCount();
+    } else {
+      resultEl.style.background = '#fce4ec';
+      resultEl.style.color = '#c62828';
+      resultEl.textContent = '❌ ' + (data.error || '送信に失敗しました');
+    }
+  } catch (e) {
+    resultEl.style.display = 'block';
+    resultEl.style.background = '#fce4ec';
+    resultEl.style.color = '#c62828';
+    resultEl.textContent = '❌ エラー: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '未認証会員に一括送信';
+}
+
 // STRIPE CONNECT
 // 手数料率（システム設定 - チャネル別）
 const AIDEN_FEE_RATES={takeout:0.040,dinein:0.038,delivery:0.040};
@@ -293,7 +342,7 @@ function renderPage(){
   else if(v.type==='corps')el.innerHTML=renderCorpsList();
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
-  else if(v.type==='users')el.innerHTML=renderUsers();
+  else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();}
   else if(v.type==='system')el.innerHTML=renderSystem();
   else if(v.type==='ai')el.innerHTML=renderAI();
   else if(v.type==='cost')el.innerHTML=renderCostManagement();
@@ -363,7 +412,13 @@ function renderUsers(){
   '<div class="tab-content" id="user-members"><div class="card"><div class="card-title">会員一覧 <span class="ct-right"><span style="font-size:11px;color:var(--text-light)">合計 '+MEMBERS.length+'人</span></span></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>氏名</th><th>メール</th><th>電話番号</th><th>ランク</th><th class="r">ポイント</th><th class="r">注文回数</th><th>最終注文</th><th>登録日</th></tr></thead><tbody>'+
   MEMBERS.map(m=>'<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+m.id+'</code></td><td style="font-weight:600">'+m.name+'</td><td>'+m.email+'</td><td>'+m.phone+'</td><td>'+rankBadge(m.rank)+'</td><td class="r fw-800">'+m.points.toLocaleString()+'</td><td class="r">'+m.orders+'</td><td>'+m.lastOrder+'</td><td>'+m.joined+'</td></tr>').join('')+
-  '</tbody></table></div><div class="card"><p style="font-size:11px;color:var(--text-light)">※ ゲスト注文者の個人情報は顧客企業に絶対非提供（仕様確定済み）。注文回数・タイムスタンプのみ閲覧可能。</p></div></div>'+
+  '</tbody></table></div>'+
+  '<div class="card" id="verificationBulkCard"><div class="card-title">📧 メール認証管理（Phase 3） <span class="ct-right"><button class="btn btn-primary btn-sm" id="bulkVerifyBtn" onclick="sendBulkVerificationEmails()">未認証会員に一括送信</button></span></div>'+
+  '<p style="font-size:11px;color:var(--text-light);margin-bottom:12px">Phase 2導入前に登録済みの未認証会員に認証メールを一括送信します。送信後30日間の猶予期間が設定されます。</p>'+
+  '<div id="bulkVerifyStatus" style="font-size:12px;margin-bottom:8px"></div>'+
+  '<div id="bulkVerifyResult" style="display:none;padding:12px;border-radius:8px;font-size:12px;margin-top:8px"></div>'+
+  '</div>'+
+  '<div class="card"><p style="font-size:11px;color:var(--text-light)">※ ゲスト注文者の個人情報は顧客企業に絶対非提供（仕様確定済み）。注文回数・タイムスタンプのみ閲覧可能。</p></div></div>'+
   // guests
   '<div class="tab-content" id="user-guests"><div class="card"><div class="card-title">ゲスト注文者 <span class="ct-right"><span style="font-size:11px;color:var(--text-light)">合計 '+GUESTS.length+'件</span></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">※ ゲストの個人情報（名前・メール・電話番号）は表示しません。注文回数とタイムスタンプのみ。</p>'+
   '<table class="data-table"><thead><tr><th>ゲストID</th><th class="r">注文回数</th><th>最終注文日</th><th>チャネル</th></tr></thead><tbody>'+

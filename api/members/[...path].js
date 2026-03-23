@@ -35,6 +35,16 @@ export default async function handler(req, res) {
     return handleResendVerification(req, res);
   }
 
+  // /api/members/bulk-send-verification (Phase 3: admin bulk send)
+  if (pathSegments[0] === 'bulk-send-verification') {
+    return handleBulkSendVerification(req, res);
+  }
+
+  // /api/members/verification-status (Phase 3: check if current user is verified)
+  if (pathSegments[0] === 'verification-status') {
+    return handleVerificationStatus(req, res);
+  }
+
   // /api/members/reset-password
   if (pathSegments[0] === 'reset-password') {
     return handleResetPassword(req, res);
@@ -88,18 +98,58 @@ async function handleLogin(req, res) {
 
     if (authError) {
       // Check if user exists but is unverified (Supabase blocks signIn for unconfirmed users)
-      const { data: { users } } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
-      // Use admin API to check specific user
-      const { data: userList } = await supabase.from('members').select('auth_user_id').eq('email', email).limit(1);
+      const { data: userList } = await supabase.from('members')
+        .select('auth_user_id, verification_grace_sent_at, verification_grace_expires_at, withdrawal_status')
+        .eq('email', email).limit(1);
+
       if (userList && userList.length > 0) {
-        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userList[0].auth_user_id);
-        if (authUser && !authUser.email_confirmed_at) {
-          return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
-        }
+        const memberRow = userList[0];
+
         // Check withdrawal status
-        const { data: memberCheck } = await supabase.from('members').select('withdrawal_status').eq('auth_user_id', userList[0].auth_user_id).single();
-        if (memberCheck && memberCheck.withdrawal_status === 'withdrawn') {
+        if (memberRow.withdrawal_status === 'withdrawn') {
           return error(res, 'このアカウントは退会済みです。', 403, 'ACCOUNT_WITHDRAWN');
+        }
+
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(memberRow.auth_user_id);
+        if (authUser && !authUser.email_confirmed_at) {
+          // Phase 3: existing members with grace period can still login
+          if (memberRow.verification_grace_sent_at) {
+            // Verify password by attempting signIn with a temporary confirm
+            // Use admin to generate a session for grace-period users
+            const { data: { user: updatedUser }, error: confirmErr } = await supabase.auth.admin.updateUser(
+              memberRow.auth_user_id,
+              { email_confirm: true }
+            );
+            if (confirmErr) {
+              return error(res, 'メール認証が完了していません。', 403, 'EMAIL_NOT_VERIFIED');
+            }
+            // Now try login again
+            const { data: retryData, error: retryError } = await anonClient.auth.signInWithPassword({ email, password });
+            // Immediately un-confirm to keep tracking status
+            await supabase.auth.admin.updateUser(memberRow.auth_user_id, { email_confirm: false });
+
+            if (retryError) {
+              return error(res, 'メールアドレスまたはパスワードが正しくありません', 401);
+            }
+
+            const { data: member } = await supabase.from('members')
+              .select('id, first_name, last_name, email, phone, gender, address_prefecture, address_city, address_street, address_building, stripe_customer_id, withdrawal_status')
+              .eq('auth_user_id', retryData.user.id).single();
+            if (!member) return error(res, '会員情報が見つかりません', 404);
+
+            const { withdrawal_status: ws, ...mData } = member;
+            return ok(res, {
+              access_token: retryData.session.access_token,
+              refresh_token: retryData.session.refresh_token,
+              expires_in: retryData.session.expires_in,
+              member: mData,
+              email_verified: false,
+              grace_expires_at: memberRow.verification_grace_expires_at,
+            });
+          }
+
+          // New member without grace period — block login
+          return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
         }
       }
       return error(res, 'メールアドレスまたはパスワードが正しくありません', 401);
@@ -107,8 +157,16 @@ async function handleLogin(req, res) {
 
     // Double-check email verification (for edge cases)
     if (!authData.user.email_confirmed_at) {
-      await anonClient.auth.signOut();
-      return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
+      // Phase 3: check if this is a grace-period member
+      const { data: graceCheck } = await supabase.from('members')
+        .select('verification_grace_sent_at, verification_grace_expires_at')
+        .eq('auth_user_id', authData.user.id).single();
+
+      if (!graceCheck || !graceCheck.verification_grace_sent_at) {
+        await anonClient.auth.signOut();
+        return error(res, 'メール認証が完了していません。登録時に届いた認証メールのURLをクリックしてください。', 403, 'EMAIL_NOT_VERIFIED');
+      }
+      // Grace period member — allow login but flag as unverified
     }
 
     const { data: member, error: memberError } = await supabase
@@ -128,12 +186,23 @@ async function handleLogin(req, res) {
     }
 
     const { withdrawal_status, ...memberData } = member;
-    return ok(res, {
+    const isVerified = !!authData.user.email_confirmed_at;
+    const response = {
       access_token: authData.session.access_token,
       refresh_token: authData.session.refresh_token,
       expires_in: authData.session.expires_in,
       member: memberData,
-    });
+    };
+
+    if (!isVerified) {
+      const { data: graceInfo } = await supabase.from('members')
+        .select('verification_grace_expires_at')
+        .eq('auth_user_id', authData.user.id).single();
+      response.email_verified = false;
+      response.grace_expires_at = graceInfo?.verification_grace_expires_at || null;
+    }
+
+    return ok(res, response);
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
   }
@@ -701,6 +770,118 @@ async function handleResendVerification(req, res) {
       message: '認証メールを再送しました。',
       resend_count: newResendCount,
       max_resend: MAX_RESEND,
+    });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Bulk Send Verification Email (Phase 3: Admin) ---
+async function handleBulkSendVerification(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  // Require service_role auth (admin only)
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return error(res, '認証が必要です', 401);
+
+  const BATCH_LIMIT = 100;
+  const batchSize = Math.min(parseInt(req.body?.batch_size) || BATCH_LIMIT, BATCH_LIMIT);
+
+  try {
+    // Find existing unverified members who haven't been notified yet
+    const { data: unverified, error: queryError } = await supabase.rpc(
+      'mark_existing_unverified_for_grace',
+      { batch_limit: batchSize }
+    );
+
+    if (queryError) {
+      return error(res, 'クエリエラー: ' + queryError.message, 500);
+    }
+
+    if (!unverified || unverified.length === 0) {
+      return ok(res, { message: '未認証の既存会員はいません。', sent_count: 0, total_remaining: 0 });
+    }
+
+    // Send verification emails via Supabase Auth generateLink
+    let sentCount = 0;
+    const errors = [];
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html';
+
+    for (const member of unverified) {
+      try {
+        await supabase.auth.admin.generateLink({
+          type: 'signup',
+          email: member.member_email,
+          options: { redirectTo: redirectUrl },
+        });
+        sentCount++;
+      } catch (e) {
+        errors.push({ email: member.member_email, error: e.message });
+      }
+    }
+
+    // Audit log
+    await supabase.from('audit_logs').insert({
+      action: 'bulk_verification_email_sent',
+      target_table: 'members',
+      details: { sent_count: sentCount, error_count: errors.length, batch_size: batchSize },
+    });
+
+    // Check remaining
+    const { count: remaining } = await supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .is('verification_grace_sent_at', null);
+
+    return ok(res, {
+      message: `${sentCount}件の認証メールを送信しました。`,
+      sent_count: sentCount,
+      errors: errors.length > 0 ? errors : undefined,
+      total_remaining: remaining || 0,
+    });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Verification Status (Phase 3: Check current user's verification) ---
+async function handleVerificationStatus(req, res) {
+  if (req.method !== 'GET') return error(res, 'Method not allowed', 405);
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return error(res, '認証が必要です', 401);
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return error(res, '認証に失敗しました', 401);
+
+    const isVerified = !!user.email_confirmed_at;
+
+    // Get grace period info if unverified
+    let graceInfo = null;
+    if (!isVerified) {
+      const { data: member } = await supabase
+        .from('members')
+        .select('verification_grace_sent_at, verification_grace_expires_at')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (member) {
+        graceInfo = {
+          grace_sent_at: member.verification_grace_sent_at,
+          grace_expires_at: member.verification_grace_expires_at,
+          grace_expired: member.verification_grace_expires_at
+            ? new Date(member.verification_grace_expires_at) < new Date()
+            : false,
+        };
+      }
+    }
+
+    return ok(res, {
+      email_verified: isVerified,
+      email: user.email,
+      grace: graceInfo,
     });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
