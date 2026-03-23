@@ -45,3 +45,35 @@ export async function requireAuth(req, res) {
   }
   return auth;
 }
+
+/**
+ * Check if authenticated user is a staff member of the given store.
+ * Uses the service-role Supabase client to query staff_accounts.
+ * Returns true if user is staff/manager/owner of the store.
+ */
+export async function isStoreStaffMember(authUserId, storeId) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return false;
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+  // Get store's brand_id
+  const { data: store } = await adminClient
+    .from('stores')
+    .select('brand_id')
+    .eq('id', storeId)
+    .single();
+
+  if (!store) return false;
+
+  // Check if user is staff for this brand
+  const { data: staff } = await adminClient
+    .from('staff_accounts')
+    .select('id')
+    .eq('auth_user_id', authUserId)
+    .eq('brand_id', store.brand_id)
+    .limit(1);
+
+  return staff && staff.length > 0;
+}

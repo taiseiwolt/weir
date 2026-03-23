@@ -1,7 +1,7 @@
 import { supabase } from '../_lib/supabase.js';
 import { stripe } from '../_lib/stripe.js';
 import { handleCors, ok, error } from '../_lib/response.js';
-import { authenticateRequest, requireAuth } from '../_lib/auth.js';
+import { authenticateRequest, requireAuth, isStoreStaffMember } from '../_lib/auth.js';
 
 // AIden 手数料率（チャネル別）
 const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
@@ -425,6 +425,11 @@ async function handleList(req, res) {
   const auth = await authenticateRequest(req);
   const { store_id, status, limit = 50, offset = 0 } = req.query;
 
+  // SEC-1: 認証必須。store_id指定時はスタッフ権限も必要
+  if (!auth) {
+    return error(res, '認証が必要です', 401);
+  }
+
   try {
     let query = supabase
       .from('orders')
@@ -432,18 +437,29 @@ async function handleList(req, res) {
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
 
-    if (store_id) query = query.eq('store_id', store_id);
-    if (status) query = query.eq('status', status);
-
-    if (auth && !store_id) {
+    if (store_id) {
+      // store_id指定時: スタッフ権限チェック
+      const isStaff = await isStoreStaffMember(auth.user.id, store_id);
+      if (!isStaff) {
+        return error(res, 'この店舗の注文を閲覧する権限がありません', 403);
+      }
+      query = query.eq('store_id', store_id);
+    } else {
+      // store_id未指定: 自分の注文のみ
       const { data: member } = await supabase
         .from('members')
         .select('id')
         .eq('auth_user_id', auth.user.id)
         .single();
 
-      if (member) query = query.eq('member_id', member.id);
+      if (member) {
+        query = query.eq('member_id', member.id);
+      } else {
+        return ok(res, { orders: [], total: 0 });
+      }
     }
+
+    if (status) query = query.eq('status', status);
 
     const { data: orders, error: dbError, count } = await query;
     if (dbError) return error(res, dbError.message, 500);
@@ -482,8 +498,8 @@ async function handleOrderDetail(req, res, id) {
         .single();
 
       const isOwner = member && order.member_id === member.id;
-      const isStoreStaff = true; // TODO: implement store staff check
-      if (!isOwner && !isStoreStaff) {
+      const isStaff = await isStoreStaffMember(auth.user.id, order.store_id);
+      if (!isOwner && !isStaff) {
         return error(res, 'アクセス権限がありません', 403);
       }
     } else if (tracking_token) {
@@ -510,11 +526,18 @@ async function handleCancel(req, res, id) {
   try {
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, payment_intent_id')
+      .select('id, status, payment_intent_id, store_id')
       .eq('id', id)
       .single();
 
     if (orderError || !order) return error(res, '注文が見つかりません', 404);
+
+    // SEC-3: 店舗スタッフ権限チェック
+    const isStaff = await isStoreStaffMember(auth.user.id, order.store_id);
+    if (!isStaff) {
+      return error(res, 'この注文をキャンセルする権限がありません', 403);
+    }
+
     if (order.status === 'cancelled') return error(res, 'この注文は既にキャンセルされています');
 
     if (order.payment_intent_id) {
@@ -563,11 +586,17 @@ async function handleStatus(req, res, id) {
   try {
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, payment_intent_id, total_amount')
+      .select('id, status, payment_intent_id, total_amount, store_id')
       .eq('id', id)
       .single();
 
     if (orderError || !order) return error(res, '注文が見つかりません', 404);
+
+    // スタッフ権限チェック
+    const isStaff = await isStoreStaffMember(auth.user.id, order.store_id);
+    if (!isStaff) {
+      return error(res, 'この注文のステータスを変更する権限がありません', 403);
+    }
 
     if (status === 'prepared' && order.payment_intent_id) {
       try {
