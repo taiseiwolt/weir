@@ -2035,6 +2035,19 @@ async function placeOrder() {
       if (orderBtnText) orderBtnText.textContent = 'クレジットカード/デビットカードで注文';
       window.removeEventListener('beforeunload', preventUnload);
 
+      // 決済失敗時: orphan order をキャンセル
+      if (piData?.order_id) {
+        try {
+          sb.from('orders')
+            .update({ payment_status: 'failed', status: 'cancelled' })
+            .eq('id', piData.order_id)
+            .eq('payment_status', 'pending')
+            .then(({ error: cancelErr }) => {
+              if (cancelErr) console.warn('Orphan order cancel failed:', cancelErr);
+            });
+        } catch (cancelErr) { /* fire-and-forget */ }
+      }
+
       // 決済失敗ログをサーバーに記録
       try {
         fetch(SUPABASE_URL + '/functions/v1/log-payment-failure', {

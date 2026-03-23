@@ -189,13 +189,22 @@ aiden-demo/
 - Supabase JS Client v2 を使用（CDN経由）
 - API Key はコードにハードコードしない（環境変数経由）
 - ユーザー入力値は必ずサニタイズする（XSS対策）
+- innerHTML にDB/APIから取得した文字列を代入する際は必ず escH() でエスケープする
+  例: el.innerHTML = escH(data.name) ← OK / el.innerHTML = data.name ← NG
 
 ### SQL / Database
 - テーブル名: 複数形スネークケース（例: `order_items`）
 - 全テーブルに `created_at`, `updated_at` を含める
 - 外部キー: 適切な ON DELETE 設定（CASCADE or SET NULL）
-- RLS: 全テーブルで有効化必須。ポリシーなしのテーブルを放置しない
-- マイグレーション: `supabase/migrations/` に日付プレフィックス付きで保存
+- RLS: 全テーブルで有効化必須。有効化と同時にポリシーを設定すること
+- 管理専用テーブルのRLSボイラープレート:
+  ```sql
+  ALTER TABLE tbl ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "service_role_only" ON tbl TO service_role USING (true) WITH CHECK (true);
+  ```
+- pg_cronジョブの http_post header で service_role_key を参照する場合は current_setting() ではなく直接値を記載する（pg_cronのコンテキストでは current_setting() が動作しない）
+- マイグレーション: `supabase/migrations/` に日付プレフィックス付きで保存（YYYYMMDD形式）
+- ファイル名の日付は作成当日の日付を使用する（翌日日付は使用しない）
 - 本番データに影響するSQL: 実行前に SELECT で影響範囲を確認する
 - パラメータ化クエリを必ず使用する（SQL Injection対策）
 
@@ -315,11 +324,13 @@ CC依頼の実装時、以下の領域にまたがる場合は各観点を考慮
 1. コードをセルフレビューする（問題があれば自分で修正してから報告）
 2. git commit する
 3. 変更内容のサマリだけ簡潔に報告する
+4. 手動作業（DBマイグレーション・環境変数設定・Edge Functionデプロイ等）がある場合は完了報告の先頭に「⚠️ 手動作業あり」セクションを設けて番号付きで列挙する
 
 ### Agents
-- `.claude/agents/` に12のエージェント定義がある
+- `.claude/agents/` にエージェント定義がある（現在: agents-legal.md に4エージェント）
 - 各エージェントはタスクの技術領域に応じて参照する
 - 既存の `~/.claude/commands/` の6スキルも引き続き使用可能
+- エージェント横断の品質チェック（法務文書ガードレールセクション参照）で、未定義ドメインの観点も考慮する
 
 ---
 

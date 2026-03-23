@@ -77,11 +77,30 @@ export default async function handler(req, res) {
       case 'payment_intent.payment_failed': {
         const pi = event.data.object;
         const orderId = pi.metadata?.order_id;
+
+        // metadata にorder_idがある場合
         if (orderId) {
           await supabase
             .from('orders')
             .update({ payment_status: 'failed', status: 'cancelled' })
             .eq('id', orderId);
+        }
+
+        // payment_intent_id で検索（create-payment-intent で作成されたorphan order対応）
+        if (!orderId && pi.id) {
+          const { data: orphanOrder } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('payment_intent_id', pi.id)
+            .eq('payment_status', 'pending')
+            .maybeSingle();
+
+          if (orphanOrder) {
+            await supabase
+              .from('orders')
+              .update({ payment_status: 'failed', status: 'cancelled' })
+              .eq('id', orphanOrder.id);
+          }
         }
         break;
       }

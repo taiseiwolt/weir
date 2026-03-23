@@ -3,6 +3,8 @@ import { stripe } from '../_lib/stripe.js';
 import { handleCors, ok, error } from '../_lib/response.js';
 import { authenticateRequest, requireAuth } from '../_lib/auth.js';
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
@@ -271,12 +273,62 @@ async function handleRegister(req, res) {
       return error(res, 'メンバー登録に失敗しました: ' + memberError.message, 500);
     }
 
+    // 確認メールを送信（Resend API経由）
+    let emailSent = false;
+    try {
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email,
+        options: { redirectTo: redirectUrl },
+      });
+
+      if (linkError) {
+        console.error('generateLink error:', linkError.message);
+      } else if (linkData?.properties?.action_link && RESEND_API_KEY) {
+        const confirmLink = linkData.properties.action_link;
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: 'AIden <noreply@aiden-jp.net>',
+            to: [email],
+            subject: '【AIden】メールアドレスの確認',
+            html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
+              <h2 style="color:#333">メールアドレスの確認</h2>
+              <p>${last_name} ${first_name} 様</p>
+              <p>AIdenへのご登録ありがとうございます。<br>以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
+              <div style="text-align:center;margin:30px 0">
+                <a href="${confirmLink}" style="background:#2563eb;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold">メールアドレスを確認する</a>
+              </div>
+              <p style="color:#666;font-size:14px">このリンクは60分間有効です。<br>心当たりがない場合は、このメールを無視してください。</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:30px 0">
+              <p style="color:#999;font-size:12px">AIden - 飲食店向けオールインワンSaaS</p>
+            </div>`,
+          }),
+        });
+        emailSent = emailRes.ok;
+        if (!emailRes.ok) {
+          console.error('Resend email failed:', await emailRes.text());
+        }
+      } else if (!RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY not set, skipping verification email');
+      }
+    } catch (emailErr) {
+      console.error('Verification email error:', emailErr.message);
+    }
+
     return ok(res, {
       member_id: member.id,
       email: member.email,
       first_name: member.first_name,
       last_name: member.last_name,
-      message: '確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。',
+      email_sent: emailSent,
+      message: emailSent
+        ? '確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。'
+        : '会員登録が完了しました。確認メールの送信に失敗しました。マイページから再送できます。',
     }, 201);
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
