@@ -46,8 +46,18 @@ export default async function handler(req, res) {
   }
 
   // /api/members/withdraw
-  if (pathSegments[0] === 'withdraw') {
+  if (pathSegments[0] === 'withdraw' && !pathSegments[1]) {
     return handleWithdraw(req, res);
+  }
+
+  // /api/members/withdraw/cancel
+  if (pathSegments[0] === 'withdraw' && pathSegments[1] === 'cancel') {
+    return handleWithdrawCancel(req, res);
+  }
+
+  // /api/members/withdraw/status
+  if (pathSegments[0] === 'withdraw' && pathSegments[1] === 'status') {
+    return handleWithdrawStatus(req, res);
   }
 
   // /api/members/[id]/card
@@ -711,7 +721,7 @@ async function handleUpdatePassword(req, res) {
   }
 }
 
-// --- Withdraw (Account Deletion) ---
+// --- Withdraw (Reservation Pattern - Phase 2) ---
 async function handleWithdraw(req, res) {
   if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
 
@@ -719,15 +729,15 @@ async function handleWithdraw(req, res) {
   if (!auth) return;
 
   try {
-    // Get member info
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('id, auth_user_id, withdrawal_status')
+      .select('id, auth_user_id, email, first_name, last_name, withdrawal_status')
       .eq('auth_user_id', auth.user.id)
       .single();
 
     if (memberError || !member) return error(res, '会員情報が見つかりません', 404);
     if (member.withdrawal_status === 'withdrawn') return error(res, '既に退会済みです');
+    if (member.withdrawal_status === 'pending') return error(res, '既に退会申請済みです', 409, 'ALREADY_PENDING');
 
     // Check for active orders
     const { data: activeOrders } = await supabase
@@ -738,68 +748,121 @@ async function handleWithdraw(req, res) {
       .limit(1);
 
     if (activeOrders && activeOrders.length > 0) {
-      return error(res, '進行中の注文があるため退会できません。注文が完了してから再度お試しください。', 409, 'ACTIVE_ORDERS_EXIST');
+      return error(res, '進行中の注文があるため退会申請できません。注文が完了してから再度お試しください。', 409, 'ACTIVE_ORDERS_EXIST');
     }
 
-    // 1. Expire all points
-    const { data: pointBalance } = await supabase
-      .from('point_transactions')
-      .select('amount, expires_at')
-      .eq('member_id', member.id);
+    // Set withdrawal reservation (30 days from now)
+    const now = new Date();
+    const scheduledAt = new Date(now);
+    scheduledAt.setDate(scheduledAt.getDate() + 30);
 
-    if (pointBalance) {
-      let balance = 0;
-      const now = new Date();
-      pointBalance.forEach(t => {
-        if (t.amount > 0 && t.expires_at && new Date(t.expires_at) < now) return;
-        balance += t.amount;
-      });
-      balance = Math.max(0, balance);
-
-      if (balance > 0) {
-        // Get brand_id from any existing transaction
-        const { data: anyTxn } = await supabase
-          .from('point_transactions')
-          .select('brand_id')
-          .eq('member_id', member.id)
-          .limit(1)
-          .single();
-
-        await supabase.from('point_transactions').insert({
-          member_id: member.id,
-          brand_id: anyTxn?.brand_id || null,
-          amount: -balance,
-          balance_after: 0,
-          source: 'normal',
-          reason: '退会によるポイント失効',
-        });
-      }
-    }
-
-    // 2. Invalidate unused coupons
-    await supabase
-      .from('member_coupons')
-      .update({ is_used: true, used_at: new Date().toISOString() })
-      .eq('member_id', member.id)
-      .eq('is_used', false);
-
-    // 3. Delete delivery addresses (from orders table address fields are retained for legal reasons)
-    // Members table address fields will be anonymized later (Phase 3)
-
-    // 4. Update withdrawal status
     await supabase
       .from('members')
       .update({
-        withdrawal_status: 'withdrawn',
-        withdrawal_requested_at: new Date().toISOString(),
-        withdrawal_completed_at: new Date().toISOString(),
+        withdrawal_status: 'pending',
+        withdrawal_requested_at: now.toISOString(),
+        withdrawal_scheduled_at: scheduledAt.toISOString(),
+        updated_at: now.toISOString(),
       })
       .eq('id', member.id);
 
-    // 5. Sign out all sessions via admin
-    await supabase.auth.admin.signOut(auth.user.id, 'global');
+    // Log to audit
+    await supabase.from('audit_logs').insert({
+      member_id: member.id,
+      action: 'withdrawal_requested',
+      details: { scheduled_at: scheduledAt.toISOString() },
+    });
 
-    return ok(res, { message: '退会が完了しました。ご利用ありがとうございました。' });
+    // Send confirmation email (fire and forget)
+    const scheduledDateStr = scheduledAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Tokyo' });
+    try {
+      await fetch(`${process.env.SUPABASE_URL || 'https://iikwusprydaogzeslgdz.supabase.co'}/functions/v1/send-withdrawal-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          type: 'requested',
+          to: member.email,
+          member_name: `${member.last_name} ${member.first_name}`,
+          scheduled_date: scheduledDateStr,
+        }),
+      });
+    } catch (_) { /* email failure should not block withdrawal */ }
+
+    return ok(res, {
+      message: '退会申請を受け付けました。30日後に退会が確定します。',
+      scheduled_at: scheduledAt.toISOString(),
+    });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Withdraw Cancel ---
+async function handleWithdrawCancel(req, res) {
+  if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
+
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  try {
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('id, auth_user_id, withdrawal_status')
+      .eq('auth_user_id', auth.user.id)
+      .single();
+
+    if (memberError || !member) return error(res, '会員情報が見つかりません', 404);
+    if (member.withdrawal_status !== 'pending') {
+      return error(res, '退会申請中ではありません', 409, 'NOT_PENDING');
+    }
+
+    await supabase
+      .from('members')
+      .update({
+        withdrawal_status: null,
+        withdrawal_requested_at: null,
+        withdrawal_scheduled_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', member.id);
+
+    // Log to audit
+    await supabase.from('audit_logs').insert({
+      member_id: member.id,
+      action: 'withdrawal_cancelled',
+      details: {},
+    });
+
+    return ok(res, { message: '退会申請をキャンセルしました。' });
+  } catch (e) {
+    return error(res, 'サーバーエラー: ' + e.message, 500);
+  }
+}
+
+// --- Withdraw Status ---
+async function handleWithdrawStatus(req, res) {
+  if (req.method !== 'GET') return error(res, 'Method not allowed', 405);
+
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+
+  try {
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('withdrawal_status, withdrawal_requested_at, withdrawal_scheduled_at')
+      .eq('auth_user_id', auth.user.id)
+      .single();
+
+    if (memberError || !member) return error(res, '会員情報が見つかりません', 404);
+
+    return ok(res, {
+      status: member.withdrawal_status || 'active',
+      requested_at: member.withdrawal_requested_at,
+      scheduled_at: member.withdrawal_scheduled_at,
+    });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
   }

@@ -135,6 +135,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 .modal-confirm:disabled{opacity:.5;cursor:not-allowed}
 .modal-error{display:none;background:#FFEBEE;border:1px solid #E53935;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#E53935;text-align:center}
 
+/* Withdrawal Pending Banner */
+.withdraw-pending{display:none;margin:0 16px 16px;background:#FFF3E0;border:1px solid #FFE0B2;border-radius:12px;padding:16px;text-align:center}
+.withdraw-pending.active{display:block}
+.withdraw-pending-title{font-size:14px;font-weight:700;color:#E65100;margin-bottom:8px}
+.withdraw-pending-date{font-size:13px;color:#BF360C;margin-bottom:12px}
+.withdraw-cancel-btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;background:#fff;color:#E65100;border:1px solid #E65100;cursor:pointer}
+.withdraw-cancel-btn:hover{background:#FFF3E0}
+.withdraw-cancel-btn:disabled{opacity:.5;cursor:not-allowed}
+
 /* Withdrawal Complete */
 .withdraw-complete{display:none;text-align:center;padding:60px 24px}
 .withdraw-complete-icon{font-size:48px;margin-bottom:16px}
@@ -216,33 +225,44 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
     📋 会員プログラム詳細を見る
   </a>
 
+  <!-- Withdrawal Pending Banner -->
+  <div class="withdraw-pending" id="withdrawPending">
+    <div class="withdraw-pending-title">退会予約中です</div>
+    <div class="withdraw-pending-date" id="withdrawScheduledDate"></div>
+    <button class="withdraw-cancel-btn" id="cancelWithdrawBtn" onclick="cancelWithdraw()">退会をキャンセルする</button>
+  </div>
+
   <!-- Withdrawal -->
-  <div class="withdraw-section">
-    <button class="withdraw-btn" id="withdrawBtn" onclick="showWithdrawModal()">退会する</button>
+  <div class="withdraw-section" id="withdrawSection">
+    <button class="withdraw-btn" id="withdrawBtn" onclick="showWithdrawModal()">退会を申請する</button>
   </div>
 </div>
 
 <!-- Withdrawal Confirmation Modal -->
 <div class="modal-backdrop" id="withdrawModal">
   <div class="modal">
-    <div class="modal-title">退会の確認</div>
+    <div class="modal-title">退会申請の確認</div>
     <div class="modal-warn">
       <div class="modal-warn-item">
+        <span class="modal-warn-item-icon">📅</span>
+        <span>退会は30日後に確定します。それまではキャンセルできます。</span>
+      </div>
+      <div class="modal-warn-item">
         <span class="modal-warn-item-icon">💰</span>
-        <span>ポイント残高（<strong id="withdrawPointBalance">0</strong>pt）は即時失効します</span>
+        <span>ポイント残高（<strong id="withdrawPointBalance">0</strong>pt）は退会確定時に失効します</span>
       </div>
       <div class="modal-warn-item">
         <span class="modal-warn-item-icon">📋</span>
-        <span>退会後90日間はデータを保持し、その後匿名化されます</span>
+        <span>退会確定後90日間はデータを保持し、その後匿名化されます</span>
       </div>
       <div class="modal-warn-item">
-        <span class="modal-warn-item-icon">🧾</span>
-        <span>注文履歴は法令上7年間保持されます（個人情報との紐付けは解除されます）</span>
+        <span class="modal-warn-item-icon">🛒</span>
+        <span>退会予約中もサービスは通常通りご利用いただけます</span>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeWithdrawModal()">キャンセル</button>
-      <button class="modal-confirm" id="confirmWithdrawBtn" onclick="executeWithdraw()">退会する</button>
+      <button class="modal-cancel" onclick="closeWithdrawModal()">戻る</button>
+      <button class="modal-confirm" id="confirmWithdrawBtn" onclick="executeWithdraw()">退会を申請する</button>
     </div>
     <div class="modal-error" id="withdrawError"></div>
   </div>
@@ -251,13 +271,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 <!-- Withdrawal Complete -->
 <div class="withdraw-complete" id="withdrawComplete">
   <div class="withdraw-complete-icon">👋</div>
-  <div class="withdraw-complete-title">退会が完了しました</div>
+  <div class="withdraw-complete-title">退会申請が完了しました</div>
   <div class="withdraw-complete-desc">
-    ご利用ありがとうございました。<br>
-    90日間はデータを保持しております。<br>
-    またのご利用をお待ちしております。
+    30日後に退会が確定します。<br>
+    それまでの間はマイページからキャンセルできます。<br>
+    退会確定時にポイントは失効します。
   </div>
-  <a href="./" class="withdraw-complete-link">トップページへ</a>
+  <a href="./aiden-mypage.html" class="withdraw-complete-link">マイページに戻る</a>
 </div>
 
 <script>
@@ -450,11 +470,33 @@ function fmtDate(d) {
   }
 })();
 
-// === Withdrawal Functions ===
+// === Withdrawal Functions (Phase 2: Reservation Pattern) ===
 var currentPointBalance = 0;
 
+// Check withdrawal status on page load
+async function checkWithdrawalStatus() {
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    if (!session) return;
+
+    var resp = await fetch('https://aiden-jp.net/api/members/withdraw/status', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token },
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+
+    if (data.data && data.data.status === 'pending' && data.data.scheduled_at) {
+      var scheduledDate = new Date(data.data.scheduled_at);
+      var dateStr = scheduledDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Tokyo' });
+      document.getElementById('withdrawScheduledDate').textContent = dateStr + ' に退会が確定します';
+      document.getElementById('withdrawPending').classList.add('active');
+      document.getElementById('withdrawSection').style.display = 'none';
+    }
+  } catch (_) {}
+}
+checkWithdrawalStatus();
+
 function showWithdrawModal() {
-  // Set point balance in modal
   var balanceEl = document.getElementById('pointBalance');
   currentPointBalance = parseInt(balanceEl ? balanceEl.textContent.replace(/,/g, '') : '0') || 0;
   document.getElementById('withdrawPointBalance').textContent = currentPointBalance.toLocaleString();
@@ -466,12 +508,10 @@ function closeWithdrawModal() {
   document.getElementById('withdrawModal').classList.remove('active');
 }
 
-// Close modal on backdrop click
 document.getElementById('withdrawModal').addEventListener('click', function(e) {
   if (e.target === this) closeWithdrawModal();
 });
 
-// Close modal on ESC key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeWithdrawModal();
 });
@@ -487,6 +527,8 @@ async function executeWithdraw() {
     var session = (await sb.auth.getSession()).data.session;
     if (!session) {
       showWithdrawError('セッションが切れています。再度ログインしてください。');
+      btn.disabled = false;
+      btn.textContent = '退会を申請する';
       return;
     }
 
@@ -500,23 +542,58 @@ async function executeWithdraw() {
     var data = await resp.json();
 
     if (resp.ok) {
-      // Sign out locally
-      await sb.auth.signOut();
-      sessionStorage.removeItem('aiden_member_id');
-
-      // Show completion screen
       closeWithdrawModal();
       document.getElementById('mainContent').style.display = 'none';
       document.getElementById('withdrawComplete').style.display = '';
     } else {
-      showWithdrawError(data.error || '退会処理に失敗しました');
+      showWithdrawError(data.error || '退会申請に失敗しました');
     }
   } catch (e) {
     showWithdrawError('通信エラーが発生しました');
   }
 
   btn.disabled = false;
-  btn.textContent = '退会する';
+  btn.textContent = '退会を申請する';
+}
+
+async function cancelWithdraw() {
+  var btn = document.getElementById('cancelWithdrawBtn');
+  if (!confirm('退会申請をキャンセルしますか？')) return;
+
+  btn.disabled = true;
+  btn.textContent = '処理中...';
+
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    if (!session) {
+      alert('セッションが切れています。再度ログインしてください。');
+      btn.disabled = false;
+      btn.textContent = '退会をキャンセルする';
+      return;
+    }
+
+    var resp = await fetch('https://aiden-jp.net/api/members/withdraw/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+    });
+    var data = await resp.json();
+
+    if (resp.ok) {
+      document.getElementById('withdrawPending').classList.remove('active');
+      document.getElementById('withdrawSection').style.display = '';
+      alert('退会申請をキャンセルしました。');
+    } else {
+      alert(data.error || 'キャンセルに失敗しました');
+    }
+  } catch (e) {
+    alert('通信エラーが発生しました');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '退会をキャンセルする';
 }
 
 function showWithdrawError(msg) {
