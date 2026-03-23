@@ -703,5 +703,18 @@ async function resendVerificationFromBanner() {
   btn.textContent = '認証メールを再送する';
 }
 </script>
+<script src="aiden-chat-widget.js"></script>
+<script>
+(function(){
+  // Get member ID from localStorage if available
+  const memberId = localStorage.getItem('aiden_member_id') || null;
+  window._aidenChat = new AidenChatWidget({
+    contextType: 'enduser',
+    memberId: memberId,
+    supabaseClient: typeof sb !== 'undefined' ? sb : null,
+    apiBase: 'https://aiden-jp.net',
+  });
+})();
+</script>
 </body>
 </html>

@@ -1258,5 +1258,18 @@ function startPolling() {
   <div style="margin-top:4px">緊急時: 管理者に直接ご連絡ください</div>
   <div style="margin-top:4px">Powered by AIden</div>
 </footer>
+<script src="aiden-chat-widget.js"></script>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  new AidenChatWidget({
+    contextType: 'merchant',
+    storeId: params.get('store_id') || null,
+    brandId: params.get('brand_id') || null,
+    supabaseClient: typeof sb !== 'undefined' ? sb : null,
+    apiBase: 'https://aiden-jp.net',
+  });
+})();
+</script>
 </body>
 </html>

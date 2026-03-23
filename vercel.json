@@ -10,6 +10,7 @@
   ],
   "rewrites": [
     { "source": "/api/orders", "destination": "/api/orders/__root" },
+    { "source": "/api/chat", "destination": "/api/chat/__root" },
     { "source": "/", "destination": "/aiden-brand-sushiro.html" },
     { "source": "/legal", "destination": "/legal/index.html" },
     { "source": "/legal/", "destination": "/legal/index.html" },

@@ -15863,5 +15863,18 @@ async function submitPlanChangeRequest(plan, direction) {
   <a href="./aiden-privacy-client.html" style="color:#6c5ce7;margin:0 8px;text-decoration:underline">プライバシーポリシー</a>
   <div style="margin-top:8px;font-size:11px;color:#aaa">Powered by AIden</div>
 </footer>
+<script src="aiden-chat-widget.js"></script>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  new AidenChatWidget({
+    contextType: 'merchant',
+    storeId: params.get('store_id') || null,
+    brandId: params.get('brand_id') || null,
+    supabaseClient: typeof sb !== 'undefined' ? sb : null,
+    apiBase: 'https://aiden-jp.net',
+  });
+})();
+</script>
 </body>
 </html>

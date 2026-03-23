@@ -2576,8 +2576,20 @@ function goToCheckout() {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
   <div style="margin-bottom:6px"><a href="./legal/terms.html" style="color:#666;margin:0 8px">利用規約</a><a href="./legal/privacy.html" style="color:#666;margin:0 8px">プライバシーポリシー</a></div>
-  <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a></div>
+  <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a> | <a href="javascript:void(0)" onclick="if(window._aidenChat)window._aidenChat.open()" style="color:#D32F2F;font-weight:600">チャットで問い合わせ</a></div>
   <div style="margin-top:4px">Powered by AIden</div>
 </footer>
+<script src="aiden-chat-widget.js"></script>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  window._aidenChat = new AidenChatWidget({
+    contextType: 'enduser',
+    storeId: params.get('store_id') || params.get('sid') || null,
+    supabaseClient: typeof sb !== 'undefined' ? sb : null,
+    apiBase: 'https://aiden-jp.net',
+  });
+})();
+</script>
 </body>
 </html>
