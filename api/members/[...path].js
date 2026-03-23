@@ -177,7 +177,12 @@ async function handleRegister(req, res) {
 
     const authUserId = authData.user.id;
 
-    const memberData = { auth_user_id: authUserId, first_name, last_name, email, phone, name: (last_name || '') + ' ' + (first_name || '') };
+    const memberData = {
+      auth_user_id: authUserId, first_name, last_name, email, phone,
+      name: (last_name || '') + ' ' + (first_name || ''),
+      email_verification_sent_at: new Date().toISOString(),
+      email_verification_resend_count: 0,
+    };
     if (brand_id) memberData.brand_id = brand_id;
     if (gender) memberData.gender = gender;
     if (birth_date) memberData.birth_date = birth_date;
@@ -610,34 +615,56 @@ async function handleLineCallback(req, res) {
   }
 }
 
-// --- Resend Verification Email ---
+// --- Resend Verification Email (Phase 2) ---
 async function handleResendVerification(req, res) {
   if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
 
   const { email } = req.body || {};
   if (!email) return error(res, 'メールアドレスを入力してください');
 
+  const MAX_RESEND = 5;
+  const COOLDOWN_SECONDS = 60;
+
   try {
-    // Find user by email via admin API
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-    if (listError) return error(res, 'ユーザー検索に失敗しました', 500);
+    // Find member by email
+    const { data: members, error: memberError } = await supabase
+      .from('members')
+      .select('id, auth_user_id, email_verification_sent_at, email_verification_resend_count')
+      .eq('email', email)
+      .limit(1);
 
-    const user = users.find(u => u.email === email);
-    if (!user) return error(res, 'アカウントが見つかりません', 404);
+    if (memberError || !members || members.length === 0) {
+      return error(res, 'アカウントが見つかりません', 404);
+    }
 
-    if (user.email_confirmed_at) {
+    const member = members[0];
+
+    // Check if already verified via auth.users
+    const { data: { user: authUser }, error: authError } = await supabase.auth.admin.getUserById(member.auth_user_id);
+    if (authError || !authUser) return error(res, 'ユーザー情報の取得に失敗しました', 500);
+
+    if (authUser.email_confirmed_at) {
       return error(res, 'このメールアドレスは既に認証済みです');
     }
 
-    // Check registration age - only allow resend within 60 minutes of registration
-    const createdAt = new Date(user.created_at);
-    const now = new Date();
-    const minutesSinceRegistration = (now - createdAt) / (1000 * 60);
-    if (minutesSinceRegistration > 60) {
-      return error(res, '認証期限（60分）が切れています。再度会員登録をお願いいたします。', 410, 'VERIFICATION_EXPIRED');
+    // Check resend count limit (max 5)
+    const resendCount = member.email_verification_resend_count || 0;
+    if (resendCount >= MAX_RESEND) {
+      return error(res, '再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 429, 'RESEND_LIMIT_EXCEEDED');
     }
 
-    // Use Supabase Admin API to generate a new confirmation link
+    // Check cooldown (60 seconds since last send)
+    if (member.email_verification_sent_at) {
+      const lastSent = new Date(member.email_verification_sent_at);
+      const now = new Date();
+      const secondsSinceLastSend = (now - lastSent) / 1000;
+      if (secondsSinceLastSend < COOLDOWN_SECONDS) {
+        const remaining = Math.ceil(COOLDOWN_SECONDS - secondsSinceLastSend);
+        return error(res, `${remaining}秒後に再送できます。`, 429, 'COOLDOWN_ACTIVE');
+      }
+    }
+
+    // Generate new confirmation link (invalidates previous token)
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'signup',
       email: email,
@@ -650,7 +677,31 @@ async function handleResendVerification(req, res) {
       return error(res, '認証メールの再送に失敗しました: ' + linkError.message, 500);
     }
 
-    return ok(res, { message: '認証メールを再送しました。' });
+    // Update resend tracking in members table
+    const newResendCount = resendCount + 1;
+    await supabase
+      .from('members')
+      .update({
+        email_verification_sent_at: new Date().toISOString(),
+        email_verification_resend_count: newResendCount,
+      })
+      .eq('id', member.id);
+
+    // Audit log
+    await supabase.from('audit_logs').insert({
+      member_id: member.id,
+      user_email: email,
+      action: 'email_verification_resent',
+      target_table: 'members',
+      target_id: member.id,
+      details: { resend_count: newResendCount },
+    });
+
+    return ok(res, {
+      message: '認証メールを再送しました。',
+      resend_count: newResendCount,
+      max_resend: MAX_RESEND,
+    });
   } catch (e) {
     return error(res, 'サーバーエラー: ' + e.message, 500);
   }

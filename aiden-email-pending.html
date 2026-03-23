@@ -31,9 +31,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .resend-btn{display:inline-block;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;color:var(--brand);background:transparent;border:2px solid var(--brand);cursor:pointer;transition:all .2s}
 .resend-btn:hover{background:var(--brand);color:#fff}
 .resend-btn:disabled{opacity:.5;cursor:not-allowed;border-color:var(--border);color:var(--text-sub)}
+.resend-btn:disabled:hover{background:transparent;color:var(--text-sub)}
 .resend-msg{font-size:12px;color:var(--text-sub);margin-top:12px;min-height:20px}
 .resend-msg.success{color:#2E7D32}
 .resend-msg.error{color:#E53935}
+.cooldown-text{font-size:13px;color:var(--text-sub);margin-top:8px}
 .home-link{display:inline-block;margin-top:20px;font-size:13px;color:var(--text-sub)}
 </style>
 </head>
@@ -58,6 +60,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
   <button class="resend-btn" id="resendBtn" onclick="resendEmail()">認証メールを再送する</button>
+  <div class="cooldown-text" id="cooldownText"></div>
   <div class="resend-msg" id="resendMsg"></div>
   <div><a href="./" class="home-link">トップページへ戻る</a></div>
 </div>
@@ -65,13 +68,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 var API_BASE = 'https://aiden-jp.net';
 var email = '';
 var resendCount = 0;
-var MAX_RESEND = 3;
+var MAX_RESEND = 5;
+var COOLDOWN_SECONDS = 60;
+var cooldownTimer = null;
+var cooldownRemaining = 0;
+var limitReached = false;
 
 (function init() {
   var params = new URLSearchParams(window.location.search);
   email = params.get('email') || '';
   if (email) {
-    // Mask email for display
     var parts = email.split('@');
     var local = parts[0];
     var masked = local.length > 2 ? local[0] + '***' + local[local.length - 1] : local[0] + '***';
@@ -79,15 +85,38 @@ var MAX_RESEND = 3;
   }
 })();
 
+function startCooldown(seconds) {
+  cooldownRemaining = seconds;
+  var btn = document.getElementById('resendBtn');
+  var cooldownEl = document.getElementById('cooldownText');
+  btn.disabled = true;
+
+  function tick() {
+    if (cooldownRemaining <= 0) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+      cooldownEl.textContent = '';
+      if (!limitReached) {
+        btn.disabled = false;
+        btn.textContent = '認証メールを再送する';
+      }
+      return;
+    }
+    cooldownEl.textContent = cooldownRemaining + '秒後に再送できます';
+    btn.textContent = '再送まで ' + cooldownRemaining + '秒';
+    cooldownRemaining--;
+  }
+
+  tick();
+  cooldownTimer = setInterval(tick, 1000);
+}
+
 async function resendEmail() {
   if (!email) {
     showMsg('メールアドレスが不明です。再度会員登録をお試しください。', 'error');
     return;
   }
-  if (resendCount >= MAX_RESEND) {
-    showMsg('再送上限（' + MAX_RESEND + '回）に達しました。', 'error');
-    return;
-  }
+  if (limitReached) return;
 
   var btn = document.getElementById('resendBtn');
   btn.disabled = true;
@@ -102,27 +131,50 @@ async function resendEmail() {
     var data = await resp.json();
 
     if (resp.ok) {
-      resendCount++;
-      showMsg('認証メールを再送しました（' + resendCount + '/' + MAX_RESEND + '回）', 'success');
+      resendCount = data.data && data.data.resend_count ? data.data.resend_count : resendCount + 1;
+      var maxResend = data.data && data.data.max_resend ? data.data.max_resend : MAX_RESEND;
+      showMsg('認証メールを再送しました。受信トレイを確認してください。（' + resendCount + '/' + maxResend + '回）', 'success');
+
+      if (resendCount >= maxResend) {
+        limitReached = true;
+        btn.disabled = true;
+        btn.textContent = '再送上限に達しました';
+        showMsg('再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 'error');
+      } else {
+        startCooldown(COOLDOWN_SECONDS);
+      }
     } else {
-      if (data.code === 'VERIFICATION_EXPIRED') {
+      if (data.code === 'RESEND_LIMIT_EXCEEDED') {
+        limitReached = true;
+        btn.disabled = true;
+        btn.textContent = '再送上限に達しました';
+        showMsg('再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 'error');
+      } else if (data.code === 'COOLDOWN_ACTIVE') {
+        var match = (data.error || '').match(/(\d+)秒/);
+        var remaining = match ? parseInt(match[1]) : COOLDOWN_SECONDS;
+        startCooldown(remaining);
+        showMsg('', '');
+      } else if (data.code === 'VERIFICATION_EXPIRED') {
         showMsg('認証期限が切れています。再度会員登録をお願いします。', 'error');
+        btn.disabled = true;
+        btn.textContent = '認証メールを再送する';
       } else {
         showMsg(data.error || '再送に失敗しました', 'error');
+        btn.disabled = false;
+        btn.textContent = '認証メールを再送する';
       }
     }
   } catch (e) {
     showMsg('通信エラーが発生しました', 'error');
+    btn.disabled = false;
+    btn.textContent = '認証メールを再送する';
   }
-
-  btn.disabled = resendCount >= MAX_RESEND;
-  btn.textContent = '認証メールを再送する';
 }
 
 function showMsg(text, type) {
   var el = document.getElementById('resendMsg');
   el.textContent = text;
-  el.className = 'resend-msg ' + type;
+  el.className = 'resend-msg ' + (type || '');
 }
 </script>
 </body>
