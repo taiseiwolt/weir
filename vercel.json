@@ -8,11 +8,8 @@
       "permanent": true
     }
   ],
-  "routes": [
-    { "src": "^/api/orders$", "dest": "/api/orders/__root" },
-    { "src": "/api/(.*)", "dest": "/api/$1" }
-  ],
   "rewrites": [
+    { "source": "/api/orders", "destination": "/api/orders/__root" },
     { "source": "/", "destination": "/aiden-brand-sushiro.html" },
     { "source": "/legal", "destination": "/legal/index.html" },
     { "source": "/legal/", "destination": "/legal/index.html" },
