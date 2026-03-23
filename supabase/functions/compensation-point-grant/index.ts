@@ -1,27 +1,31 @@
 // Supabase Edge Function: 補償ポイント付与
 // POST /functions/v1/compensation-point-grant
 //
+// 認証: JWT必須（管理者のみポイント付与可能）
+//
 // 環境変数（Supabase Dashboard > Edge Functions > Secrets で設定）:
-//   SUPABASE_SERVICE_ROLE_KEY: eyJxxx（point_transactions テーブル書き込み用）
+//   SUPABASE_SERVICE_ROLE_KEY（point_transactions テーブル書き込み用）
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 serve(async (req) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
 
+  const corsHeaders = getCorsHeaders(req)
+
   try {
+    // JWT または service_role_key による認証
+    const authError = await requireAuthOrServiceRole(req, corsHeaders)
+    if (authError) return authError
+
     const { member_id, brand_id, amount, reason, granted_by } = await req.json()
 
     if (!member_id || !amount || amount <= 0) {
@@ -80,7 +84,7 @@ serve(async (req) => {
     if (insertErr) {
       console.error('Insert error:', insertErr)
       return new Response(
-        JSON.stringify({ error: 'ポイント付与に失敗しました: ' + insertErr.message }),
+        JSON.stringify({ error: 'ポイント付与に失敗しました' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -97,7 +101,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('Edge function error:', err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorMessage(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

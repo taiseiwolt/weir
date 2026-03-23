@@ -13,6 +13,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -63,11 +64,6 @@ interface MonitoringAlert {
   check_type: string
   severity: string
   resolved_at: string | null
-}
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 // --- メトリクス取得関数群 ---
@@ -809,8 +805,14 @@ async function sendEmail(subject: string, html: string): Promise<boolean> {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（cron呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -933,7 +935,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('Monitor usage error:', err)
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
+      JSON.stringify({ error: sanitizeErrorMessage(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

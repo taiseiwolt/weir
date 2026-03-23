@@ -1,6 +1,8 @@
 // Supabase Edge Function: Stripe Connect オンボーディングリンク再生成
 // POST /functions/v1/stripe-connect-onboarding
 //
+// 認証: JWT必須（認証済みユーザーのみ）
+//
 // 既存のStripeアカウントに対してオンボーディングリンクを再生成する
 // （期限切れやリフレッシュ時に使用）
 //
@@ -9,23 +11,25 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://aiden-jp.net'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
 
+  const corsHeaders = getCorsHeaders(req)
+
   try {
+    // JWT または service_role_key による認証
+    const authError = await requireAuthOrServiceRole(req, corsHeaders)
+    if (authError) return authError
+
     const { corp_id, stripe_account_id } = await req.json()
 
     // stripe_account_id が直接指定されていない場合は corp_id から取得
@@ -109,7 +113,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('Edge function error:', err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorMessage(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

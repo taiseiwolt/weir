@@ -1,29 +1,33 @@
 // Supabase Edge Function: Stripe Connect Express アカウント作成 + オンボーディングリンク生成
 // POST /functions/v1/stripe-connect-create
 //
+// 認証: JWT必須（認証済みユーザーのみ）
+//
 // 環境変数（Supabase Dashboard > Edge Functions > Secrets で設定）:
 //   STRIPE_SECRET_KEY（テスト/本番キーを環境変数で切替）
 //   SUPABASE_SERVICE_ROLE_KEY（corps テーブル更新用）
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://aiden-jp.net'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
 
+  const corsHeaders = getCorsHeaders(req)
+
   try {
+    // JWT または service_role_key による認証
+    const authError = await requireAuthOrServiceRole(req, corsHeaders)
+    if (authError) return authError
+
     const { corp_id, business_name, email } = await req.json()
 
     if (!corp_id) {
@@ -109,7 +113,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('Edge function error:', err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorMessage(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

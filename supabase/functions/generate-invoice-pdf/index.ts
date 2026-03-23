@@ -13,14 +13,10 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1'
 import fontkit from 'https://esm.sh/@pdf-lib/fontkit@1.1.1'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 // 日本語フォント (Noto Sans JP) を取得
 async function fetchJapaneseFont(): Promise<ArrayBuffer> {
@@ -54,15 +50,21 @@ function getBillingPeriodLabel(period: string): string {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
 
+  const corsHeaders = getCorsHeaders(req)
+
   try {
+    // 認証: JWT または service_role_key 必須
+    const authError = await requireAuthOrServiceRole(req, corsHeaders)
+    if (authError) return authError
+
     const body = await req.json().catch(() => ({}))
     const { invoice_id } = body
 
     if (!invoice_id) {
-      return jsonResponse({ error: 'invoice_id は必須です' }, 400)
+      return jsonResponse({ error: 'invoice_id は必須です' }, 400, corsHeaders)
     }
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -75,7 +77,7 @@ serve(async (req) => {
       .single()
 
     if (invErr || !invoice) {
-      return jsonResponse({ error: '請求書が見つかりません: ' + (invErr?.message || '') }, 404)
+      return jsonResponse({ error: '請求書が見つかりません' }, 404, corsHeaders)
     }
 
     // 2. 法人情報取得
@@ -393,10 +395,10 @@ serve(async (req) => {
             upsert: true,
           })
         if (retryErr) {
-          return jsonResponse({ error: 'PDF Storage upload failed: ' + retryErr.message }, 500)
+          return jsonResponse({ error: 'PDF Storage アップロードに失敗しました' }, 500, corsHeaders)
         }
       } else {
-        return jsonResponse({ error: 'PDF Storage upload failed: ' + uploadErr.message }, 500)
+        return jsonResponse({ error: 'PDF Storage アップロードに失敗しました' }, 500, corsHeaders)
       }
     }
 
@@ -422,16 +424,16 @@ serve(async (req) => {
       invoice_id,
       pdf_url: pdfUrl,
       storage_path: fileName,
-    })
+    }, 200, corsHeaders)
   } catch (err) {
     console.error('Edge function error:', err)
-    return jsonResponse({ error: (err as Error).message }, 500)
+    return jsonResponse({ error: sanitizeErrorMessage(err) }, 500, corsHeaders)
   }
 })
 
-function jsonResponse(data: unknown, status = 200) {
+function jsonResponse(data: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...headers, 'Content-Type': 'application/json' },
   })
 }

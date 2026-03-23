@@ -11,6 +11,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -18,11 +19,6 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 
 const FROM_EMAIL = 'billing@aiden-jp.net'
 const FROM_NAME = 'AIden 請求管理'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 function formatCurrency(amount: number): string {
   return '¥' + amount.toLocaleString('ja-JP')
@@ -195,8 +191,14 @@ function buildInvoiceEmail(data: {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（内部呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const body = await req.json().catch(() => ({}))
@@ -306,13 +308,13 @@ serve(async (req) => {
     })
   } catch (err) {
     console.error('Edge function error:', err)
-    return jsonResponse({ error: (err as Error).message }, 500)
+    return jsonResponse({ error: sanitizeErrorMessage(err) }, 500)
+  }
+
+  function jsonResponse(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
-
-function jsonResponse(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}

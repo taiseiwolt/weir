@@ -15,21 +15,21 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse } from '../_shared/auth.ts'
 
 const LINE_CHANNEL_ID = Deno.env.get('LINE_CHANNEL_ID')!
 const LINE_CHANNEL_SECRET = Deno.env.get('LINE_CHANNEL_SECRET')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // 認証スキップ: OAuthコールバック（LINE API検証が認証の代わり）
 
   try {
     const url = new URL(req.url)
@@ -214,7 +214,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('line-auth-callback error:', err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: 'LINE認証コールバックでエラーが発生しました' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

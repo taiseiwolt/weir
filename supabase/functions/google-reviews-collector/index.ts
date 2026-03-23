@@ -10,6 +10,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const GOOGLE_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -17,11 +18,6 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const NEARBY_RADIUS_METERS = 3000
 const MAX_COMPETITOR_DETAILS = 10 // 競合のPlace Details取得上限（コスト制御）
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 // --- Google Places API (New) helpers ---
 
@@ -139,8 +135,14 @@ function parsePriceLevel(pl?: string): number | null {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（cron呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -318,7 +320,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('google-reviews-collector error:', error)
-    return new Response(JSON.stringify({ error: String(error) }), {
+    return new Response(JSON.stringify({ error: sanitizeErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

@@ -6,16 +6,12 @@
 // 環境変数: RESEND_API_KEY
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const FROM_EMAIL = 'noreply@aiden-jp.net'
 const FROM_NAME = 'AIden CS'
 const TO_EMAIL = 'support@aiden-jp.net'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 interface ChatMessage {
   role: string
@@ -62,8 +58,14 @@ function buildMessagesHtml(messages: ChatMessage[]): string {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（内部呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const data: EscalationRequest = await req.json()
@@ -184,7 +186,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('send-escalation-email error:', err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorMessage(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

@@ -12,6 +12,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const GOOGLE_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -19,11 +20,6 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const MAX_STORES = 500
 const MAX_NEARBY_PER_REQUEST = 20
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 // Place Details で取得するフィールド（コスト最適化）
 // reviews を除外: Advanced→Basic扱いで月$50削減。レビューは google-reviews-collector-weekly で別途取得。
@@ -174,8 +170,14 @@ function getWeekStart(date: Date): string {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（cron呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -388,7 +390,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('collect-competitor-data error:', error)
-    return new Response(JSON.stringify({ error: String(error) }), {
+    return new Response(JSON.stringify({ error: sanitizeErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

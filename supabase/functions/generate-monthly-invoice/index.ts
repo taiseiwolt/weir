@@ -13,14 +13,10 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 // 手数料率（チャネル別） - フォールバック用
 const FEE_RATES: Record<string, number> = {
@@ -31,8 +27,14 @@ const FEE_RATES: Record<string, number> = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflightResponse(req)
   }
+
+  const corsHeaders = getCorsHeaders(req)
+
+  // service_role認証（cron/admin呼び出し）
+  const authError = await requireAuthOrServiceRole(req, corsHeaders)
+  if (authError) return authError
 
   try {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
@@ -60,7 +62,7 @@ serve(async (req) => {
       .select('id, name')
 
     if (corpsErr) {
-      return jsonResponse({ error: '法人取得に失敗: ' + corpsErr.message }, 500)
+      return jsonResponse({ error: '法人取得に失敗: ' + sanitizeErrorMessage(corpsErr) }, 500)
     }
 
     if (!corps || corps.length === 0) {
@@ -75,7 +77,7 @@ serve(async (req) => {
       .lt('created_at', periodEnd)
 
     if (ordersErr) {
-      return jsonResponse({ error: '注文取得に失敗: ' + ordersErr.message }, 500)
+      return jsonResponse({ error: '注文取得に失敗: ' + sanitizeErrorMessage(ordersErr) }, 500)
     }
 
     // 3. AIden原資ポイント消費を取得（source='aiden_compensation' かつ amount < 0 = 消費）
@@ -275,13 +277,13 @@ serve(async (req) => {
     })
   } catch (err) {
     console.error('Edge function error:', err)
-    return jsonResponse({ error: err.message }, 500)
+    return jsonResponse({ error: sanitizeErrorMessage(err) }, 500)
+  }
+
+  function jsonResponse(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
-
-function jsonResponse(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}
