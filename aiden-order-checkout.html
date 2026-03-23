@@ -1817,30 +1817,6 @@ async function placeOrder() {
   document.getElementById('orderAlert').classList.remove('show');
   document.querySelectorAll('.section-alert').forEach(a => a.classList.remove('show'));
 
-  // === BAN照合チェック ===
-  const banCheckEmail = document.getElementById('custEmail').value.trim();
-  const banCheckStoreId = CHECKOUT_DATA.storeId || '';
-  try {
-    const banRes = await fetch(SUPABASE_URL + '/functions/v1/check-ban-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
-      body: JSON.stringify({ email: banCheckEmail, store_id: banCheckStoreId })
-    });
-    if (banRes.ok) {
-      const banData = await banRes.json();
-      if (banData.is_banned) {
-        const alertEl = document.getElementById('orderAlert');
-        alertEl.textContent = 'この注文は処理できません。お問い合わせください。';
-        alertEl.classList.add('show');
-        alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-    }
-  } catch (e) {
-    // BAN照合サーバーに到達できない場合は注文を続行（可用性優先）
-    console.warn('BAN check failed, proceeding with order:', e);
-  }
-
   // 住所保存処理（チェックされている場合）
   saveAddressIfChecked();
 
