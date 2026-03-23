@@ -14,6 +14,9 @@
   ],
   "rewrites": [
     { "source": "/", "destination": "/aiden-brand-sushiro.html" },
-    { "source": "/((?!api/).*)", "destination": "/404.html" }
+    { "source": "/legal", "destination": "/legal/index.html" },
+    { "source": "/legal/", "destination": "/legal/index.html" },
+    { "source": "/legal/:path", "destination": "/legal/:path" },
+    { "source": "/((?!api/|legal/).*)", "destination": "/404.html" }
   ]
 }
