@@ -227,6 +227,7 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 </div>
 
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* =====================================================
    BRAND CONFIG
    ===================================================== */
@@ -863,11 +864,11 @@ function buildMenu() {
     mainHtml += '<div class="menu-grid">';
     cat.items.forEach(function(item, idx) {
       mainHtml += '<div class="menu-card" onclick="openModal(\''+cat.id+'\','+idx+')">'
-        +'<div class="menu-card-img" style="background:'+item.bg+'">'+item.emoji+'</div>'
+        +'<div class="menu-card-img" style="background:'+escH(item.bg)+'">'+escH(item.emoji)+'</div>'
         +'<div class="menu-card-body">'
         +'<div class="menu-card-tags">'+buildTagsHtml(item.tags,item.discount)+'</div>'
-        +'<div class="menu-card-name">'+t(item.nameKey)+'</div>'
-        +'<div class="menu-card-desc">'+t(item.outlineKey)+'</div>'
+        +'<div class="menu-card-name">'+escH(t(item.nameKey))+'</div>'
+        +'<div class="menu-card-desc">'+escH(t(item.outlineKey))+'</div>'
         +'<div class="menu-card-price">'+buildPriceHtml(item)+'</div>'
         +'</div></div>';
     });
@@ -885,14 +886,14 @@ function openModal(catId, idx) {
   var courseNote = item.isCourse
     ? '<p style="font-size:12px;color:var(--text3);margin-top:10px">'+t('reserve_note')+' <a href="javascript:void(0)" onclick="openResModal()" style="color:var(--brand-primary)">'+t('reserve_link')+'</a></p>' : '';
   document.getElementById('item-modal-inner').innerHTML =
-    '<div class="item-modal-img" style="background:'+item.bg+'">'+item.emoji+'</div>'
+    '<div class="item-modal-img" style="background:'+escH(item.bg)+'">'+escH(item.emoji)+'</div>'
     +'<div class="item-modal-body">'
     +'<div class="item-modal-tags">'+buildTagsHtml(item.tags,item.discount)+'</div>'
-    +'<div class="item-modal-name">'+t(item.nameKey)+'</div>'
-    +'<div class="item-modal-outline">'+t(item.outlineKey)+'</div>'
-    +'<div class="item-modal-desc"'+(t(item.detailKey)?'':' style="display:none"')+'>'+t(item.detailKey)+'</div>'
+    +'<div class="item-modal-name">'+escH(t(item.nameKey))+'</div>'
+    +'<div class="item-modal-outline">'+escH(t(item.outlineKey))+'</div>'
+    +'<div class="item-modal-desc"'+(t(item.detailKey)?'':' style="display:none"')+'>'+escH(t(item.detailKey))+'</div>'
     +'<div class="item-modal-price">'+priceHtml+'</div>'
-    +'<div class="item-modal-allergen"><strong>'+t('allergen_label')+'：</strong>'+allergens+'</div>'
+    +'<div class="item-modal-allergen"><strong>'+escH(t('allergen_label'))+'：</strong>'+escH(allergens)+'</div>'
     +courseNote+'</div>';
   document.getElementById('item-modal').classList.add('open');
   document.body.style.overflow = 'hidden';

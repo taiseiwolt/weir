@@ -305,6 +305,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 </div>
 
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ===================================================================
 // SUPABASE CONFIG
 // ===================================================================
@@ -455,7 +456,7 @@ function fmtDate(d) {
         var daysLeft = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
         if (daysLeft <= 30) {
           document.getElementById('expiryWarn').style.display = 'flex';
-          document.getElementById('expiryText').innerHTML = '<strong>' + soonestExpiryAmount + 'pt</strong> が' + fmtDate(soonestExpiry) + 'に失効します。お早めにご利用ください。';
+          document.getElementById('expiryText').innerHTML = '<strong>' + soonestExpiryAmount + 'pt</strong> が' + escH(fmtDate(soonestExpiry)) + 'に失効します。お早めにご利用ください。';
         }
       }
     }
@@ -472,8 +473,8 @@ function fmtDate(d) {
           return '<div class="review-item">'
             + '<div class="review-item-icon">⭐</div>'
             + '<div class="review-item-info">'
-            + '<div class="review-item-desc">' + (t.reason || '口コミ投稿ポイント') + '</div>'
-            + '<div class="review-item-date">' + fmtDate(t.created_at) + '</div></div>'
+            + '<div class="review-item-desc">' + escH(t.reason || '口コミ投稿ポイント') + '</div>'
+            + '<div class="review-item-date">' + escH(fmtDate(t.created_at)) + '</div></div>'
             + '<div class="review-item-pts">+' + t.amount + '</div></div>';
         }).join('');
       } else {
@@ -490,11 +491,11 @@ function fmtDate(d) {
         var c = mc.coupons;
         if (!c) return '';
         var discountLabel = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value.toLocaleString() + '割引';
-        var expiryLabel = c.expires_at ? '有効期限: ' + fmtDate(c.expires_at) : '';
+        var expiryLabel = c.expires_at ? '有効期限: ' + escH(fmtDate(c.expires_at)) : '';
         return '<div class="coupon-item">'
           + '<div class="coupon-icon">🎟️</div>'
           + '<div class="coupon-info">'
-          + '<div class="coupon-name">' + c.name + '</div>'
+          + '<div class="coupon-name">' + escH(c.name) + '</div>'
           + '<div class="coupon-desc">' + discountLabel + '</div>'
           + (expiryLabel ? '<div class="coupon-expiry">' + expiryLabel + '</div>' : '')
           + '</div></div>';

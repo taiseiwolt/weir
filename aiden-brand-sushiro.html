@@ -459,6 +459,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 </div>
 
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
@@ -963,7 +964,7 @@ async function loadFromSupabase() {
       if (sel) {
         sel.innerHTML = '<option value="">店舗を選択してください</option>';
         storesRes.data.forEach(function(s) {
-          sel.innerHTML += '<option value="' + s.name + '">' + s.name + '</option>';
+          sel.innerHTML += '<option value="' + escH(s.name) + '">' + escH(s.name) + '</option>';
         });
       }
     }
@@ -977,7 +978,7 @@ async function loadFromSupabase() {
           var d = new Date(n.published_at);
           var ds = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
           var catLabel = NEWS_CAT_MAP[n.category] || n.category;
-          return '<div class="news-item"><span class="news-date">' + ds + '</span><span class="news-cat ' + n.category + '">' + catLabel + '</span><span class="news-title"><a href="' + (n.url || '#') + '">' + n.title + '</a></span></div>';
+          return '<div class="news-item"><span class="news-date">' + ds + '</span><span class="news-cat ' + escH(n.category) + '">' + escH(catLabel) + '</span><span class="news-title"><a href="' + escH(n.url || '#') + '">' + escH(n.title) + '</a></span></div>';
         }).join('');
       }
     }

@@ -249,6 +249,7 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 </div>
 
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* =====================================================
    BRAND CONFIG
    ===================================================== */
@@ -369,7 +370,7 @@ function renderResults(stores) {
   Object.keys(grouped).forEach(function(pref) {
     var list = grouped[pref];
     html += '<div class="pref-section">'
-      + '<div class="pref-header"><h2>'+pref+'</h2><span class="pref-count">'+list.length+'店舗</span></div>'
+      + '<div class="pref-header"><h2>'+escH(pref)+'</h2><span class="pref-count">'+list.length+'店舗</span></div>'
       + '<div class="store-grid">';
     list.forEach(function(s) {
       var availLabel = s.avail==='ok' ? '空あり' : s.avail==='few' ? '残りわずか' : '満席';
@@ -378,14 +379,14 @@ function renderResults(stores) {
         var on = s.attrs.indexOf(a.key) > -1;
         return on ? '<span class="store-attr-tag on">'+a.icon+' '+a.label+'</span>' : '';
       }).join('');
-      html += '<a class="store-card" href="'+s.storeUrl+'">'
-        + '<div class="store-card-img" style="background:'+s.bg+'">'+(s.thumbUrl ? '' : '🏪')+'<span class="store-avail '+availCls+'">'+availLabel+'</span></div>'
+      html += '<a class="store-card" href="'+escH(s.storeUrl)+'">'
+        + '<div class="store-card-img" style="background:'+escH(s.bg)+'">'+(s.thumbUrl ? '' : '🏪')+'<span class="store-avail '+availCls+'">'+availLabel+'</span></div>'
         + '<div class="store-card-body">'
-        + '<div class="store-card-name">'+s.name+'</div>'
-        + '<div class="store-card-addr">'+s.addr+'</div>'
-        + '<div class="store-card-station">'+s.station+'</div>'
+        + '<div class="store-card-name">'+escH(s.name)+'</div>'
+        + '<div class="store-card-addr">'+escH(s.addr)+'</div>'
+        + '<div class="store-card-station">'+escH(s.station)+'</div>'
         + '<div class="store-card-attrs">'+attrTags+'</div>'
-        + '<div class="store-card-hours">営業時間：'+s.hours+'</div>'
+        + '<div class="store-card-hours">営業時間：'+escH(s.hours)+'</div>'
         + '</div></a>';
     });
     html += '</div></div>';

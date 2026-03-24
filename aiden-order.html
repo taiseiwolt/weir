@@ -974,6 +974,7 @@ input,select,textarea{font-family:var(--font)}
 <div class="toast" id="toast"></div>
 </div>
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 /* ============================================================
    BRAND
@@ -1958,27 +1959,27 @@ function renderMenu(){
   var cats=getCategories();
   var tabHtml='<div class="cat-tab active" data-cat="all" onclick="filterCat(\'all\',this)">'+t('cat_all')+'</div>';
   cats.forEach(function(c){
-    tabHtml+='<div class="cat-tab" data-cat="'+c.name+'" onclick="filterCat(\''+c.name+'\',this)">'+c.emoji+' '+c.name+'</div>';
+    tabHtml+='<div class="cat-tab" data-cat="'+escH(c.name)+'" onclick="filterCat(\''+escH(c.name)+'\',this)">'+escH(c.emoji)+' '+escH(c.name)+'</div>';
   });
   document.getElementById('cat-tabs').innerHTML=tabHtml;
 
   // Menu body
   var html='';
   MENU.forEach(function(cat){
-    html+='<div class="menu-category" data-cat="'+cat.category+'">';
-    html+='<div class="menu-cat-header">'+cat.emoji+' '+cat.category+'</div>';
+    html+='<div class="menu-category" data-cat="'+escH(cat.category)+'">';
+    html+='<div class="menu-cat-header">'+escH(cat.emoji)+' '+escH(cat.category)+'</div>';
     cat.items.forEach(function(item){
       var sold=item.soldOut;
       var taxRate=item.tax/100;
       var priceWithTax=Math.floor(item.price*(1+taxRate));
-      html+='<div class="menu-item" onclick="'+(sold?'':('openItemModal(\''+item.id+'\')'))+'" style="'+(sold?'opacity:.6;':'')+'cursor:'+(sold?'default':'pointer')+'">'
+      html+='<div class="menu-item" onclick="'+(sold?'':('openItemModal(\''+escH(item.id)+'\')'))+'" style="'+(sold?'opacity:.6;':'')+'cursor:'+(sold?'default':'pointer')+'">'
         +'<div class="menu-item-info">'
         +(item.popular?'<div class="menu-item-popular">人気</div>':'')
-        +'<div class="menu-item-name">'+item.name+'</div>'
-        +'<div class="menu-item-desc">'+item.desc+'</div>'
+        +'<div class="menu-item-name">'+escH(item.name)+'</div>'
+        +'<div class="menu-item-desc">'+escH(item.desc)+'</div>'
         +'<div class="menu-item-price">¥'+priceWithTax.toLocaleString()+'<span class="menu-item-price-sub"> 税込</span></div>'
         +'</div>'
-        +'<div class="menu-item-img" style="font-size:36px">'+item.emoji
+        +'<div class="menu-item-img" style="font-size:36px">'+escH(item.emoji)
         +(sold?'<div class="menu-item-soldout-overlay">品切れ</div>':'')
         +(sold?'':'<div class="menu-item-add-btn">+</div>')
         +'</div>'
@@ -2190,10 +2191,10 @@ function openRecommend(lastItemId){
   recs.forEach(function(item){
     var price=Math.floor(item.price*(1+item.tax/100));
     html+='<div class="rec-item">'
-      +'<div class="rec-item-img">'+item.emoji+'</div>'
-      +'<div class="rec-item-info"><div class="rec-item-name">'+item.name+'</div>'
+      +'<div class="rec-item-img">'+escH(item.emoji)+'</div>'
+      +'<div class="rec-item-info"><div class="rec-item-name">'+escH(item.name)+'</div>'
       +'<div class="rec-item-price">¥'+price.toLocaleString()+' 税込</div></div>'
-      +'<button class="rec-item-add" id="rec-add-'+item.id+'" onclick="addRecItem(\''+item.id+'\',this)">追加</button>'
+      +'<button class="rec-item-add" id="rec-add-'+escH(item.id)+'" onclick="addRecItem(\''+escH(item.id)+'\',this)">追加</button>'
       +'</div>';
   });
   document.getElementById('rec-items').innerHTML=html;
@@ -2264,9 +2265,9 @@ function renderCheckout(){
   var pHtml='';
   PAYMENT_METHODS.forEach(function(p){
     var sel=selectedPayment===p.id;
-    pHtml+='<div class="payment-opt '+(sel?'selected':'')+'" onclick="selectPayment(\''+p.id+'\')">'
-      +'<div class="payment-opt-icon">'+p.icon+'</div>'
-      +'<div class="payment-opt-name">'+p.name+'</div>'
+    pHtml+='<div class="payment-opt '+(sel?'selected':'')+'" onclick="selectPayment(\''+escH(p.id)+'\')">'
+      +'<div class="payment-opt-icon">'+escH(p.icon)+'</div>'
+      +'<div class="payment-opt-name">'+escH(p.name)+'</div>'
       +'<div class="payment-radio '+(sel?'on':'')+'"></div>'
       +'</div>';
   });
