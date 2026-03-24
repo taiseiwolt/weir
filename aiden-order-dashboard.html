@@ -713,7 +713,7 @@ async function loadFromSupabase() {
   }
 
   // 3. Load orders with items
-  const orderCols = 'id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, estimated_delivery_at, channel, member_id, notes, created_at, updated_at, pickup_at, order_items(id, product_id, product_name, size_id, quantity, unit_price, subtotal)';
+  const orderCols = 'id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, estimated_delivery_at, channel, member_id, notes, created_at, updated_at, pickup_at, order_items(id, product_id, size_id, quantity, unit_price, subtotal)';
   const {data: orders} = await sb.from('orders').select(orderCols).eq('store_id', STORE_ID).order('created_at', {ascending: false});
   if (!orders || orders.length === 0) throw new Error('No orders');
 
@@ -1137,7 +1137,7 @@ function startRealtime() {
             } catch(e) { /* fall through */ }
           }
           if (!fullOrder) {
-            const { data } = await sb.from('orders').select('id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, channel, member_id, notes, created_at, updated_at, order_items(id, product_id, product_name, size_id, quantity, unit_price, subtotal)').eq('id', payload.new.id).single();
+            const { data } = await sb.from('orders').select('id, display_id, store_id, brand_id, order_type, status, total_amount, tracking_token, tracking_status, payment_status, payment_intent_id, channel, member_id, notes, created_at, updated_at, order_items(id, product_id, size_id, quantity, unit_price, subtotal)').eq('id', payload.new.id).single();
             fullOrder = data;
           }
           if (fullOrder) {

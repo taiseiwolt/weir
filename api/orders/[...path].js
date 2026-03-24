@@ -496,7 +496,7 @@ async function handleOrderDetail(req, res, id) {
 
     const { data: order, error: dbError } = await supabase
       .from('orders')
-      .select('*, order_items(id, product_id, product_name, size_id, quantity, unit_price, subtotal)')
+      .select('*, order_items(id, product_id, size_id, quantity, unit_price, subtotal)')
       .eq(column, id)
       .single();
 

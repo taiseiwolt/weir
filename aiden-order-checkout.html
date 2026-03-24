@@ -1868,7 +1868,6 @@ async function placeOrder() {
           store_id: CHECKOUT_DATA.storeId,
           cart_items: (CHECKOUT_DATA.cartItems || []).map(item => ({
             product_id: item.id || item.productId || null,
-            product_name: item.name,
             quantity: item.qty || 1,
             unit_price: item.price || 0,
             options: item.storeOptions || item.options || null
@@ -2117,10 +2116,8 @@ async function placeOrder() {
         const orderItems = CHECKOUT_DATA.cartItems.map(item => ({
           order_id: orderRow.id,
           product_id: item.productId || null,
-          product_name: item.name,
           quantity: item.qty || 1,
           unit_price: item.price || 0,
-          options: item.options || null,
         }));
         await sb.from('order_items').insert(orderItems);
       }
