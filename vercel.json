@@ -18,5 +18,16 @@
     { "source": "/legal/", "destination": "/legal/index.html" },
     { "source": "/legal/:path", "destination": "/legal/:path" },
     { "source": "/((?!api/|legal/).*)", "destination": "/404.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://iikwusprydaogzeslgdz.supabase.co https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://www.google.com; connect-src 'self' https://iikwusprydaogzeslgdz.supabase.co wss://iikwusprydaogzeslgdz.supabase.co https://api.stripe.com https://nominatim.openstreetmap.org https://zipcloud.ibsnet.co.jp https://aiden-jp.net; frame-src https://js.stripe.com"
+        }
+      ]
+    }
   ]
 }

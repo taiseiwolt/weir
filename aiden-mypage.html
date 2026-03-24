@@ -347,7 +347,7 @@ function fmtDate(d) {
     document.getElementById('mainContent').style.display = '';
 
     // Load member data
-    const { data: member } = await sb.from('members').select('*').eq('id', memberId).single();
+    const { data: member } = await sb.from('members').select('id, brand_id, display_id, full_name, first_name, last_name, email, phone, current_rank_id, total_points, total_spend, monthly_order_count, order_count, visit_count, created_at, updated_at').eq('id', memberId).single();
     if (!member) {
       document.getElementById('loginPrompt').style.display = '';
       document.getElementById('mainContent').style.display = 'none';
@@ -377,7 +377,7 @@ function fmtDate(d) {
     }
 
     // Load rank settings
-    const { data: ranks } = await sb.from('rank_settings').select('*').eq('brand_id', brandId).order('sort_order', { ascending: true });
+    const { data: ranks } = await sb.from('rank_settings').select('id, brand_id, rank_name, is_default, sort_order, cond_monthly_count, cond_total_spend, benefit_point_multi, benefit_birthday, benefit_other, icon').eq('brand_id', brandId).order('sort_order', { ascending: true });
 
     if (ranks && ranks.length > 0) {
       document.getElementById('statusCard').style.display = '';
@@ -415,7 +415,7 @@ function fmtDate(d) {
     }
 
     // Load point settings and balance
-    const { data: pointSettings } = await sb.from('point_settings').select('*').eq('brand_id', brandId).eq('enabled', true).single();
+    const { data: pointSettings } = await sb.from('point_settings').select('id, brand_id, enabled, earn_rate_unit, earn_rate_point, use_rate_point, use_rate_yen, expiry_months').eq('brand_id', brandId).eq('enabled', true).single();
     if (pointSettings) {
       document.getElementById('pointSection').style.display = '';
 
@@ -462,10 +462,10 @@ function fmtDate(d) {
     }
 
     // Review point history
-    const { data: reviewSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', brandId).eq('enabled', true).single();
+    const { data: reviewSettings } = await sb.from('review_point_settings').select('id, brand_id, enabled, points_per_review, monthly_limit').eq('brand_id', brandId).eq('enabled', true).single();
     if (reviewSettings) {
       document.getElementById('sectionReviewHistory').style.display = '';
-      const { data: reviewTxns } = await sb.from('point_transactions').select('*').eq('member_id', memberId).eq('brand_id', brandId).eq('source', 'review').order('created_at', { ascending: false }).limit(5);
+      const { data: reviewTxns } = await sb.from('point_transactions').select('id, member_id, brand_id, amount, source, reason, expires_at, created_at').eq('member_id', memberId).eq('brand_id', brandId).eq('source', 'review').order('created_at', { ascending: false }).limit(5);
 
       var reviewCard = document.getElementById('reviewHistoryCard');
       if (reviewTxns && reviewTxns.length > 0) {

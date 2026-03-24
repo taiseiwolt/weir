@@ -44,7 +44,7 @@ async function handleCategories(req, res) {
 
     const { data: categories, error: dbError } = await supabase
       .from('categories')
-      .select('*')
+      .select('id, brand_id, name, sort_order')
       .eq('brand_id', targetBrandId)
       .order('sort_order');
 
@@ -144,9 +144,9 @@ async function getProductsByStore(res, storeId) {
 
 async function getProductsByBrand(res, brandId) {
   const [catResult, prodResult, sizeResult] = await Promise.all([
-    supabase.from('categories').select('*').eq('brand_id', brandId).order('sort_order'),
-    supabase.from('products').select('*').eq('brand_id', brandId),
-    supabase.from('product_sizes').select('*'),
+    supabase.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', brandId).order('sort_order'),
+    supabase.from('products').select('id, brand_id, category_id, name, description, price, image_url, tags, is_available, sort_order').eq('brand_id', brandId),
+    supabase.from('product_sizes').select('id, product_id, name, price, sort_order'),
   ]);
 
   if (catResult.error) return error(res, catResult.error.message, 500);
@@ -173,7 +173,7 @@ async function handleProductDetail(req, res, id) {
     const { data: product, error: dbError } = await supabase
       .from('products')
       .select(`
-        *,
+        id, brand_id, category_id, name, description, price, image_url, tags, is_available, sort_order,
         product_sizes(id, name, price, sort_order),
         product_option_groups(
           id, sort_order,

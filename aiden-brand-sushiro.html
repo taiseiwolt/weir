@@ -459,7 +459,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 </div>
 
 <script>
-function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
@@ -809,7 +809,7 @@ function changeLang(lang) {
     var key = el.getAttribute('data-i18n');
     if (dict[key] !== undefined) {
       if (el.tagName === 'INPUT') el.placeholder = dict[key];
-      else el.innerHTML = dict[key].replace(/\n/g, '<br>');
+      else el.innerHTML = escH(dict[key]).replace(/\n/g, '<br>');
     }
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
@@ -839,8 +839,8 @@ function applyBrandConfig() {
   var mark = document.getElementById('logo-mark');
   var footerMark = document.getElementById('footer-logo-mark');
   if (c.logoMarkType === 'image' && c.logoMarkSrc) {
-    mark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo" loading="lazy">';
-    footerMark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo" loading="lazy">';
+    mark.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="logo" loading="lazy">';
+    footerMark.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="logo" loading="lazy">';
   } else {
     mark.textContent = c.logoMarkEmoji;
     footerMark.textContent = c.logoMarkEmoji;
@@ -849,7 +849,7 @@ function applyBrandConfig() {
   var txt = document.getElementById('logo-text');
   var footerTxt = document.getElementById('footer-logo-text');
   if (c.logoTextType === 'image' && c.logoTextValue) {
-    txt.innerHTML = '<img src="'+c.logoTextValue+'" alt="'+c.name+'" loading="lazy">';
+    txt.innerHTML = '<img src="'+escH(c.logoTextValue)+'" alt="'+escH(c.name)+'" loading="lazy">';
     footerTxt.textContent = c.name;
   } else {
     txt.textContent = c.logoTextValue;
@@ -860,8 +860,8 @@ function applyBrandConfig() {
   var companyLinks = document.getElementById('footer-company-links');
   if (companyLinks) {
     var linksHtml = '';
-    if (c.companyUrl) linksHtml += '<a href="'+c.companyUrl+'" target="_blank" rel="noopener" data-i18n="footer_company">会社情報</a>';
-    if (c.recruitUrl) linksHtml += '<a href="'+c.recruitUrl+'" target="_blank" rel="noopener" data-i18n="footer_recruit">採用情報</a>';
+    if (c.companyUrl) linksHtml += '<a href="'+escH(c.companyUrl)+'" target="_blank" rel="noopener" data-i18n="footer_company">会社情報</a>';
+    if (c.recruitUrl) linksHtml += '<a href="'+escH(c.recruitUrl)+'" target="_blank" rel="noopener" data-i18n="footer_recruit">採用情報</a>';
     if (!linksHtml) linksHtml = '<span style="font-size:12px;color:var(--text3)">—</span>';
     companyLinks.innerHTML = linksHtml;
   }
@@ -885,7 +885,7 @@ function renderSns() {
   SNS_DEFS.forEach(function(def) {
     var url = BRAND_CONFIG.sns[def.key];
     if (url && url.trim()) {
-      html += '<a href="'+url+'" target="_blank" rel="noopener" class="sns-btn '+def.cls+'"><span style="font-size:17px">'+def.icon+'</span> '+def.label+'</a>';
+      html += '<a href="'+escH(url)+'" target="_blank" rel="noopener" class="sns-btn '+escH(def.cls)+'"><span style="font-size:17px">'+escH(def.icon)+'</span> '+escH(def.label)+'</a>';
       count++;
     }
   });
@@ -926,7 +926,7 @@ async function loadFromSupabase() {
     var brandId = storeRes.data.brand_id;
 
     // 2. Load brand config
-    var brandRes = await sb.from('brands').select('*').eq('id', brandId).single();
+    var brandRes = await sb.from('brands').select('id, name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value, sns_line, sns_x, sns_instagram, sns_facebook, sns_tiktok, sns_youtube, sns_threads, company_url, recruit_url, hero_catchphrase').eq('id', brandId).single();
     if (brandRes.data) {
       var b = brandRes.data;
       BRAND_CONFIG.name = b.name || BRAND_CONFIG.name;
@@ -970,7 +970,7 @@ async function loadFromSupabase() {
     }
 
     // 4. Load news
-    var newsRes = await sb.from('brand_news').select('*').eq('brand_id', brandId).order('published_at', {ascending: false}).limit(5);
+    var newsRes = await sb.from('brand_news').select('id, brand_id, title, category, published_at, url').eq('brand_id', brandId).order('published_at', {ascending: false}).limit(5);
     if (newsRes.data && newsRes.data.length > 0) {
       var nl = document.getElementById('news-list');
       if (nl) {
@@ -984,7 +984,7 @@ async function loadFromSupabase() {
     }
 
     // 5. Load media (hero, recommend, guide)
-    var mediaRes = await sb.from('media').select('*').eq('entity_type', 'brand').eq('entity_id', brandId).order('sort_order');
+    var mediaRes = await sb.from('media').select('id, entity_type, entity_id, media_type, url, title, sort_order').eq('entity_type', 'brand').eq('entity_id', brandId).order('sort_order');
     if (mediaRes.data && mediaRes.data.length > 0) {
       var heroMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_hero'; });
       var recMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_recommend'; });
@@ -995,7 +995,7 @@ async function loadFromSupabase() {
         var heroBg = document.getElementById('hero-bg');
         if (heroBg) {
           heroBg.textContent = '';
-          heroBg.style.background = 'url(' + heroMedia[0].url + ') center/cover no-repeat';
+          heroBg.style.background = 'url(' + encodeURI(heroMedia[0].url) + ') center/cover no-repeat';
         }
       }
 
@@ -1005,7 +1005,7 @@ async function loadFromSupabase() {
         if (cs) {
           cs.innerHTML = '<div class="campaign-item featured"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0000,#4a0000)"><div style="text-align:center;color:white;padding:12px"><div style="font-size:11px;margin-bottom:4px;opacity:.8">現在実施中の</div><div style="font-size:16px;font-weight:700">キャンペーン</div><div style="font-size:36px;margin-top:8px">▶</div></div></div></div>'
             + recMedia.map(function(m){
-              return '<div class="campaign-item"><div class="campaign-item-img" style="background:url(' + m.url + ') center/cover no-repeat"></div><div class="campaign-item-title">' + (m.title || '') + '</div></div>';
+              return '<div class="campaign-item"><div class="campaign-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="campaign-item-title">' + escH(m.title || '') + '</div></div>';
             }).join('');
         }
       }
@@ -1015,7 +1015,7 @@ async function loadFromSupabase() {
         var gs = document.getElementById('guide-scroll');
         if (gs) {
           gs.innerHTML = guideMedia.map(function(m){
-            return '<div class="guide-item"><div class="guide-item-img" style="background:url(' + m.url + ') center/cover no-repeat"></div><div class="guide-item-title">' + (m.title || '') + (m.description ? '<br>' + m.description : '') + '</div></div>';
+            return '<div class="guide-item"><div class="guide-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="guide-item-title">' + escH(m.title || '') + (m.description ? '<br>' + escH(m.description) : '') + '</div></div>';
           }).join('');
         }
       }
@@ -1271,7 +1271,7 @@ function rmGoStep(n) {
       ['ご要望', document.getElementById('rm-notes').value || 'なし']
     ];
     document.getElementById('rm-confirm-box').innerHTML = rows.map(function(r){
-      return '<div class="rm-confirm-row"><span class="rm-confirm-label">'+r[0]+'</span><span>'+r[1]+'</span></div>';
+      return '<div class="rm-confirm-row"><span class="rm-confirm-label">'+escH(r[0])+'</span><span>'+escH(r[1])+'</span></div>';
     }).join('');
   }
 }

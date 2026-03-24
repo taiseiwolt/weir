@@ -950,7 +950,7 @@ function applyBrand() {
   var mark = document.getElementById('logo-mark');
   mark.innerHTML = (c.logoMarkType==='image'&&c.logoMarkSrc) ? '<img src="'+c.logoMarkSrc+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" loading="lazy">' : c.logoMarkEmoji;
   var txt = document.getElementById('logo-text');
-  txt.innerHTML = (c.logoTextType==='image'&&c.logoTextValue) ? '<img src="'+c.logoTextValue+'" style="height:32px" loading="lazy">' : c.logoTextValue;
+  txt.innerHTML = (c.logoTextType==='image'&&c.logoTextValue) ? '<img src="'+c.logoTextValue+'" style="height:32px" loading="lazy">' : escH(c.logoTextValue);
 }
 function toggleNav() {
   var nav = document.getElementById('mobile-nav');
@@ -995,9 +995,9 @@ async function loadMenuFromSupabase() {
   }
 
   // Supabase fallback
-  var {data: cats} = await sb.from('categories').select('*').eq('brand_id', BRAND_ID).order('sort_order');
-  var {data: products} = await sb.from('products').select('*').eq('brand_id', BRAND_ID);
-  var {data: sizes} = await sb.from('product_sizes').select('*');
+  var {data: cats} = await sb.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', BRAND_ID).order('sort_order');
+  var {data: products} = await sb.from('products').select('id, brand_id, category_id, name, description, price, image_url, is_available, sort_order').eq('brand_id', BRAND_ID);
+  var {data: sizes} = await sb.from('product_sizes').select('id, product_id, label, price, sort_order');
   if (!cats || !cats.length || !products || !products.length) return;
   MENU_DATA = cats.map(function(c, ci) {
     var catProducts = products.filter(function(p) { return p.category_id === c.id; });
@@ -1247,7 +1247,7 @@ function rmGoStep(n) {
       ['ご要望', document.getElementById('rm-notes').value || 'なし']
     ];
     document.getElementById('rm-confirm-box').innerHTML = rows.map(function(r){
-      return '<div class="rm-confirm-row"><span class="rm-confirm-label">'+r[0]+'</span><span>'+r[1]+'</span></div>';
+      return '<div class="rm-confirm-row"><span class="rm-confirm-label">'+escH(r[0])+'</span><span>'+escH(r[1])+'</span></div>';
     }).join('');
   }
 }

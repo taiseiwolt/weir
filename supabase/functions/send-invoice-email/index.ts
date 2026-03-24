@@ -213,7 +213,7 @@ serve(async (req) => {
     // 1. 請求書データ取得
     const { data: invoice, error: invErr } = await sbAdmin
       .from('invoices')
-      .select('*')
+      .select('id, corp_id, billing_period, subtotal, adjustments, tax, total, due_date, pdf_url, adjustment_details, status')
       .eq('id', invoice_id)
       .single()
 
@@ -224,7 +224,7 @@ serve(async (req) => {
     // 2. 法人情報取得
     const { data: corp } = await sbAdmin
       .from('corps')
-      .select('*')
+      .select('id, name, rep, representative, email, rep_email')
       .eq('id', invoice.corp_id)
       .single()
 

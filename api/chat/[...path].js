@@ -645,7 +645,7 @@ async function handlePolicies(req, res) {
 
     let query = supabase
       .from('store_policies')
-      .select('*')
+      .select('id, store_id, brand_id, policy_type, content, created_at, updated_at')
       .order('policy_type');
 
     if (store_id) query = query.eq('store_id', store_id);

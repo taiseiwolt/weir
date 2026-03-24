@@ -182,6 +182,11 @@ img{max-width:100%}
 
 <script>
 // ===================================================================
+// XSS ESCAPE
+// ===================================================================
+function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+// ===================================================================
 // SUPABASE CONFIG
 // ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
@@ -234,7 +239,7 @@ const RANK_COLORS = {
     let hasAnySection = false;
 
     // 1. Rank Settings
-    const { data: ranks } = await sb.from('rank_settings').select('*').eq('brand_id', BRAND_ID).order('sort_order', { ascending: true });
+    const { data: ranks } = await sb.from('rank_settings').select('id, brand_id, rank_name, is_default, sort_order, cond_monthly_count, cond_total_spend, benefit_point_multi, benefit_birthday, benefit_other, icon').eq('brand_id', BRAND_ID).order('sort_order', { ascending: true });
     if (ranks && ranks.length > 0) {
       hasAnySection = true;
       document.getElementById('sectionRank').style.display = '';
@@ -248,54 +253,54 @@ const RANK_COLORS = {
 
         let benefits = '';
         if (r.benefit_point_multi && r.benefit_point_multi > 1) {
-          benefits += '<div class="rank-benefit">ポイント付与率 ' + r.benefit_point_multi + '倍</div>';
+          benefits += '<div class="rank-benefit">ポイント付与率 ' + escH(r.benefit_point_multi) + '倍</div>';
         }
-        if (r.benefit_birthday) benefits += '<div class="rank-benefit">' + r.benefit_birthday + '</div>';
-        if (r.benefit_other) benefits += '<div class="rank-benefit">' + r.benefit_other + '</div>';
+        if (r.benefit_birthday) benefits += '<div class="rank-benefit">' + escH(r.benefit_birthday) + '</div>';
+        if (r.benefit_other) benefits += '<div class="rank-benefit">' + escH(r.benefit_other) + '</div>';
 
         return '<div class="rank-card' + (isCurrent ? ' current' : '') + '" style="background:' + colors.bg + '">'
           + '<div class="rank-header">'
-          + '<div class="rank-icon" style="background:' + colors.icon + '">' + (r.icon || '🏅') + '</div>'
-          + '<div><div class="rank-name" style="color:' + colors.text + '">' + r.rank_name + '</div>'
-          + '<div class="rank-condition">' + condText + '</div></div></div>'
+          + '<div class="rank-icon" style="background:' + colors.icon + '">' + escH(r.icon || '🏅') + '</div>'
+          + '<div><div class="rank-name" style="color:' + colors.text + '">' + escH(r.rank_name) + '</div>'
+          + '<div class="rank-condition">' + escH(condText) + '</div></div></div>'
           + (benefits ? '<div class="rank-benefits">' + benefits + '</div>' : '')
           + '</div>';
       }).join('');
     }
 
     // 2. Point Settings
-    const { data: pointSettings } = await sb.from('point_settings').select('*').eq('brand_id', BRAND_ID).eq('enabled', true).single();
+    const { data: pointSettings } = await sb.from('point_settings').select('id, brand_id, enabled, earn_rate_unit, earn_rate_point, use_rate_point, use_rate_yen, expiry_months').eq('brand_id', BRAND_ID).eq('enabled', true).single();
     if (pointSettings) {
       hasAnySection = true;
       document.getElementById('sectionPoint').style.display = '';
       const ps = pointSettings;
       let html = '';
       html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--green-bg)">🛒</div>'
-        + '<div class="how-to-text"><h4>注文で貯まる</h4><p>お会計' + ps.earn_rate_unit + '円ごとに' + ps.earn_rate_point + 'ポイント付与されます。</p></div></div>';
+        + '<div class="how-to-text"><h4>注文で貯まる</h4><p>お会計' + escH(ps.earn_rate_unit) + '円ごとに' + escH(ps.earn_rate_point) + 'ポイント付与されます。</p></div></div>';
       html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--blue-bg)">💳</div>'
-        + '<div class="how-to-text"><h4>お会計で使える</h4><p>' + ps.use_rate_point + 'ポイント = ' + ps.use_rate_yen + '円として、次回のお会計から値引きできます。</p></div></div>';
+        + '<div class="how-to-text"><h4>お会計で使える</h4><p>' + escH(ps.use_rate_point) + 'ポイント = ' + escH(ps.use_rate_yen) + '円として、次回のお会計から値引きできます。</p></div></div>';
       html += '<div class="how-to-row"><div class="how-to-icon" style="background:#FFEBEE">⏰</div>'
-        + '<div class="how-to-text"><h4>有効期限</h4><p>ポイントの有効期限は付与日から' + ps.expiry_months + 'ヶ月です。</p></div></div>';
+        + '<div class="how-to-text"><h4>有効期限</h4><p>ポイントの有効期限は付与日から' + escH(ps.expiry_months) + 'ヶ月です。</p></div></div>';
 
       // Rank multiplier info
       if (ranks && ranks.some(function(r) { return r.benefit_point_multi > 1; })) {
         html += '<div class="how-to-row"><div class="how-to-icon" style="background:var(--gold-bg)">🏆</div>'
           + '<div class="how-to-text"><h4>ランク倍率</h4><p>ランクが上がるとポイント倍率がアップ！上位ランクでは最大'
-          + Math.max.apply(null, ranks.map(function(r){ return r.benefit_point_multi || 1; }))
+          + escH(Math.max.apply(null, ranks.map(function(r){ return r.benefit_point_multi || 1; })))
           + '倍のポイントが貯まります。</p></div></div>';
       }
       document.getElementById('pointHowTo').innerHTML = html;
     }
 
     // 3. Review Point Settings
-    const { data: reviewSettings } = await sb.from('review_point_settings').select('*').eq('brand_id', BRAND_ID).eq('enabled', true).single();
+    const { data: reviewSettings } = await sb.from('review_point_settings').select('id, brand_id, enabled, points_per_review, monthly_limit, review_link_expiry_days, approval_mode, google_place_id').eq('brand_id', BRAND_ID).eq('enabled', true).single();
     if (reviewSettings) {
       hasAnySection = true;
       document.getElementById('sectionReview').style.display = '';
       const rs = reviewSettings;
       let html = '<div class="review-highlight">'
         + '<div class="review-big-icon">⭐</div>'
-        + '<div class="review-big-text">口コミ投稿で' + rs.points_per_review + 'ポイントもらえる！</div></div>';
+        + '<div class="review-big-text">口コミ投稿で' + escH(rs.points_per_review) + 'ポイントもらえる！</div></div>';
 
       html += '<div class="review-steps">'
         + '<div class="review-step"><div class="review-step-num">1</div><div class="review-step-text">モバイルオーダーで注文する</div></div>'
@@ -303,8 +308,8 @@ const RANK_COLORS = {
         + '<div class="review-step"><div class="review-step-num">3</div><div class="review-step-text">ポイントが自動付与されます</div></div>'
         + '</div>';
 
-      html += '<div class="review-note">※ 月間上限: ' + rs.monthly_limit + '回まで'
-        + '　※ 投稿リンク有効期限: ' + rs.review_link_expiry_days + '日間</div>';
+      html += '<div class="review-note">※ 月間上限: ' + escH(rs.monthly_limit) + '回まで'
+        + '　※ 投稿リンク有効期限: ' + escH(rs.review_link_expiry_days) + '日間</div>';
 
       document.getElementById('reviewCard').innerHTML = html;
     }
@@ -316,11 +321,11 @@ const RANK_COLORS = {
       document.getElementById('sectionIncentive').style.display = '';
       let badges = '';
       if (incentive.type === 'point' || incentive.type === 'both') {
-        badges += '<div class="incentive-badge">🎯 ' + incentive.point_amount + 'ポイント プレゼント</div>';
+        badges += '<div class="incentive-badge">🎯 ' + escH(incentive.point_amount) + 'ポイント プレゼント</div>';
       }
       if ((incentive.type === 'coupon' || incentive.type === 'both') && incentive.coupons) {
         const c = incentive.coupons;
-        const discountLabel = c.discount_type === 'percent' ? c.discount_value + '%OFF' : '¥' + c.discount_value.toLocaleString() + '割引';
+        const discountLabel = c.discount_type === 'percent' ? escH(c.discount_value) + '%OFF' : '¥' + escH(c.discount_value.toLocaleString()) + '割引';
         badges += '<div class="incentive-badge">🎟️ ' + discountLabel + 'クーポン</div>';
       }
       document.getElementById('incentiveCard').innerHTML =

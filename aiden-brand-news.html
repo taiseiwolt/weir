@@ -118,6 +118,8 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
 </footer>
 
 <script>
+function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 var BRAND_CONFIG = {
   name:'焼肉 炭火亭', primaryColor:'#D32F2F', primaryDark:'#B71C1C',
   headerBg:'#D32F2F', headerTextColor:'#FFFFFF', fontColor:'#333333',
@@ -166,7 +168,7 @@ function renderFilters() {
   var html = '';
   filters.forEach(function(f) {
     var label = f==='all' ? t('f_all') : t(CAT_KEYS[f]);
-    html += '<button class="filter-btn'+(currentFilter===f?' active':'')+'" onclick="setFilter(\''+f+'\')">' + label + '</button>';
+    html += '<button class="filter-btn'+(currentFilter===f?' active':'')+'" onclick="setFilter(\''+f+'\')">' + escH(label) + '</button>';
   });
   document.getElementById('filter-bar').innerHTML = html;
 }
@@ -184,9 +186,9 @@ function render() {
     var catKey = CAT_KEYS[n.cat];
     var title = (n.title[currentLang] || n.title['ja']);
     html += '<div class="news-item">'
-      +'<span class="news-date">'+n.date+'</span>'
-      +'<span class="news-cat '+n.cat+'">'+t(catKey)+'</span>'
-      +'<span class="news-title-text"><a href="#">'+title+'</a></span>'
+      +'<span class="news-date">'+escH(n.date)+'</span>'
+      +'<span class="news-cat '+escH(n.cat)+'">'+escH(t(catKey))+'</span>'
+      +'<span class="news-title-text"><a href="#">'+escH(title)+'</a></span>'
       +'</div>';
   });
   document.getElementById('news-list').innerHTML = html || '<div style="padding:24px;text-align:center;color:var(--text3)">—</div>';
@@ -235,7 +237,7 @@ const BRAND_ID = '22222222-0000-0000-0000-000000000001';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadNewsFromSupabase() {
-  var {data: news} = await sb.from('brand_news').select('*').eq('brand_id', BRAND_ID).order('published_at', {ascending: false});
+  var {data: news} = await sb.from('brand_news').select('id, brand_id, title, category, published_at').eq('brand_id', BRAND_ID).order('published_at', {ascending: false});
   if (!news || news.length === 0) return;
   NEWS_DATA = news.map(function(n, i) {
     var d = new Date(n.published_at);

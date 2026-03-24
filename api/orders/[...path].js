@@ -344,7 +344,7 @@ async function handleConfirm(req, res, id) {
       if (memberRow) {
         const { data: ranks } = await supabase
           .from('rank_settings')
-          .select('*')
+          .select('id, brand_id, rank_name, is_default, sort_order, cond_monthly_count, cond_total_spend, benefit_point_multi, benefit_birthday, benefit_other, icon')
           .eq('brand_id', brand_id)
           .order('sort_order', { ascending: true });
 
@@ -368,7 +368,7 @@ async function handleConfirm(req, res, id) {
     if (memberId && brand_id) {
       const { data: rvSettings } = await supabase
         .from('review_point_settings')
-        .select('*')
+        .select('id, brand_id, enabled, points_per_review, monthly_limit, review_link_expiry_days')
         .eq('brand_id', brand_id)
         .single();
 
@@ -496,7 +496,7 @@ async function handleOrderDetail(req, res, id) {
 
     const { data: order, error: dbError } = await supabase
       .from('orders')
-      .select('*, order_items(id, product_id, size_id, quantity, unit_price, subtotal)')
+      .select('id, display_id, store_id, brand_id, member_id, order_type, status, total_amount, payment_intent_id, tracking_token, customer_name, customer_email, customer_phone, delivery_address, aiden_points_used, normal_points_used, created_at, updated_at, order_items(id, product_id, size_id, quantity, unit_price, subtotal)')
       .eq(column, id)
       .single();
 

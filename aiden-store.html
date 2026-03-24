@@ -884,6 +884,7 @@ img,video{max-width:100%;display:block}
 </div>
 
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* =====================================================
    STORE CONFIG（管理画面 / Supabase から取得）
    ===================================================== */
@@ -1047,7 +1048,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoreFromSupabase() {
   // Direct Supabase
-  var {data: storeData} = await sb.from('stores').select('*').eq('slug', STORE_SLUG).single();
+  var {data: storeData} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, logo_image_url, description, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
   STORE.name = storeData.name;
   STORE.address = storeData.address || STORE.address;
@@ -1059,9 +1060,9 @@ async function loadStoreFromSupabase() {
   if (storeData.cancel_same_day != null) STORE.cancel.cancelSameDay = storeData.cancel_same_day;
   if (storeData.cancel_3days != null) STORE.cancel.cancel3days = storeData.cancel_3days;
 
-  var {data: cats} = await sb.from('categories').select('*').eq('brand_id', storeData.brand_id).order('sort_order');
-  var {data: products} = await sb.from('products').select('*').eq('brand_id', storeData.brand_id);
-  var {data: sizes} = await sb.from('product_sizes').select('*');
+  var {data: cats} = await sb.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', storeData.brand_id).order('sort_order');
+  var {data: products} = await sb.from('products').select('id, brand_id, category_id, name, description, price, image_url, is_available, sort_order').eq('brand_id', storeData.brand_id);
+  var {data: sizes} = await sb.from('product_sizes').select('id, product_id, label, price, sort_order');
   if (cats && products) {
     var newMenu = cats.map(function(c) {
       var catProds = products.filter(function(p) { return p.category_id === c.id; });
@@ -1073,7 +1074,7 @@ async function loadStoreFromSupabase() {
     if (newMenu.length > 0) MENU = newMenu;
   }
 
-  var {data: mediaRows} = await sb.from('media').select('*').eq('entity_type', 'store').eq('entity_id', storeData.id).order('sort_order');
+  var {data: mediaRows} = await sb.from('media').select('id, entity_type, entity_id, media_type, url, title, description, is_video, sort_order').eq('entity_type', 'store').eq('entity_id', storeData.id).order('sort_order');
   if (mediaRows && mediaRows.length > 0) {
     var gallery = mediaRows.filter(function(m){ return m.media_type === 'store_gallery'; });
     var staff = mediaRows.filter(function(m){ return m.media_type === 'store_staff'; });
@@ -1565,7 +1566,7 @@ function goStep(n) {
   if(n===3) {
     var storeName = modalPresetStore || '—';
     var rows=[['店舗',storeName],['日時',(document.getElementById('m-date').value||selDate||'—')+' '+selTime],['人数',document.getElementById('m-guests').value+'名'],['お名前',document.getElementById('m-name').value||'—'],['電話',document.getElementById('m-phone').value||'—'],['メール',document.getElementById('m-email').value||'—'],['ご要望',document.getElementById('m-notes').value||'なし']];
-    document.getElementById('confirm-box').innerHTML = rows.map(function(r){ return '<div class="confirm-row"><span class="confirm-label">'+r[0]+'</span><span>'+r[1]+'</span></div>'; }).join('');
+    document.getElementById('confirm-box').innerHTML = rows.map(function(r){ return '<div class="confirm-row"><span class="confirm-label">'+escH(r[0])+'</span><span>'+escH(r[1])+'</span></div>'; }).join('');
   }
 }
 function validateStep2() {
@@ -1712,7 +1713,7 @@ function buildSmConfirmBox() {
     ['ご要望',   document.getElementById('sm-notes').value||'なし']
   ];
   document.getElementById('sm-confirm-box').innerHTML = rows.map(function(r){
-    return '<div class="confirm-row"><span class="confirm-label">'+r[0]+'</span><span>'+r[1]+'</span></div>';
+    return '<div class="confirm-row"><span class="confirm-label">'+escH(r[0])+'</span><span>'+escH(r[1])+'</span></div>';
   }).join('');
 }
 function validateSeatStep3() {
@@ -1736,7 +1737,7 @@ function validateVacancy() {
   var e = showErr('v-email', validateEmail(document.getElementById('v-email').value));
   if(e) return;
   var rows=[['希望日',document.getElementById('v-date').value],['人数',document.getElementById('v-guests').value],['時間帯',document.getElementById('v-time').value],['メール',document.getElementById('v-email').value]];
-  document.getElementById('vacancy-confirm-box').innerHTML = rows.map(function(r){ return '<div class="confirm-row"><span class="confirm-label">'+r[0]+'</span><span>'+r[1]+'</span></div>'; }).join('');
+  document.getElementById('vacancy-confirm-box').innerHTML = rows.map(function(r){ return '<div class="confirm-row"><span class="confirm-label">'+escH(r[0])+'</span><span>'+escH(r[1])+'</span></div>'; }).join('');
   showVacancyStep(2);
 }
 function submitVacancy(){ showVacancyStep(3); /* ※実際はSupabaseに登録しメール送信 */ }
@@ -1753,10 +1754,10 @@ function openLightbox(idx, fallbackEmoji, usePhotoMedia) {
     var m = media[idx];
     document.getElementById('lightbox-img').innerHTML = m.imgUrl
       ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain" loading="lazy">'
-      : '<div style="font-size:100px;padding:40px;display:flex;align-items:center;justify-content:center">'+m.emoji+'</div>';
+      : '<div style="font-size:100px;padding:40px;display:flex;align-items:center;justify-content:center">'+escH(m.emoji)+'</div>';
   } else {
     lbMedia = []; lbIdx = 0;
-    document.getElementById('lightbox-img').innerHTML = '<div style="font-size:100px;padding:40px">'+fallbackEmoji+'</div>';
+    document.getElementById('lightbox-img').innerHTML = '<div style="font-size:100px;padding:40px">'+escH(fallbackEmoji)+'</div>';
   }
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1768,7 +1769,7 @@ function moveLightbox(dir) {
   var m = lbMedia[lbIdx];
   document.getElementById('lightbox-img').innerHTML = m.imgUrl
     ? '<img src="'+m.imgUrl+'" style="max-width:100%;max-height:80vh;object-fit:contain" loading="lazy">'
-    : '<div style="font-size:100px;padding:40px">'+m.emoji+'</div>';
+    : '<div style="font-size:100px;padding:40px">'+escH(m.emoji)+'</div>';
 }
 document.getElementById('lightbox').addEventListener('click', function(e){ if(e.target===this) closeLightbox(); });
 document.getElementById('modal-bg').addEventListener('click', function(e){ if(e.target===this) closeModal(); });

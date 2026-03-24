@@ -19,6 +19,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const CARD_RATE_LIMIT_WINDOW_HOURS = 1
 const CARD_RATE_LIMIT_MAX_ORDERS = 5
 
+// 1日あたりのカード決済上限（円）
+const MAX_DAILY_PAYMENT_AMOUNT = parseInt(Deno.env.get('MAX_DAILY_PAYMENT_AMOUNT') || '50000', 10)
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return corsPreflightResponse(req)
@@ -102,6 +105,29 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ error: '短時間に多数のご注文がありました。しばらくしてから再度お試しください' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // 1日あたりのカード決済上限チェック
+      const dailyWindowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { data: dailyOrders } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('card_fingerprint', cardFingerprint)
+        .gte('created_at', dailyWindowStart)
+        .not('payment_status', 'eq', 'failed')
+
+      const dailyTotal = (dailyOrders || []).reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0)
+      // total_amount は円単位（JPYはStripeでもzero-decimal currency）
+      const currentAmount = pi.amount
+
+      if (dailyTotal + currentAmount > MAX_DAILY_PAYMENT_AMOUNT) {
+        return new Response(
+          JSON.stringify({
+            error: `1日あたりの決済上限（¥${MAX_DAILY_PAYMENT_AMOUNT.toLocaleString()}）に達しました`,
+            error_code: 'DAILY_LIMIT_EXCEEDED'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
     }

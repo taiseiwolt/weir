@@ -720,6 +720,11 @@ img { max-width:100%; display:block; }
 .hidden { display:none !important; }
 .no-results { text-align:center; padding:60px 20px; color:var(--text-light); }
 .no-results svg { width:48px; height:48px; margin-bottom:12px; opacity:.4; }
+
+/* ===== VOICE ASSISTANT ===== */
+.voice-listening { background: #3b82f6 !important; animation: voicePulse 1.5s infinite; }
+.voice-recording { background: #ef4444 !important; animation: voicePulse 1s infinite; }
+@keyframes voicePulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0.4)} 50%{box-shadow:0 0 0 12px rgba(59,130,246,0)} }
 </style>
 </head>
 <body>
@@ -1288,7 +1293,7 @@ async function loadFromSupabase() {
     // 2. 営業時間取得
     const { data: hoursRows } = await sb
       .from('store_hours')
-      .select('*')
+      .select('id, store_id, day_of_week, open_time, close_time, is_closed')
       .eq('store_id', storeRows.id)
       .order('day_of_week');
 
@@ -1489,6 +1494,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!STORE_DATA.storeRequestEnabled) {
     document.getElementById('orderRequest').style.display = 'none';
   }
+
+  // Voice assistant POC init
+  initVoiceAssistant();
 });
 
 // ===================================================================
@@ -2572,10 +2580,153 @@ function goToCheckout() {
   // Navigate to checkout page (versionless)
   window.location.href = './aiden-order-checkout.html';
 }
+
+// ===================================================================
+// VOICE ASSISTANT POC
+// ===================================================================
+// Voice Assistant POC
+// Current: Browser Web Speech API (click to talk)
+// Future: Picovoice Porcupine wake word ("Hey AIden") + STT
+// Requires: PICOVOICE_ACCESS_KEY env var (set up at console.picovoice.ai)
+//
+// To enable Porcupine wake word detection:
+// 1. Add SDK: <script src="https://unpkg.com/@picovoice/porcupine-web@3.0/dist/iife/index.js"></script>
+// 2. Set PICOVOICE_ACCESS_KEY
+// 3. Uncomment the porcupine init code below
+// -------------------------------------------------------------------
+
+const PICOVOICE_KEY = ''; // Set via env or leave empty for demo mode
+let porcupineInstance = null;
+let isListening = false;
+let recognition = null;
+
+async function initVoiceAssistant() {
+  const micBtn = document.getElementById('voice-mic-btn');
+  if (!micBtn) return;
+
+  // Check for SpeechRecognition support
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    document.getElementById('voice-assistant').style.display = 'none';
+    return;
+  }
+
+  micBtn.addEventListener('click', toggleVoiceSearch);
+
+  // --- Porcupine wake word (commented out until Access Key is available) ---
+  // if (PICOVOICE_KEY && typeof PorcupineWeb !== 'undefined') {
+  //   try {
+  //     porcupineInstance = await PorcupineWeb.PorcupineWorker.create(
+  //       PICOVOICE_KEY,
+  //       [{ builtin: 'Hey Google', sensitivity: 0.7 }], // Replace with custom "Hey AIden" .ppn
+  //       (detection) => {
+  //         if (detection.index >= 0) {
+  //           // Wake word detected
+  //           startListening();
+  //         }
+  //       }
+  //     );
+  //     await porcupineInstance.start();
+  //     console.log('[Voice] Porcupine wake word detection active');
+  //   } catch (err) {
+  //     console.warn('[Voice] Porcupine init failed, falling back to click-to-talk', err);
+  //   }
+  // }
+}
+
+function toggleVoiceSearch() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(() => {
+      isListening = true;
+      updateMicUI('listening');
+      startSpeechRecognition();
+    })
+    .catch(() => {
+      alert('マイクの使用を許可してください');
+    });
+}
+
+function startSpeechRecognition() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'ja-JP';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = function(event) {
+    var transcript = event.results[0][0].transcript;
+    if (event.results[0].isFinal) {
+      handleVoiceCommand(transcript);
+      stopListening();
+    } else {
+      updateVoiceStatus(transcript + '...');
+    }
+  };
+
+  recognition.onerror = function() {
+    stopListening();
+  };
+
+  recognition.onend = function() {
+    if (isListening) stopListening();
+  };
+
+  recognition.start();
+}
+
+function handleVoiceCommand(text) {
+  var searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.value = text;
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    onSearch();
+  }
+  updateVoiceStatus('\u300C' + escH(text) + '\u300D\u3067\u691C\u7D22\u3057\u307E\u3057\u305F');
+  setTimeout(function() { updateVoiceStatus(''); }, 3000);
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) {
+    recognition.abort();
+    recognition = null;
+  }
+  updateMicUI('idle');
+}
+
+function updateMicUI(state) {
+  var btn = document.getElementById('voice-mic-btn');
+  if (!btn) return;
+  btn.classList.remove('voice-listening', 'voice-recording');
+  if (state === 'listening') btn.classList.add('voice-listening');
+  if (state === 'recording') btn.classList.add('voice-recording');
+}
+
+function updateVoiceStatus(text) {
+  var el = document.getElementById('voice-status');
+  if (el) el.textContent = text;
+}
+
 </script>
+<!-- ===== VOICE ASSISTANT POC ===== -->
+<div id="voice-assistant" style="position:fixed;bottom:80px;right:16px;z-index:1000;text-align:center;">
+  <button id="voice-mic-btn" style="width:48px;height:48px;border-radius:50%;border:none;background:#6b7280;color:white;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.3s;" aria-label="音声検索">
+    <svg id="voice-mic-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </button>
+  <div style="font-size:10px;color:#6b7280;margin-top:4px;white-space:nowrap;">音声検索</div>
+  <div id="voice-status" style="font-size:10px;color:#6b7280;margin-top:2px;max-width:120px;"></div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
-  <div style="margin-bottom:6px"><a href="./legal/terms.html" style="color:#666;margin:0 8px">利用規約</a><a href="./legal/privacy.html" style="color:#666;margin:0 8px">プライバシーポリシー</a></div>
+  <div style="margin-bottom:6px"><a href="./legal/terms.html" style="color:#666;margin:0 8px">利用規約</a><a href="./legal/privacy.html" style="color:#666;margin:0 8px">プライバシーポリシー</a><a href="#" onclick="showTokushoho();return false;" style="color:#666;margin:0 8px">特定商取引法に基づく表示</a></div>
   <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a> | <a href="javascript:void(0)" onclick="if(window._aidenChat)window._aidenChat.open()" style="color:#D32F2F;font-weight:600">チャットで問い合わせ</a></div>
   <div style="margin-top:4px">Powered by AIden</div>
 </footer>
@@ -2590,6 +2741,83 @@ function goToCheckout() {
     apiBase: 'https://aiden-jp.net',
   });
 })();
+</script>
+<!-- 特商法モーダル -->
+<div id="tokushoho-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;max-width:600px;margin:40px auto;border-radius:12px;padding:24px;position:relative;">
+    <button onclick="document.getElementById('tokushoho-modal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+    <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">特定商取引法に基づく表示</h2>
+    <div id="tokushoho-content">読み込み中...</div>
+  </div>
+</div>
+<script>
+async function showTokushoho() {
+  const modal = document.getElementById('tokushoho-modal');
+  const content = document.getElementById('tokushoho-content');
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'flex-start';
+
+  const params = new URLSearchParams(window.location.search);
+  const storeId = params.get('store_id');
+  if (!storeId) {
+    content.innerHTML = '<p>店舗情報が見つかりません。</p>';
+    return;
+  }
+
+  const { data: store, error } = await sb
+    .from('stores')
+    .select('id, name, address, phone, brand_id')
+    .eq('id', storeId)
+    .single();
+
+  if (error || !store) {
+    content.innerHTML = '<p>店舗情報の取得に失敗しました。</p>';
+    return;
+  }
+
+  content.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">事業者名</th>
+        <td style="padding:12px 8px;">${escH(store.name)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">所在地</th>
+        <td style="padding:12px 8px;">${escH(store.address)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">電話番号</th>
+        <td style="padding:12px 8px;">${escH(store.phone)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の価格</th>
+        <td style="padding:12px 8px;">各商品ページに税込価格を表示</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払方法</th>
+        <td style="padding:12px 8px;">クレジットカード（Visa, Mastercard, JCB, American Express）</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払時期</th>
+        <td style="padding:12px 8px;">注文確定時にカード決済（与信確保→商品提供完了時に確定）</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の引渡時期</th>
+        <td style="padding:12px 8px;">注文後、店舗の調理完了次第（目安時間は注文確認画面に表示）</td>
+      </tr>
+      <tr>
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">返品・キャンセル</th>
+        <td style="padding:12px 8px;">商品の性質上、お客様都合による返品はお受けできません。<br>商品に不備があった場合は、店舗までお問い合わせください。<br><a href="/aiden-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">利用規約</a>もあわせてご確認ください。</td>
+      </tr>
+    </table>
+  `;
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var m = document.getElementById('tokushoho-modal');
+    if (m) m.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

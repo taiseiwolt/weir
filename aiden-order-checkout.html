@@ -875,7 +875,7 @@ async function loadCheckoutData() {
       // 3. Load coupons from Supabase
       const brandId = storeRow.brands?.id;
       if (brandId) {
-        const { data: coupons } = await sb.from('coupons').select('*').eq('brand_id', brandId).eq('is_active', true);
+        const { data: coupons } = await sb.from('coupons').select('id, brand_id, code, name, discount_value, discount_type, expires_at, min_order_amount, is_active').eq('brand_id', brandId).eq('is_active', true);
         if (coupons && coupons.length > 0) {
           CHECKOUT_DATA.availableCoupons = coupons.map(c => ({
             id: c.id,
@@ -1481,7 +1481,7 @@ async function loadSavedAddresses() {
 
     var { data, error } = await sb
       .from('member_addresses')
-      .select('*')
+      .select('id, member_id, label, postal_code, prefecture, city, address_line, building, phone, is_default, created_at')
       .eq('member_id', memberId)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
@@ -1947,7 +1947,18 @@ async function placeOrder() {
               try { confirmData = JSON.parse(bodyText); } catch(e) {}
               break; // 成功したらリトライ終了
             }
-            // 非200でもリトライ
+            // 日次決済上限・レート制限エラーはリトライせず即エラー表示
+            if (confirmRes.status === 400 || confirmRes.status === 429) {
+              try {
+                const errBody = JSON.parse(bodyText);
+                if (errBody.error_code === 'DAILY_LIMIT_EXCEEDED' || confirmRes.status === 429) {
+                  throw new Error(errBody.error || '1日あたりの決済上限（¥50,000）に達しました');
+                }
+              } catch(parseErr) {
+                if (parseErr instanceof Error && parseErr.message.includes('決済上限')) throw parseErr;
+              }
+            }
+            // その他の非200はリトライ
             if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
           } catch (confirmErr) {
             console.warn('[checkout] confirm-order attempt', attempt, 'failed:', confirmErr);
@@ -2277,6 +2288,89 @@ if (window.location.hash === '#signin') {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSigninModal(); });
 // オーバーレイクリックで閉じる
 document.getElementById('signinOverlay')?.addEventListener('click', (e) => { if (e.target.id === 'signinOverlay') closeSigninModal(); });
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+</script>
+<footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
+  <div style="margin-bottom:6px"><a href="./legal/terms.html" style="color:#666;margin:0 8px">利用規約</a><a href="./legal/privacy.html" style="color:#666;margin:0 8px">プライバシーポリシー</a><a href="#" onclick="showTokushoho();return false;" style="color:#666;margin:0 8px">特定商取引法に基づく表示</a></div>
+  <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a></div>
+  <div style="margin-top:4px">Powered by AIden</div>
+</footer>
+<!-- 特商法モーダル -->
+<div id="tokushoho-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;max-width:600px;margin:40px auto;border-radius:12px;padding:24px;position:relative;">
+    <button onclick="document.getElementById('tokushoho-modal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+    <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">特定商取引法に基づく表示</h2>
+    <div id="tokushoho-content">読み込み中...</div>
+  </div>
+</div>
+<script>
+async function showTokushoho() {
+  const modal = document.getElementById('tokushoho-modal');
+  const content = document.getElementById('tokushoho-content');
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'flex-start';
+
+  const params = new URLSearchParams(window.location.search);
+  const storeId = params.get('store_id');
+  if (!storeId) {
+    content.innerHTML = '<p>店舗情報が見つかりません。</p>';
+    return;
+  }
+
+  const { data: store, error } = await sb
+    .from('stores')
+    .select('id, name, address, phone, brand_id')
+    .eq('id', storeId)
+    .single();
+
+  if (error || !store) {
+    content.innerHTML = '<p>店舗情報の取得に失敗しました。</p>';
+    return;
+  }
+
+  content.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">事業者名</th>
+        <td style="padding:12px 8px;">${escH(store.name)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">所在地</th>
+        <td style="padding:12px 8px;">${escH(store.address)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">電話番号</th>
+        <td style="padding:12px 8px;">${escH(store.phone)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の価格</th>
+        <td style="padding:12px 8px;">各商品ページに税込価格を表示</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払方法</th>
+        <td style="padding:12px 8px;">クレジットカード（Visa, Mastercard, JCB, American Express）</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払時期</th>
+        <td style="padding:12px 8px;">注文確定時にカード決済（与信確保→商品提供完了時に確定）</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の引渡時期</th>
+        <td style="padding:12px 8px;">注文後、店舗の調理完了次第（目安時間は注文確認画面に表示）</td>
+      </tr>
+      <tr>
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">返品・キャンセル</th>
+        <td style="padding:12px 8px;">商品の性質上、お客様都合による返品はお受けできません。<br>商品に不備があった場合は、店舗までお問い合わせください。<br><a href="/aiden-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">利用規約</a>もあわせてご確認ください。</td>
+      </tr>
+    </table>
+  `;
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var m = document.getElementById('tokushoho-modal');
+    if (m) m.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

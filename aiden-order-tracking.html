@@ -663,7 +663,7 @@ async function loadFaqContent() {
   const container = document.getElementById('faqContent');
   try {
     // Load common FAQs + brand-specific FAQs
-    let query = sb.from('faqs').select('*').eq('is_active', true).order('sort_order', { ascending: true });
+    let query = sb.from('faqs').select('id, brand_id, category, question, answer, is_active, is_common, sort_order').eq('is_active', true).order('sort_order', { ascending: true });
     const { data, error } = await query;
     if (error) throw error;
 

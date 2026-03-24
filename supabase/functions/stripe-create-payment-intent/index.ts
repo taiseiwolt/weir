@@ -214,13 +214,17 @@ serve(async (req) => {
         )
       }
 
-      // 注文金額上限チェック
+      // 注文金額上限チェック（1回あたり）
       if (totalAmount > MAX_ORDER_AMOUNT) {
         return new Response(
           JSON.stringify({ error: `1回のご注文は${MAX_ORDER_AMOUNT.toLocaleString()}円までとなります` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+
+      // NOTE: 1日あたりのカード決済上限（MAX_DAILY_PAYMENT_AMOUNT）チェックは
+      // confirm-order で実施。PaymentIntent作成時点ではcard_fingerprintが未確定のため
+      // ここではチェックできない。
 
       // 3. Stripe Connect Account ID を取得
       let stripeAccountId: string | null = null

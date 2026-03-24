@@ -442,7 +442,7 @@ const BRAND_ID = '22222222-0000-0000-0000-000000000001';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('stores').select('*').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, is_active, description').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails

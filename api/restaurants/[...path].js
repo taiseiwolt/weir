@@ -27,7 +27,7 @@ async function handleBrandsList(req, res) {
   try {
     const { data: brands, error: dbError } = await supabase
       .from('brands')
-      .select('*')
+      .select('id, name, slug, description, logo_image_url, hero_image_url, address, lat, lng, is_active, created_at')
       .order('name');
 
     if (dbError) return error(res, dbError.message, 500);
@@ -42,15 +42,15 @@ async function handleBrandDetail(req, res, id) {
   try {
     const { data: brand, error: dbError } = await supabase
       .from('brands')
-      .select('*')
+      .select('id, name, slug, description, logo_image_url, hero_image_url, address, lat, lng, is_active, created_at')
       .eq('id', id)
       .single();
 
     if (dbError) return error(res, 'ブランドが見つかりません', 404);
 
     const [newsResult, mediaResult, storesResult] = await Promise.all([
-      supabase.from('brand_news').select('*').eq('brand_id', id).order('published_at', { ascending: false }).limit(20),
-      supabase.from('media').select('*').eq('entity_type', 'brand').eq('entity_id', id).order('sort_order'),
+      supabase.from('brand_news').select('id, brand_id, title, body, cat, published_at, image_url, url, created_at').eq('brand_id', id).order('published_at', { ascending: false }).limit(20),
+      supabase.from('media').select('id, entity_type, entity_id, media_type, url, title, description, sort_order').eq('entity_type', 'brand').eq('entity_id', id).order('sort_order'),
       supabase.from('stores').select('id, name, slug, address, lat, lng, is_active').eq('brand_id', id).eq('is_active', true).order('name'),
     ]);
 
@@ -118,7 +118,7 @@ async function handleStoreDetail(req, res, slug) {
   try {
     let query = supabase
       .from('stores')
-      .select('*, brands(id, name)')
+      .select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, description, created_at, updated_at, brands(id, name)')
       .eq('slug', slug);
 
     let { data: store, error: dbError } = await query.single();
@@ -126,7 +126,7 @@ async function handleStoreDetail(req, res, slug) {
     if (dbError && slug.includes('-')) {
       const { data: storeById, error: idError } = await supabase
         .from('stores')
-        .select('*, brands(id, name)')
+        .select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, description, created_at, updated_at, brands(id, name)')
         .eq('id', slug)
         .single();
       if (!idError) store = storeById;
@@ -136,8 +136,8 @@ async function handleStoreDetail(req, res, slug) {
     }
 
     const [hoursResult, mediaResult, servicesResult] = await Promise.all([
-      supabase.from('store_hours').select('*').eq('store_id', store.id).order('day_of_week'),
-      supabase.from('media').select('*').eq('entity_type', 'store').eq('entity_id', store.id).order('sort_order'),
+      supabase.from('store_hours').select('id, store_id, day_of_week, open_time, close_time, is_closed').eq('store_id', store.id).order('day_of_week'),
+      supabase.from('media').select('id, entity_type, entity_id, media_type, url, title, description, sort_order').eq('entity_type', 'store').eq('entity_id', store.id).order('sort_order'),
       supabase.from('service_subscriptions').select('service_key').eq('entity_type', 'store').eq('entity_id', store.id).eq('is_active', true),
     ]);
 

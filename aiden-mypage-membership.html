@@ -422,6 +422,8 @@ body { font-family: "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; backg
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 var SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -447,7 +449,7 @@ async function loadAddresses() {
   var memberId = sessionStorage.getItem('aiden_member_id');
   if (!memberId) { document.getElementById('addrEmpty').style.display = ''; return; }
   try {
-    var { data, error } = await sb.from('member_addresses').select('*').eq('member_id', memberId).order('is_default', { ascending: false });
+    var { data, error } = await sb.from('member_addresses').select('id, member_id, label, postal_code, prefecture, city, street, building, phone, is_default, created_at').eq('member_id', memberId).order('is_default', { ascending: false });
     if (error) throw error;
     addresses = data || [];
     renderAddresses();
@@ -465,16 +467,16 @@ function renderAddresses() {
     div.className = 'addr-item' + (a.is_default ? ' default' : '');
     div.innerHTML =
       '<div class="addr-item-header">' +
-        '<span class="addr-item-label">' + (a.label || '住所') + '</span>' +
+        '<span class="addr-item-label">' + escH(a.label || '住所') + '</span>' +
         (a.is_default ? '<span class="addr-item-default">デフォルト</span>' : '') +
       '</div>' +
-      '<div class="addr-item-text">〒' + (a.postal_code || '') + ' ' + (a.prefecture || '') + (a.city || '') + (a.street || '') +
-        (a.building ? ' ' + a.building : '') +
+      '<div class="addr-item-text">〒' + escH(a.postal_code || '') + ' ' + escH(a.prefecture || '') + escH(a.city || '') + escH(a.street || '') +
+        (a.building ? ' ' + escH(a.building) : '') +
       '</div>' +
       '<div class="addr-item-actions">' +
-        '<button onclick="editAddress(\'' + a.id + '\')">編集</button>' +
-        (!a.is_default ? '<button onclick="setDefaultAddr(\'' + a.id + '\')">デフォルトに設定</button>' : '') +
-        '<button class="del" onclick="deleteAddress(\'' + a.id + '\')">削除</button>' +
+        '<button onclick="editAddress(\'' + escH(a.id) + '\')">編集</button>' +
+        (!a.is_default ? '<button onclick="setDefaultAddr(\'' + escH(a.id) + '\')">デフォルトに設定</button>' : '') +
+        '<button class="del" onclick="deleteAddress(\'' + escH(a.id) + '\')">削除</button>' +
       '</div>';
     list.appendChild(div);
   });

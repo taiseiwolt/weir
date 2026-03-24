@@ -185,7 +185,7 @@ serve(async (req) => {
     // 1. アクティブな収集設定を取得
     const { data: configs, error: configErr } = await supabase
       .from('competitor_collection_config')
-      .select('*')
+      .select('id, label, center_latitude, center_longitude, radius_meters, is_active')
       .eq('is_active', true)
 
     if (configErr) throw configErr
