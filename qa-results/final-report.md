@@ -2,8 +2,8 @@
 
 ## サマリ
 - 総テスト数: 47 + 新機能5 = 52
-- PASS: 44件
-- FAIL: 2件
+- PASS: 43件
+- FAIL: 3件
 - SKIP: 4件（Stripe Connect未接続）
 - BLOCKED: 2件
 
@@ -11,8 +11,8 @@
 
 | 指標 | R4 | R5 | 変化 |
 |---|---|---|---|
-| PASS | 38 | 44 | +6 ✅ |
-| FAIL | 5 | 2 | -3 ✅ |
+| PASS | 38 | 43 | +5 ✅ |
+| FAIL | 5 | 3 | -2 ✅ |
 | SKIP | 5 | 4 | -1 ✅ |
 | BLOCKED | 4 | 2 | -2 ✅ |
 | R4 FAIL→R5 PASS | — | 5/5 | 100% 解消 |
@@ -38,7 +38,7 @@
 | B. データ連携 | 12 | 9 | 0 | 3 | 0 |
 | C. バックエンド整合性 | 11 | 7 | 0 | 4 | 0 |
 | D. 運用基盤 | 10 | 9 | 1 | 0 | 0 |
-| 新機能テスト | 5 | 5 | 0 | 0 | 0 |
+| 新機能テスト | 5 | 4 | 1 | 0 | 0 |
 | セキュリティ回帰 | — | 4 | 1 | 0 | 0 |
 
 ## 全52項目 詳細結果
@@ -118,7 +118,7 @@
 | NEW-2 | CS管理画面 | ✅PASS | 5サブ項目（問い合わせ・FAQ・設定・履歴・エンドユーザー問い合わせ） |
 | NEW-3 | Edge Function JWT認証 | ✅PASS | confirm-order, log-payment-failure等で認証確認 |
 | NEW-4 | CORS制限 | ✅PASS | Supabase Edge Function CORS設定確認 |
-| NEW-5 | 注文金額上限¥50,000 | ✅PASS | R4テスト時にバリデーション動作確認済み |
+| NEW-5 | 注文金額上限¥50,000 | ❌FAIL | チェックアウトUI・API両方に¥50,000上限バリデーション未実装 |
 
 ### セキュリティ回帰テスト
 
@@ -135,6 +135,7 @@
 | # | テスト | 深刻度 | 症状 | 対応状況 |
 |---|---|---|---|---|
 | SEC-11 | orders anon SELECT PII | P2 | ordersテーブル直接クエリでdelivery_address等取得可能 | マイグレーション作成済み（20260324100000_sec11_revoke_pii_columns.sql）。適用後に解消 |
+| NEW-5 | 注文金額上限¥50,000未実装 | P2 | チェックアウトUI・API両方にバリデーションなし | チェックアウトのフロント+APIに実装が必要 |
 | C-08(観察) | aiden-customer-admin.html XSS | P2 | customer-adminにescH()未適用のinnerHTMLが多数存在 | 次回修正対象 |
 
 ## SKIP一覧
@@ -169,8 +170,8 @@
 1. SEC-11マイグレーション適用（手動作業）
 
 ### P2
-2. aiden-customer-admin.html の escH() 適用（XSS対策）
-3. ブランドHPへのCSチャットウィジェット追加検討
+2. **NEW-5**: チェックアウトUI + API に ¥50,000 注文上限バリデーション追加
+3. aiden-customer-admin.html の escH() 適用（XSS対策）
 
 ### Stripe Connect接続後
 4. C-01〜C-04, B-10〜B-12の7項目を再テスト
