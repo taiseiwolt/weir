@@ -21,6 +21,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 // ─── 素材画像インポート ──────────────────────────────
 var _snsImgFiles = [];
 var _snsSelectedRatio = '1:1';
@@ -101,7 +103,7 @@ function snsImgSelectPlatform(platform, el) {
   var noteEl = document.getElementById('snsImgPlatformNote');
   if(noteEl && info) {
     var icon = info.type === 'video_note' ? '🎬' : '💡';
-    noteEl.innerHTML = icon + ' ' + info.note.replace(/\n/g,'<br>');
+    noteEl.innerHTML = icon + ' ' + escH(info.note).replace(/\n/g,'<br>');
     noteEl.style.display = '';
     noteEl.style.background = info.type === 'video_note' ? '#fff8e1' : '#f0edff';
     noteEl.style.color = info.type === 'video_note' ? '#795548' : '#6c5ce7';
@@ -5165,7 +5167,7 @@ async function onAuthSuccess(user) {
       sel.appendChild(opt);
     });
   } else {
-    sel.innerHTML = '<option>🏷 ' + (displayName || 'ブランド') + '</option>';
+    sel.innerHTML = '<option>🏷 ' + escH(displayName || 'ブランド') + '</option>';
   }
 
   // Show app, hide login
@@ -5355,7 +5357,7 @@ function showDataLoadError(errors) {
     banner.style.cssText = 'position:fixed;top:var(--header-h);left:var(--sidebar-w);right:0;z-index:95;background:#ffeef1;border-bottom:1px solid #f5c2c7;padding:10px 20px;font-size:12px;color:#d63031;display:flex;align-items:center;gap:8px;';
     document.body.appendChild(banner);
   }
-  banner.innerHTML = '<span style="font-size:16px">⚠️</span><div><strong>一部のデータの読み込みに失敗しました</strong><br>' + errors.join(' / ') + '</div><button onclick="this.parentNode.remove()" style="margin-left:auto;background:none;border:none;color:#d63031;cursor:pointer;font-size:16px">&times;</button>';
+  banner.innerHTML = '<span style="font-size:16px">⚠️</span><div><strong>一部のデータの読み込みに失敗しました</strong><br>' + errors.map(e => escH(e)).join(' / ') + '</div><button onclick="this.parentNode.remove()" style="margin-left:auto;background:none;border:none;color:#d63031;cursor:pointer;font-size:16px">&times;</button>';
 }
 
 let CORP = { id: '', name: '', stripe_account_id: null };
@@ -5465,30 +5467,30 @@ function statusBadge(s) {
 
 const TABLE_CONFIGS = {
   storeBasicTable: s => `
-    <td class="store-name">${s.name}</td><td style="font-size:11px">${s.address}</td><td>${s.phone}</td>
-    <td>${s.genre||'寿司'} / ${s.subGenre||'回転寿司'}</td>
+    <td class="store-name">${escH(s.name)}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
+    <td>${escH(s.genre||'寿司')} / ${escH(s.subGenre||'回転寿司')}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td><td>${yesNo(s.reservation)}</td>
     <td>${statusBadge(s.status)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditById('${s.id}')">✏️</button></td>`,
+    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">✏️</button></td>`,
   storeHoursTable: s => `
-    <td class="store-name">${s.name}</td>
-    <td>${s.hoursOpen}〜${s.hoursClose}</td><td>${s.delOpen}〜${s.delClose}</td>
+    <td class="store-name">${escH(s.name)}</td>
+    <td>${escH(s.hoursOpen)}〜${escH(s.hoursClose)}</td><td>${escH(s.delOpen)}〜${escH(s.delClose)}</td>
     <td>なし</td><td>${statusBadge(s.status)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeHoursSelector','storeHoursEdit','storeHoursTarget','${s.name}')">✏️</button></td>`,
+    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeHoursSelector','storeHoursEdit','storeHoursTarget','${escH(s.name)}')">✏️</button></td>`,
   storeFacilityTable: s => `
-    <td class="store-name">${s.name}</td><td>${s.seats}席</td><td>${s.smoking}</td>
+    <td class="store-name">${escH(s.name)}</td><td>${s.seats}席</td><td>${escH(s.smoking)}</td>
     <td>${yesNo(s.parking)}</td><td>${yesNo(s.kids)}</td><td>${yesNo(s.pets)}</td>
-    <td style="font-size:11px">${s.payment}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeFacilitySelector','storeFacilityEdit','storeFacilityTarget','${s.name}')">✏️</button></td>`,
+    <td style="font-size:11px">${escH(s.payment)}</td>
+    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeFacilitySelector','storeFacilityEdit','storeFacilityTarget','${escH(s.name)}')">✏️</button></td>`,
   storeDeliveryTable: s => `
-    <td class="store-name">${s.name}</td><td>${s.radius}</td>
-    <td>${s.cookTime}</td><td>${s.delTime}</td>
+    <td class="store-name">${escH(s.name)}</td><td>${escH(s.radius)}</td>
+    <td>${escH(s.cookTime)}</td><td>${escH(s.delTime)}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeDeliverySelector','storeDeliveryEdit','storeDeliveryTarget','${s.name}')">✏️</button></td>`,
+    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeDeliverySelector','storeDeliveryEdit','storeDeliveryTarget','${escH(s.name)}')">✏️</button></td>`,
   storeMediaTable: s => `
-    <td class="store-name">${s.name}</td><td>${s.headerImg}/10枚</td><td>${s.thumbImg}/1枚</td>
+    <td class="store-name">${escH(s.name)}</td><td>${s.headerImg}/10枚</td><td>${s.thumbImg}/1枚</td>
     <td>${s.galleryImg}/30枚</td><td>${s.heroImg}/1枚</td><td>${s.staffImg}/20名</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeMediaSelector','storeMediaEdit','storeMediaTarget','${s.name}')">✏️</button></td>`,
+    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeMediaSelector','storeMediaEdit','storeMediaTarget','${escH(s.name)}')">✏️</button></td>`,
 };
 
 function renderStoreTable(tableId) {
@@ -5794,7 +5796,7 @@ function addNthWeek(listId, weekId, dayId) {
   const tag = document.createElement('span');
   tag.dataset.val = label;
   tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#e3f2fd;color:#1565c0;border-radius:12px;font-size:11px;font-weight:600';
-  tag.innerHTML = label + ' <span style="cursor:pointer;opacity:0.6" onclick="this.parentElement.remove()">✕</span>';
+  tag.innerHTML = escH(label) + ' <span style="cursor:pointer;opacity:0.6" onclick="this.parentElement.remove()">✕</span>';
   list.appendChild(tag);
 }
 
@@ -5808,7 +5810,7 @@ function addSpotClosure() {
   const period = end && end !== start ? start + ' 〜 ' + end : start;
   const tbody = document.getElementById('spotClosureBody');
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td style="font-weight:600;font-size:12px">${period}</td><td><span class="badge badge-info" style="font-size:10px">${target}</span></td><td>${reason}</td><td style="font-size:11px;color:var(--text-light)">${memo||'—'}</td><td><button class="btn-edit" onclick="this.closest('tr').remove();updateSpotEmpty()" style="color:#c62828">✕</button></td>`;
+  tr.innerHTML = `<td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">${escH(target)}</span></td><td>${escH(reason)}</td><td style="font-size:11px;color:var(--text-light)">${escH(memo||'—')}</td><td><button class="btn-edit" onclick="this.closest('tr').remove();updateSpotEmpty()" style="color:#c62828">✕</button></td>`;
   tbody.appendChild(tr);
   document.getElementById('spotEmpty').style.display = 'none';
   // reset
@@ -6063,7 +6065,7 @@ function confirmArea() {
     const r = document.getElementById('deliveryRadiusInput').value;
     detail += '：半径 ' + r + 'km';
   }
-  document.getElementById('areaConfirmStatus').innerHTML = '<span style="color:#2e7d32;font-weight:600">✅ 確定済み — ' + detail + '</span>';
+  document.getElementById('areaConfirmStatus').innerHTML = '<span style="color:#2e7d32;font-weight:600">✅ 確定済み — ' + escH(detail) + '</span>';
 }
 
 function toggleSelfDelivery() {
@@ -6520,7 +6522,7 @@ function renderStoreReviewTable() {
     const st = r.reply ? (r.replyStatus || '掲載済') : '未返信';
     const stBadge = st==='掲載済'?'badge-success':st==='審査中'?'badge-warning':'';
     const repliedBadge = r.reply ? '<span class="badge badge-success" style="margin-right:4px">返信済</span>' : '';
-    return `<tr><td style="white-space:nowrap">${r.date}</td><td>${r.userName}</td><td>${r.storeName}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.comment}</td><td>${repliedBadge}<span class="badge ${stBadge}">${st}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${r.id}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
+    return `<tr><td style="white-space:nowrap">${escH(r.date)}</td><td>${escH(r.userName)}</td><td>${escH(r.storeName)}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.comment)}</td><td>${repliedBadge}<span class="badge ${stBadge}">${escH(st)}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${escH(r.id)}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
   }).join('');
   const info = document.getElementById('storeReviewPagerInfo');
   const prev = document.getElementById('storeReviewPrevBtn');
@@ -6558,7 +6560,7 @@ function renderStoreReviews() {
     const st = r.reply ? (r.replyStatus || '掲載済') : '未返信';
     const stBadge = st==='掲載済'?'badge-success':st==='審査中'?'badge-warning':'';
     const repliedBadge = r.reply ? '<span class="badge badge-success" style="margin-right:4px">返信済</span>' : '';
-    return `<tr><td style="white-space:nowrap">${r.date}</td><td>${r.userName}</td><td>${r.storeName}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.comment}</td><td>${repliedBadge}<span class="badge ${stBadge}">${st}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${r.id}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
+    return `<tr><td style="white-space:nowrap">${escH(r.date)}</td><td>${escH(r.userName)}</td><td>${escH(r.storeName)}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.comment)}</td><td>${repliedBadge}<span class="badge ${stBadge}">${escH(st)}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${escH(r.id)}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
   }).join('');
 }
 let _rvProdPage = 0;
@@ -6586,8 +6588,8 @@ function renderProductReviewTable() {
     const st = r.reply ? (r.replyStatus || '掲載済') : '未返信';
     const stBadge = st==='掲載済'?'badge-success':st==='審査中'?'badge-warning':'';
     const repliedBadge = r.reply ? '<span class="badge badge-success" style="margin-right:4px">返信済</span>' : '';
-    const tagsHtml = (r.tags||[]).map(t => '<span class="tag selected" style="font-size:9px">'+t+'</span>').join('');
-    return `<tr><td style="white-space:nowrap">${r.date}</td><td>${r.userName}</td><td>${r.storeName}</td><td>${r.productName||''}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td>${tagsHtml}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.comment}</td><td>${repliedBadge}<span class="badge ${stBadge}">${st}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${r.id}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
+    const tagsHtml = (r.tags||[]).map(t => '<span class="tag selected" style="font-size:9px">'+escH(t)+'</span>').join('');
+    return `<tr><td style="white-space:nowrap">${escH(r.date)}</td><td>${escH(r.userName)}</td><td>${escH(r.storeName)}</td><td>${escH(r.productName||'')}</td><td>${'⭐'.repeat(Math.round(r.rating))}</td><td>${tagsHtml}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.comment)}</td><td>${repliedBadge}<span class="badge ${stBadge}">${escH(st)}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openReviewReply('${escH(r.id)}')">${r.reply?'返信を編集':'返信'}</button></td></tr>`;
   }).join('');
 }
 
@@ -6666,11 +6668,11 @@ function openReviewReply(reviewId) {
   document.getElementById('reviewReplyModalInfo').innerHTML =
     '<div style="background:#f8f9fa;border-radius:8px;padding:12px 14px;margin-bottom:14px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-        '<div style="font-size:13px;font-weight:700">' + review.userName + '</div>' +
+        '<div style="font-size:13px;font-weight:700">' + escH(review.userName) + '</div>' +
         '<div style="font-size:13px">' + stars + '</div>' +
-        '<div style="font-size:11px;color:#888;margin-left:auto">' + review.date + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-left:auto">' + escH(review.date) + '</div>' +
       '</div>' +
-      '<div style="font-size:13px;color:#333;line-height:1.7">' + review.comment + '</div>' +
+      '<div style="font-size:13px;color:#333;line-height:1.7">' + escH(review.comment) + '</div>' +
     '</div>';
   document.getElementById('reviewReplyModal').style.display = 'flex';
 }
@@ -6710,11 +6712,11 @@ function reviewReplyPreview() {
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
         '<div style="width:36px;height:36px;border-radius:50%;background:#4285f4;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">G</div>' +
         '<div>' +
-          '<div style="font-size:13px;font-weight:700;color:#202124">' + storeName + '</div>' +
+          '<div style="font-size:13px;font-weight:700;color:#202124">' + escH(storeName) + '</div>' +
           '<div style="font-size:11px;color:#70757a">オーナーからの返信・' + dateStr + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:13px;color:#202124;line-height:1.8;white-space:pre-wrap">' + text + '</div>' +
+      '<div style="font-size:13px;color:#202124;line-height:1.8;white-space:pre-wrap">' + escH(text) + '</div>' +
       '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #f1f3f4;font-size:11px;color:#70757a;display:flex;align-items:center;gap:6px">' +
         '<img src="https://www.google.com/favicon.ico" width="14" height="14" style="vertical-align:middle" loading="lazy"> Google マップに掲載されます' +
       '</div>' +
@@ -6914,7 +6916,7 @@ function renderInvoices() {
   document.getElementById('invoiceBody').innerHTML = filtered.map(inv => {
     const stMap = {'下書き':'badge-secondary','確定':'badge-warning','支払済':'badge-success'};
     const stBadge = stMap[inv.status] || 'badge-warning';
-    return `<tr><td>${inv.month}</td><td>${inv.type}</td><td>¥${inv.amount.toLocaleString()}</td><td><span class="badge ${stBadge}">${inv.status}</span></td><td>${inv.dueDate}</td><td><button class="btn btn-secondary btn-sm" onclick="openInvoiceBreakdown('${inv.id}')">内訳</button> <button class="btn btn-secondary btn-sm" onclick="showToast('PDFダウンロード（デモ）')">PDF</button></td></tr>`;
+    return `<tr><td>${escH(inv.month)}</td><td>${escH(inv.type)}</td><td>¥${inv.amount.toLocaleString()}</td><td><span class="badge ${stBadge}">${escH(inv.status)}</span></td><td>${escH(inv.dueDate)}</td><td><button class="btn btn-secondary btn-sm" onclick="openInvoiceBreakdown('${escH(inv.id)}')">内訳</button> <button class="btn btn-secondary btn-sm" onclick="showToast('PDFダウンロード（デモ）')">PDF</button></td></tr>`;
   }).join('');
   // Supabase からも読み込み試行
   if(typeof loadInvoicesFromSupabase==='function' && !renderInvoices._loaded){
@@ -7982,12 +7984,12 @@ function csvScopeChanged() {
   document.getElementById('csvStoreGroup').style.display = scope==='store' ? '' : 'none';
   if(scope==='brand') {
     document.getElementById('csvBrandList').innerHTML = ['スシロー','はま寿司','くら寿司'].map(b =>
-      `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked> ${b}</label>`
+      `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked> ${escH(b)}</label>`
     ).join('');
   }
   if(scope==='store') {
     document.getElementById('csvStoreList').innerHTML = STORES.map(s =>
-      `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked> ${s.name}</label>`
+      `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked> ${escH(s.name)}</label>`
     ).join('');
   }
 }
@@ -8079,7 +8081,7 @@ function bmRenderRanking() {
   tbody.innerHTML = data.map((d,i) => {
     const bg = d.self ? ' style="background:#fffde7"' : '';
     const td1 = d.self ? `<td style="font-weight:700;color:var(--accent)">${i+1}位</td>` : `<td>${i+1}</td>`;
-    const td2 = d.self ? `<td style="font-weight:700">${d.name}</td>` : `<td style="color:#999">${d.name}</td>`;
+    const td2 = d.self ? `<td style="font-weight:700">${escH(d.name)}</td>` : `<td style="color:#999">${escH(d.name)}</td>`;
     return `<tr${bg}>${td1}${td2}<td>¥${d.sales.toLocaleString()}</td><td>${d.orders}件</td><td>¥${d.avg.toLocaleString()}</td></tr>`;
   }).join('');
 }

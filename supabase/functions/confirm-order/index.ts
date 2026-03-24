@@ -61,6 +61,16 @@ serve(async (req) => {
       )
     }
 
+    // ¥50,000 注文上限チェック（チャージバック対策）
+    const MAX_ORDER_AMOUNT = parseInt(Deno.env.get('MAX_ORDER_AMOUNT') || '50000', 10)
+    const amountInYen = Math.round(pi.amount / 100)
+    if (amountInYen > MAX_ORDER_AMOUNT) {
+      return new Response(
+        JSON.stringify({ error: `1回のご注文は${MAX_ORDER_AMOUNT.toLocaleString()}円までとなります` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     // 2. カードfingerprint取得 + 頻度制限チェック

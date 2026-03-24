@@ -1675,6 +1675,7 @@ function checkAllValid(showAlerts) {
   if(CHECKOUT_DATA.cartItems.length === 0) { valid = false; errors.push('注文する商品'); }
   var currentTotal = CHECKOUT_DATA.cartItems.reduce(function(s,i){ return s + i.price * i.qty; }, 0);
   if(currentTotal < 1) { valid = false; errors.push('商品代金が¥0です'); }
+  if(currentTotal > 50000) { valid = false; errors.push('1回のご注文は50,000円までとなります'); }
 
   // Payment
   if(!selectedPayment) { valid = false; errors.push('お支払い方法'); }
