@@ -66,7 +66,8 @@ serve(async (req) => {
 
     // ¥50,000 注文上限チェック（チャージバック対策）
     const MAX_ORDER_AMOUNT = parseInt(Deno.env.get('MAX_ORDER_AMOUNT') || '50000', 10)
-    const amountInYen = Math.round(pi.amount / 100)
+    // JPY は zero-decimal currency: pi.amount は既に円単位
+    const amountInYen = pi.amount
     if (amountInYen > MAX_ORDER_AMOUNT) {
       return new Response(
         JSON.stringify({ error: `1回のご注文は${MAX_ORDER_AMOUNT.toLocaleString()}円までとなります` }),
@@ -140,7 +141,63 @@ serve(async (req) => {
       .maybeSingle()
 
     if (existingOrder) {
-      // 既に作成済み（Webhook等で先に処理された場合）
+      // 既に作成済み（stripe-create-payment-intent で pending INSERT されたケース）
+      // → payment_status を authorized に更新 + card_fingerprint を記録
+      const updatePayload: Record<string, any> = {
+        payment_status: pi.status === 'succeeded' ? 'paid' : 'authorized',
+      }
+      if (cardFingerprint) {
+        updatePayload.card_fingerprint = cardFingerprint
+      }
+
+      const { error: updateErr } = await supabase
+        .from('orders')
+        .update(updatePayload)
+        .eq('id', existingOrder.id)
+        .eq('payment_status', 'pending') // pending の場合のみ更新（冪等性保証）
+
+      if (updateErr) {
+        console.warn('Order status update error:', updateErr)
+      }
+
+      // メール送信（既存注文でもpending→authorized遷移時は送信）
+      try {
+        const { data: storeRow } = await supabase
+          .from('stores')
+          .select('name')
+          .eq('id', pi.metadata?.store_id)
+          .single()
+
+        const { data: orderDetail } = await supabase
+          .from('orders')
+          .select('customer_email, customer_name, order_type, total_amount')
+          .eq('id', existingOrder.id)
+          .single()
+
+        if (orderDetail?.customer_email) {
+          await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              order_id: existingOrder.id,
+              tracking_token: existingOrder.tracking_token,
+              display_id: existingOrder.display_id,
+              customer_email: orderDetail.customer_email,
+              customer_name: orderDetail.customer_name || '',
+              store_name: storeRow?.name || '',
+              order_type: orderDetail.order_type,
+              total_amount: orderDetail.total_amount,
+              items: [],
+            }),
+          })
+        }
+      } catch (emailErr) {
+        console.warn('Order email skipped (existing order):', emailErr)
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -210,10 +267,10 @@ serve(async (req) => {
       const orderItems = cartItems.map((item: any) => ({
         order_id: orderRow.id,
         product_id: item.pid || null,
-        product_name: item.pn || '',
+        size_id: item.sid || null,
         quantity: item.q || 1,
         unit_price: item.up || 0,
-        options: item.opt || null,
+        subtotal: (item.up || 0) * (item.q || 1),
       }))
       const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
       if (itemsErr) {
