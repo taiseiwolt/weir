@@ -161,42 +161,51 @@ serve(async (req) => {
         console.warn('Order status update error:', updateErr)
       }
 
-      // メール送信（既存注文でもpending→authorized遷移時は送信）
+      // メール送信（既存注文でもpending→paid遷移時は送信）
       try {
         const { data: storeRow } = await supabase
           .from('stores')
-          .select('name')
+          .select('name, brands(name)')
           .eq('id', pi.metadata?.store_id)
           .single()
 
         const { data: orderDetail } = await supabase
           .from('orders')
-          .select('customer_email, customer_name, order_type, total_amount')
+          .select('customer_email, customer_name, order_type, total_amount, order_items(product_name, quantity, unit_price)')
           .eq('id', existingOrder.id)
           .single()
 
         if (orderDetail?.customer_email) {
-          await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+          const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
             },
             body: JSON.stringify({
-              order_id: existingOrder.id,
-              tracking_token: existingOrder.tracking_token,
-              display_id: existingOrder.display_id,
-              customer_email: orderDetail.customer_email,
+              type: 'confirmation',
+              to: orderDetail.customer_email,
+              order_id: existingOrder.display_id,
               customer_name: orderDetail.customer_name || '',
               store_name: storeRow?.name || '',
-              order_type: orderDetail.order_type,
-              total_amount: orderDetail.total_amount,
-              items: [],
+              brand_name: (storeRow as any)?.brands?.name || '',
+              order_mode: orderDetail.order_type || 'takeout',
+              subtotal: orderDetail.total_amount || 0,
+              total: orderDetail.total_amount || 0,
+              items: (orderDetail.order_items || []).map((i: any) => ({
+                name: i.product_name || '商品',
+                qty: i.quantity || 1,
+                price: i.unit_price || 0,
+              })),
             }),
           })
+          if (!emailRes.ok) {
+            const errBody = await emailRes.text().catch(() => '')
+            console.error('send-order-email failed (existing order):', emailRes.status, errBody)
+          }
         }
       } catch (emailErr) {
-        console.warn('Order email skipped (existing order):', emailErr)
+        console.error('Order email error (existing order):', emailErr)
       }
 
       return new Response(
@@ -281,37 +290,42 @@ serve(async (req) => {
 
     // 6. Thanksメール送信（非同期、失敗しても注文は有効）
     try {
-      // 店舗名を取得
+      // 店舗名 + ブランド名を取得
       const { data: storeRow } = await supabase
         .from('stores')
-        .select('name')
+        .select('name, brands(name)')
         .eq('id', meta.store_id)
         .single()
 
-      await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+      const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
-          order_id: orderRow.id,
-          tracking_token: orderRow.tracking_token,
-          display_id: orderRow.display_id,
-          customer_email: guestInfo.email,
+          type: 'confirmation',
+          to: guestInfo.email,
+          order_id: orderRow.display_id,
           customer_name: `${guestInfo.last_name} ${guestInfo.first_name}`.trim(),
           store_name: storeRow?.name || '',
-          order_type: meta.order_type,
-          total_amount: pi.amount,
+          brand_name: (storeRow as any)?.brands?.name || '',
+          order_mode: meta.order_type || 'takeout',
+          subtotal: pi.amount,
+          total: pi.amount,
           items: cartItems.map((i: any) => ({
-            name: i.pn,
-            qty: i.q,
-            price: i.up,
+            name: i.pn || '商品',
+            qty: i.q || 1,
+            price: i.up || 0,
           })),
         }),
       })
+      if (!emailRes.ok) {
+        const errBody = await emailRes.text().catch(() => '')
+        console.error('send-order-email failed (new order):', emailRes.status, errBody)
+      }
     } catch (emailErr) {
-      console.warn('Order email skipped:', emailErr)
+      console.error('Order email error (new order):', emailErr)
     }
 
     // 7. レスポンス

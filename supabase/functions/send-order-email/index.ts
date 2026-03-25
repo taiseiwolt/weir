@@ -357,7 +357,16 @@ serve(async (req) => {
 
     if (!data.to || !data.order_id || !data.type) {
       return new Response(
-        JSON.stringify({ error: 'to, order_id, type は必須です' }),
+        JSON.stringify({ error: 'to, order_id, type は必須です', received: { to: !!data.to, order_id: !!data.order_id, type: !!data.type } }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // メールアドレス形式バリデーション
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(data.to)) {
+      return new Response(
+        JSON.stringify({ error: '無効なメールアドレス形式です', to: data.to }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
