@@ -2486,6 +2486,7 @@ content.innerHTML = `
             <th style="position:sticky;top:0;background:#fff;z-index:1">投稿者</th>
             <th style="position:sticky;top:0;background:#fff;z-index:1">評価</th>
             <th style="position:sticky;top:0;background:#fff;z-index:1">コメント</th>
+            <th style="position:sticky;top:0;background:#fff;z-index:1;width:100px">AI返信</th>
           </tr>
         </thead>
         <tbody id="grAllReviewsBody"></tbody>
@@ -15318,9 +15319,11 @@ function grRenderDemoAllReviews() {
     var stars = '';
     for (var i = 0; i < 5; i++) stars += i < r.r ? '★' : '☆';
     var color = r.r >= 4 ? '#27ae60' : r.r === 3 ? '#f39c12' : '#e94560';
-    return '<tr><td style="white-space:nowrap">' + r.d + '</td><td>' + r.a + '</td>' +
+    var escaped = escH(r.t).replace(/'/g,'&#39;');
+    return '<tr><td style="white-space:nowrap">' + r.d + '</td><td>' + escH(r.a) + '</td>' +
       '<td style="color:' + color + ';font-weight:700">' + stars + '</td>' +
-      '<td style="max-width:400px">' + r.t + '</td></tr>';
+      '<td style="max-width:400px">' + escH(r.t) + '</td>' +
+      '<td><button class="btn btn-sm" style="background:#e8e0ff;color:#6c5ce7;font-size:10px;white-space:nowrap" onclick="aiGenerateReviewReply(\'' + escaped + '\',' + r.r + ',\'' + escH(r.a) + '\')">🤖 AI返信</button></td></tr>';
   }).join('');
 }
 
@@ -15867,6 +15870,94 @@ async function submitPlanChangeRequest(plan, direction) {
 </footer>
 <script src="aiden-chat-widget.js"></script>
 <script>
+// ═══════════════════════════════════════
+// AI レビュー返信生成
+// ═══════════════════════════════════════
+async function aiGenerateReviewReply(reviewText, rating, reviewerName) {
+  var params = new URLSearchParams(location.search);
+  var storeId = params.get('store_id');
+  if (!storeId) { alert('store_id が未設定です'); return; }
+
+  // モーダル表示
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3>🤖 AI レビュー返信生成</h3>' +
+    '<div style="background:#f5f6fa;padding:14px;border-radius:10px;margin-bottom:16px">' +
+      '<div style="font-size:11px;color:#888;margin-bottom:4px">元のレビュー（★' + rating + '）</div>' +
+      '<div style="font-size:13px">' + escH(reviewText) + '</div>' +
+    '</div>' +
+    '<div id="aiReplyResult" style="text-align:center;padding:30px">' +
+      '<div class="spinner" style="margin:0 auto 12px"></div>' +
+      '<div style="font-size:12px;color:#888">AI が返信を生成中...</div>' +
+    '</div>'
+  );
+
+  try {
+    var res = await fetch(SUPABASE_URL + '/functions/v1/generate-review-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: JSON.stringify({
+        store_id: storeId,
+        review_text: reviewText,
+        reviewer_name: reviewerName || '',
+        rating: rating,
+        review_source: 'google',
+      }),
+    });
+    var data = await res.json();
+
+    if (!res.ok || !data.success) {
+      document.getElementById('aiReplyResult').innerHTML =
+        '<div style="color:#e94560;font-size:13px">⚠️ ' + escH(data.error || 'エラーが発生しました') + '</div>';
+      return;
+    }
+
+    var variants = data.variants || [];
+    var toneLabels = { formal: 'フォーマル（丁寧）', casual: 'カジュアル', friendly: 'フレンドリー' };
+    var toneColors = { formal: '#6c5ce7', casual: '#00b894', friendly: '#e17055' };
+
+    var html = '<div style="font-size:12px;color:#888;margin-bottom:12px">3つのトーンから選んでください</div>';
+    variants.forEach(function(v) {
+      var label = toneLabels[v.tone] || v.tone;
+      var color = toneColors[v.tone] || '#6c5ce7';
+      var escaped = escH(v.text).replace(/'/g,'&#39;');
+      html += '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s" ' +
+        'onmouseover="this.style.borderColor=\'' + color + '\'" onmouseout="this.style.borderColor=\'#e0e0e0\'">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<span style="font-size:11px;font-weight:700;color:' + color + '">' + escH(label) + '</span>' +
+          '<button class="btn btn-sm" style="background:' + color + ';color:#fff;font-size:10px" ' +
+            'onclick="aiCopyReply(\'' + escaped + '\')">📋 コピー</button>' +
+        '</div>' +
+        '<div style="font-size:13px;line-height:1.6">' + escH(v.text) + '</div>' +
+      '</div>';
+    });
+
+    if (data.quota && data.quota.remaining >= 0) {
+      html += '<div style="text-align:right;font-size:10px;color:#888;margin-top:8px">今月の残り: ' + data.quota.remaining + '回（' + data.quota.plan + 'プラン）</div>';
+    }
+
+    document.getElementById('aiReplyResult').innerHTML = html;
+  } catch (e) {
+    document.getElementById('aiReplyResult').innerHTML =
+      '<div style="color:#e94560;font-size:13px">⚠️ 通信エラーが発生しました</div>';
+  }
+}
+
+function aiCopyReply(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    showToast('✅ クリップボードにコピーしました');
+  }).catch(function() {
+    // fallback
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ クリップボードにコピーしました');
+  });
+}
+
 (function(){
   const params = new URLSearchParams(location.search);
   new AidenChatWidget({

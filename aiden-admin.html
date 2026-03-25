@@ -72,6 +72,7 @@
 .cols-3{grid-template-columns:1fr 1fr 1fr}
 @media(max-width:1200px){.stat-row{grid-template-columns:repeat(2,1fr)}.menu-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.stat-row{grid-template-columns:1fr 1fr}}
+.spinner{width:28px;height:28px;border:3px solid #e0e0e0;border-top:3px solid #6c5ce7;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -611,12 +612,171 @@ function renderSystem(){
 
 // ===== AI QUALITY =====
 function renderAI(){
-  return '<div class="page-title">AI品質管理</div><div class="page-subtitle">AI機能の利用状況と品質モニタリング</div>'+
+  var storeOpts=STORES.map(s=>'<option value="'+s.id+'">'+escHtml(s.name)+'</option>').join('');
+  return '<div class="page-title">AI品質管理</div><div class="page-subtitle">AI機能の利用状況・生成ツール・品質モニタリング</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card purple"><div class="sc-label">AI応答回数（今月）</div><div class="sc-val">1,842</div><div class="sc-sub"><span class="sc-change up">↑ 24%</span></div></div><div class="stat-card green"><div class="sc-label">AI正答率</div><div class="sc-val">94.2%</div><div class="sc-sub">目標: 95%</div></div><div class="stat-card blue"><div class="sc-label">平均応答時間</div><div class="sc-val">1.8秒</div><div class="sc-sub">目標: 2.0秒</div></div></div>'+
-  '<div class="card"><div class="card-title">🤖 AI機能別利用状況（全体）</div><div id="aiChart"></div></div>'+
-  '<div class="card"><div class="card-title">⚙️ AI機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">SNS投稿文自動生成</div><div style="font-size:10px;color:var(--text-light)">ブランドトーンに合わせた投稿文</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI画像生成</div><div style="font-size:10px;color:var(--text-light)">メニュー写真加工・SNS用画像</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI口コミ返信提案</div><div style="font-size:10px;color:var(--text-light)">返信文の自動生成</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AIチャットサポート</div><div style="font-size:10px;color:var(--text-light)">エンドユーザー向けチャットボット</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>';
+  '<div class="tabs" id="aiTabs">'+
+    '<div class="tab active" onclick="switchTab(\'ai\',this,\'usage\')">📊 利用状況</div>'+
+    '<div class="tab" onclick="switchTab(\'ai\',this,\'sns\')">📱 SNS投稿生成</div>'+
+    '<div class="tab" onclick="switchTab(\'ai\',this,\'pop\')">🎨 POP画像生成</div>'+
+    '<div class="tab" onclick="switchTab(\'ai\',this,\'settings\')">⚙️ 設定</div>'+
+  '</div>'+
+  // --- 利用状況タブ ---
+  '<div class="tab-content active" id="ai-usage">'+
+    '<div class="card"><div class="card-title">🤖 AI機能別利用状況（全体）</div><div id="aiChart"></div></div>'+
+  '</div>'+
+  // --- SNS投稿生成タブ ---
+  '<div class="tab-content" id="ai-sns">'+
+    '<div class="card"><div class="card-title">📱 SNS投稿文を生成</div>'+
+      '<div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">'+
+        '<div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">店舗 <span style="color:#e94560">*</span></label><select id="aiSnsStore" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">選択してください</option>'+storeOpts+'</select></div>'+
+        '<div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">プラットフォーム <span style="color:#e94560">*</span></label><select id="aiSnsPlatform" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="x">X（旧Twitter）</option><option value="instagram">Instagram</option><option value="line">LINE</option></select></div>'+
+        '<div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">トピック（任意）</label><input id="aiSnsTopic" placeholder="例: 春の新メニュー" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>'+
+      '</div>'+
+      '<button class="btn btn-primary" onclick="aiGenerateSnsPost()" id="aiSnsBtn">🤖 投稿を生成</button>'+
+      '<div id="aiSnsResult" style="margin-top:16px"></div>'+
+    '</div>'+
+  '</div>'+
+  // --- POP画像生成タブ ---
+  '<div class="tab-content" id="ai-pop">'+
+    '<div class="card"><div class="card-title">🎨 POP画像を生成</div>'+
+      '<div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'+
+        '<div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">店舗 <span style="color:#e94560">*</span></label><select id="aiPopStore" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">選択してください</option>'+storeOpts+'</select></div>'+
+        '<div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">スタイル</label><select id="aiPopStyle" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="modern">モダン</option><option value="traditional">和風</option><option value="cute">かわいい</option></select></div>'+
+      '</div>'+
+      '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">内容 <span style="color:#e94560">*</span></label><textarea id="aiPopPrompt" rows="3" placeholder="例: 本日限定！まぐろ大トロ半額キャンペーン" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical"></textarea></div>'+
+      '<button class="btn btn-primary" onclick="aiGeneratePopImage()" id="aiPopBtn">🎨 画像を生成</button>'+
+      '<div id="aiPopResult" style="margin-top:16px"></div>'+
+    '</div>'+
+  '</div>'+
+  // --- 設定タブ ---
+  '<div class="tab-content" id="ai-settings">'+
+    '<div class="card"><div class="card-title">⚙️ AI機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">SNS投稿文自動生成</div><div style="font-size:10px;color:var(--text-light)">ブランドトーンに合わせた投稿文</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI画像生成</div><div style="font-size:10px;color:var(--text-light)">メニュー写真加工・SNS用画像</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI口コミ返信提案</div><div style="font-size:10px;color:var(--text-light)">返信文の自動生成</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AIチャットサポート</div><div style="font-size:10px;color:var(--text-light)">エンドユーザー向けチャットボット</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>'+
+  '</div>';
 }
 function renderAICharts(){const el=document.getElementById('aiChart');if(!el)return;const d=[{n:'SNS投稿文生成',v:620},{n:'AI画像生成',v:480},{n:'口コミ返信提案',v:390},{n:'POP作成',v:210},{n:'チャットサポート',v:142}];const mx=Math.max(...d.map(x=>x.v));el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
+
+// ===== AI SNS投稿生成 =====
+async function aiGenerateSnsPost(){
+  var storeId=document.getElementById('aiSnsStore').value;
+  var platform=document.getElementById('aiSnsPlatform').value;
+  var topic=document.getElementById('aiSnsTopic').value.trim();
+  if(!storeId){alert('店舗を選択してください');return;}
+  var btn=document.getElementById('aiSnsBtn');
+  btn.disabled=true;btn.textContent='生成中...';
+  document.getElementById('aiSnsResult').innerHTML='<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:#888">AIが投稿文を生成中...</div></div>';
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-sns-post',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({store_id:storeId,platform:platform,topic:topic||null})
+    });
+    var data=await res.json();
+    if(!res.ok||!data.success){
+      document.getElementById('aiSnsResult').innerHTML='<div style="color:#e94560;padding:12px;background:#fff0f0;border-radius:8px;font-size:13px">⚠️ '+escHtml(data.error||'エラーが発生しました')+'</div>';
+      return;
+    }
+    var variants=data.variants||[];
+    var toneLabels={formal:'フォーマル',casual:'カジュアル',friendly:'フレンドリー'};
+    var toneColors={formal:'#6c5ce7',casual:'#00b894',friendly:'#e17055'};
+    var html='<div style="font-size:12px;color:#888;margin-bottom:8px">'+escHtml(data.platform.toUpperCase())+' | 文字数上限: '+data.char_limit+'文字</div>';
+    variants.forEach(function(v){
+      var label=toneLabels[v.tone]||v.tone;
+      var color=toneColors[v.tone]||'#6c5ce7';
+      var len=v.text.length;
+      var over=len>(data.char_limit||9999);
+      html+='<div style="border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+          '<span style="font-size:11px;font-weight:700;color:'+color+'">'+escHtml(label)+'</span>'+
+          '<div style="display:flex;gap:6px;align-items:center">'+
+            '<span style="font-size:10px;color:'+(over?'#e94560':'#888')+'">'+len+'文字</span>'+
+            '<button class="btn btn-sm" style="background:'+color+';color:#fff;font-size:10px" onclick="aiCopyText(this)">📋 コピー</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="ai-copy-text" style="font-size:13px;line-height:1.6;white-space:pre-wrap">'+escHtml(v.text)+'</div>'+
+      '</div>';
+    });
+    if(data.quota&&data.quota.remaining>=0) html+='<div style="text-align:right;font-size:10px;color:#888">残り: '+data.quota.remaining+'回（'+data.quota.plan+'）</div>';
+    document.getElementById('aiSnsResult').innerHTML=html;
+  }catch(e){
+    document.getElementById('aiSnsResult').innerHTML='<div style="color:#e94560;font-size:13px">⚠️ 通信エラー</div>';
+  }finally{btn.disabled=false;btn.textContent='🤖 投稿を生成';}
+}
+
+// ===== AI POP画像生成 =====
+async function aiGeneratePopImage(){
+  var storeId=document.getElementById('aiPopStore').value;
+  var style=document.getElementById('aiPopStyle').value;
+  var prompt=document.getElementById('aiPopPrompt').value.trim();
+  if(!storeId){alert('店舗を選択してください');return;}
+  if(!prompt){alert('内容を入力してください');return;}
+  var btn=document.getElementById('aiPopBtn');
+  btn.disabled=true;btn.textContent='生成中（30秒程度）...';
+  document.getElementById('aiPopResult').innerHTML='<div style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:#888">DALL-E 3がPOP画像を生成中...<br><span style="font-size:10px">通常20〜40秒かかります</span></div></div>';
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-pop-image',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({store_id:storeId,prompt_text:prompt,style:style})
+    });
+    var data=await res.json();
+    if(!res.ok||!data.success){
+      document.getElementById('aiPopResult').innerHTML='<div style="color:#e94560;padding:12px;background:#fff0f0;border-radius:8px;font-size:13px">⚠️ '+escHtml(data.error||'エラーが発生しました')+'</div>';
+      return;
+    }
+    var html='<div style="text-align:center">'+
+      '<img src="'+escHtml(data.image_url)+'" style="max-width:100%;max-height:500px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);margin-bottom:16px" alt="POP画像">'+
+      '<div style="display:flex;justify-content:center;gap:10px">'+
+        '<a href="'+escHtml(data.image_url)+'" download class="btn btn-primary btn-sm">💾 ダウンロード</a>'+
+        '<button class="btn btn-secondary btn-sm" onclick="aiGeneratePopImage()">🔄 再生成</button>'+
+      '</div>'+
+    '</div>';
+    if(data.quota&&data.quota.remaining>=0) html+='<div style="text-align:right;font-size:10px;color:#888;margin-top:8px">残り: '+data.quota.remaining+'回（'+data.quota.plan+'）</div>';
+    document.getElementById('aiPopResult').innerHTML=html;
+  }catch(e){
+    document.getElementById('aiPopResult').innerHTML='<div style="color:#e94560;font-size:13px">⚠️ 通信エラー</div>';
+  }finally{btn.disabled=false;btn.textContent='🎨 画像を生成';}
+}
+
+function aiCopyText(btn){
+  var text=btn.closest('div').parentElement.querySelector('.ai-copy-text').textContent;
+  navigator.clipboard.writeText(text).then(function(){showToast('✅ コピーしました');}).catch(function(){showToast('✅ コピーしました');});
+}
+
+// ===== 月次AIコメント =====
+async function aiGenerateMonthlyComment(){
+  var storeId=document.getElementById('aiMonthlyStore').value;
+  var month=document.getElementById('aiMonthlyMonth').value;
+  if(!storeId){alert('店舗を選択してください');return;}
+  if(!month){alert('月を選択してください');return;}
+  var btn=document.getElementById('aiMonthlyBtn');
+  btn.disabled=true;btn.textContent='生成中...';
+  document.getElementById('aiMonthlyResult').innerHTML='<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:#888">AIが経営データを分析中...</div></div>';
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-monthly-comment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({store_id:storeId,month:month})
+    });
+    var data=await res.json();
+    if(!res.ok||!data.success){
+      document.getElementById('aiMonthlyResult').innerHTML='<div style="color:#e94560;font-size:13px">⚠️ '+escHtml(data.error||'エラーが発生しました')+'</div>';
+      return;
+    }
+    var ds=data.data_summary||{};
+    var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'+
+      '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:#888">注文数</div><div style="font-size:20px;font-weight:800;color:#6c5ce7">'+(ds.order_count||0)+'</div></div>'+
+      '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:#888">GMV</div><div style="font-size:20px;font-weight:800;color:#00b894">¥'+(ds.gmv||0).toLocaleString()+'</div></div>'+
+      '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:#888">平均単価</div><div style="font-size:20px;font-weight:800;color:#0984e3">¥'+(ds.avg_order_value||0).toLocaleString()+'</div></div>'+
+      '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:#888">口コミ評価</div><div style="font-size:20px;font-weight:800;color:#e17055">'+(ds.review&&ds.review.avgRating?ds.review.avgRating:'—')+'</div></div>'+
+    '</div>'+
+    '<div style="background:#fff;padding:16px;border-radius:10px;border:1px solid #e0d8fc;white-space:pre-wrap;line-height:1.8">'+escHtml(data.comment)+'</div>';
+    if(data.quota&&data.quota.remaining>=0) html+='<div style="text-align:right;font-size:10px;color:#888;margin-top:8px">残り: '+data.quota.remaining+'回（'+data.quota.plan+'）</div>';
+    document.getElementById('aiMonthlyResult').innerHTML=html;
+  }catch(e){
+    document.getElementById('aiMonthlyResult').innerHTML='<div style="color:#e94560;font-size:13px">⚠️ 通信エラー</div>';
+  }finally{btn.disabled=false;btn.textContent='🤖 AIコメントを生成';}
+}
 
 // ===== COMPENSATION (補償管理) =====
 function renderCompensation(){
@@ -2189,6 +2349,16 @@ function renderKPIDashboard(){
         '<tr><td>障害件数</td><td><span style="color:var(--text-light)" title="POC開始後に計測開始">—</span></td><td>手動入力</td></tr>'+
       '</tbody></table>'+
     '</div>'+
+  '</div>'+
+  // 月次AIコメント
+  '<div class="card" style="margin-top:16px;background:linear-gradient(135deg,#f8f6ff 0%,#eff8ff 100%);border:1px solid #d4c5f9">'+
+    '<div class="card-title" style="color:#5b4a9e">🤖 月次AIコメント</div>'+
+    '<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">'+
+      '<select id="aiMonthlyStore" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:200px"><option value="">店舗を選択</option>'+storeOpts+'</select>'+
+      '<input type="month" id="aiMonthlyMonth" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px" value="2026-03">'+
+      '<button class="btn btn-sm" style="background:#5b4a9e;color:#fff" onclick="aiGenerateMonthlyComment()" id="aiMonthlyBtn">🤖 AIコメントを生成</button>'+
+    '</div>'+
+    '<div id="aiMonthlyResult" style="font-size:13px;line-height:1.8;color:#333"></div>'+
   '</div>';
 }
 
