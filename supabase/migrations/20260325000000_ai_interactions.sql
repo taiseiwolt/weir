@@ -42,10 +42,12 @@ CREATE TRIGGER trg_ai_interactions_updated_at
 ALTER TABLE ai_interactions ENABLE ROW LEVEL SECURITY;
 
 -- service_role: 全操作
+DROP POLICY IF EXISTS "service_role_full_access" ON ai_interactions;
 CREATE POLICY "service_role_full_access" ON ai_interactions
   TO service_role USING (true) WITH CHECK (true);
 
 -- authenticated: 自店舗のSELECTのみ
+DROP POLICY IF EXISTS "authenticated_select_own_store" ON ai_interactions;
 CREATE POLICY "authenticated_select_own_store" ON ai_interactions
   FOR SELECT TO authenticated
   USING (
@@ -54,7 +56,7 @@ CREATE POLICY "authenticated_select_own_store" ON ai_interactions
       JOIN brands b ON s.brand_id = b.id
       JOIN corps c ON b.corp_id = c.id
       WHERE c.id IN (
-        SELECT corp_id FROM staff_accounts WHERE auth_uid = auth.uid()
+        SELECT corp_id FROM staff_accounts WHERE auth_user_id = auth.uid()
       )
     )
   );
