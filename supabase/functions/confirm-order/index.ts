@@ -142,9 +142,10 @@ serve(async (req) => {
 
     if (existingOrder) {
       // 既に作成済み（stripe-create-payment-intent で pending INSERT されたケース）
-      // → payment_status を authorized に更新 + card_fingerprint を記録
+      // → payment_status を paid に更新 + card_fingerprint を記録
+      // CHECK制約の許可値: pending, paid, captured, failed, refunded, partially_refunded, disputed
       const updatePayload: Record<string, any> = {
-        payment_status: pi.status === 'succeeded' ? 'paid' : 'authorized',
+        payment_status: 'paid',
       }
       if (cardFingerprint) {
         updatePayload.card_fingerprint = cardFingerprint
