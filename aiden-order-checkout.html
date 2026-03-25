@@ -440,10 +440,11 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 <header class="header">
   <div class="header-left">
     <div class="header-logo" id="headerLogo"><span id="headerLogoText">炭</span></div>
-    <span class="header-title">注文の最終確認</span>
+    <span class="header-title" data-i18n="header_title">注文の最終確認</span>
   </div>
-  <div class="header-right">
-    <button class="btn-signin" onclick="openSigninModal()">サインイン</button>
+  <div class="header-right" style="display:flex;align-items:center;gap:8px">
+    <button id="langToggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer">EN</button>
+    <button class="btn-signin" onclick="openSigninModal()" data-i18n="signin">サインイン</button>
   </div>
 </header>
 
@@ -495,25 +496,25 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <div class="section">
       <div class="section-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        お客さま情報
+        <span data-i18n="section_customer_info">お客さま情報</span>
       </div>
       <div class="section-alert" id="alertCustomer">お客さま情報を入力してください</div>
       <div class="form-row">
         <div class="form-group">
-          <label>姓<span class="req">*</span></label>
+          <label data-i18n="label_last_name">姓<span class="req">*</span></label>
           <input type="text" class="form-input" id="custLastName" placeholder="山田" oninput="validateForm()">
         </div>
         <div class="form-group">
-          <label>名<span class="req">*</span></label>
+          <label data-i18n="label_first_name">名<span class="req">*</span></label>
           <input type="text" class="form-input" id="custFirstName" placeholder="太郎" oninput="validateForm()">
         </div>
       </div>
       <div class="form-group" style="margin-bottom:12px">
-        <label>メールアドレス<span class="req">*</span></label>
+        <label data-i18n="label_email">メールアドレス<span class="req">*</span></label>
         <input type="email" class="form-input" id="custEmail" placeholder="example@mail.com" oninput="validateForm()">
       </div>
       <div class="form-group">
-        <label>電話番号<span class="req">*</span></label>
+        <label data-i18n="label_phone">電話番号<span class="req">*</span></label>
         <div class="form-input-row">
           <span class="form-input-prefix">+81</span>
           <input type="tel" class="form-input" id="custPhone" placeholder="09012345678" oninput="validateForm()">
@@ -644,7 +645,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <div class="section">
       <div class="section-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        お支払い方法
+        <span data-i18n="section_payment">お支払い方法</span>
       </div>
       <div class="section-alert" id="alertPayment">お支払い方法を選択してください</div>
       <div class="payment-methods" id="paymentMethods">
@@ -716,13 +717,13 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
       <div class="price-card-title">お支払い金額</div>
       <div class="price-card-sub">税込み（適用される場合）</div>
 
-      <div class="price-section-title">料金体系について</div>
+      <div class="price-section-title" data-i18n="section_price">料金体系について</div>
       <div class="price-row">
-        <span class="label">税込商品代金</span>
+        <span class="label" data-i18n="label_subtotal">税込商品代金</span>
         <span class="value" id="priceSubtotal">¥0</span>
       </div>
       <div class="price-row" id="priceDeliveryRow">
-        <span class="label">デリバリー</span>
+        <span class="label" data-i18n="label_delivery_fee">配達料</span>
         <span class="value" id="priceDelivery">¥0</span>
       </div>
       <div class="price-row" id="priceServiceFeeRow" style="display:none">
@@ -730,19 +731,19 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         <span class="value" id="priceServiceFee">¥0</span>
       </div>
       <div class="price-row" id="priceSurchargeRow" style="display:none">
-        <span class="label">少額注文手数料</span>
+        <span class="label" data-i18n="label_surcharge">少額注文手数料</span>
         <span class="value" id="priceSurcharge">¥0</span>
       </div>
       <div class="price-row discount" id="priceCouponRow" style="display:none">
-        <span class="label">クーポン割引</span>
+        <span class="label" data-i18n="label_coupon">クーポン割引</span>
         <span class="value" id="priceCoupon">-¥0</span>
       </div>
       <div class="price-row discount" id="pricePointRow" style="display:none">
-        <span class="label">ポイント利用</span>
+        <span class="label" data-i18n="label_points">ポイント利用</span>
         <span class="value" id="pricePoint">-0pt</span>
       </div>
       <div class="price-row total">
-        <span class="label">合計</span>
+        <span class="label" data-i18n="label_total">合計</span>
         <span class="value" id="priceTotal">¥0</span>
       </div>
 
@@ -752,7 +753,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 
       <button class="btn-order incomplete" id="btnOrder" onclick="placeOrder()">
         <span class="btn-order-icon" id="orderBtnIcon"></span>
-        <span id="orderBtnText">注文する</span>
+        <span id="orderBtnText" data-i18n="btn_order">注文する</span>
       </button>
       <div class="order-alert-text" id="orderAlert"></div>
     </div>
@@ -792,6 +793,121 @@ let cardComplete = false;
 // UTILITY
 // ===================================================================
 function escapeHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ===================================================================
+// i18n (多言語切替)
+// ===================================================================
+let currentLang = sessionStorage.getItem('aiden_lang') || 'ja';
+
+const I18N = {
+  en: {
+    'header_title': 'Order Confirmation',
+    'signin': 'Sign In',
+    'section_delivery_address': 'Delivery Address',
+    'section_customer_info': 'Customer Information',
+    'section_delivery_time': 'Delivery Time',
+    'section_takeout_time': 'Pickup Time',
+    'section_payment': 'Payment Method',
+    'section_price': 'Payment Summary',
+    'label_last_name': 'Last Name',
+    'label_first_name': 'First Name',
+    'label_email': 'Email',
+    'label_phone': 'Phone',
+    'label_subtotal': 'Subtotal',
+    'label_delivery_fee': 'Delivery Fee',
+    'label_surcharge': 'Small Order Fee',
+    'label_coupon': 'Coupon Discount',
+    'label_points': 'Points Used',
+    'label_total': 'Total',
+    'btn_order': 'Place Order',
+    'time_asap': 'As Soon As Possible',
+    'time_scheduled': 'Schedule Delivery',
+    'time_scheduled_sub': 'Select your preferred date and time',
+    'time_asap_takeout': 'As Soon As Possible',
+    'time_scheduled_takeout': 'Schedule Pickup',
+    'time_scheduled_takeout_sub': 'Select your preferred date and time',
+    'card_number': 'Card Number',
+    'card_expiry': 'Expiry',
+    'card_cvc': 'CVC',
+    'delivery_eta': 'Estimated delivery in {min}-{max} minutes',
+    'free_delivery_met': 'Free delivery for orders over ¥{threshold}',
+    'free_delivery_hint': 'Free delivery for orders over ¥{threshold}',
+    'no_timeslot': 'No available time slots',
+    'prefecture': 'Prefecture',
+    'city': 'City',
+    'address': 'Address',
+    'building': 'Building (Optional)',
+  }
+};
+
+function t(key) {
+  if (currentLang === 'ja') return null;
+  return I18N[currentLang]?.[key] || null;
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translated = t(key);
+    if (translated) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = translated;
+      } else {
+        if (!el.dataset.jaText) el.dataset.jaText = el.textContent;
+        el.textContent = translated;
+      }
+    } else if (el.dataset.jaText) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = el.dataset.jaText;
+      } else {
+        el.textContent = el.dataset.jaText;
+      }
+    }
+  });
+  document.getElementById('langToggle').textContent = currentLang === 'ja' ? 'EN' : 'JA';
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'ja' ? 'en' : 'ja';
+  sessionStorage.setItem('aiden_lang', currentLang);
+  applyLang();
+}
+
+// ===================================================================
+// ERROR TRANSLATION (Stripe / API → 日本語)
+// ===================================================================
+function translateStripeError(err) {
+  const map = {
+    'card_declined': 'カードが拒否されました。別のカードをお試しください。',
+    'insufficient_funds': '残高が不足しています。',
+    'expired_card': 'カードの有効期限が切れています。',
+    'incorrect_cvc': 'セキュリティコードが正しくありません。',
+    'incorrect_number': 'カード番号が正しくありません。',
+    'processing_error': '処理中にエラーが発生しました。もう一度お試しください。',
+    'invalid_expiry_year': '有効期限（年）が正しくありません。',
+    'invalid_expiry_month': '有効期限（月）が正しくありません。',
+  };
+  if (err.decline_code && map[err.decline_code]) return map[err.decline_code];
+  if (err.code && map[err.code]) return map[err.code];
+  if (err.type === 'card_error' || err.type === 'validation_error') {
+    return err.message || '決済処理中にエラーが発生しました。';
+  }
+  return '決済処理中にエラーが発生しました。もう一度お試しください。';
+}
+
+function translateApiError(msg) {
+  if (!msg) return null;
+  const patterns = [
+    [/idempotent/i, '前回の決済情報が残っています。ページを更新してやり直してください。'],
+    [/rate limit/i, '短時間に多数のリクエストがありました。しばらくしてからお試しください。'],
+    [/invalid.*api.*key/i, 'システムエラーが発生しました。しばらくしてからお試しください。'],
+    [/network/i, '通信エラーが発生しました。接続を確認してやり直してください。'],
+  ];
+  for (const [re, ja] of patterns) {
+    if (re.test(msg)) return ja;
+  }
+  return msg;
+}
 
 // ===================================================================
 // CHECKOUT_DATA - sessionStorage（カート）＋Supabase（店舗設定）で構築
@@ -975,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     switchMode(mode);
     validateForm();
     loadSavedAddresses();
+    applyLang();
   } catch(e) { console.error('Checkout init error:', e); }
 });
 
@@ -1067,18 +1184,19 @@ function updateTimeSlots(type) {
   const sel = document.getElementById(selectId);
   sel.innerHTML = '';
 
+  const SLOT_INTERVAL = 30; // 30分間隔
   let startHour, startMin;
   if(isToday) {
     const earliest = new Date(now.getTime() + minMinutesFromNow * 60000);
     startHour = earliest.getHours();
-    startMin = Math.ceil(earliest.getMinutes() / 10) * 10;
+    startMin = Math.ceil(earliest.getMinutes() / SLOT_INTERVAL) * SLOT_INTERVAL;
     if(startMin >= 60) { startHour++; startMin = 0; }
   } else {
     startHour = 11; startMin = 0;
   }
 
   for(let h = startHour; h < 22; h++) {
-    for(let m = (h === startHour ? startMin : 0); m < 60; m += 10) {
+    for(let m = (h === startHour ? startMin : 0); m < 60; m += SLOT_INTERVAL) {
       const opt = document.createElement('option');
       opt.value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
       opt.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
@@ -1862,11 +1980,8 @@ async function placeOrder() {
       const customerEmail = document.getElementById('custEmail').value.trim();
       const customerPhone = document.getElementById('custPhone').value.trim();
 
-      // 冪等性キー生成（セッション内で1回のみ）
-      if (!sessionStorage.getItem('aiden_order_idempotency')) {
-        sessionStorage.setItem('aiden_order_idempotency', 'idem_' + Date.now() + '_' + Math.random().toString(36).slice(2));
-      }
-      const idempotencyKey = sessionStorage.getItem('aiden_order_idempotency');
+      // 冪等性キー生成（注文ごとにユニーク）
+      const idempotencyKey = 'idem_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
       // 1. Edge Function で PaymentIntent 作成 + 注文レコード作成（サーバー側で金額再計算）
       const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
@@ -1911,7 +2026,7 @@ async function placeOrder() {
         if (err.sold_out_products) {
           throw new Error(err.error);
         }
-        throw new Error(err.error || '決済処理に失敗しました');
+        throw new Error(translateApiError(err.error) || '決済処理に失敗しました');
       }
 
       piData = await res.json();
@@ -1927,10 +2042,7 @@ async function placeOrder() {
       );
 
       if (stripeError) {
-        if (stripeError.type === 'card_error' || stripeError.type === 'validation_error') {
-          throw new Error(stripeError.message);
-        }
-        throw new Error('決済処理中にエラーが発生しました');
+        throw new Error(translateStripeError(stripeError));
       }
 
       // 3. 決済成功 → confirm-order で注文レコード作成 + メール送信
