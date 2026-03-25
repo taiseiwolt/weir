@@ -340,12 +340,15 @@ serve(async (req) => {
         const orderItems = cart_items.map((item: any) => ({
           order_id: orderRow.id,
           product_id: item.product_id || null,
-          product_name: productMap[item.product_id]?.name || item.product_name || '',
+          size_id: item.size_id || null,
           quantity: item.quantity || 1,
           unit_price: item.unit_price || 0,
-          options: item.options || null,
+          subtotal: (item.unit_price || 0) * (item.quantity || 1),
         }))
-        await supabase.from('order_items').insert(orderItems)
+        const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
+        if (itemsErr) {
+          console.error('order_items insert error:', itemsErr)
+        }
       }
 
       // 8. レスポンス返却
