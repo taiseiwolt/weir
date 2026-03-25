@@ -777,10 +777,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ===================================================================
 // STRIPE CONFIG
 // ===================================================================
+const STRIPE_PK = 'pk_live_51TAiXE5o4NvikFmDtuvSnCgWt5141ZQ4fP9uSCLlc06PfhJr1Q5UAUEMXDQJRQrpxaDU5vHc39Kau6A1y674KNov00wj4yofzH';
 let stripeInstance = null;
 try {
   if (typeof Stripe !== 'undefined') {
-    stripeInstance = Stripe('pk_test_51TAiXe8IrssGKLKQNOIn8NnQ1f8BzAgd3cSKBNxQODtIYsWzeLX6ggSaZheuKn48isUlMkxLDVUTS2Nr3bRNDbwp00eNu0O0RE');
+    stripeInstance = Stripe(STRIPE_PK);
   }
 } catch(e) { console.warn('Stripe SDK load failed:', e); }
 let stripeElements = null;

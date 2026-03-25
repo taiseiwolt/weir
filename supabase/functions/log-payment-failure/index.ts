@@ -18,27 +18,28 @@ serve(async (req) => {
 
   const corsHeaders = getCorsHeaders(req)
 
-  // 認証: service_role_key, JWT, または anon key のいずれかを要求
-  // anon key はフロントの決済失敗ログ記録で使用される
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ error: 'Authorization ヘッダーがありません' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-  const token = authHeader.replace('Bearer ', '')
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
-  const isAnon = token === anonKey
+  // 認証: service_role_key, JWT, apikey ヘッダー, または Authorization の anon key
+  // ゲスト注文（未ログイン）の決済失敗ログ記録にも対応
   const isService = verifyServiceRole(req)
 
-  if (!isAnon && !isService) {
-    const { user, error: authError } = await verifyJwt(req)
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: authError || '認証が必要です' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+  if (!isService) {
+    // Supabase API Gateway が apikey ヘッダーを付与するため、それで認証OK
+    const apikeyHeader = req.headers.get('apikey')
+    const authHeader = req.headers.get('Authorization')
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+    const token = authHeader ? authHeader.replace('Bearer ', '') : ''
+
+    const hasValidApikey = apikeyHeader && apikeyHeader.length > 0
+    const isAnonAuth = token === anonKey
+
+    if (!hasValidApikey && !isAnonAuth) {
+      const { user, error: authError } = await verifyJwt(req)
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: authError || '認証が必要です' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
   }
 
