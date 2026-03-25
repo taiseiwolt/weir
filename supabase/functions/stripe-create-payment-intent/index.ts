@@ -191,10 +191,10 @@ serve(async (req) => {
         surcharge = Math.min(diff, maxSurcharge)
       }
 
-      // サービス料: 商品小計の10%、50円単位で切り上げ
-      const serviceChargeRate = 0.10
+      // サービス料: 店舗設定の料率（デフォルト0%）、50円単位で切り上げ
+      const serviceChargeRate = parseFloat(storeRow.service_charge_rate) || 0
       const rawServiceCharge = subtotal * serviceChargeRate
-      const serviceFee = Math.ceil(rawServiceCharge / 50) * 50
+      const serviceFee = serviceChargeRate > 0 ? Math.ceil(rawServiceCharge / 50) * 50 : 0
 
       // クーポン割引
       const discount = coupon_discount || 0

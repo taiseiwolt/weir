@@ -725,8 +725,8 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         <span class="label">デリバリー</span>
         <span class="value" id="priceDelivery">¥0</span>
       </div>
-      <div class="price-row" id="priceServiceFeeRow">
-        <span class="label">サービス料（10%）</span>
+      <div class="price-row" id="priceServiceFeeRow" style="display:none">
+        <span class="label" id="priceServiceFeeLabel">サービス料</span>
         <span class="value" id="priceServiceFee">¥0</span>
       </div>
       <div class="price-row" id="priceSurchargeRow" style="display:none">
@@ -814,6 +814,7 @@ let CHECKOUT_DATA = {
   deliveryTimeMin: 60,
   deliveryTimeMax: 70,
   surchargeAmount: 0,
+  serviceChargeRate: 0,
   prepTimeMinutes: 30,
   cartItems: [],
   subtotal: 0,
@@ -863,6 +864,7 @@ async function loadCheckoutData() {
       if (storeRow.delivery_time_max !== null) CHECKOUT_DATA.deliveryTimeMax = storeRow.delivery_time_max;
       if (storeRow.free_delivery_threshold !== null) CHECKOUT_DATA.freeDeliveryThreshold = storeRow.free_delivery_threshold;
       if (storeRow.prep_time_minutes !== null) CHECKOUT_DATA.prepTimeMinutes = storeRow.prep_time_minutes;
+      CHECKOUT_DATA.serviceChargeRate = parseFloat(storeRow.service_charge_rate) || 0;
 
       // 2b. 法人の stripe_account_id を取得（Stripe Connect 決済用）
       const corpId = storeRow.brands?.corp_id;
@@ -1356,8 +1358,9 @@ function updatePriceSummary() {
   const delivery = (mode === 'delivery' && !freeDeliveryMet) ? C.deliveryFee : 0;
   const surcharge = C.surchargeAmount;
 
-  // サービス料: 商品小計の10%、50円単位で切り上げ
-  const serviceFee = Math.ceil(subtotal * 0.10 / 50) * 50;
+  // サービス料: 店舗設定の料率、50円単位で切り上げ（0%の場合は0円）
+  const svcRate = C.serviceChargeRate || 0;
+  const serviceFee = svcRate > 0 ? Math.ceil(subtotal * svcRate / 50) * 50 : 0;
 
   let couponDiscount = 0;
   if(appliedCoupon) {
@@ -1399,7 +1402,13 @@ function updatePriceSummary() {
 
   document.getElementById('priceSubtotal').textContent = '¥' + subtotal.toLocaleString();
   document.getElementById('priceDelivery').textContent = '¥' + delivery.toLocaleString();
-  document.getElementById('priceServiceFee').textContent = '¥' + serviceFee.toLocaleString();
+  if (serviceFee > 0) {
+    document.getElementById('priceServiceFeeRow').style.display = '';
+    document.getElementById('priceServiceFeeLabel').textContent = 'サービス料（' + Math.round(svcRate * 100) + '%）';
+    document.getElementById('priceServiceFee').textContent = '¥' + serviceFee.toLocaleString();
+  } else {
+    document.getElementById('priceServiceFeeRow').style.display = 'none';
+  }
 
   if(surcharge > 0) {
     document.getElementById('priceSurchargeRow').style.display = '';
