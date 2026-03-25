@@ -156,7 +156,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
     <div class="status-text" id="statusText">読み込み中...</div>
     <div class="status-sub" id="statusSub"></div>
     <div class="step-bar" id="stepBar"></div>
-    <div class="status-disclaimer" id="deliveryDisclaimer" style="display:none">配達時間は状況によって15分程度前後する可能性があります、予めご了承ください</div>
+    <div class="status-disclaimer" id="deliveryDisclaimer" style="display:none"></div>
     <button class="review-btn" id="reviewBtn" onclick="openReview()">⭐ 口コミを書く</button>
   </div>
   <button class="float-btn btn-chat" onclick="openChat()" title="チャットサポート">💬</button>
@@ -268,6 +268,7 @@ let map = null;
 let storeMarker = null;
 let driverMarker = null;
 let pollInterval = null;
+let etaInterval = null;
 
 // ===================================================================
 // INIT
@@ -365,6 +366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startRealtime();
     startDeliveryTracking();
     startPolling();
+    startEtaCountdown();
 
   } catch (e) {
     console.error(e);
@@ -435,7 +437,7 @@ function calcETAText() {
   const ch = getChannel(), eta = calcETA();
   if (eta===null) return '';
   if (eta<=0) return 'まもなく到着予定です';
-  return ch==='delivery' ? 'お届けまでの所要時間：'+eta+'分' : 'お受け取りまで：約'+eta+'分';
+  return ch==='delivery' ? 'お届けまでの所要時間：約'+eta+'分' : 'お受け取りまでの所要時間：約'+eta+'分';
 }
 
 function escHtml(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
@@ -505,7 +507,14 @@ function renderTracking() {
     d.title=s.text; bar.appendChild(d);
   });
 
-  document.getElementById('deliveryDisclaimer').style.display = ch==='delivery'&&!isFinal&&!isCancelled ? '' : 'none';
+  if ((ch==='delivery' || ch==='takeout') && !isFinal && !isCancelled) {
+    document.getElementById('deliveryDisclaimer').style.display = '';
+    document.getElementById('deliveryDisclaimer').textContent = ch==='delivery'
+      ? '配達時間は状況によって15分程度前後する可能性があります、予めご了承ください'
+      : '準備時間は状況によって前後する可能性があります、予めご了承ください';
+  } else {
+    document.getElementById('deliveryDisclaimer').style.display = 'none';
+  }
   document.getElementById('reviewBtn').style.display = isFinal&&!isCancelled ? '' : 'none';
   if (isFinal||isCancelled) spinner.style.display = 'none';
 }
@@ -542,6 +551,7 @@ function startRealtime() {
             sb.removeChannel(realtimeChannel);
             realtimeChannel = null;
             if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+            if (etaInterval) { clearInterval(etaInterval); etaInterval = null; }
             if (deliveryChannel) { sb.removeChannel(deliveryChannel); deliveryChannel = null; }
           }
         }
@@ -615,10 +625,28 @@ function startPolling() {
         if (getChannel()==='delivery' && data.delivery_lat && data.delivery_lng) updateDriverMarker(data.delivery_lat, data.delivery_lng);
         if (FINAL_STATUSES.includes(data.tracking_status) || data.tracking_status==='cancelled') {
           clearInterval(pollInterval); pollInterval=null;
+          if (etaInterval) { clearInterval(etaInterval); etaInterval=null; }
           if (deliveryChannel) { sb.removeChannel(deliveryChannel); deliveryChannel=null; }
         }
       }
     } catch(e) { console.error('Poll error:', e); }
+  }, 60000);
+}
+
+// ===================================================================
+// ETA COUNTDOWN (BUG-4: リアルタイムカウントダウン)
+// ===================================================================
+function startEtaCountdown() {
+  if (etaInterval) clearInterval(etaInterval);
+  const cur = orderData.tracking_status || 'placed';
+  if (FINAL_STATUSES.includes(cur) || cur === 'cancelled') return;
+
+  etaInterval = setInterval(() => {
+    const cur = orderData.tracking_status || 'placed';
+    if (FINAL_STATUSES.includes(cur) || cur === 'cancelled') {
+      clearInterval(etaInterval); etaInterval = null; return;
+    }
+    renderTracking();
   }, 60000);
 }
 
