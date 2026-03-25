@@ -171,7 +171,7 @@ serve(async (req) => {
 
         const { data: orderDetail } = await supabase
           .from('orders')
-          .select('customer_email, customer_name, order_type, total_amount, order_items(product_name, quantity, unit_price)')
+          .select('customer_email, customer_name, order_type, total_amount, order_items(quantity, unit_price, products(name))')
           .eq('id', existingOrder.id)
           .single()
 
@@ -193,7 +193,7 @@ serve(async (req) => {
               subtotal: orderDetail.total_amount || 0,
               total: orderDetail.total_amount || 0,
               items: (orderDetail.order_items || []).map((i: any) => ({
-                name: i.product_name || '商品',
+                name: i.products?.name || '商品',
                 qty: i.quantity || 1,
                 price: i.unit_price || 0,
               })),
