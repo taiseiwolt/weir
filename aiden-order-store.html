@@ -102,7 +102,17 @@ img { max-width:100%; display:block; }
   color:#FFF;
 }
 .hero-store-name { font-size:28px; font-weight:800; margin-bottom:8px; }
-.hero-store-desc { font-size:14px; line-height:1.7; opacity:.9; max-width:700px; }
+.hero-store-desc {
+  font-size:14px; line-height:1.7; opacity:.9; max-width:700px;
+  display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;
+  transition: all .3s;
+}
+.hero-store-desc.expanded { -webkit-line-clamp:unset; }
+.hero-desc-toggle {
+  font-size:12px; color:rgba(255,255,255,.7); cursor:pointer;
+  margin-top:4px; display:none;
+}
+.hero-desc-toggle:hover { color:#FFF; }
 
 /* ===== INFO BAR ===== */
 .info-bar {
@@ -757,6 +767,7 @@ img { max-width:100%; display:block; }
   <div class="hero-overlay">
     <h1 class="hero-store-name" id="heroStoreName"></h1>
     <p class="hero-store-desc" id="heroStoreDesc"></p>
+    <span class="hero-desc-toggle" id="heroDescToggle" onclick="toggleHeroDesc()">もっと見る ▼</span>
   </div>
 </section>
 
@@ -1552,6 +1563,13 @@ function initStoreData() {
   document.getElementById('heroImg').src = S.storeHeroImg;
   document.getElementById('heroStoreName').textContent = S.storeName;
   document.getElementById('heroStoreDesc').textContent = S.storeDescription;
+  // Show toggle if description overflows 1 line
+  requestAnimationFrame(() => {
+    const descEl = document.getElementById('heroStoreDesc');
+    if (descEl.scrollHeight > descEl.clientHeight) {
+      document.getElementById('heroDescToggle').style.display = 'inline-block';
+    }
+  });
 
   // Store detail modal
   document.getElementById('storeModalName').textContent = S.storeName;
@@ -2582,6 +2600,14 @@ function goToCheckout() {
 }
 
 // ===================================================================
+// Hero description toggle
+function toggleHeroDesc() {
+  const desc = document.getElementById('heroStoreDesc');
+  const toggle = document.getElementById('heroDescToggle');
+  desc.classList.toggle('expanded');
+  toggle.textContent = desc.classList.contains('expanded') ? '閉じる ▲' : 'もっと見る ▼';
+}
+
 // VOICE ASSISTANT POC
 // ===================================================================
 // Voice Assistant POC
@@ -2590,7 +2616,7 @@ function goToCheckout() {
 // Requires: PICOVOICE_ACCESS_KEY env var (set up at console.picovoice.ai)
 //
 // To enable Porcupine wake word detection:
-// 1. Add SDK: <script src="https://unpkg.com/@picovoice/porcupine-web@3.0/dist/iife/index.js"></script>
+// 1. Add SDK: [picovoice-porcupine-web@3.0 script tag]
 // 2. Set PICOVOICE_ACCESS_KEY
 // 3. Uncomment the porcupine init code below
 // -------------------------------------------------------------------
