@@ -287,39 +287,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const orderSelect = `
-    *,
-    order_items(*, products(id, name, image_url)),
-    stores!inner(id, name, address, phone, lat, lng, brands(id, name, primary_color))
-  `;
-
   try {
     let order = null;
 
-    // 1. tracking_token で直接検索
+    // 1. tracking_token で RPC 経由検索（SECURITY DEFINER で delivery PII にアクセス）
     if (token) {
-      const { data, error } = await sb
-        .from('orders')
-        .select(orderSelect)
-        .eq('tracking_token', token)
-        .single();
-
+      const { data, error } = await sb.rpc('get_order_by_tracking_token', { p_token: token });
       if (!error && data) {
         order = data;
-      } else if (orderId) {
-        // Fallback: display_id + token 併用（旧URLフォーマット対応）
-        const { data: fallback, error: fbErr } = await sb
-          .from('orders')
-          .select(orderSelect)
-          .eq('display_id', orderId)
-          .eq('tracking_token', token)
-          .single();
-        if (!fbErr && fallback) order = fallback;
       }
     }
 
     // 2. payment_intent_id フォールバック（checkout.htmlからtoken取得できなかった場合）
     if (!order && piParam) {
+      const orderSelect = `
+        id, display_id, store_id, order_type, total_amount, delivery_fee, service_fee,
+        tracking_status, tracking_token, tracking_expires_at,
+        estimated_minutes, estimated_delivery_at, created_at,
+        order_items(id, quantity, unit_price, subtotal, products(id, name, image_url)),
+        stores!inner(id, name, address, phone, lat, lng, brands(id, name, primary_color))
+      `;
       const { data: piOrder, error: piErr } = await sb
         .from('orders')
         .select(orderSelect)
@@ -615,14 +602,13 @@ function startPolling() {
   pollInterval = setInterval(async () => {
     try {
       const { data } = await sb.from('orders')
-        .select('tracking_status, estimated_delivery_at, delivery_lat, delivery_lng')
+        .select('tracking_status, estimated_delivery_at')
         .eq('id', orderData.id).single();
 
       if (data) {
         const changed = data.tracking_status !== orderData.tracking_status;
         Object.assign(orderData, data);
         if (changed) renderTracking();
-        if (getChannel()==='delivery' && data.delivery_lat && data.delivery_lng) updateDriverMarker(data.delivery_lat, data.delivery_lng);
         if (FINAL_STATUSES.includes(data.tracking_status) || data.tracking_status==='cancelled') {
           clearInterval(pollInterval); pollInterval=null;
           if (etaInterval) { clearInterval(etaInterval); etaInterval=null; }
