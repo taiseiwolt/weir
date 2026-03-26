@@ -416,7 +416,7 @@ function updateDriverMarker(lat, lng) {
 function getChannel() {
   const t = orderData?.order_type || orderData?.channel || 'delivery';
   if (t==='dine_in'||t==='dinein') return 'dine_in';
-  if (t==='takeout') return 'takeout';
+  if (t==='takeout'||t==='pickup') return 'takeout';
   return 'delivery';
 }
 
