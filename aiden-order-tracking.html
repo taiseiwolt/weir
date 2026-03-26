@@ -54,6 +54,10 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
 .progress-icon{font-size:56px;line-height:1}
 
 /* === STATUS TEXT === */
+.order-type-label{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px;letter-spacing:.5px}
+.order-type-label.delivery{background:#E3F2FD;color:#1565C0}
+.order-type-label.takeout{background:#FFF3E0;color:#E65100}
+.order-type-label.dine_in{background:#E8F5E9;color:#2E7D32}
 .store-name{font-size:14px;color:var(--text-light);font-weight:600;margin-bottom:4px;letter-spacing:.5px}
 .status-text{font-size:18px;font-weight:700;text-align:center;margin-bottom:6px;line-height:1.4}
 .status-sub{font-size:13px;color:var(--text-light);text-align:center;margin-bottom:8px}
@@ -152,6 +156,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
         <div class="progress-label" id="progressLabel">でお届け</div>
       </div>
     </div>
+    <div class="order-type-label" id="orderTypeLabel"></div>
     <div class="store-name" id="storeName">---</div>
     <div class="status-text" id="statusText">読み込み中...</div>
     <div class="status-sub" id="statusSub"></div>
@@ -422,9 +427,23 @@ function calcETA() {
 
 function calcETAText() {
   const ch = getChannel(), eta = calcETA();
-  if (eta===null) return '';
-  if (eta<=0) return 'まもなく到着予定です';
-  return ch==='delivery' ? 'お届けまでの所要時間：約'+eta+'分' : 'お受け取りまでの所要時間：約'+eta+'分';
+  if (eta===null) {
+    // #3: ETA不明時のフォールバック
+    if (ch==='delivery') return 'お届け時間を確認中です';
+    if (ch==='takeout') return 'お受け取り時間を確認中です';
+    if (ch==='dine_in') return 'ご提供時間を確認中です';
+    return '';
+  }
+  if (eta<=0) {
+    // #1: チャネル別の「まもなく」テキスト
+    if (ch==='delivery') return 'まもなく到着予定です';
+    if (ch==='takeout') return 'まもなくお受け取りいただけます';
+    if (ch==='dine_in') return 'まもなくご提供いたします';
+    return 'まもなくご用意できます';
+  }
+  if (ch==='delivery') return 'お届けまでの所要時間：約'+eta+'分';
+  if (ch==='dine_in') return 'ご提供までの所要時間：約'+eta+'分';
+  return 'お受け取りまでの所要時間：約'+eta+'分';
 }
 
 function escHtml(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
@@ -473,9 +492,17 @@ function renderTracking() {
     if (eta !== null && eta > 0) {
       center.innerHTML = '<div class="progress-time">'+eta+'</div><div class="progress-unit">分</div><div class="progress-label">'+(ch==='delivery'?'でお届け':'でご用意')+'</div>';
     } else {
-      center.innerHTML = '<div class="progress-icon">'+(statuses[idx]?.icon||'⏳')+'</div>';
+      // #4: ETA=null時は⏳を表示（📝は文具に見えるため回避）
+      center.innerHTML = '<div class="progress-icon">⏳</div>';
     }
   }
+
+  // #5: 注文タイプラベル表示
+  const TYPE_LABELS = { delivery:{ emoji:'🚗', label:'デリバリー' }, takeout:{ emoji:'🛍', label:'テイクアウト' }, dine_in:{ emoji:'🍽', label:'店内注文' } };
+  const typeInfo = TYPE_LABELS[ch] || TYPE_LABELS.delivery;
+  const typeLabelEl = document.getElementById('orderTypeLabel');
+  typeLabelEl.className = 'order-type-label ' + ch;
+  typeLabelEl.textContent = typeInfo.emoji + ' ' + typeInfo.label;
 
   if (isCancelled) {
     document.getElementById('statusText').textContent = 'ご注文がキャンセルになりました';
