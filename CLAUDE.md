@@ -91,8 +91,9 @@ aiden-demo/
 ├── aiden-terms-enduser.html          # 利用規約（エンドユーザー向け）
 ├── 404.html                          # 404エラーページ
 │
-├── e2e-customer-admin.spec.js        # E2Eテスト（顧客管理）
-├── e2e-data-consistency.spec.js      # E2Eテスト（データ整合性）
+├── e2e-customer-admin.spec.cjs       # E2Eテスト（顧客管理）
+├── e2e-data-consistency.spec.cjs     # E2Eテスト（データ整合性）
+├── playwright.config.cjs             # Playwright設定
 ├── seed-members.py                   # メンバーシードスクリプト
 ├── vercel.json                       # Vercel設定
 ├── package.json                      # npm設定
@@ -172,48 +173,13 @@ aiden-demo/
 - コミットメッセージは英語で書く（例: `feat: add refund button to order dashboard`）
 - 1 commit = 1 機能単位（複数の無関係な変更を1 commitに混ぜない）
 
-### File Versioning
-- dot notation（例: v33.8）
-- 変更のたびにバージョンを上げる
-- versioned ファイル + versionless ファイルの2つを出力する
-
-### HTML Files
-- ファイル命名: `aiden-{機能名}.html`
-- display_id 形式: prefix + 7桁英数字（例: STR-a1b2c3d）
-- モーダル: backdrop付き、ESCキーで閉じる、既存パターンに合わせる
-- フォームバリデーション: フロント側でも実施する
-- 画面遷移: URLパラメータで store_id, brand_id 等を引き渡す
-- console.log: デバッグ完了後に必ず削除する
-
-### JavaScript
-- Supabase JS Client v2 を使用（CDN経由）
-- API Key はコードにハードコードしない（環境変数経由）
-- ユーザー入力値は必ずサニタイズする（XSS対策）
-- innerHTML にDB/APIから取得した文字列を代入する際は必ず escH() でエスケープする
-  例: el.innerHTML = escH(data.name) ← OK / el.innerHTML = data.name ← NG
-
-### SQL / Database
-- テーブル名: 複数形スネークケース（例: `order_items`）
-- 全テーブルに `created_at`, `updated_at` を含める
-- 外部キー: 適切な ON DELETE 設定（CASCADE or SET NULL）
-- RLS: 全テーブルで有効化必須。有効化と同時にポリシーを設定すること
-- 管理専用テーブルのRLSボイラープレート:
-  ```sql
-  ALTER TABLE tbl ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY "service_role_only" ON tbl TO service_role USING (true) WITH CHECK (true);
-  ```
-- pg_cronジョブの http_post header で service_role_key を参照する場合は current_setting() ではなく直接値を記載する（pg_cronのコンテキストでは current_setting() が動作しない）
-- マイグレーション: `supabase/migrations/` に日付プレフィックス付きで保存（YYYYMMDD形式）
-- ファイル名の日付は作成当日の日付を使用する（翌日日付は使用しない）
-- 本番データに影響するSQL: 実行前に SELECT で影響範囲を確認する
-- パラメータ化クエリを必ず使用する（SQL Injection対策）
-
-### API (Serverless Functions)
-- エンドポイント命名: `/api/{resource}`（RESTful）
-- レスポンス形式: `{ success: boolean, data?: any, error?: string }`
-- HTTPステータスコード: 200, 400, 401, 404, 500 を適切に使い分ける
-- service_role key: サーバーサイドのみで使用（フロントに露出させない）
-- 認証が必要なAPI: Supabase Auth の JWT を検証する
+### 言語別規約
+詳細は `.claude/rules/` を参照:
+- `sql.md` — SQL/Supabase（RLS、マイグレーション、pg_cron）
+- `javascript.md` — JS（escH()、XSS対策、Supabase Client）
+- `html.md` — HTML/CSS（命名、モーダル、バージョニング）
+- `api.md` — Serverless Functions（REST設計、認証）
+- `legal.md` — 法務文書ガードレール（曖昧表現チェック、リスクチェック）
 
 ---
 
@@ -265,44 +231,6 @@ aiden-demo/
 
 ---
 
-## 法務文書ガードレール
-
-### 法務文書作成・修正時の必須チェック
-
-法務文書（契約書、覚書、規約、ポリシー、特約）を作成・修正する場合、以下を必ず実行すること:
-
-1. **曖昧表現チェック**: 以下の表現が含まれていないか全文スキャンし、含まれている場合は断定表現または具体的な数値・期限に置き換える
-   - 「原則」「原則として」→ 断定表現に（例: 「加盟店が負担する」）
-   - 「一般的に」「通常」→ 具体的な条件に
-   - 「合理的な」→ 基準を明記するか、不要なら削除
-   - 「速やかに」「遅滞なく」→ 具体的な日数に（例: 「7営業日以内に」）
-   - 「重大な」→ 基準を定義
-   - 「必要に応じて」→ 条件を明記
-   - 「可能な限り」→ 義務か努力かを明確に
-   - 「適切な」「適当な」→ 基準を明記
-   - 「概ね」「おおむね」→ 具体的な範囲に
-
-2. **AIdenリスクチェック**: 作成した条項がAIden側のリスクにならないか確認。特に:
-   - コスト負担が曖昧になっていないか
-   - 免責範囲が狭すぎないか
-   - 期限や上限が未設定になっていないか
-
-3. **外部弁護士確認推奨の明示**: リスクが高い条項には `<!-- ※外部弁護士の確認を推奨 -->` コメントを付記
-
-4. **完了報告に曖昧表現チェック結果を含める**: 「曖昧表現チェック: 検出0件」または「検出N件、全て修正済み」を報告に含める
-
-### エージェント横断の品質チェック
-
-CC依頼の実装時、以下の領域にまたがる場合は各観点を考慮すること:
-
-- **法務文書** → Legal Director, Compliance Checker, Privacy Officerの観点
-- **決済関連** → Stripe Integrator, Fee Reconciler, Finance Managerの観点
-- **セキュリティ** → Security Auditor, Privacy Officerの観点
-- **顧客向けUI/UX** → Frontend Builder, CSS Designer, POC Plannerの観点
-- **データ設計** → Supabase Architect, Data Engineer, Data Quality Checkerの観点
-
----
-
 ## Work Style Rules
 
 ### Communication
@@ -320,11 +248,18 @@ CC依頼の実装時、以下の領域にまたがる場合は各観点を考慮
 2. 関連するテーブル構造やAPIを把握する
 3. 既存のコードパターンに合わせる
 
+### Verification
+タスク完了の判定基準:
+- `npm run lint` が pass する（console.log残存なし）
+- HTML変更時: ブラウザで表示確認
+- API変更時: curl or Supabase CLIで動作確認
+
 ### After Completing Any Task
 1. コードをセルフレビューする（問題があれば自分で修正してから報告）
-2. git commit する
-3. 変更内容のサマリだけ簡潔に報告する
-4. 手動作業（DBマイグレーション・環境変数設定・Edge Functionデプロイ等）がある場合は完了報告の先頭に「⚠️ 手動作業あり」セクションを設けて番号付きで列挙する
+2. `npm run lint` を実行して品質チェック
+3. git commit する
+4. 変更内容のサマリだけ簡潔に報告する
+5. 手動作業（DBマイグレーション・環境変数設定・Edge Functionデプロイ等）がある場合は完了報告の先頭に「⚠️ 手動作業あり」セクションを設けて番号付きで列挙する
 
 ### Agents
 - `.claude/agents/` にエージェント定義がある（現在: agents-legal.md に4エージェント）
