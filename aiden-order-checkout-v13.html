@@ -526,7 +526,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
           <div class="time-option-body">
             <div class="time-option-title">予約配達</div>
             <div class="time-option-sub">希望の日時を指定できます</div>
-            <div class="time-picker-row" id="scheduledDeliveryPicker" style="display:none">
+            <div class="time-picker-row" id="scheduledDeliveryPicker" style="display:none" onclick="event.stopPropagation()">
               <select class="form-input" id="schedDate" onchange="updateTimeSlots('delivery')"></select>
               <select class="form-input" id="schedTime" onchange="validateForm()"></select>
             </div>

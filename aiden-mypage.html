@@ -156,6 +156,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
 .verification-banner-close{background:none;border:none;font-size:20px;color:#BF360C;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
 .verification-banner-msg{font-size:11px;margin-top:6px;padding:6px 10px;border-radius:6px}
 
+/* Order History */
+.order-hist-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.order-hist-item:last-child{border-bottom:none}
+.order-hist-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.order-hist-icon.pickup{background:#E3F2FD;color:#1976D2}
+.order-hist-icon.delivery{background:#FFF3E0;color:#E65100}
+.order-hist-info{flex:1;min-width:0}
+.order-hist-id{font-size:12px;color:var(--text-sub)}
+.order-hist-amount{font-size:14px;font-weight:700;color:var(--text-main)}
+.order-hist-date{font-size:11px;color:#aaa;margin-top:2px}
+.order-hist-track{padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;background:var(--brand);color:#fff;text-decoration:none;white-space:nowrap}
+
 /* Withdrawal Complete */
 .withdraw-complete{display:none;text-align:center;padding:60px 24px}
 .withdraw-complete-icon{font-size:48px;margin-bottom:16px}
@@ -230,6 +242,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
       </div>
       <div class="point-icon">💰</div>
     </div>
+  </div>
+
+  <!-- Order History -->
+  <div class="section" id="sectionOrderHistory">
+    <div class="sec-title"><span>📦</span>注文履歴</div>
+    <div class="card" id="orderHistoryCard"></div>
   </div>
 
   <!-- Review Point History -->
@@ -459,6 +477,28 @@ function fmtDate(d) {
           document.getElementById('expiryText').innerHTML = '<strong>' + soonestExpiryAmount + 'pt</strong> が' + escH(fmtDate(soonestExpiry)) + 'に失効します。お早めにご利用ください。';
         }
       }
+    }
+
+    // Order history
+    const { data: recentOrders } = await sb.from('orders').select('display_id, order_type, total_amount, tracking_token, created_at').eq('member_id', memberId).order('created_at', { ascending: false }).limit(10);
+    if (recentOrders && recentOrders.length > 0) {
+      document.getElementById('sectionOrderHistory').style.display = '';
+      var ohCard = document.getElementById('orderHistoryCard');
+      ohCard.innerHTML = recentOrders.map(function(o) {
+        var icon = o.order_type === 'delivery' ? '🚚' : '🛍️';
+        var iconCls = o.order_type === 'delivery' ? 'delivery' : 'pickup';
+        var modeLabel = o.order_type === 'delivery' ? 'デリバリー' : 'テイクアウト';
+        var trackBtn = o.tracking_token
+          ? '<a href="./aiden-order-tracking.html?token=' + encodeURIComponent(o.tracking_token) + '" class="order-hist-track">追跡</a>'
+          : '';
+        return '<div class="order-hist-item">'
+          + '<div class="order-hist-icon ' + iconCls + '">' + icon + '</div>'
+          + '<div class="order-hist-info">'
+          + '<div class="order-hist-id">' + escH(o.display_id) + ' / ' + modeLabel + '</div>'
+          + '<div class="order-hist-amount">¥' + (o.total_amount || 0).toLocaleString() + '</div>'
+          + '<div class="order-hist-date">' + escH(fmtDate(o.created_at)) + '</div></div>'
+          + trackBtn + '</div>';
+      }).join('');
     }
 
     // Review point history

@@ -39,6 +39,7 @@ interface EmailRequest {
   paid_at?: string
   review_token?: string
   review_url_base?: string
+  tracking_token?: string
 }
 
 function formatCurrency(amount: number): string {
@@ -166,6 +167,19 @@ function buildConfirmationEmail(data: EmailRequest): string {
                 <td style="padding:12px 0;font-size:18px;color:#D32F2F;font-weight:800;text-align:right;">${formatCurrency(data.total)}</td>
               </tr>
             </table>
+
+            ${data.tracking_token ? `
+            <!-- Tracking CTA -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+              <tr>
+                <td align="center" style="padding:8px 0;">
+                  <a href="https://aiden-jp.net/aiden-order-tracking.html?token=${data.tracking_token}"
+                     style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
+                    注文状況を確認する
+                  </a>
+                </td>
+              </tr>
+            </table>` : ''}
 
             <p style="font-size:12px;color:#999;line-height:1.6;margin:0;">
               ※ このメールは自動送信されています。<br>

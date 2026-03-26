@@ -192,6 +192,7 @@ serve(async (req) => {
               order_mode: orderDetail.order_type || 'takeout',
               subtotal: orderDetail.total_amount || 0,
               total: orderDetail.total_amount || 0,
+              tracking_token: existingOrder.tracking_token || '',
               items: (orderDetail.order_items || []).map((i: any) => ({
                 name: i.products?.name || '商品',
                 qty: i.quantity || 1,
@@ -313,6 +314,7 @@ serve(async (req) => {
           order_mode: meta.order_type || 'takeout',
           subtotal: pi.amount,
           total: pi.amount,
+          tracking_token: orderRow.tracking_token || '',
           items: cartItems.map((i: any) => ({
             name: i.pn || '商品',
             qty: i.q || 1,
