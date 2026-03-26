@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": null,
-  "outputDirectory": null,
   "redirects": [
     {
       "source": "/:path(.*)",
