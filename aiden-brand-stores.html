@@ -455,7 +455,7 @@ async function loadStoresFromSupabase() {
   STORES = stores.map(function(s, i) {
     var prefCity = (s.address || '').substring(0, 3);
     return {
-      id: s.slug || s.id, name: s.name.replace('焼肉 炭火亭 ','炭火亭 '), pref: prefCity, city: '',
+      id: s.slug || s.id, uuid: s.id, name: s.name.replace('焼肉 炭火亭 ','炭火亭 '), pref: prefCity, city: '',
       addr: s.address || '', station: '', hours: '17:00〜23:00',
       bg: thumbMap[s.id] ? 'url('+thumbMap[s.id]+') center/cover no-repeat' : bgs[i % bgs.length],
       thumbUrl: thumbMap[s.id] || null,
@@ -596,8 +596,9 @@ function initResStoreOptions() {
   var sel = document.getElementById('rm-store');
   STORES.forEach(function(s) {
     var opt = document.createElement('option');
-    opt.value = s.name;
+    opt.value = s.uuid || s.id;
     opt.textContent = s.name;
+    opt.dataset.name = s.name;
     sel.appendChild(opt);
   });
 }
@@ -675,9 +676,10 @@ function rmGoStep(n) {
     else if (i+1 === n) el.classList.add('active');
   });
   if (n === 3) {
+    var storeEl = document.getElementById('rm-store');
     var storeName = rmPresetStore
       ? rmPresetStore
-      : (document.getElementById('rm-store').options[document.getElementById('rm-store').selectedIndex].text || '—');
+      : (storeEl.options[storeEl.selectedIndex]?.text || '—');
     var rows = [
       ['店舗',  storeName],
       ['日時',  (document.getElementById('rm-date').value || '—') + ' ' + (rmSelTime || '—')],
@@ -713,10 +715,45 @@ function rmClearErr(id) {
   if (el) el.classList.remove('show');
 }
 
-function rmSubmit() {
-  document.getElementById('rmstep-3').style.display = 'none';
-  document.getElementById('rm-res-id').textContent = 'RES-' + Date.now().toString().slice(-6);
-  document.getElementById('rmstep-complete').style.display = 'block';
+async function rmSubmit() {
+  var submitBtn = document.querySelector('#rmstep-3 .rm-submit-btn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '送信中...'; }
+  try {
+    var storeSelect = document.getElementById('rm-store');
+    var storeId = storeSelect.value;
+    var storeName = storeSelect.options[storeSelect.selectedIndex]?.text || '';
+    if (rmPresetStore) {
+      var found = STORES.find(function(s){ return s.name === rmPresetStore; });
+      storeId = found ? (found.uuid || found.id) : '';
+      storeName = rmPresetStore;
+    }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/create-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store_id: storeId,
+        reservation_date: document.getElementById('rm-date').value,
+        reservation_time: rmSelTime,
+        party_size: parseInt(document.getElementById('rm-guests').value, 10),
+        guest_name: document.getElementById('rm-name').value.trim(),
+        guest_phone: document.getElementById('rm-phone').value.trim(),
+        guest_email: document.getElementById('rm-email').value.trim(),
+        special_requests: document.getElementById('rm-notes').value.trim() || undefined
+      })
+    });
+    var json = await res.json();
+    if (!res.ok || !json.success) {
+      alert('予約の送信に失敗しました: ' + (json.error || '不明なエラー'));
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+      return;
+    }
+    document.getElementById('rmstep-3').style.display = 'none';
+    document.getElementById('rm-res-id').textContent = json.reservation.display_id;
+    document.getElementById('rmstep-complete').style.display = 'block';
+  } catch (e) {
+    alert('予約の送信に失敗しました。通信状況をご確認ください。');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+  }
 }
 
 document.getElementById('res-modal-bg').addEventListener('click', function(e){

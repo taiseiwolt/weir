@@ -283,6 +283,41 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
 
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:3000;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .toast.show{display:block;animation:slideUp .3s}
+
+/* ===== RESERVATIONS PAGE ===== */
+.res-controls{display:flex;align-items:center;gap:12px;padding:12px 16px;flex-wrap:wrap}
+.res-filter-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #E0E0E0;background:#fff;color:#555;transition:all .2s}
+.res-filter-btn.active{background:#D32F2F;color:#fff;border-color:#D32F2F}
+.res-summary-row{display:flex;gap:12px;padding:0 16px 12px;flex-wrap:wrap}
+.res-summary-row .summary-card{flex:1;min-width:120px}
+
+.res-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+.res-badge.confirmed{background:#E3F2FD;color:#1565C0}
+.res-badge.pending{background:#FFF8E1;color:#F57F17}
+.res-badge.cancel_requested{background:#FFF3E0;color:#E65100}
+.res-badge.cancelled{background:#F5F5F5;color:#999}
+.res-badge.no_show{background:#FFEBEE;color:#C62828}
+.res-badge.completed{background:#E8F5E9;color:#2E7D32}
+
+.res-action-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;margin:0 2px}
+.res-action-btn.approve{background:#2E7D32;color:#fff}
+.res-action-btn.reject{background:#C62828;color:#fff}
+.res-action-btn.complete{background:#1565C0;color:#fff}
+.res-action-btn.noshow{background:#666;color:#fff}
+
+/* Calendar view */
+.res-cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 16px}
+.res-cal-date{font-size:16px;font-weight:700;color:#333;min-width:160px;text-align:center}
+.res-cal-timeline{padding:0 16px 16px}
+.res-cal-slot{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f0f0f0;min-height:40px}
+.res-cal-time{width:60px;font-size:13px;font-weight:700;color:#888;padding-top:2px;flex-shrink:0}
+.res-cal-cards{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.res-cal-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:8px 12px;font-size:12px;min-width:140px;cursor:default}
+.res-cal-card.confirmed{border-left:3px solid #1565C0}
+.res-cal-card.pending{border-left:3px solid #F57F17}
+.res-cal-card.cancel_requested{border-left:3px solid #E65100}
+.res-cal-card .res-cal-name{font-weight:700;color:#333}
+.res-cal-card .res-cal-info{color:#888;font-size:11px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -354,6 +389,46 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
           </tr></thead><tbody id="tbExt"></tbody></table>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- RESERVATIONS PAGE -->
+  <div class="page-view" id="pg-reservations">
+    <div class="res-controls">
+      <div class="filter-group">
+        <span class="filter-group-label">表示</span>
+        <div class="res-filter-btn active" data-rf="today" onclick="setResFilter('today')">今日</div>
+        <div class="res-filter-btn" data-rf="tomorrow" onclick="setResFilter('tomorrow')">明日</div>
+        <div class="res-filter-btn" data-rf="week" onclick="setResFilter('week')">今週</div>
+        <div class="res-filter-btn" data-rf="pending" onclick="setResFilter('pending')">承認待ち</div>
+      </div>
+      <div class="view-toggle">
+        <button class="view-toggle-btn active" data-rv="list" onclick="setResView('list')">リスト</button>
+        <button class="view-toggle-btn" data-rv="calendar" onclick="setResView('calendar')">カレンダー</button>
+      </div>
+    </div>
+    <div class="res-summary-row">
+      <div class="summary-card"><div class="lbl">本日の予約</div><div class="val" id="resTodayCount">0</div></div>
+      <div class="summary-card"><div class="lbl">承認待ち</div><div class="val" id="resPendingCount">0</div></div>
+      <div class="summary-card"><div class="lbl">合計人数</div><div class="val" id="resTotalGuests">0名</div></div>
+    </div>
+    <!-- List View -->
+    <div id="resListView">
+      <table class="htable"><thead><tr>
+        <th style="width:80px">状態</th><th style="width:100px">予約番号</th><th style="width:100px">日時</th>
+        <th style="width:60px">人数</th><th>お名前</th><th style="width:80px">席種</th>
+        <th style="width:80px">電話番号</th><th style="width:140px"></th>
+      </tr></thead><tbody id="resListBody"></tbody></table>
+      <div class="no-data" id="resNoData" style="display:none">予約データがありません</div>
+    </div>
+    <!-- Calendar View -->
+    <div id="resCalView" style="display:none">
+      <div class="res-cal-nav">
+        <button class="period-btn" onclick="resCalPrev()">◀ 前日</button>
+        <span class="res-cal-date" id="resCalDateLabel"></span>
+        <button class="period-btn" onclick="resCalNext()">翌日 ▶</button>
+      </div>
+      <div class="res-cal-timeline" id="resCalTimeline"></div>
     </div>
   </div>
 
@@ -597,7 +672,7 @@ const LOGOS={
 const S={new:{l:"新規",c:"#DC3232",b:"#FFF0F0"},cooking:{l:"調理中",c:"#1A1A1A",b:"#F2F2F2"},ready:{l:"受け渡し待ち",c:"#1A1A1A",b:"#E8F5E9"},done:{l:"受渡済",c:"#999",b:"#F7F7F7"},cancelled:{l:"取消",c:"#BBB",b:"#FAFAFA"}};
 const TI={dine:"🍽",takeout:"🥡",delivery:"🛵"},TL={dine:"店内",takeout:"お持ち帰り",delivery:"デリバリー"};
 const NX={new:"受注する",cooking:"調理完了",ready:"受渡済にする"};
-const NAV=[{id:"orders",i:"📋",l:"注文"},{id:"history",i:"📊",l:"売上"},{id:"menu",i:"🍽",l:"メニュー"},{id:"settings",i:"⚙",l:"設定"}];
+const NAV=[{id:"orders",i:"📋",l:"注文"},{id:"reservations",i:"📅",l:"予約"},{id:"history",i:"📊",l:"売上"},{id:"menu",i:"🍽",l:"メニュー"},{id:"settings",i:"⚙",l:"設定"}];
 const FT=[{id:"all",l:"すべて"},{id:"new",l:"新規"},{id:"cooking",l:"調理中"},{id:"ready",l:"受け渡し待ち"},{id:"done",l:"受渡済"},{id:"cancelled",l:"取消"}];
 let MENU=[
   {id:1,name:'特選カルビ',price:1280,cat:'焼肉',emoji:'🥩',avail:true},{id:2,name:'ハラミ',price:980,cat:'焼肉',emoji:'🥩',avail:true},
@@ -764,7 +839,7 @@ function fmtDT(d){return`${d.getMonth()+1}/${d.getDate()} ${fmtT(d)}`;}
 
 // ===== NAV =====
 function rNav(){document.getElementById("nav").innerHTML=NAV.map(n=>{const a=n.id===aPage,b=n.id==="orders"?nc():0;return'<div class="nav-item'+(a?' active':'')+'" onclick="switchPage(\''+n.id+'\')"><div class="icon">'+n.i+'</div><div class="label">'+n.l+'</div>'+(b>0?'<div class="nav-badge">'+b+'</div>':'')+'</div>'}).join("");}
-function switchPage(p){aPage=p;rNav();document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('active'));document.getElementById('pg-'+p).classList.add('active');if(p==='history')renderHistory();if(p==='menu')renderMenu();if(p==='settings')renderSettings();}
+function switchPage(p){aPage=p;rNav();document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('active'));document.getElementById('pg-'+p).classList.add('active');if(p==='history')renderHistory();if(p==='menu')renderMenu();if(p==='settings')renderSettings();if(p==='reservations')loadReservations();}
 
 // ===== HEADER =====
 function rHdr(){const h=document.getElementById("hdr");h.className="header"+(isPaused?" paused":"");document.getElementById("ptgl").textContent=isPaused?"▶ 受付再開":"⏸ 受付中";const n=nc();const nb=document.getElementById("nb");nb.textContent=n;nb.style.display=n>0?"flex":"none";}
@@ -1252,7 +1327,154 @@ function startPolling() {
   // Start Realtime subscription + polling fallback
   startRealtime();
   startPolling();
+  startReservationRealtime();
 })();
+
+// ===== RESERVATIONS =====
+let resData=[], resFilter='today', resView='list', resCalDate=new Date();
+
+function setResFilter(f){
+  resFilter=f;
+  document.querySelectorAll('.res-filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.rf===f));
+  loadReservations();
+}
+function setResView(v){
+  resView=v;
+  document.querySelectorAll('[data-rv]').forEach(b=>b.classList.toggle('active',b.dataset.rv===v));
+  document.getElementById('resListView').style.display=v==='list'?'':'none';
+  document.getElementById('resCalView').style.display=v==='calendar'?'':'none';
+  renderReservations();
+}
+
+async function loadReservations(){
+  if(!STORE_ID) return;
+  const today=new Date();
+  let dateFrom='',dateTo='',statusFilter='';
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  if(resFilter==='today'){dateFrom=dateTo=fmt(today);}
+  else if(resFilter==='tomorrow'){const t=new Date(today);t.setDate(t.getDate()+1);dateFrom=dateTo=fmt(t);}
+  else if(resFilter==='week'){dateFrom=fmt(today);const w=new Date(today);w.setDate(w.getDate()+7);dateTo=fmt(w);}
+  else if(resFilter==='pending'){statusFilter='pending,cancel_requested';}
+
+  let url=SUPABASE_URL+'/functions/v1/get-reservations?store_id='+STORE_ID;
+  if(dateFrom) url+='&date_from='+dateFrom;
+  if(dateTo) url+='&date_to='+dateTo;
+  if(statusFilter) url+='&status='+statusFilter;
+
+  try{
+    const res=await fetch(url);
+    const json=await res.json();
+    resData=json.reservations||[];
+  }catch(e){resData=[];}
+  renderReservations();
+}
+
+const RES_STATUS={pending:{l:'承認待ち'},confirmed:{l:'確定'},cancelled:{l:'キャンセル'},cancel_requested:{l:'ﾘｸｴｽﾄ中'},no_show:{l:'ノーショー'},completed:{l:'来店済'}};
+const SEAT_L={counter:'カウンター',table:'テーブル',private_room:'個室'};
+
+function renderReservations(){
+  // Summary
+  const today=new Date();const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr=fmt(today);
+  const todayRes=resData.filter(r=>r.reservation_date===todayStr&&r.status!=='cancelled');
+  document.getElementById('resTodayCount').textContent=todayRes.length;
+  document.getElementById('resPendingCount').textContent=resData.filter(r=>r.status==='pending'||r.status==='cancel_requested').length;
+  document.getElementById('resTotalGuests').textContent=todayRes.reduce((s,r)=>s+r.party_size,0)+'名';
+
+  if(resView==='list') renderResList();
+  else renderResCal();
+}
+
+function renderResList(){
+  const tbody=document.getElementById('resListBody');
+  const noData=document.getElementById('resNoData');
+  if(!resData.length){tbody.innerHTML='';noData.style.display='block';return;}
+  noData.style.display='none';
+
+  tbody.innerHTML=resData.map(r=>{
+    const st=RES_STATUS[r.status]||{l:r.status};
+    const seat=SEAT_L[r.seat_type]||'—';
+    const dt=r.reservation_date.replace(/-/g,'/')+' '+r.reservation_time.substring(0,5);
+    let actions='';
+    if(r.status==='pending'){
+      actions=`<button class="res-action-btn approve" onclick="event.stopPropagation();resAction('${r.id}','confirmed')">承認</button>`
+        +`<button class="res-action-btn reject" onclick="event.stopPropagation();resAction('${r.id}','cancelled')">拒否</button>`;
+    } else if(r.status==='cancel_requested'){
+      actions=`<button class="res-action-btn approve" onclick="event.stopPropagation();resAction('${r.id}','cancelled')">承認</button>`
+        +`<button class="res-action-btn reject" onclick="event.stopPropagation();resAction('${r.id}','confirmed')">拒否</button>`;
+    } else if(r.status==='confirmed'){
+      actions=`<button class="res-action-btn complete" onclick="event.stopPropagation();resAction('${r.id}','completed')">来店</button>`
+        +`<button class="res-action-btn noshow" onclick="event.stopPropagation();resAction('${r.id}','no_show')">NS</button>`;
+    }
+    return `<tr><td><span class="res-badge ${escH(r.status)}">${escH(st.l)}</span></td>`
+      +`<td style="font-weight:600;font-size:11px">${escH(r.display_id)}</td>`
+      +`<td>${escH(dt)}</td>`
+      +`<td style="text-align:center">${r.party_size}名</td>`
+      +`<td>${escH(r.guest_name)}</td>`
+      +`<td>${escH(seat)}</td>`
+      +`<td style="font-size:11px">${escH(r.guest_phone)}</td>`
+      +`<td>${actions}</td></tr>`;
+  }).join('');
+}
+
+function renderResCal(){
+  const d=resCalDate;
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const wk=['日','月','火','水','木','金','土'];
+  document.getElementById('resCalDateLabel').textContent=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (${wk[d.getDay()]})`;
+
+  const dayStr=fmt(d);
+  const dayRes=resData.filter(r=>r.reservation_date===dayStr&&r.status!=='cancelled');
+
+  // Group by time
+  const slots={};
+  for(let h=10;h<=23;h++){
+    ['00','30'].forEach(m=>{slots[`${String(h).padStart(2,'0')}:${m}`]=[];});
+  }
+  dayRes.forEach(r=>{
+    const t=r.reservation_time.substring(0,5);
+    if(!slots[t]) slots[t]=[];
+    slots[t].push(r);
+  });
+
+  const tl=document.getElementById('resCalTimeline');
+  tl.innerHTML=Object.keys(slots).sort().map(time=>{
+    const cards=slots[time];
+    return `<div class="res-cal-slot"><div class="res-cal-time">${time}</div><div class="res-cal-cards">`
+      +(cards.length?cards.map(r=>{
+        const st=RES_STATUS[r.status]||{l:r.status};
+        return `<div class="res-cal-card ${r.status}"><div class="res-cal-name">${escH(r.guest_name)} (${r.party_size}名)</div>`
+          +`<div class="res-cal-info">${escH(r.display_id)} ・ ${escH(st.l)}${r.seat_type?' ・ '+(SEAT_L[r.seat_type]||''):''}</div></div>`;
+      }).join(''):'')
+      +`</div></div>`;
+  }).join('');
+}
+
+function resCalPrev(){resCalDate.setDate(resCalDate.getDate()-1);loadReservations();}
+function resCalNext(){resCalDate.setDate(resCalDate.getDate()+1);loadReservations();}
+
+async function resAction(resId,newStatus){
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/update-reservation-status',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({reservation_id:resId,new_status:newStatus,cancelled_by:newStatus==='cancelled'?'store':undefined})
+    });
+    const json=await res.json();
+    if(!res.ok||!json.success){alert('操作に失敗しました: '+(json.error||''));return;}
+    loadReservations();
+  }catch(e){alert('通信エラーが発生しました');}
+}
+
+function startReservationRealtime(){
+  if(!STORE_ID) return;
+  sb.channel('reservations-dashboard-'+STORE_ID)
+    .on('postgres_changes',
+      {event:'*',schema:'public',table:'reservations',filter:'store_id=eq.'+STORE_ID},
+      ()=>{if(aPage==='reservations')loadReservations();}
+    ).subscribe();
+}
 </script>
 <footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
   <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a></div>

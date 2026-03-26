@@ -1050,6 +1050,7 @@ async function loadStoreFromSupabase() {
   // Direct Supabase
   var {data: storeData} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, logo_image_url, description, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
+  STORE.storeId = storeData.id;
   STORE.name = storeData.name;
   STORE.address = storeData.address || STORE.address;
   STORE.phone = storeData.phone || STORE.phone;
@@ -1575,11 +1576,37 @@ function validateStep2() {
   var e  = showErr('m-email', validateEmail(document.getElementById('m-email').value));
   if(!n && !p && !e) goStep(3);
 }
-function submitRes() {
-  document.getElementById('mstep-3').style.display='none';
-  document.getElementById('res-id').textContent='RES-'+Date.now().toString().slice(-6);
-  document.getElementById('mstep-complete').style.display='block';
-  // ※ 実際はここでSupabaseに予約データをPOSTし、SendGrid経由で確認メールを送信
+async function submitRes() {
+  var submitBtn = document.querySelector('#mstep-3 .rm-submit-btn, #mstep-3 button[onclick*="submitRes"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '送信中...'; }
+  try {
+    var res = await fetch(SUPABASE_URL + '/functions/v1/create-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store_id: STORE.storeId,
+        reservation_date: document.getElementById('m-date').value || selDate,
+        reservation_time: selTime,
+        party_size: parseInt(document.getElementById('m-guests').value, 10),
+        guest_name: document.getElementById('m-name').value.trim(),
+        guest_phone: document.getElementById('m-phone').value.trim(),
+        guest_email: document.getElementById('m-email').value.trim(),
+        special_requests: document.getElementById('m-notes').value.trim() || undefined
+      })
+    });
+    var json = await res.json();
+    if (!res.ok || !json.success) {
+      alert('予約の送信に失敗しました: ' + (json.error || '不明なエラー'));
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+      return;
+    }
+    document.getElementById('mstep-3').style.display='none';
+    document.getElementById('res-id').textContent = json.reservation.display_id;
+    document.getElementById('mstep-complete').style.display='block';
+  } catch (e) {
+    alert('予約の送信に失敗しました。通信状況をご確認ください。');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+  }
 }
 
 /* =====================================================
@@ -1722,14 +1749,43 @@ function validateSeatStep3() {
   var e = showErr('sm-email', validateEmail(document.getElementById('sm-email').value));
   if(!n && !p && !e) goSeatStep(4);
 }
-function submitSeatRes() {
-  var resId = 'RES-'+Date.now().toString().slice(-6);
-  document.getElementById('smstep-4').style.display = 'none';
-  document.getElementById('sm-res-id').textContent = resId;
-  document.getElementById('smstep-complete').style.display = 'block';
-  // ※ Supabase POST + SendGrid メール送信（実装時）
-  // sendReservationEmail({ to:sm-email, resId, seat:smSelSeatName, date:sm-date, time:smSelTime,
-  //   guests:sm-guests, course:smSelCourse.name, name:sm-name, phone:sm-phone, notes:sm-notes });
+async function submitSeatRes() {
+  var submitBtn = document.querySelector('#smstep-4 button[onclick*="submitSeatRes"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '送信中...'; }
+  try {
+    var seatTypeMap = { 'カウンター': 'counter', 'テーブル': 'table', '個室': 'private_room' };
+    var seatType = null;
+    for (var key in seatTypeMap) {
+      if (smSelSeatName && smSelSeatName.indexOf(key) >= 0) { seatType = seatTypeMap[key]; break; }
+    }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/create-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store_id: STORE.storeId,
+        reservation_date: document.getElementById('sm-date').value,
+        reservation_time: smSelTime,
+        party_size: parseInt(document.getElementById('sm-guests').value, 10),
+        seat_type: seatType,
+        guest_name: document.getElementById('sm-name').value.trim(),
+        guest_phone: document.getElementById('sm-phone').value.trim(),
+        guest_email: document.getElementById('sm-email').value.trim(),
+        special_requests: document.getElementById('sm-notes').value.trim() || undefined
+      })
+    });
+    var json = await res.json();
+    if (!res.ok || !json.success) {
+      alert('予約の送信に失敗しました: ' + (json.error || '不明なエラー'));
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+      return;
+    }
+    document.getElementById('smstep-4').style.display = 'none';
+    document.getElementById('sm-res-id').textContent = json.reservation.display_id;
+    document.getElementById('smstep-complete').style.display = 'block';
+  } catch (e) {
+    alert('予約の送信に失敗しました。通信状況をご確認ください。');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+  }
 }
 document.getElementById('seat-modal').addEventListener('click', function(e){ if(e.target===this) closeSeatModal(); });
 function showVacancyStep(n){ [1,2,3].forEach(function(i){ document.getElementById('vacancy-step-'+i).style.display=i===n?'block':'none'; }); }
