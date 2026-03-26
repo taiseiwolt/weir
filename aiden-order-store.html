@@ -2802,22 +2802,49 @@ async function showTokushoho() {
   }
 
   content.innerHTML = `
-    <table style="width:100%;border-collapse:collapse;">
+    <h3 style="font-size:14px;font-weight:bold;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d1d5db;">販売店舗情報</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="border-bottom:1px solid #e5e7eb;">
-        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">事業者名</th>
+        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">販売事業者名</th>
         <td style="padding:12px 8px;">${escH(store.name)}</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">所在地</th>
         <td style="padding:12px 8px;">${escH(store.address)}</td>
       </tr>
-      <tr style="border-bottom:1px solid #e5e7eb;">
+      <tr>
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">電話番号</th>
         <td style="padding:12px 8px;">${escH(store.phone)}</td>
       </tr>
+    </table>
+    <h3 style="font-size:14px;font-weight:bold;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d1d5db;">プラットフォーム運営者情報</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="border-bottom:1px solid #e5e7eb;">
-        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の価格</th>
-        <td style="padding:12px 8px;">各商品ページに税込価格を表示</td>
+        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">販売事業者名</th>
+        <td style="padding:12px 8px;">個人事業主 Taisei（屋号: AIden）</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">運営責任者</th>
+        <td style="padding:12px 8px;">前田 大生</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">所在地</th>
+        <td style="padding:12px 8px;">東京都渋谷区</td>
+      </tr>
+      <tr>
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">連絡先</th>
+        <td style="padding:12px 8px;">メール: support@aiden-jp.net</td>
+      </tr>
+    </table>
+    <h3 style="font-size:14px;font-weight:bold;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d1d5db;">取引条件</h3>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">販売価格</th>
+        <td style="padding:12px 8px;">各商品ページに税込価格を表示。送料・手数料が発生する場合は注文確認画面にて別途表示します。</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品代金以外の必要料金</th>
+        <td style="padding:12px 8px;">デリバリーの場合は配達料が別途かかります。金額は注文確認画面に表示されます。</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払方法</th>
@@ -2825,17 +2852,22 @@ async function showTokushoho() {
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">支払時期</th>
-        <td style="padding:12px 8px;">注文確定時にカード決済（与信確保→商品提供完了時に確定）</td>
+        <td style="padding:12px 8px;">注文確定時にクレジットカード与信を確保し、商品提供完了時に決済を確定します。</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">商品の引渡時期</th>
-        <td style="padding:12px 8px;">注文後、店舗の調理完了次第（目安時間は注文確認画面に表示）</td>
+        <td style="padding:12px 8px;">店内飲食・テイクアウト: 注文後、店舗の調理完了次第（目安時間は注文確認画面に表示）。デリバリー: 注文後、調理完了後に配達（目安時間は注文確認画面に表示）。</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">返品・キャンセル</th>
+        <td style="padding:12px 8px;">食品という商品の性質上、お客様都合による返品・返金はお受けできません。商品に不備（異物混入・注文内容と異なる商品等）があった場合は、提供店舗へ直接お問い合わせください。店舗判断により返金対応いたします。</td>
       </tr>
       <tr>
-        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">返品・キャンセル</th>
-        <td style="padding:12px 8px;">商品の性質上、お客様都合による返品はお受けできません。<br>商品に不備があった場合は、店舗までお問い合わせください。<br><a href="/aiden-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">利用規約</a>もあわせてご確認ください。</td>
+        <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">申込みの撤回</th>
+        <td style="padding:12px 8px;">店舗が注文を受付（ステータスが「調理中」以降）した後のキャンセルはできません。受付前であればアプリ上からキャンセル可能です。</td>
       </tr>
     </table>
+    <p style="margin-top:16px;font-size:12px;color:#6b7280;"><a href="/aiden-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">エンドユーザー利用規約</a> | <a href="/aiden-privacy-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">プライバシーポリシー</a> | <a href="/aiden-tokushoho.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">特定商取引法に基づく表示（全文）</a></p>
   `;
 }
 document.addEventListener('keydown', function(e) {
