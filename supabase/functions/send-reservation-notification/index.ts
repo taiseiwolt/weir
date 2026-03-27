@@ -15,19 +15,18 @@ const FROM_EMAIL = 'support@aiden-jp.net'
 const FROM_NAME = 'AIden'
 
 interface NotificationRequest {
-  type: string  // メールタイプ
-  to?: string   // 顧客メールアドレス（顧客向けの場合）
+  type: string
+  to?: string
   store_id?: string
   store_name?: string
   display_id?: string
-  reservation_date?: string
-  reservation_time?: string
-  party_size?: number
-  seat_type?: string
-  guest_name?: string
-  guest_phone?: string
-  guest_email?: string
-  special_requests?: string
+  date?: string
+  time?: string
+  guest_count?: number
+  name?: string
+  phone?: string
+  email?: string
+  notes?: string
   status?: string
   cancellation_reason?: string
 }
@@ -36,16 +35,6 @@ function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00+09:00')
   const weekdays = ['日', '月', '火', '水', '木', '金', '土']
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${weekdays[d.getDay()]}）`
-}
-
-function formatSeatType(type?: string): string {
-  if (!type) return '指定なし'
-  const map: Record<string, string> = {
-    counter: 'カウンター席',
-    table: 'テーブル席',
-    private_room: '個室',
-  }
-  return map[type] || type
 }
 
 function statusLabel(status?: string): string {
@@ -100,9 +89,8 @@ function buildEmailHtml(title: string, greeting: string, body: string): string {
 function buildReservationInfoHtml(data: NotificationRequest): string {
   const rows = [
     { label: '予約番号', value: data.display_id || '' },
-    { label: '日時', value: `${data.reservation_date ? formatDate(data.reservation_date) : ''} ${data.reservation_time || ''}` },
-    { label: '人数', value: `${data.party_size || ''}名` },
-    { label: '席種', value: formatSeatType(data.seat_type) },
+    { label: '日時', value: `${data.date ? formatDate(data.date) : ''} ${data.time || ''}` },
+    { label: '人数', value: `${data.guest_count || ''}名` },
   ]
 
   return `
@@ -147,7 +135,6 @@ serve(async (req) => {
     switch (data.type) {
       // --- 店舗向け ---
       case 'new_reservation_store': {
-        // 店舗のメールアドレスを取得
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         const { data: store } = await supabase
           .from('stores')
@@ -174,21 +161,21 @@ serve(async (req) => {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding:4px 0;font-size:13px;color:#888;width:100px;">お名前</td>
-                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.guest_name || '')}</td>
+                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.name || '')}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px 0;font-size:13px;color:#888;">電話番号</td>
-                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.guest_phone || '')}</td>
+                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.phone || '')}</td>
                 </tr>
-                ${data.guest_email ? `
+                ${data.email ? `
                 <tr>
                   <td style="padding:4px 0;font-size:13px;color:#888;">メール</td>
-                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.guest_email)}</td>
+                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.email)}</td>
                 </tr>` : ''}
-                ${data.special_requests ? `
+                ${data.notes ? `
                 <tr>
                   <td style="padding:4px 0;font-size:13px;color:#888;">特記事項</td>
-                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.special_requests)}</td>
+                  <td style="padding:4px 0;font-size:13px;color:#333;font-weight:600;">${escapeHtml(data.notes)}</td>
                 </tr>` : ''}
               </table>
             </td></tr>
@@ -248,7 +235,7 @@ serve(async (req) => {
             ${escapeHtml(data.store_name || '')} でお待ちしております。
           </p>
           ${reservationInfo}`
-        html = buildEmailHtml('ご予約確定', `${escapeHtml(data.guest_name || '')} 様`, body)
+        html = buildEmailHtml('ご予約確定', `${escapeHtml(data.name || '')} 様`, body)
         break
       }
 
@@ -261,7 +248,7 @@ serve(async (req) => {
             店舗による承認後、確定メールをお送りします。
           </p>
           ${reservationInfo}`
-        html = buildEmailHtml('ご予約受付', `${escapeHtml(data.guest_name || '')} 様`, body)
+        html = buildEmailHtml('ご予約受付', `${escapeHtml(data.name || '')} 様`, body)
         break
       }
 
@@ -277,7 +264,7 @@ serve(async (req) => {
           <p style="font-size:13px;color:#666;margin:0;">
             <strong>理由:</strong> ${escapeHtml(data.cancellation_reason)}
           </p>` : ''}`
-        html = buildEmailHtml('ご予約キャンセル', `${escapeHtml(data.guest_name || '')} 様`, body)
+        html = buildEmailHtml('ご予約キャンセル', `${escapeHtml(data.name || '')} 様`, body)
         break
       }
 
@@ -290,7 +277,7 @@ serve(async (req) => {
             店舗による確認後、結果をお知らせいたします。
           </p>
           ${reservationInfo}`
-        html = buildEmailHtml('キャンセルリクエスト受付', `${escapeHtml(data.guest_name || '')} 様`, body)
+        html = buildEmailHtml('キャンセルリクエスト受付', `${escapeHtml(data.name || '')} 様`, body)
         break
       }
 

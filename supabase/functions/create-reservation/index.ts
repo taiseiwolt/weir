@@ -6,24 +6,21 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getCorsHeaders, corsPreflightResponse, escapeHtml, sanitizeErrorMessage } from '../_shared/auth.ts'
+import { getCorsHeaders, corsPreflightResponse, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 interface CreateReservationRequest {
   store_id: string
-  reservation_date: string    // YYYY-MM-DD
-  reservation_time: string    // HH:MM
-  party_size: number
-  seat_type?: string          // 'counter' | 'table' | 'private_room'
-  course_id?: string
-  guest_name: string
-  guest_phone: string
-  guest_email?: string
-  special_requests?: string
-  customer_id?: string
-  stripe_payment_method_id?: string
+  date: string           // YYYY-MM-DD
+  time: string           // HH:MM
+  guest_count: number
+  name: string
+  phone: string
+  email?: string
+  notes?: string
+  member_id?: string
 }
 
 function generateDisplayId(): string {
@@ -53,14 +50,14 @@ serve(async (req) => {
     const data: CreateReservationRequest = await req.json()
 
     // バリデーション
-    if (!data.store_id || !data.reservation_date || !data.reservation_time || !data.party_size || !data.guest_name || !data.guest_phone) {
+    if (!data.store_id || !data.date || !data.time || !data.guest_count || !data.name || !data.phone) {
       return new Response(
-        JSON.stringify({ error: 'store_id, reservation_date, reservation_time, party_size, guest_name, guest_phone は必須です' }),
+        JSON.stringify({ error: 'store_id, date, time, guest_count, name, phone は必須です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    if (data.party_size < 1) {
+    if (data.guest_count < 1) {
       return new Response(
         JSON.stringify({ error: '人数は1以上を指定してください' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -69,7 +66,7 @@ serve(async (req) => {
 
     // 日付バリデーション
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(data.reservation_date)) {
+    if (!dateRegex.test(data.date)) {
       return new Response(
         JSON.stringify({ error: '日付は YYYY-MM-DD 形式で指定してください' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,7 +75,7 @@ serve(async (req) => {
 
     // 時刻バリデーション
     const timeRegex = /^\d{2}:\d{2}$/
-    if (!timeRegex.test(data.reservation_time)) {
+    if (!timeRegex.test(data.time)) {
       return new Response(
         JSON.stringify({ error: '時刻は HH:MM 形式で指定してください' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -108,14 +105,6 @@ serve(async (req) => {
       )
     }
 
-    // クレカ必須チェック
-    if (store.reservation_require_card && !data.stripe_payment_method_id) {
-      return new Response(
-        JSON.stringify({ error: 'この店舗ではクレジットカードの登録が必要です' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // display_id 生成（重複チェック付き）
     let displayId = generateDisplayId()
     let retries = 0
@@ -137,19 +126,16 @@ serve(async (req) => {
     const insertData: Record<string, unknown> = {
       store_id: data.store_id,
       display_id: displayId,
-      reservation_date: data.reservation_date,
-      reservation_time: data.reservation_time,
-      party_size: data.party_size,
-      guest_name: data.guest_name,
-      guest_phone: data.guest_phone,
+      date: data.date,
+      time: data.time,
+      guest_count: data.guest_count,
+      name: data.name,
+      phone: data.phone,
       status,
     }
-    if (data.seat_type) insertData.seat_type = data.seat_type
-    if (data.course_id) insertData.course_id = data.course_id
-    if (data.guest_email) insertData.guest_email = data.guest_email
-    if (data.special_requests) insertData.special_requests = data.special_requests
-    if (data.customer_id) insertData.customer_id = data.customer_id
-    if (data.stripe_payment_method_id) insertData.stripe_payment_method_id = data.stripe_payment_method_id
+    if (data.email) insertData.email = data.email
+    if (data.notes) insertData.notes = data.notes
+    if (data.member_id) insertData.member_id = data.member_id
 
     const { data: reservation, error: insertError } = await supabase
       .from('reservations')
@@ -176,24 +162,22 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           type: 'new_reservation_store',
-          reservation_id: reservation.id,
           store_id: data.store_id,
           store_name: store.name,
           display_id: displayId,
-          reservation_date: data.reservation_date,
-          reservation_time: data.reservation_time,
-          party_size: data.party_size,
-          seat_type: data.seat_type,
-          guest_name: data.guest_name,
-          guest_phone: data.guest_phone,
-          guest_email: data.guest_email,
-          special_requests: data.special_requests,
+          date: data.date,
+          time: data.time,
+          guest_count: data.guest_count,
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          notes: data.notes,
           status,
         }),
       })
 
       // 顧客へ確認メール（メールアドレスがある場合のみ）
-      if (data.guest_email) {
+      if (data.email) {
         await fetch(`${SUPABASE_URL}/functions/v1/send-reservation-notification`, {
           method: 'POST',
           headers: {
@@ -202,14 +186,13 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             type: status === 'confirmed' ? 'confirmed_customer' : 'pending_customer',
-            to: data.guest_email,
-            guest_name: data.guest_name,
+            to: data.email,
+            name: data.name,
             store_name: store.name,
             display_id: displayId,
-            reservation_date: data.reservation_date,
-            reservation_time: data.reservation_time,
-            party_size: data.party_size,
-            seat_type: data.seat_type,
+            date: data.date,
+            time: data.time,
+            guest_count: data.guest_count,
             status,
           }),
         })

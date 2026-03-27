@@ -86,20 +86,12 @@ serve(async (req) => {
       status: data.new_status,
     }
 
-    if (data.new_status === 'cancelled') {
-      updateData.cancelled_at = new Date().toISOString()
-      updateData.cancelled_by = data.cancelled_by || 'store'
-      if (data.cancellation_reason) {
-        updateData.cancellation_reason = data.cancellation_reason
-      }
-    }
-
     // ステータス更新
     const { data: updated, error: updateError } = await supabase
       .from('reservations')
       .update(updateData)
       .eq('id', data.reservation_id)
-      .select('id, display_id, status, guest_email, guest_name')
+      .select('id, display_id, status, email, name')
       .single()
 
     if (updateError) {
@@ -112,7 +104,7 @@ serve(async (req) => {
 
     // メール通知（非同期）
     try {
-      if (updated.guest_email) {
+      if (updated.email) {
         let emailType = ''
         if (data.new_status === 'confirmed') emailType = 'confirmed_customer'
         else if (data.new_status === 'cancelled') emailType = 'cancelled_customer'
@@ -126,14 +118,13 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               type: emailType,
-              to: updated.guest_email,
-              guest_name: updated.guest_name,
+              to: updated.email,
+              name: updated.name,
               store_name: reservation.stores?.name || '',
               display_id: updated.display_id,
-              reservation_date: reservation.reservation_date,
-              reservation_time: reservation.reservation_time,
-              party_size: reservation.party_size,
-              seat_type: reservation.seat_type,
+              date: reservation.date,
+              time: reservation.time,
+              guest_count: reservation.guest_count,
               status: data.new_status,
               cancellation_reason: data.cancellation_reason,
             }),

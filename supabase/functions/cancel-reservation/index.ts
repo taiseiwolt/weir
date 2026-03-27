@@ -75,7 +75,7 @@ serve(async (req) => {
     }
 
     // 予約日時までの時間を計算
-    const reservationDateTime = new Date(`${reservation.reservation_date}T${reservation.reservation_time}:00+09:00`)
+    const reservationDateTime = new Date(`${reservation.date}T${reservation.time}:00+09:00`)
     const now = new Date()
     const hoursUntilReservation = (reservationDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
     const deadlineHours = reservation.stores?.reservation_cancel_deadline_hours ?? 72
@@ -96,13 +96,6 @@ serve(async (req) => {
     // ステータス更新
     const updateData: Record<string, unknown> = {
       status: newStatus,
-    }
-    if (newStatus === 'cancelled') {
-      updateData.cancelled_at = new Date().toISOString()
-      updateData.cancelled_by = 'customer'
-    }
-    if (data.cancellation_reason) {
-      updateData.cancellation_reason = data.cancellation_reason
     }
 
     const { data: updated, error: updateError } = await supabase
@@ -134,16 +127,16 @@ serve(async (req) => {
           store_id: reservation.store_id,
           store_name: reservation.stores?.name || '',
           display_id: reservation.display_id,
-          reservation_date: reservation.reservation_date,
-          reservation_time: reservation.reservation_time,
-          party_size: reservation.party_size,
-          guest_name: reservation.guest_name,
+          date: reservation.date,
+          time: reservation.time,
+          guest_count: reservation.guest_count,
+          name: reservation.name,
           cancellation_reason: data.cancellation_reason,
         }),
       })
 
       // 顧客にキャンセル確認メール
-      if (reservation.guest_email) {
+      if (reservation.email) {
         await fetch(`${SUPABASE_URL}/functions/v1/send-reservation-notification`, {
           method: 'POST',
           headers: {
@@ -152,13 +145,13 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             type: newStatus === 'cancelled' ? 'cancelled_customer' : 'cancel_requested_customer',
-            to: reservation.guest_email,
-            guest_name: reservation.guest_name,
+            to: reservation.email,
+            name: reservation.name,
             store_name: reservation.stores?.name || '',
             display_id: reservation.display_id,
-            reservation_date: reservation.reservation_date,
-            reservation_time: reservation.reservation_time,
-            party_size: reservation.party_size,
+            date: reservation.date,
+            time: reservation.time,
+            guest_count: reservation.guest_count,
             status: newStatus,
           }),
         })

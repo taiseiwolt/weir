@@ -40,14 +40,14 @@ serve(async (req) => {
       .from('reservations')
       .select('*')
       .eq('store_id', storeId)
-      .order('reservation_date', { ascending: true })
-      .order('reservation_time', { ascending: true })
+      .order('date', { ascending: true })
+      .order('time', { ascending: true })
 
     if (dateFrom) {
-      query = query.gte('reservation_date', dateFrom)
+      query = query.gte('date', dateFrom)
     }
     if (dateTo) {
-      query = query.lte('reservation_date', dateTo)
+      query = query.lte('date', dateTo)
     }
     if (status) {
       // カンマ区切りで複数ステータス対応

@@ -1585,13 +1585,13 @@ async function submitRes() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         store_id: STORE.storeId,
-        reservation_date: document.getElementById('m-date').value || selDate,
-        reservation_time: selTime,
-        party_size: parseInt(document.getElementById('m-guests').value, 10),
-        guest_name: document.getElementById('m-name').value.trim(),
-        guest_phone: document.getElementById('m-phone').value.trim(),
-        guest_email: document.getElementById('m-email').value.trim(),
-        special_requests: document.getElementById('m-notes').value.trim() || undefined
+        date: document.getElementById('m-date').value || selDate,
+        time: selTime,
+        guest_count: parseInt(document.getElementById('m-guests').value, 10),
+        name: document.getElementById('m-name').value.trim(),
+        phone: document.getElementById('m-phone').value.trim(),
+        email: document.getElementById('m-email').value.trim(),
+        notes: document.getElementById('m-notes').value.trim() || undefined
       })
     });
     var json = await res.json();
@@ -1763,14 +1763,13 @@ async function submitSeatRes() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         store_id: STORE.storeId,
-        reservation_date: document.getElementById('sm-date').value,
-        reservation_time: smSelTime,
-        party_size: parseInt(document.getElementById('sm-guests').value, 10),
-        seat_type: seatType,
-        guest_name: document.getElementById('sm-name').value.trim(),
-        guest_phone: document.getElementById('sm-phone').value.trim(),
-        guest_email: document.getElementById('sm-email').value.trim(),
-        special_requests: document.getElementById('sm-notes').value.trim() || undefined
+        date: document.getElementById('sm-date').value,
+        time: smSelTime,
+        guest_count: parseInt(document.getElementById('sm-guests').value, 10),
+        name: document.getElementById('sm-name').value.trim(),
+        phone: document.getElementById('sm-phone').value.trim(),
+        email: document.getElementById('sm-email').value.trim(),
+        notes: document.getElementById('sm-notes').value.trim() || undefined
       })
     });
     var json = await res.json();

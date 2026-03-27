@@ -732,13 +732,13 @@ async function rmSubmit() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         store_id: storeId,
-        reservation_date: document.getElementById('rm-date').value,
-        reservation_time: rmSelTime,
-        party_size: parseInt(document.getElementById('rm-guests').value, 10),
-        guest_name: document.getElementById('rm-name').value.trim(),
-        guest_phone: document.getElementById('rm-phone').value.trim(),
-        guest_email: document.getElementById('rm-email').value.trim(),
-        special_requests: document.getElementById('rm-notes').value.trim() || undefined
+        date: document.getElementById('rm-date').value,
+        time: rmSelTime,
+        guest_count: parseInt(document.getElementById('rm-guests').value, 10),
+        name: document.getElementById('rm-name').value.trim(),
+        phone: document.getElementById('rm-phone').value.trim(),
+        email: document.getElementById('rm-email').value.trim(),
+        notes: document.getElementById('rm-notes').value.trim() || undefined
       })
     });
     var json = await res.json();

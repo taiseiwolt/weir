@@ -416,7 +416,7 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
     <div id="resListView">
       <table class="htable"><thead><tr>
         <th style="width:80px">状態</th><th style="width:100px">予約番号</th><th style="width:100px">日時</th>
-        <th style="width:60px">人数</th><th>お名前</th><th style="width:80px">席種</th>
+        <th style="width:60px">人数</th><th>お名前</th>
         <th style="width:80px">電話番号</th><th style="width:140px"></th>
       </tr></thead><tbody id="resListBody"></tbody></table>
       <div class="no-data" id="resNoData" style="display:none">予約データがありません</div>
@@ -1377,10 +1377,10 @@ function renderReservations(){
   // Summary
   const today=new Date();const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const todayStr=fmt(today);
-  const todayRes=resData.filter(r=>r.reservation_date===todayStr&&r.status!=='cancelled');
+  const todayRes=resData.filter(r=>r.date===todayStr&&r.status!=='cancelled');
   document.getElementById('resTodayCount').textContent=todayRes.length;
   document.getElementById('resPendingCount').textContent=resData.filter(r=>r.status==='pending'||r.status==='cancel_requested').length;
-  document.getElementById('resTotalGuests').textContent=todayRes.reduce((s,r)=>s+r.party_size,0)+'名';
+  document.getElementById('resTotalGuests').textContent=todayRes.reduce((s,r)=>s+r.guest_count,0)+'名';
 
   if(resView==='list') renderResList();
   else renderResCal();
@@ -1394,8 +1394,7 @@ function renderResList(){
 
   tbody.innerHTML=resData.map(r=>{
     const st=RES_STATUS[r.status]||{l:r.status};
-    const seat=SEAT_L[r.seat_type]||'—';
-    const dt=r.reservation_date.replace(/-/g,'/')+' '+r.reservation_time.substring(0,5);
+    const dt=r.date.replace(/-/g,'/')+' '+r.time.substring(0,5);
     let actions='';
     if(r.status==='pending'){
       actions=`<button class="res-action-btn approve" onclick="event.stopPropagation();resAction('${r.id}','confirmed')">承認</button>`
@@ -1410,10 +1409,9 @@ function renderResList(){
     return `<tr><td><span class="res-badge ${escH(r.status)}">${escH(st.l)}</span></td>`
       +`<td style="font-weight:600;font-size:11px">${escH(r.display_id)}</td>`
       +`<td>${escH(dt)}</td>`
-      +`<td style="text-align:center">${r.party_size}名</td>`
-      +`<td>${escH(r.guest_name)}</td>`
-      +`<td>${escH(seat)}</td>`
-      +`<td style="font-size:11px">${escH(r.guest_phone)}</td>`
+      +`<td style="text-align:center">${r.guest_count}名</td>`
+      +`<td>${escH(r.name)}</td>`
+      +`<td style="font-size:11px">${escH(r.phone)}</td>`
       +`<td>${actions}</td></tr>`;
   }).join('');
 }
@@ -1425,7 +1423,7 @@ function renderResCal(){
   document.getElementById('resCalDateLabel').textContent=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (${wk[d.getDay()]})`;
 
   const dayStr=fmt(d);
-  const dayRes=resData.filter(r=>r.reservation_date===dayStr&&r.status!=='cancelled');
+  const dayRes=resData.filter(r=>r.date===dayStr&&r.status!=='cancelled');
 
   // Group by time
   const slots={};
@@ -1433,7 +1431,7 @@ function renderResCal(){
     ['00','30'].forEach(m=>{slots[`${String(h).padStart(2,'0')}:${m}`]=[];});
   }
   dayRes.forEach(r=>{
-    const t=r.reservation_time.substring(0,5);
+    const t=r.time.substring(0,5);
     if(!slots[t]) slots[t]=[];
     slots[t].push(r);
   });
@@ -1444,8 +1442,8 @@ function renderResCal(){
     return `<div class="res-cal-slot"><div class="res-cal-time">${time}</div><div class="res-cal-cards">`
       +(cards.length?cards.map(r=>{
         const st=RES_STATUS[r.status]||{l:r.status};
-        return `<div class="res-cal-card ${r.status}"><div class="res-cal-name">${escH(r.guest_name)} (${r.party_size}名)</div>`
-          +`<div class="res-cal-info">${escH(r.display_id)} ・ ${escH(st.l)}${r.seat_type?' ・ '+(SEAT_L[r.seat_type]||''):''}</div></div>`;
+        return `<div class="res-cal-card ${r.status}"><div class="res-cal-name">${escH(r.name)} (${r.guest_count}名)</div>`
+          +`<div class="res-cal-info">${escH(r.display_id)} ・ ${escH(st.l)}</div></div>`;
       }).join(''):'')
       +`</div></div>`;
   }).join('');
