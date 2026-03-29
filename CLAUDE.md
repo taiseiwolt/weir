@@ -300,6 +300,13 @@ settings.json に CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1" を設定済み。
   - chrome-visual と chrome-destructive は同一ページ同時テスト禁止（QA Leadがタスクリストで制御）
 - テスト用データには `_test_` プレフィックスを付与（本番データ汚染防止）
 
+### チームB（プロジェクト実行チーム）
+- 機能追加・修正プロジェクトはチームBのフロー（①〜⑧）に従って遂行する
+- ⑦ Devil's Advocate と ⑧ Project Supervisor は常時稼働
+- Taiseiの承認ポイントは3箇所: ①要件確定後 / ④CC依頼文完成後 / ⑦最終判定後
+- チームAとの連携: ①②④完了時に必ずチームA関連エージェントのレビューを実施
+- 詳細は .claude/agents/agents-project-execution.md を参照
+
 ### 共通ルール
 - ブロードキャストは最小限（トークンコスト削減）
 - 各チームメイトは完了時にサマリをQA Leadに報告
