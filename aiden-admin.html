@@ -1043,7 +1043,6 @@ async function executeRefund(orderId){
     });
     if(res.ok){
       var data=await res.json();
-      console.log('Refund success:',data);
     }
   }catch(e){console.warn('Edge Function call skipped:',e);}
   closeModal();
@@ -1596,7 +1595,7 @@ async function loadRealCostLogs(){
     const from=new Date(2026,0,1).toISOString();
     const{data,error}=await sb.from('ai_usage_logs').select('id, store_id, brand_id, corp_id, feature_type, model, input_tokens, output_tokens, cost_usd, api_cost_yen, action, created_at').gte('created_at',from).order('created_at',{ascending:false}).limit(5000);
     if(error){console.warn('ai_usage_logs load error:',error.message);return;}
-    if(!data||data.length===0){console.log('No real ai_usage_logs data, using demo');return;}
+    if(!data||data.length===0){return;}
     // Map feature_type to content_type keys & find matching cost info
     const ftMap={sales_analysis:'sales_analysis',review_reply:'review_reply',sns_content:'sns_content',pop_image:'pop_image',monthly_comment:'monthly_ai_comment'};
     COST_REAL_LOGS=data.map(function(r){
