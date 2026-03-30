@@ -646,7 +646,7 @@ async function loadFromSupabase() {
     };
   });
   oCtr = 1000 + O.length;
-  console.log('Supabase loaded:', O.length, 'orders');
+
 }
 
 // ===== GENERATE ORDERS =====
@@ -979,7 +979,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('#ptgl')&&!e.target.c
   document.querySelector('.main').style.opacity = '0.4';
   try {
     await loadFromSupabase();
-    console.log('Dashboard: Supabase data loaded');
+
   } catch(e) {
     console.warn('Supabase load failed, using demo data:', e);
     genOrders();

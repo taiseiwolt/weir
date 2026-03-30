@@ -1551,7 +1551,7 @@ function geocodeAndNext(){
       if(data && data.length > 0){
         pendingLat = parseFloat(data[0].lat);
         pendingLng = parseFloat(data[0].lon);
-        console.log('[GEOCODE] 住所→座標:', query, pendingLat, pendingLng);
+
       } else {
         console.warn('[GEOCODE] 結果なし、ZIP座標を使用');
       }
@@ -1586,7 +1586,7 @@ function onZipInput(val){
     pendingLat = cached[1];
     pendingLng = cached[2];
     document.getElementById('addr-street').value = cached[0];
-    console.log('[ZIP CACHE HIT]', key, '->', pendingLat, pendingLng);
+
     setTimeout(function(){ goAddrStep(2); document.getElementById('addr-street').focus(); }, 200);
     return;
   }
@@ -1644,7 +1644,7 @@ function onZipInput(val){
 
         if(addrText){
           document.getElementById('addr-street').value = addrText;
-          console.log('[ZIP API]', key, '->', pendingLat, pendingLng, '/', addrText);
+
           /* セッションキャッシュに追加（再入力時に即時応答） */
           ZIP_MAP[key] = [addrText, pendingLat, pendingLng];
         } else {
@@ -1731,7 +1731,7 @@ function useAddress(){
   userAddress  = street + (building ? ' ' + building : '');
   userLat = pinLat !== null ? pinLat : pendingLat;
   userLng = pinLng !== null ? pinLng : pendingLng;
-  console.log('[DELIVERY PIN]', {lat:userLat, lng:userLng, address:userAddress});
+
   closeAddrModal();
   document.getElementById('addr-btn-text').textContent = userAddress;
   if(mainMap){

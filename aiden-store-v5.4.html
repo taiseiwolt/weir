@@ -1045,7 +1045,7 @@ async function loadStoreFromSupabase() {
     }).filter(function(c) { return c.items.length > 0; });
     if (newMenu.length > 0) MENU = newMenu;
   }
-  console.log('Store loaded from Supabase:', STORE.name, MENU.length, 'categories');
+
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

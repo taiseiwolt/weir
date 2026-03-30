@@ -1980,8 +1980,18 @@ async function placeOrder() {
       const customerEmail = document.getElementById('custEmail').value.trim();
       const customerPhone = document.getElementById('custPhone').value.trim();
 
-      // 冪等性キー生成（注文ごとにユニーク）
-      const idempotencyKey = 'idem_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      // 冪等性キー生成（カート内容+ユーザーIDのハッシュ — 同一カートからの重複決済防止 IR-06）
+      // sessionStorageに保存し、同一チェックアウトセッション中は同じキーを再利用
+      if (!sessionStorage.getItem('aiden_checkout_idem')) {
+        const cartSig = (CHECKOUT_DATA.cartItems || [])
+          .map(i => (i.id || i.productId || '') + ':' + (i.qty || 1))
+          .sort().join(',');
+        const rawKey = (CHECKOUT_DATA.storeId || '') + '|' + cartSig + '|' + (sessionStorage.getItem('aiden_member_id') || 'guest');
+        let h = 0;
+        for (let i = 0; i < rawKey.length; i++) { h = Math.imul(31, h) + rawKey.charCodeAt(i) | 0; }
+        sessionStorage.setItem('aiden_checkout_idem', 'idem_' + Math.abs(h).toString(36));
+      }
+      const idempotencyKey = sessionStorage.getItem('aiden_checkout_idem');
 
       // 1. Edge Function で PaymentIntent 作成 + 注文レコード作成（サーバー側で金額再計算）
       const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
@@ -2016,6 +2026,7 @@ async function placeOrder() {
           aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
           normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
           member_id: sessionStorage.getItem('aiden_member_id') || null,
+          coupon_id: appliedCoupon ? (appliedCoupon.id || null) : null,
           coupon_discount: appliedCoupon ? (appliedCoupon.type === 'percent' ? Math.round(CHECKOUT_DATA.subtotal * appliedCoupon.discount / 100) : appliedCoupon.discount) : 0
         })
       });
@@ -2049,12 +2060,10 @@ async function placeOrder() {
       if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture') {
         let confirmData = {};
         const piId = paymentIntent.id;
-        console.log('[checkout] Payment succeeded, PI:', piId);
 
         // confirm-order 呼び出し（リトライ付き）
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            console.log('[checkout] confirm-order attempt', attempt);
             const confirmRes = await fetch(SUPABASE_URL + '/functions/v1/confirm-order', {
               method: 'POST',
               headers: {
@@ -2064,7 +2073,6 @@ async function placeOrder() {
               body: JSON.stringify({ payment_intent_id: piId })
             });
             const bodyText = await confirmRes.text();
-            console.log('[checkout] confirm-order status:', confirmRes.status, 'body:', bodyText);
             if (confirmRes.ok) {
               try { confirmData = JSON.parse(bodyText); } catch(e) {}
               break; // 成功したらリトライ終了
@@ -2092,7 +2100,6 @@ async function placeOrder() {
         let trackingToken = confirmData.tracking_token || '';
         let displayId = confirmData.display_id || '';
         let orderId = confirmData.order_id || '';
-        console.log('[checkout] confirmData:', JSON.stringify(confirmData));
 
         // フォールバック: confirm-orderからtoken取得できなかった場合、DBから直接検索
         if (!trackingToken) {
@@ -2107,7 +2114,6 @@ async function placeOrder() {
               trackingToken = fbOrder.tracking_token;
               displayId = fbOrder.display_id || displayId;
               orderId = fbOrder.id || orderId;
-              console.log('[checkout] DB fallback found:', trackingToken);
             }
           } catch(fbErr) {
             console.warn('[checkout] DB fallback failed:', fbErr);
@@ -2143,11 +2149,9 @@ async function placeOrder() {
 
         // ── トラッキングページにリダイレクト ──
         if (trackingToken) {
-          console.log('[checkout] Redirecting to tracking with token:', trackingToken);
           window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
         } else {
           // 最終フォールバック: payment_intent_id でtracking.htmlに渡す
-          console.error('[checkout] No tracking_token available, using PI fallback');
           window.location.href = 'aiden-order-tracking.html?pi=' + encodeURIComponent(piId);
         }
         return;

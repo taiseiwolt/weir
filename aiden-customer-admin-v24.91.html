@@ -4416,7 +4416,7 @@ async function loadAdminFromSupabase() {
       }));
     }
 
-    console.log('Admin: Supabase loaded -', STORES.length, 'stores,', PRODUCTS.length, 'products,', REVIEWS.length, 'reviews');
+
   } catch(e) {
     console.warn('Supabase load failed, using demo data:', e);
   }

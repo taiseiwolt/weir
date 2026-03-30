@@ -5116,19 +5116,12 @@ async function handleLogin(e) {
 // ===== LOGOUT HANDLER =====
 async function handleLogout() {
   if (!confirm('ログアウトしますか？')) return;
-  await sb.auth.signOut();
-  CURRENT_AUTH_USER = null;
-  CURRENT_STAFF = null;
-  BRAND_ID = null;
-  CORP_ID = null;
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('appHeader').style.display = 'none';
-  document.getElementById('sidebar').style.display = 'none';
-  document.getElementById('content').style.display = 'none';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPassword').value = '';
-  document.getElementById('loginError').style.display = 'none';
+  try { await sb.auth.signOut(); } catch(e) {}
+  sessionStorage.clear();
+  localStorage.removeItem('sb-iikwusprydaogzeslgdz-auth-token');
+  window.location.href = '/';
 }
+window.addEventListener('pageshow', function(e) { if(e.persisted) { window.location.reload(); } });
 
 // ===== AUTH SUCCESS: load staff profile & show app =====
 async function onAuthSuccess(user) {

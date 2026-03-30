@@ -1299,7 +1299,12 @@ async function loadFromSupabase() {
     }
     const { data: storeRows } = await query.single();
 
-    if (!storeRows) return; // データなければフォールバックのまま
+    if (!storeRows) {
+      if (storeIdParam) {
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;"><p>店舗が見つかりませんでした。URLをご確認ください。</p></div>';
+      }
+      return;
+    }
 
     // 2. 営業時間取得
     const { data: hoursRows } = await sb
@@ -2041,6 +2046,7 @@ function addToCart() {
 }
 
 function quickAdd(itemId) {
+  if(quickAdd._t) return; quickAdd._t = setTimeout(() => { quickAdd._t = null; }, 300);
   if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
@@ -2554,6 +2560,11 @@ function goToCheckout() {
     alert('現在営業時間外です。営業時間内にご注文ください。');
     return;
   }
+  // Block checkout if cart is empty
+  if(getCartCount() === 0) {
+    alert('カートに商品がありません。商品を追加してからご注文ください。');
+    return;
+  }
   // Block checkout if out of delivery area and in delivery mode
   if(orderMode === 'delivery' && isOutOfDeliveryArea) {
     alert('配達サービスエリア外のため、デリバリー注文はできません。お持ち帰りに切り替えてください。');
@@ -2652,7 +2663,7 @@ async function initVoiceAssistant() {
   //       }
   //     );
   //     await porcupineInstance.start();
-  //     console.log('[Voice] Porcupine wake word detection active');
+
   //   } catch (err) {
   //     console.warn('[Voice] Porcupine init failed, falling back to click-to-talk', err);
   //   }
