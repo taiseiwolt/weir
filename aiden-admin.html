@@ -80,7 +80,7 @@
   <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">AIden</span></div>
   <span class="header-badge">MASTER ADMIN</span>
   <div class="header-search"><span class="si">🔍</span><input type="text" id="globalSearch" placeholder="法人 / ブランド / 店舗を検索（名称 or ID）..." oninput="onSearch(this.value)" onfocus="onSearch(this.value)" autocomplete="off"><div class="sdd" id="searchResults"></div></div>
-  <div class="header-right"><div class="header-user"><div class="avatar">T</div><span>Taisei</span></div><button class="btn-logout" onclick="showToast('🔒 ログアウト')">ログアウト</button></div>
+  <div class="header-right"><div class="header-user"><div class="avatar">T</div><span>Taisei</span></div><button class="btn-logout" onclick="doLogout()">ログアウト</button></div>
 </header>
 <nav class="sidebar" id="sidebar">
   <div class="nav-item active" data-page="dashboard" onclick="goTo('dashboard')"><span class="icon">📊</span><span class="label">ダッシュボード</span></div>
@@ -154,6 +154,9 @@ function statusBadge(s){const m={active:'status-active',trial:'status-trial'};co
 function roleBadge(r){const c={owner:'#6c5ce7',admin:'#0984e3',staff:'#636e72'};return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+c[r]+'20;color:'+c[r]+'">'+r.charAt(0).toUpperCase()+r.slice(1)+'</span>';}
 function rankBadge(r){const c={'ゴールド':'#e17055','シルバー':'#636e72','レギュラー':'#0984e3'};return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(c[r]||'#999')+'20;color:'+(c[r]||'#999')+'">'+r+'</span>';}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('aidenPopList');window.location.href='/';}
+// bfcache防止: ブラウザバックで復元された場合はリロード
+window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
 function openModal(h){document.getElementById('modalBody').innerHTML=h;document.getElementById('modalOverlay').classList.add('show');}
 function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
@@ -870,6 +873,8 @@ function openCompPointModal(memberId){
 }
 
 async function grantCompPoint(memberId){
+  if(grantCompPoint._p)return; grantCompPoint._p=true;
+  try{
   var amount=parseInt(document.getElementById('compPointAmount').value);
   var reasonSelect=document.getElementById('compPointReasonSelect').value;
   var reasonText=document.getElementById('compPointReason').value.trim();
@@ -896,6 +901,7 @@ async function grantCompPoint(memberId){
   closeModal();
   showToast('✅ '+amount+'pt を '+m.name+' に付与しました（AIden原資）');
   renderPage();
+  }finally{grantCompPoint._p=false;}
 }
 
 // --- 返金管理タブ ---
@@ -1014,6 +1020,10 @@ function openRefundModal(orderId){
 }
 
 async function executeRefund(orderId){
+  if(executeRefund._p)return; executeRefund._p=true;
+  const refundBtn=document.querySelector('.btn-d[onclick*="executeRefund"]');
+  if(refundBtn){refundBtn.disabled=true;refundBtn.textContent='処理中...';}
+  try{
   var o=ADMIN_ORDERS.find(function(x){return x.id===orderId;});
   if(!o)return;
   var amount=parseInt(document.getElementById('refundAmount').value);
@@ -1048,6 +1058,7 @@ async function executeRefund(orderId){
   closeModal();
   showToast('✅ '+Y(amount)+' を返金しました（'+o.id+'）');
   renderPage();
+  }finally{executeRefund._p=false;if(refundBtn){refundBtn.disabled=false;refundBtn.textContent='返金実行';}}
 }
 
 // ===== CORP DETAIL =====
@@ -1483,7 +1494,9 @@ function validateBulkRows(dataRows,type){
 }
 
 function confirmBulkImport(){
-  if(!_bulkParsed||!_bulkParsed.length){showToast('⚠️ 登録データがありません');return;}
+  if(confirmBulkImport._p){showToast('⚠️ 処理中です。しばらくお待ちください');return;}
+  confirmBulkImport._p=true;
+  if(!_bulkParsed||!_bulkParsed.length){confirmBulkImport._p=false;showToast('⚠️ 登録データがありません');return;}
   let added=0;
   _bulkParsed.forEach(item=>{
     if(_bulkType==='corp'){
@@ -1499,6 +1512,7 @@ function confirmBulkImport(){
   closeModal();
   showToast('✅ '+added+'件を登録しました');
   _bulkParsed=null;_bulkType=null;
+  confirmBulkImport._p=false;
   renderPage();
 }
 

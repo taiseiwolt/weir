@@ -351,6 +351,7 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
         <div class="pm-item" onclick="doPause(999)">本日休止</div>
       </div>
     </div>
+    <button class="h-btn" onclick="doLogout()" style="margin-left:8px;color:#999;font-size:11px;">🔒 ログアウト</button>
   </div>
 
   <!-- ORDERS PAGE -->
@@ -900,28 +901,21 @@ function renderExpand(){
 const STATUS_NEXT_API = {new:'accepted', cooking:'prepared', ready:'delivered'};
 
 async function doAction(id){
-  const o=O.find(x=>x.id===id);if(!o)return;
-  const prevStatus = o.s;
-
-  // Optimistic update
-  if(o.s==='new')o.s='cooking';else if(o.s==='cooking')o.s='ready';else if(o.s==='ready')o.s='done';
-  rOrders();renderHistory();
-
-  // Call API if available
-  if (API_BASE && o.dbId) {
-    const apiStatus = STATUS_NEXT_API[prevStatus];
-    if (apiStatus) {
-      try {
-        await apiFetch('/api/orders/' + o.dbId + '/status', {
-          method: 'PATCH',
-          body: JSON.stringify({ status: apiStatus }),
-        });
-      } catch(e) {
-        console.error('Status update API error:', e);
-        // Don't revert — local state is still valid
+  if(doAction._p&&doAction._p===id)return; doAction._p=id;
+  try{
+    const o=O.find(x=>x.id===id);if(!o)return;
+    const prevStatus = o.s;
+    if(o.s==='new')o.s='cooking';else if(o.s==='cooking')o.s='ready';else if(o.s==='ready')o.s='done';
+    rOrders();renderHistory();
+    if(API_BASE&&o.dbId){
+      const apiStatus=STATUS_NEXT_API[prevStatus];
+      if(apiStatus){
+        try{
+          await apiFetch('/api/orders/'+o.dbId+'/status',{method:'PATCH',body:JSON.stringify({status:apiStatus})});
+        }catch(e){console.error('Status update API error:',e);}
       }
     }
-  }
+  }finally{doAction._p=null;}
 }
 
 // ===== DETAIL =====
@@ -976,17 +970,24 @@ function cancelFull(id){
     <button class="cancel-back" onclick="openCancel('${id}')">戻る</button></div>`;
 }
 function doPartialCancel(id){
-  const checks=[...document.querySelectorAll('.cancel-items input:checked')];
-  if(!checks.length)return alert('商品を選択');if(!document.getElementById('cReason').value)return alert('理由を選択');
-  const o=O.find(x=>x.id===id);checks.map(c=>parseInt(c.value)).sort((a,b)=>b-a).forEach(i=>o.items.splice(i,1));
-  if(!o.items.length){o.s='cancelled';callCancelAPI(o);}else o.tot=o.items.reduce((s,it)=>s+it.p*it.q,0);
-  closeCancel();rOrders();renderHistory();
+  if(doPartialCancel._p)return; doPartialCancel._p=true;
+  try{
+    const checks=[...document.querySelectorAll('.cancel-items input:checked')];
+    if(!checks.length){doPartialCancel._p=false;return alert('商品を選択');}
+    if(!document.getElementById('cReason').value){doPartialCancel._p=false;return alert('理由を選択');}
+    const o=O.find(x=>x.id===id);checks.map(c=>parseInt(c.value)).sort((a,b)=>b-a).forEach(i=>o.items.splice(i,1));
+    if(!o.items.length){o.s='cancelled';callCancelAPI(o);}else o.tot=o.items.reduce((s,it)=>s+it.p*it.q,0);
+    closeCancel();rOrders();renderHistory();
+  }finally{setTimeout(()=>{doPartialCancel._p=false;},500);}
 }
 function doFullCancel(id){
-  if(!document.getElementById('cReason').value)return alert('理由を選択');
-  const o=O.find(x=>x.id===id);o.s='cancelled';
-  callCancelAPI(o);
-  closeCancel();rOrders();renderHistory();
+  if(doFullCancel._p)return; doFullCancel._p=true;
+  try{
+    if(!document.getElementById('cReason').value){doFullCancel._p=false;return alert('理由を選択');}
+    const o=O.find(x=>x.id===id);o.s='cancelled';
+    callCancelAPI(o);
+    closeCancel();rOrders();renderHistory();
+  }finally{setTimeout(()=>{doFullCancel._p=false;},500);}
 }
 
 async function callCancelAPI(o) {
@@ -1066,6 +1067,8 @@ function renderMenu(){
 }
 function toggleStock(id,v){const m=MENU.find(x=>x.id===id);if(m){m.avail=v;showToast(v?`✅ ${m.name} 販売再開`:`🚫 ${m.name} 品切れ`);renderMenu();}}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('aiden_token');window.location.href='/';}
+window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
 
 // ===== SETTINGS =====
 const CHANNELS=[

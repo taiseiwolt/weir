@@ -48,6 +48,7 @@ serve(async (req) => {
       normal_points_used,
       member_id,
       coupon_discount,
+      coupon_id,
       // 後方互換: 既存の呼び出し元がある場合
       amount,
       currency,
@@ -79,6 +80,39 @@ serve(async (req) => {
           JSON.stringify({ error: '店舗情報が見つかりません' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
+
+      // 1b. 営業時間チェック（サーバーサイド — C-10）
+      {
+        const now = new Date()
+        // JST = UTC + 9h
+        const jstMs = now.getTime() + 9 * 60 * 60 * 1000
+        const jst = new Date(jstMs)
+        const dayOfWeek = jst.getUTCDay() // 0=日, 1=月 ... 6=土
+        const currentMinutes = jst.getUTCHours() * 60 + jst.getUTCMinutes()
+
+        const { data: hoursRows } = await supabase
+          .from('store_hours')
+          .select('open_time, close_time, is_closed')
+          .eq('store_id', store_id)
+          .eq('day_of_week', dayOfWeek)
+
+        // 今日の営業時間が存在しない or 全て is_closed の場合は拒否
+        const isOpen = hoursRows && hoursRows.some((h: any) => {
+          if (h.is_closed) return false
+          const [oh, om] = (h.open_time as string).split(':').map(Number)
+          const [ch, cm] = (h.close_time as string).split(':').map(Number)
+          const openMin = oh * 60 + om
+          const closeMin = ch * 60 + cm
+          return currentMinutes >= openMin && currentMinutes < closeMin
+        })
+
+        if (!isOpen) {
+          return new Response(
+            JSON.stringify({ error: '現在営業時間外です。営業時間内にご注文ください。' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
       }
 
       // 2. サーバー側で商品金額を再計算（フロントエンドの金額を信用しない）
@@ -196,11 +230,59 @@ serve(async (req) => {
       const rawServiceCharge = subtotal * serviceChargeRate
       const serviceFee = serviceChargeRate > 0 ? Math.ceil(rawServiceCharge / 50) * 50 : 0
 
-      // クーポン割引
-      const discount = coupon_discount || 0
+      // クーポン割引（サーバーサイド検証 — IR-12）
+      let discount = 0
+      if (coupon_id && (coupon_discount || 0) > 0) {
+        const { data: couponRow } = await supabase
+          .from('coupons')
+          .select('id, discount_value, discount_type, is_active, brand_id, min_order_amount, expires_at, usage_limit, usage_count')
+          .eq('id', coupon_id)
+          .single()
 
-      // ポイント利用
+        if (!couponRow || !couponRow.is_active) {
+          return new Response(
+            JSON.stringify({ error: 'クーポンが無効または期限切れです' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // 利用回数上限チェック
+        if (couponRow.usage_limit && (couponRow.usage_count || 0) >= couponRow.usage_limit) {
+          return new Response(
+            JSON.stringify({ error: 'このクーポンは利用上限に達しています' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // 最低注文金額チェック
+        if (couponRow.min_order_amount && subtotal < couponRow.min_order_amount) {
+          return new Response(
+            JSON.stringify({ error: `このクーポンは¥${couponRow.min_order_amount.toLocaleString()}以上のご注文で利用可能です` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // 割引額をサーバーで再計算（クライアント値を上書き）
+        discount = couponRow.discount_type === 'percent'
+          ? Math.round(subtotal * couponRow.discount_value / 100)
+          : couponRow.discount_value
+      } else if (!coupon_id && (coupon_discount || 0) > 0) {
+        // coupon_idなしでdiscountを送ってきた場合は無視（不正利用防止）
+        discount = 0
+      }
+
+      // ポイント利用（サーバーサイド残高検証 — IR-10）
       const pointsDiscount = points_used || 0
+      if (member_id && pointsDiscount > 0) {
+        const { data: ptRows } = await supabase
+          .from('point_transactions')
+          .select('amount')
+          .eq('member_id', member_id)
+        const ptBalance = (ptRows || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
+        if (ptBalance < pointsDiscount) {
+          return new Response(
+            JSON.stringify({ error: 'ポイント残高が不足しています' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
 
       // 合計金額（Stripe JPYは正の整数が必要）
       const totalAmount = Math.round(Math.max(subtotal + deliveryFee + surcharge + serviceFee - discount - pointsDiscount, 0))
