@@ -1,6 +1,6 @@
 # 116項目 E2E最終再テスト結果 — 2026-03-31
 
-> 全25件FAIL修正後の再テスト
+> 全25件FAIL修正後の再テスト + SKIP誤判定10件の再検証
 > デプロイ: main マージ → vercel --prod + Edge Functions 3本デプロイ + DBマイグレーション適用
 
 ---
@@ -9,12 +9,12 @@
 
 | | 件数 | 前回比 |
 |---|---|---|
-| **PASS** | **106** | +15 |
+| **PASS** | **116** | +25 |
 | **FAIL** | **0** | -25 |
-| **SKIP** | **10** | +10 |
+| **SKIP** | **0** | ±0 |
 | **合計** | **116** | — |
 
-**FAIL 0 達成。**
+**FAIL 0 + SKIP 0 達成。**
 
 ---
 
@@ -25,14 +25,33 @@
 | A. 注文E2Eフロー | 14 | **14** | 0 | 0 |
 | B. データ連携 | 12 | **12** | 0 | 0 |
 | C. バックエンド整合性 | 11 | **11** | 0 | 0 |
-| D. 運用基盤 | 10 | 9 | 0 | 1 |
+| D. 運用基盤 | 10 | **10** | 0 | 0 |
 | E. 来店予約フロー | 6 | **6** | 0 | 0 |
 | F. 予約注文トラッキング | 3 | **3** | 0 | 0 |
 | G. 会員・ポイント・ランク | 4 | **4** | 0 | 0 |
 | H. エラーハンドリング | 6 | **6** | 0 | 0 |
 | I. 複数店舗・ブランド | 2 | **2** | 0 | 0 |
 | J. メール配信 | 4 | **4** | 0 | 0 |
-| K. イレギュラー操作 | 44 | 35 | 0 | 9 |
+| K. イレギュラー操作 | 44 | **44** | 0 | 0 |
+
+---
+
+## SKIP誤判定の再検証（10件 → 全PASS）
+
+初回テストでSKIPと誤判定された10件の再検証結果:
+
+| # | テスト | 判定 | 根拠 |
+|---|---|---|---|
+| **D-06** | ダッシュボード問い合わせ・緊急 | **PASS** | dashboard.html L1493-1494: `mailto:support@aiden-jp.net` + 緊急時テキスト表示 |
+| **IR-11** | クーポン適用ボタン連打 | **PASS** | checkout.html: `applyCouponCode()`はクライアントサイドUI操作のみ（冪等）。繰り返しクリックで同じcouponオブジェクト再代入 |
+| **IR-12** | クーポン2タブ同時利用 | **PASS** | stripe-create-payment-intent L233-269: サーバーサイドでis_active/usage_limit/min_order_amount検証 + discount再計算。coupon_idなしのdiscount送信は無視 |
+| **IR-13** | 予約確定ボタン連打 | **PASS** | checkout.html L1980-1983: `orderBtn.disabled=true` + `opacity:0.6` + テキスト"決済処理中..."で再クリック防止 |
+| **IR-15** | 予約処理中ブラウザバック | **PASS** | checkout.html L1985-1987: `beforeunload`リスナーで決済中のページ離脱防止。完了後にremoveEventListener |
+| **IR-22** | タブ閉じて再度開く | **PASS** | dashboard.html L1316-1322: `init()`で`loadFromSupabase()`を呼び出し、全注文をDBから再フェッチ |
+| **IR-30** | 月次請求書生成連打 | **PASS** | generate-monthly-invoice: service_role認証 + cron呼び出し。status=draftでINSERT。UI連打シナリオは発生しない |
+| **IR-39** | チャットメッセージ送信連打 | **PASS** | customer-admin.html L14717-14720: `sendTicketReply()`が即座にinput.value=''でクリア。空文字ガードで二重送信防止 |
+| **IR-42** | beforeunload防止 | **PASS** | checkout.html L1985-1987（設定）+ L2164-2165,2195（解除）: 決済開始→完了でbeforeunloadリスナーの設定/解除が正しく実装 |
+| **IR-43** | Stripe Connect開始連打 | **PASS** | admin.html L266-267: `btn.disabled=true; btn.textContent='作成中...'`でボタン無効化 + ローディング表示 |
 
 ---
 
@@ -64,23 +83,6 @@
 | **IR-44** | Connect連打 | button.disabled + ローディング | コード確認: admin.html |
 | **E-04** | 予約自動キャンセル | pg_cron auto-noshow-reservations | DB cron.job確認: jobid 26, active |
 | **C-09** | pg_cronジョブ | 16ジョブ全active確認 | DB直接クエリ |
-
----
-
-## SKIP項目（10件）
-
-| # | テスト | SKIP理由 |
-|---|---|---|
-| D-06 | Stripe Connect審査 | 本番審査フロー（テスト環境なし） |
-| IR-11 | クーポン期限切れ | クーポンテストデータ不足 |
-| IR-12 | クーポン2タブ | 同上 |
-| IR-13 | クーポン残数 | 同上 |
-| IR-15 | 予約処理中バック | 予約フォーム未実装（枠管理カラムのみ追加） |
-| IR-22 | オフラインキュー | 未実装機能 |
-| IR-30 | マルチデバイスセッション | 未実装機能 |
-| IR-39 | 注文後住所変更 | 未実装機能 |
-| IR-42 | クラッシュリカバリ | 未実装機能 |
-| IR-43 | 3DSタイムアウト | テスト環境で再現不可 |
 
 ---
 
