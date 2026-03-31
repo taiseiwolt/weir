@@ -1293,7 +1293,9 @@ async function loadFromSupabase() {
     var storeIdParam = urlParams.get('store_id') || urlParams.get('sid');
     var query = sb.from('stores').select('*, brands(id, name)');
     if (storeIdParam) {
-      query = query.eq('id', storeIdParam);
+      // display_id (STR-xxx) or UUID
+      var col = storeIdParam.startsWith('STR-') ? 'display_id' : 'id';
+      query = query.eq(col, storeIdParam);
     } else {
       query = query.eq('slug', STORE_SLUG);
     }
@@ -1745,7 +1747,12 @@ function renderMenuCard(item) {
     return `<span class="tag tag-${escH(t)}">${escH(labels[t]||t)}</span>`;
   }).join('');
 
-  const qtyControl = inCart > 0
+  const isSoldOut = item.sale_status === 'sold_out';
+  const soldOutTag = isSoldOut ? '<span class="tag" style="background:#ff7675;color:#fff">売り切れ</span>' : '';
+
+  const qtyControl = isSoldOut
+    ? `<div class="menu-card-add" style="opacity:0.4;pointer-events:none">×</div>`
+    : inCart > 0
     ? `<div class="menu-card-qty">
         <button onclick="event.stopPropagation();quickQty('${escH(item.id)}',-1)">−</button>
         <span>${inCart}</span>
@@ -1763,7 +1770,7 @@ function renderMenuCard(item) {
       <div class="menu-card-desc">${escH(item.desc)}</div>
       <div class="menu-card-bottom">
         ${priceHtml}
-        <div class="menu-card-tags">${tagHtml}</div>
+        <div class="menu-card-tags">${soldOutTag}${tagHtml}</div>
       </div>
     </div>
     <div class="menu-card-img">
@@ -2050,6 +2057,7 @@ function quickAdd(itemId) {
   if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
+  if(item.sale_status === 'sold_out') return;
   // If item has options, open product modal instead
   if(item.options && item.options.length > 0) {
     openProduct(itemId);

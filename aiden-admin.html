@@ -263,6 +263,8 @@ async function createStripeAccount(corpId){
   // 確認ダイアログ
   if(!confirm('Stripe Connect Expressアカウントを作成します。\n\n法人名: '+c.name+'\nメール: '+c.rep_email+'\n\n続行しますか？')) return;
 
+  var btn=document.querySelector('button[onclick*="createStripeAccount"]');
+  if(btn){btn.disabled=true;btn.textContent='作成中...';}
   showToast('⏳ Stripe アカウント作成中...');
 
   try{
@@ -301,6 +303,7 @@ async function createStripeAccount(corpId){
   }catch(e){
     console.error('Stripe Connect error:',e);
     showToast('❌ '+e.message);
+    if(btn){btn.disabled=false;btn.textContent='Stripe Connect 連携';}
   }
 }
 

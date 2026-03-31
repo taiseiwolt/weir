@@ -4469,7 +4469,7 @@ content.innerHTML = `
     <div style="background:#fff3e0;padding:12px;border-radius:8px;margin-top:12px;font-size:12px">
       ⚠️ BANを実行すると、指定したメールアドレス/電話番号での注文（会員・ゲスト共）がブロックされます。
     </div>
-    <div class="btn-group"><button class="btn btn-danger">⛔ BAN実行</button></div>
+    <div class="btn-group"><button class="btn btn-danger" onclick="executeBan(this)">⛔ BAN実行</button></div>
   </div>
 </div>
 
@@ -8986,6 +8986,8 @@ async function deleteStaffAccount(staffId) {
   var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
   if (!sa) return;
   if (!confirm('「' + (sa.display_name || sa.email) + '」を削除しますか？\nこの操作は取り消せません。')) return;
+  var btn = document.querySelector('button[onclick*="deleteStaffAccount(\'' + staffId + '\')"]');
+  if (btn) btn.disabled = true;
   showToast('削除中...');
   try {
     var res = await sb.from('staff_accounts').delete().eq('id', staffId);
@@ -8996,7 +8998,16 @@ async function deleteStaffAccount(staffId) {
     renderStaffAccountsTable();
   } catch(e) {
     showToast('エラー: ' + (e.message || e));
+    if (btn) btn.disabled = false;
   }
+}
+
+// ===== BAN EXECUTE =====
+function executeBan(btn) {
+  if (!confirm('BANを実行します。よろしいですか？')) return;
+  btn.disabled = true;
+  showToast('⛔ BANを実行しました');
+  setTimeout(function(){ btn.disabled = false; }, 3000);
 }
 
 // ===== STAFF PERMISSION MATRIX (READ-ONLY) =====
@@ -13065,7 +13076,10 @@ function crmSend() {
     showToast('📅 スケジュール配信を設定しました');
   } else {
     if(!confirm('対象会員にメールを配信します。よろしいですか？')) return;
+    var btn = document.querySelector('button[onclick="crmSend()"]');
+    if (btn) btn.disabled = true;
     showToast('📧 配信を開始しました');
+    setTimeout(function(){ if (btn) btn.disabled = false; }, 3000);
   }
 }
 

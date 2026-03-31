@@ -1372,6 +1372,11 @@ function selectPayment(id, el) {
       });
       cardElement.mount('#card-element');
 
+      // IR-41: 画面回転時にStripe Elements再マウント
+      window.addEventListener('orientationchange', function() {
+        if (cardElement) { try { cardElement.unmount(); cardElement.mount('#card-element'); } catch(_){} }
+      });
+
       // Listen for card element changes
       cardElement.on('change', function(event) {
         const errEl = document.getElementById('card-errors');
@@ -1923,6 +1928,15 @@ function clearPoints() {
 
 
 async function placeOrder() {
+  // IR-07: セッション有効性チェック
+  if (typeof sb !== 'undefined' && sessionStorage.getItem('aiden_member_id')) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      showToast('セッションの有効期限が切れました。ページを更新してください。', 'error');
+      return;
+    }
+  }
+
   if(!checkAllValid(true)) {
     // Show summary alert
     const alertEl = document.getElementById('orderAlert');
@@ -2120,6 +2134,8 @@ async function placeOrder() {
           }
         }
 
+        // IR-08: ポイント消費はconfirm-orderサーバーサイドに移行済み
+        if (false) {
         // ── ポイント消費トランザクションを記録 ──
         if (appliedPoints > 0) {
           try {
@@ -2136,6 +2152,7 @@ async function placeOrder() {
             }
           } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
         }
+        }
 
         // ── 冪等性キーをクリア（次回注文用） ──
         sessionStorage.removeItem('aiden_order_idempotency');
@@ -2148,11 +2165,16 @@ async function placeOrder() {
         window.removeEventListener('beforeunload', preventUnload);
 
         // ── トラッキングページにリダイレクト ──
+        // IR-03/IR-04: 決済後ブラウザバック防止
         if (trackingToken) {
-          window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+          const trackingUrl = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+          history.replaceState(null, '', trackingUrl);
+          window.location.href = trackingUrl;
         } else {
           // 最終フォールバック: payment_intent_id でtracking.htmlに渡す
-          window.location.href = 'aiden-order-tracking.html?pi=' + encodeURIComponent(piId);
+          const trackingUrl = 'aiden-order-tracking.html?pi=' + encodeURIComponent(piId);
+          history.replaceState(null, '', trackingUrl);
+          window.location.href = trackingUrl;
         }
         return;
       }
@@ -2260,6 +2282,8 @@ async function placeOrder() {
         await sb.from('order_items').insert(orderItems);
       }
 
+      // IR-08: ポイント消費はconfirm-orderサーバーサイドに移行済み
+      if (false) {
       // ポイント消費
       if (appliedPoints > 0) {
         try {
@@ -2275,6 +2299,7 @@ async function placeOrder() {
             });
           }
         } catch(ptErr) { console.warn('Point transaction record skipped:', ptErr); }
+      }
       }
 
       // Thanksメール
@@ -2303,7 +2328,10 @@ async function placeOrder() {
 
       sessionStorage.setItem('aiden_tracking_token', orderRow.tracking_token);
       sessionStorage.setItem('aiden_last_order_id', orderRow.display_id);
-      window.location.href = 'aiden-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
+      // IR-03/IR-04: 決済後ブラウザバック防止
+      const trackingUrl = 'aiden-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
+      history.replaceState(null, '', trackingUrl);
+      window.location.href = trackingUrl;
 
     } catch (e) {
       console.error('Order error:', e);

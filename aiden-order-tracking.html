@@ -385,6 +385,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     startPolling();
     startEtaCountdown();
 
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) { startRealtime(); if (typeof startDeliveryTracking === 'function') startDeliveryTracking(); }
+    });
+    window.addEventListener('online', () => { startRealtime(); });
+
   } catch (e) {
     console.error(e);
     showError('読み込みエラー', '注文情報の取得に失敗しました。\nしばらくしてから再度お試しください。');

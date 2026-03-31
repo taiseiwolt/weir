@@ -330,7 +330,38 @@ serve(async (req) => {
       console.error('Order email error (new order):', emailErr)
     }
 
-    // 7. レスポンス
+    // 7. ポイント消費（IR-08: サーバーサイド原子的処理）
+    const pointsUsed = (parseInt(meta.aiden_points_used) || 0) + (parseInt(meta.normal_points_used) || 0)
+    if (meta.member_id && pointsUsed > 0) {
+      try {
+        const { data: ptResult } = await supabase.rpc('deduct_points', {
+          p_member_id: meta.member_id,
+          p_brand_id: meta.brand_id || null,
+          p_amount: pointsUsed,
+          p_order_id: orderRow.id,
+        })
+        if (ptResult && !ptResult.success && ptResult.error === 'insufficient_balance') {
+          console.warn('Point deduction failed: insufficient balance', ptResult)
+        }
+      } catch (ptErr) {
+        console.error('Point deduction error:', ptErr)
+      }
+    }
+
+    // 8. ランク自動昇格チェック（G-03）
+    if (meta.member_id && meta.brand_id) {
+      try {
+        // total_spend を更新
+        await supabase.rpc('check_and_upgrade_rank', {
+          p_member_id: meta.member_id,
+          p_brand_id: meta.brand_id,
+        })
+      } catch (rankErr) {
+        console.error('Rank check error:', rankErr)
+      }
+    }
+
+    // 9. レスポンス
     return new Response(
       JSON.stringify({
         success: true,

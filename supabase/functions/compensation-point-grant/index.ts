@@ -44,55 +44,29 @@ serve(async (req) => {
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 現在の残高を取得（point_transactions の合計）
-    const { data: txns, error: txnErr } = await sbAdmin
-      .from('point_transactions')
-      .select('amount')
-      .eq('member_id', member_id)
+    // IR-27: RPC関数で原子的にポイント付与（レースコンディション防止）
+    const { data: rpcResult, error: rpcErr } = await sbAdmin.rpc('grant_compensation_points', {
+      p_member_id: member_id,
+      p_brand_id: brand_id || null,
+      p_amount: amount,
+      p_reason: reason || '',
+      p_granted_by: granted_by || '',
+    })
 
-    if (txnErr) {
-      console.error('Balance query error:', txnErr)
-      return new Response(
-        JSON.stringify({ error: '残高取得に失敗しました' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const currentBalance = (txns || []).reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
-    const newBalance = currentBalance + amount
-
-    // ポイント有効期限: 12ヶ月後
-    const expiresAt = new Date()
-    expiresAt.setMonth(expiresAt.getMonth() + 12)
-
-    // point_transactions に INSERT
-    const { data: inserted, error: insertErr } = await sbAdmin
-      .from('point_transactions')
-      .insert({
-        member_id: member_id,
-        brand_id: brand_id || null,
-        amount: amount,
-        balance_after: newBalance,
-        source: 'aiden_compensation',
-        reason: reason,
-        granted_by: granted_by || null,
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-      .single()
-
-    if (insertErr) {
-      console.error('Insert error:', insertErr)
+    if (rpcErr) {
+      console.error('RPC grant error:', rpcErr)
       return new Response(
         JSON.stringify({ error: 'ポイント付与に失敗しました' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    const inserted = rpcResult
+
     return new Response(
       JSON.stringify({
-        transaction_id: inserted.id,
-        new_balance: newBalance,
+        success: true,
+        new_balance: inserted?.balance_after ?? 0,
         amount: amount,
         source: 'aiden_compensation',
       }),

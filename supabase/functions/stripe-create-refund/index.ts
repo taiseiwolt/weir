@@ -51,12 +51,17 @@ serve(async (req) => {
       params['metadata[reason]'] = reason
     }
 
-    // Stripe Refund API 呼び出し
+    // Stripe Refund API 呼び出し（IR-25: Idempotency-Key で二重返金防止）
+    const idempotencyKey = order_id
+      ? `${order_id}_refund_${amount || 'full'}`
+      : `${payment_intent_id}_refund_${Date.now()}`
+
     const stripeRes = await fetch('https://api.stripe.com/v1/refunds', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': idempotencyKey,
       },
       body: new URLSearchParams(params),
     })

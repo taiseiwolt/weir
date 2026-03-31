@@ -554,6 +554,23 @@ async function handleCancel(req, res, id) {
 
     if (order.status === 'cancelled') return error(res, 'この注文は既にキャンセルされています');
 
+    // IR-19: 楽観的ロックでステータス変更 + キャンセルの二重実行防止
+    const { data: locked, error: lockError } = await supabase
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .neq('status', 'cancelled')
+      .select('id, status, updated_at')
+      .single();
+
+    if (lockError) {
+      if (lockError.code === 'PGRST116') {
+        return error(res, 'この注文は既にキャンセルされています', 409);
+      }
+      return error(res, '更新に失敗しました: ' + lockError.message, 500);
+    }
+
+    // Stripe キャンセル/返金（DB更新後に実行 — 失敗しても注文はキャンセル済み）
     if (order.payment_intent_id) {
       try {
         const pi = await stripe.paymentIntents.retrieve(order.payment_intent_id);
@@ -564,18 +581,11 @@ async function handleCancel(req, res, id) {
           await stripe.refunds.create({ payment_intent: order.payment_intent_id });
         }
       } catch (stripeErr) {
-        return error(res, '決済キャンセル/返金に失敗しました: ' + stripeErr.message, 500);
+        console.error('Stripe cancel/refund error (order already cancelled):', stripeErr.message);
       }
     }
 
-    const { data: updated, error: updateError } = await supabase
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('id', id)
-      .select('id, status, updated_at')
-      .single();
-
-    if (updateError) return error(res, '更新に失敗しました: ' + updateError.message, 500);
+    const updated = locked;
 
     return ok(res, updated);
   } catch (e) {
@@ -620,14 +630,32 @@ async function handleStatus(req, res, id) {
       }
     }
 
+    // IR-17: 楽観的ロック — 旧ステータスとの一致を条件に更新
     const { data: updated, error: updateError } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', id)
+      .eq('status', order.status)
       .select('id, status, total_amount, updated_at')
       .single();
 
-    if (updateError) return error(res, '更新に失敗しました: ' + updateError.message, 500);
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        return error(res, '他のオペレーターがステータスを変更しました。ページを更新してください。', 409);
+      }
+      return error(res, '更新に失敗しました: ' + updateError.message, 500);
+    }
+
+    // A-09: audit_logs に記録
+    try {
+      await supabase.from('audit_logs').insert({
+        action: 'order_status_change',
+        target_table: 'orders',
+        target_id: id,
+        details: { old_status: order.status, new_status: status, store_id: order.store_id },
+        user_email: auth.user.email || null,
+      });
+    } catch (_) { /* non-fatal */ }
 
     return ok(res, {
       ...updated,
