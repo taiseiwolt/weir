@@ -330,7 +330,27 @@ serve(async (req) => {
       console.error('Order email error (new order):', emailErr)
     }
 
-    // 7. ポイント消費（IR-08: サーバーサイド原子的処理）
+    // 7. プッシュ通知送信（非同期、失敗しても注文は有効）
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          order_id: orderRow.id,
+          store_id: meta.store_id,
+          display_id: orderRow.display_id,
+          total_amount: pi.amount,
+          order_type: meta.order_type || 'takeout',
+        }),
+      })
+    } catch (pushErr) {
+      console.error('Push notification error:', pushErr)
+    }
+
+    // 8. ポイント消費（IR-08: サーバーサイド原子的処理）
     const pointsUsed = (parseInt(meta.aiden_points_used) || 0) + (parseInt(meta.normal_points_used) || 0)
     if (meta.member_id && pointsUsed > 0) {
       try {
@@ -348,7 +368,7 @@ serve(async (req) => {
       }
     }
 
-    // 8. ランク自動昇格チェック（G-03）
+    // 9. ランク自動昇格チェック（G-03）
     if (meta.member_id && meta.brand_id) {
       try {
         // total_spend を更新
@@ -361,7 +381,7 @@ serve(async (req) => {
       }
     }
 
-    // 9. レスポンス
+    // 10. レスポンス
     return new Response(
       JSON.stringify({
         success: true,
