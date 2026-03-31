@@ -1314,6 +1314,15 @@ function startPolling() {
 
 // ===== INIT =====
 (async function init() {
+  // Auth check — redirect to login if not authenticated
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = '/'; return; }
+  } catch(e) { /* allow demo fallback */ }
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') { window.location.href = '/'; }
+  });
+
   document.querySelector('.main').style.opacity = '0.4';
   let loaded = false;
 

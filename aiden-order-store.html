@@ -1279,6 +1279,11 @@ let ITEMS = [
 let cart = []; // { itemId, qty, options:{groupId:{ selected, counts }}, unitPrice }
 let currentProduct = null;
 let prodQty = 1;
+
+// Prevent accidental navigation when cart has items
+window.addEventListener('beforeunload', (e) => {
+  if (cart.length > 0) { e.preventDefault(); }
+});
 let prodOptionState = {};
 
 // ===================================================================

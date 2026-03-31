@@ -172,6 +172,12 @@ const SUPABASE_URL='https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY='sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// AUTH CHECK — redirect if not authenticated
+(async()=>{
+  try{const{data:{session}}=await sb.auth.getSession();if(!session){window.location.href='/';return;}}catch(e){}
+  sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')window.location.href='/';});
+})();
+
 // AUDIT LOG
 async function logAudit(action,targetTable,targetId,details){
   try{
