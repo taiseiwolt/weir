@@ -32,8 +32,9 @@
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 body {
   font-family:var(--font); background:var(--bg); color:var(--text);
-  line-height:1.6; -webkit-font-smoothing:antialiased;
+  line-height:1.6; -webkit-font-smoothing:antialiased; touch-action:manipulation;
 }
+input, select, textarea { font-size:16px!important; }
 button, input, textarea, select { font-family:var(--font); border:none; background:none; outline:none; }
 button { cursor:pointer; }
 a { color:var(--brand); text-decoration:none; }
@@ -54,7 +55,7 @@ a:hover { text-decoration:underline; }
 }
 .header-title { font-size:15px; font-weight:700; color:var(--text); }
 .header-right { display:flex; align-items:center; gap:12px; }
-.btn-signin { font-size:13px; font-weight:600; color:var(--text-mid); padding:6px 12px; }
+.btn-signin { font-size:13px; font-weight:600; color:var(--text-mid); padding:6px 12px; min-height:44px; }
 
 /* ===== HERO ===== */
 .hero {
@@ -318,7 +319,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .point-balance-value { font-size:16px; font-weight:700; color:var(--brand); }
 .point-input-row { display:flex; gap:8px; align-items:center; }
 .point-input-row input { flex:1; }
-.point-input-row button { white-space:nowrap; padding:8px 14px; background:var(--brand); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; }
+.point-input-row button { white-space:nowrap; padding:8px 14px; background:var(--brand); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; min-height:44px; }
 .point-use-all { font-size:12px; color:var(--brand); cursor:pointer; margin-top:6px; font-weight:600; }
 .point-use-all:hover { text-decoration:underline; }
 .point-applied { margin-top:8px; padding:8px 12px; background:#E8FFE8; border-radius:var(--radius-sm); font-size:13px; color:#2a7a2a; font-weight:600; display:none; }
@@ -348,7 +349,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .coupon-code-form input { flex:1; }
 .coupon-code-form button {
   padding:8px 20px; background:var(--brand); color:#FFF; border-radius:var(--radius-sm);
-  font-size:13px; font-weight:700; white-space:nowrap;
+  font-size:13px; font-weight:700; white-space:nowrap; min-height:44px;
 }
 .coupon-list { display:none; flex-direction:column; gap:6px; margin-top:8px; }
 .coupon-list.show { display:flex; }
@@ -443,7 +444,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <span class="header-title" data-i18n="header_title">注文の最終確認</span>
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:8px">
-    <button id="langToggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer">EN</button>
+    <button id="langToggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer;min-height:36px">EN</button>
     <button class="btn-signin" onclick="openSigninModal()" data-i18n="signin">サインイン</button>
   </div>
 </header>
