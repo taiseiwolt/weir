@@ -878,6 +878,27 @@ function applyBrandConfig() {
     if (!linksHtml) linksHtml = '<span style="font-size:12px;color:var(--text3)">—</span>';
     companyLinks.innerHTML = linksHtml;
   }
+
+  // ページタイトル
+  document.title = c.name;
+
+  // ガイドセクションタイトル（「{ブランド名}からのご案内」）
+  var guideTitle = document.querySelector('.guide-section .sec-title');
+  if (guideTitle) guideTitle.textContent = c.name + 'からのご案内';
+
+  // フッター著作権
+  var copyright = document.querySelector('.footer-copyright');
+  if (copyright) copyright.textContent = '© 2026 ' + c.name + ' All rights reserved.';
+
+  // フッターブランド説明
+  var footerDesc = document.querySelector('.footer-brand-desc');
+  if (footerDesc && c.brandDescription) footerDesc.textContent = c.brandDescription;
+
+  // おすすめ一覧リンク → メニューページ
+  var menuUrl = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
+  document.querySelectorAll('.sec-title-more, .campaign-section a[data-i18n="sec_recommend_more"]').forEach(function(a) {
+    a.href = menuUrl;
+  });
 }
 
 /* =====================================================
@@ -940,7 +961,7 @@ async function loadFromSupabase() {
     var brandId = await resolveBrandId();
 
     // 2. Load brand config
-    var brandRes = await sb.from('brands').select('id, name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value, sns_line, sns_x, sns_instagram, sns_facebook, sns_tiktok, sns_youtube, sns_threads, company_url, recruit_url, hero_catchphrase').eq('id', brandId).single();
+    var brandRes = await sb.from('brands').select('id, name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value, sns_line, sns_x, sns_instagram, sns_facebook, sns_tiktok, sns_youtube, sns_threads, company_url, recruit_url, hero_catchphrase, brand_description').eq('id', brandId).single();
     if (brandRes.data) {
       var b = brandRes.data;
       BRAND_CONFIG.name = b.name || BRAND_CONFIG.name;
@@ -965,6 +986,7 @@ async function loadFromSupabase() {
       BRAND_CONFIG.sns.threads = b.sns_threads || '';
       BRAND_CONFIG.companyUrl = b.company_url || '';
       BRAND_CONFIG.recruitUrl = b.recruit_url || '';
+      BRAND_CONFIG.brandDescription = b.brand_description || '';
       if (b.hero_catchphrase) {
         var heroEl = document.getElementById('hero-catch');
         if (heroEl) heroEl.textContent = b.hero_catchphrase;
@@ -980,6 +1002,18 @@ async function loadFromSupabase() {
         storesRes.data.forEach(function(s) {
           sel.innerHTML += '<option value="' + escH(s.name) + '">' + escH(s.name) + '</option>';
         });
+      }
+    }
+
+    // 3b. Load categories for footer menu
+    var menuUrl = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
+    var catRes = await sb.from('categories').select('id, name, sort_order').eq('brand_id', brandId).order('sort_order');
+    if (catRes.data && catRes.data.length > 0) {
+      var footerMenu = document.querySelector('.footer-nav-list');
+      if (footerMenu && footerMenu.closest('.footer-main > div:nth-child(2)')) {
+        footerMenu.innerHTML = catRes.data.map(function(c) {
+          return '<a href="' + escH(menuUrl) + '#cat-' + escH(c.id) + '">' + escH(c.name) + '</a>';
+        }).join('');
       }
     }
 
@@ -1017,9 +1051,10 @@ async function loadFromSupabase() {
       if (recMedia.length > 0) {
         var cs = document.getElementById('campaign-scroll');
         if (cs) {
-          cs.innerHTML = '<div class="campaign-item featured"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0000,#4a0000)"><div style="text-align:center;color:white;padding:12px"><div style="font-size:11px;margin-bottom:4px;opacity:.8">現在実施中の</div><div style="font-size:16px;font-weight:700">キャンペーン</div><div style="font-size:36px;margin-top:8px">▶</div></div></div></div>'
+          var menuLink = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
+          cs.innerHTML = '<a href="' + escH(menuLink) + '" class="campaign-item featured" style="text-decoration:none;color:inherit"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0000,#4a0000)"><div style="text-align:center;color:white;padding:12px"><div style="font-size:11px;margin-bottom:4px;opacity:.8">現在実施中の</div><div style="font-size:16px;font-weight:700">キャンペーン</div><div style="font-size:36px;margin-top:8px">▶</div></div></div></a>'
             + recMedia.map(function(m){
-              return '<div class="campaign-item"><div class="campaign-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="campaign-item-title">' + escH(m.title || '') + '</div></div>';
+              return '<a href="' + escH(menuLink) + '" class="campaign-item" style="text-decoration:none;color:inherit"><div class="campaign-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="campaign-item-title">' + escH(m.title || '') + '</div></a>';
             }).join('');
         }
       }
