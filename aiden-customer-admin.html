@@ -173,6 +173,7 @@ function snsDownloadImage() {
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --primary: #1a1a2e;
@@ -615,6 +616,7 @@ const NAV = [
     {id:'ban-execute', label:'BAN実行'},
     {id:'ban-list', label:'BANリスト'},
   ]},
+  { id:'bulk-import', icon:'📥', label:'一括登録', subs:[]},
 ];
 
 // ===== BUILD SIDEBAR =====
@@ -4585,6 +4587,79 @@ content.innerHTML = `
     <div class="btn-group">
       <button class="btn btn-primary" onclick="document.getElementById('bulkPreview').style.display='block';runNormalizeDemo()">アップロード＆検証</button>
       <button class="btn btn-secondary" onclick="document.getElementById('bulkAddModal').classList.remove('show')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- 📥 一括登録 -->
+<!-- ============================== -->
+<div class="page" id="page-bulk-import">
+  <div class="breadcrumb"><a href="#" onclick="return false">一括登録</a></div>
+  <div class="page-title">📥 一括登録 / 更新</div>
+  <div class="page-subtitle">CSV・XLSXファイルで法人・ブランド・店舗データを一括登録・更新できます</div>
+
+  <div class="card">
+    <div class="card-title">① データタイプを選択</div>
+    <div class="btn-group" style="margin-bottom:12px">
+      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('corporation')" id="caBulkTypeBtn-corporation">法人</button>
+      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('brand')" id="caBulkTypeBtn-brand">ブランド</button>
+      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('store')" id="caBulkTypeBtn-store">店舗</button>
+    </div>
+  </div>
+
+  <div class="card" id="caBulkTemplateCard" style="display:none">
+    <div class="card-title">② テンプレートをダウンロード</div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="caBulkDownloadTemplate(false)">📄 空テンプレート</button>
+      <button class="btn btn-secondary" onclick="caBulkDownloadTemplate(true)">📋 既存データ付き</button>
+    </div>
+  </div>
+
+  <div class="card" id="caBulkUploadCard" style="display:none">
+    <div class="card-title">③ ファイルをアップロード</div>
+    <div class="bulk-upload-area" id="caBulkDropZone"
+      ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fef0f3'"
+      ondragleave="this.style.borderColor='var(--border)';this.style.background='transparent'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='transparent';caBulkHandleFile(event.dataTransfer.files[0])">
+      <div class="icon">📁</div>
+      <div>ここにファイルをドロップ、またはクリックして選択</div>
+      <div style="font-size:11px;margin-top:4px;color:#999">CSV / XLSX 対応</div>
+      <input type="file" id="caBulkFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="if(this.files[0])caBulkHandleFile(this.files[0])">
+    </div>
+  </div>
+
+  <div class="card" id="caBulkPreviewCard" style="display:none">
+    <div class="card-title">④ プレビュー</div>
+    <div id="caBulkPreviewSummary" style="margin-bottom:12px"></div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="caBulkPreviewTable">
+        <thead id="caBulkPreviewHead"></thead>
+        <tbody id="caBulkPreviewBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="caBulkExecute()" id="caBulkExecuteBtn">一括登録を実行</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('caBulkPreviewCard').style.display='none'">キャンセル</button>
+    </div>
+  </div>
+
+  <div class="card" id="caBulkProgressCard" style="display:none">
+    <div class="card-title">⏳ 処理中...</div>
+    <div style="background:#eee;border-radius:8px;height:20px;overflow:hidden;margin:12px 0">
+      <div id="caBulkProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width .3s"></div>
+    </div>
+    <div id="caBulkProgressText" style="font-size:12px;color:#888;text-align:center">0%</div>
+  </div>
+
+  <div class="card" id="caBulkResultCard" style="display:none">
+    <div class="card-title">✅ 結果</div>
+    <div id="caBulkResultSummary" style="margin-bottom:12px"></div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="caBulkResultTable">
+        <thead id="caBulkResultHead"></thead>
+        <tbody id="caBulkResultBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -15868,6 +15943,350 @@ async function submitPlanChangeRequest(plan, direction) {
     if (btn) { btn.disabled = false; btn.textContent = '申請する'; }
   }
 }
+
+// ═══════════════════════════════════════
+// 📥 一括登録 (Bulk Import)
+// ═══════════════════════════════════════
+var _caBulkCurrentType = '';
+var _caBulkParsedRows = [];
+var _caBulkPreviewResult = null;
+
+const CA_BULK_TEMPLATES = {
+  corporation: {
+    filename: 'aiden_corp_template.csv', format: 'csv',
+    headers: ['法人名*','代表者*','ステータス(active/trial)','会社HP URL','採用ページURL'],
+    keys: ['name','representative','status','website_url','recruit_url'],
+    sample: [['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
+  },
+  brand: {
+    filename: 'aiden_brand_template.csv', format: 'csv',
+    headers: ['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','ロゴ絵文字','フォント'],
+    keys: ['corp_name','name','slug','tagline','main_color','logo_emoji','font'],
+    sample: [['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','🥩','Noto Sans JP']],
+  },
+  store: {
+    filename: 'aiden_store_template.xlsx', format: 'xlsx',
+    headers: ['ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)'],
+    keys: ['brand_slug','name','slug','address','phone','email','genre','lat','lng','has_takeout','has_delivery','reservation_enabled','min_order_amount','prep_time_minutes'],
+    sample: [['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005','ON','OFF','ON','1500','30']],
+  },
+};
+
+function onCaBulkTypeChange(type) {
+  _caBulkCurrentType = type;
+  ['corporation','brand','store'].forEach(function(t) {
+    var btn = document.getElementById('caBulkTypeBtn-' + t);
+    if (btn) btn.className = t === type ? 'btn btn-primary' : 'btn btn-secondary';
+  });
+  document.getElementById('caBulkTemplateCard').style.display = '';
+  document.getElementById('caBulkUploadCard').style.display = '';
+  document.getElementById('caBulkPreviewCard').style.display = 'none';
+  document.getElementById('caBulkProgressCard').style.display = 'none';
+  document.getElementById('caBulkResultCard').style.display = 'none';
+}
+
+function caBulkDownloadTemplate(includeData) {
+  var type = _caBulkCurrentType;
+  if (!type) { showToast('⚠️ タイプを選択してください'); return; }
+  var tmpl = CA_BULK_TEMPLATES[type];
+  if (includeData) {
+    caBulkDownloadWithData(type, tmpl);
+    return;
+  }
+  var rows = [tmpl.headers].concat(tmpl.sample);
+  if (tmpl.format === 'xlsx') {
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, tmpl.filename);
+  } else {
+    var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = tmpl.filename;
+    a.click();
+  }
+  showToast('📄 テンプレートをダウンロードしました');
+}
+
+async function caBulkDownloadWithData(type, tmpl) {
+  try {
+    showToast('📋 既存データを取得中...');
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch('/api/bulk-import/export?type=' + encodeURIComponent(type), {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      var errBody = await res.json().catch(function() { return {}; });
+      throw new Error(errBody.error || 'エクスポートに失敗しました');
+    }
+    var data = await res.json();
+    var exportRows = (data.data && data.data.rows) ? data.data.rows : [];
+    var rows = [tmpl.headers];
+    exportRows.forEach(function(row) {
+      rows.push(tmpl.keys.map(function(k) { return row[k] != null ? String(row[k]) : ''; }));
+    });
+    if (tmpl.format === 'xlsx') {
+      var ws = XLSX.utils.aoa_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, type);
+      XLSX.writeFile(wb, tmpl.filename.replace('.xlsx', '_export.xlsx'));
+    } else {
+      var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+      var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = tmpl.filename.replace('.csv', '_export.csv');
+      a.click();
+    }
+    showToast('📋 既存データ付きテンプレートをダウンロードしました');
+  } catch(e) {
+    showToast('⚠️ ' + (e.message || 'エクスポートに失敗しました'));
+  }
+}
+
+function caBulkHandleFile(file) {
+  if (!file) return;
+  if (!_caBulkCurrentType) { showToast('⚠️ 先にタイプを選択してください'); return; }
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var rows = caBulkParseCSV(e.target.result);
+      caBulkParsedToPreview(_caBulkCurrentType, CA_BULK_TEMPLATES[_caBulkCurrentType], rows);
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    var reader2 = new FileReader();
+    reader2.onload = function(e) {
+      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      caBulkParsedToPreview(_caBulkCurrentType, CA_BULK_TEMPLATES[_caBulkCurrentType], rows);
+    };
+    reader2.readAsArrayBuffer(file);
+  } else {
+    showToast('⚠️ CSV または XLSX ファイルを選択してください');
+  }
+}
+
+function caBulkParseCSV(text) {
+  var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  var result = [];
+  lines.forEach(function(line) {
+    if (!line.trim()) return;
+    var row = [];
+    var inQuote = false;
+    var cell = '';
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (inQuote) {
+        if (ch === '"' && line[i+1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') { inQuote = false; }
+        else { cell += ch; }
+      } else {
+        if (ch === '"') { inQuote = true; }
+        else if (ch === ',') { row.push(cell); cell = ''; }
+        else { cell += ch; }
+      }
+    }
+    row.push(cell);
+    result.push(row);
+  });
+  return result;
+}
+
+async function caBulkParsedToPreview(type, tmpl, rawRows) {
+  if (rawRows.length < 2) { showToast('⚠️ データが空です（ヘッダー行のみ）'); return; }
+  var headerRow = rawRows[0];
+  var dataRows = rawRows.slice(1).filter(function(r) { return r.some(function(c) { return String(c).trim() !== ''; }); });
+  if (dataRows.length === 0) { showToast('⚠️ データ行がありません'); return; }
+
+  var objects = dataRows.map(function(row) {
+    var obj = {};
+    tmpl.keys.forEach(function(key, idx) {
+      obj[key] = idx < row.length ? String(row[idx]).trim() : '';
+    });
+    return obj;
+  });
+
+  _caBulkParsedRows = objects;
+
+  try {
+    showToast('🔍 プレビューを生成中...');
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch('/api/bulk-import/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ type: type, rows: objects })
+    });
+    if (!res.ok) {
+      var errBody = await res.json().catch(function() { return {}; });
+      throw new Error(errBody.error || 'プレビューに失敗しました');
+    }
+    var result = await res.json();
+    _caBulkPreviewResult = result.data || result;
+    caBulkRenderPreview(type, tmpl, _caBulkPreviewResult, objects);
+  } catch(e) {
+    caBulkRenderPreview(type, tmpl, null, objects);
+    showToast('⚠️ ' + (e.message || 'プレビュー生成に失敗しました（ローカル表示します）'));
+  }
+}
+
+function caBulkRenderPreview(type, tmpl, result, objects) {
+  var card = document.getElementById('caBulkPreviewCard');
+  card.style.display = '';
+
+  var newCount = 0, updateCount = 0, errorCount = 0;
+  var previewRows = result && result.rows ? result.rows : null;
+
+  if (previewRows) {
+    previewRows.forEach(function(r) {
+      if (r.action === 'create') newCount++;
+      else if (r.action === 'update') updateCount++;
+      if (r.errors && r.errors.length) errorCount++;
+    });
+  } else {
+    newCount = objects.length;
+  }
+
+  var summaryHtml = '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+  summaryHtml += '<span style="background:#e8f5e9;padding:4px 12px;border-radius:4px;font-size:13px">🆕 新規: ' + newCount + '件</span>';
+  summaryHtml += '<span style="background:#e3f2fd;padding:4px 12px;border-radius:4px;font-size:13px">🔄 更新: ' + updateCount + '件</span>';
+  if (errorCount > 0) {
+    summaryHtml += '<span style="background:#ffebee;padding:4px 12px;border-radius:4px;font-size:13px">⚠️ エラー: ' + errorCount + '件</span>';
+  }
+  summaryHtml += '</div>';
+  document.getElementById('caBulkPreviewSummary').innerHTML = summaryHtml;
+
+  var headHtml = '<tr><th>#</th><th>状態</th>';
+  tmpl.headers.forEach(function(h) { headHtml += '<th>' + escH(h) + '</th>'; });
+  if (previewRows) headHtml += '<th>備考</th>';
+  headHtml += '</tr>';
+  document.getElementById('caBulkPreviewHead').innerHTML = headHtml;
+
+  var bodyHtml = '';
+  objects.forEach(function(obj, idx) {
+    var pr = previewRows ? previewRows[idx] : null;
+    var badge = '🆕';
+    var rowStyle = '';
+    if (pr) {
+      badge = pr.action === 'update' ? '🔄' : '🆕';
+      if (pr.errors && pr.errors.length) { badge = '⚠️'; rowStyle = 'background:#fff3e0'; }
+    }
+    bodyHtml += '<tr style="' + rowStyle + '"><td>' + (idx + 1) + '</td><td>' + badge + '</td>';
+    tmpl.keys.forEach(function(k) { bodyHtml += '<td>' + escH(obj[k] || '') + '</td>'; });
+    if (previewRows) {
+      var notes = pr && pr.errors && pr.errors.length ? pr.errors.join(', ') : (pr && pr.action === 'update' ? '既存レコード更新' : '');
+      bodyHtml += '<td style="font-size:11px;color:#888">' + escH(notes) + '</td>';
+    }
+    bodyHtml += '</tr>';
+  });
+  document.getElementById('caBulkPreviewBody').innerHTML = bodyHtml;
+}
+
+async function caBulkExecute() {
+  var type = _caBulkCurrentType;
+  if (!type || !_caBulkParsedRows.length) { showToast('⚠️ アップロードデータがありません'); return; }
+
+  var btn = document.getElementById('caBulkExecuteBtn');
+  btn.disabled = true;
+  btn.textContent = '処理中...';
+
+  var progressCard = document.getElementById('caBulkProgressCard');
+  var progressBar = document.getElementById('caBulkProgressBar');
+  var progressText = document.getElementById('caBulkProgressText');
+  progressCard.style.display = '';
+  progressBar.style.width = '0%';
+  progressText.textContent = '0%';
+
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var total = _caBulkParsedRows.length;
+    var batchSize = 50;
+    var allResults = [];
+    var processed = 0;
+
+    for (var i = 0; i < total; i += batchSize) {
+      var batch = _caBulkParsedRows.slice(i, i + batchSize);
+      var res = await fetch('/api/bulk-import/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: type, rows: batch })
+      });
+      var body = await res.json();
+      if (body.data && body.data.results) {
+        allResults = allResults.concat(body.data.results);
+      } else if (body.results) {
+        allResults = allResults.concat(body.results);
+      } else {
+        batch.forEach(function() { allResults.push({status:'unknown'}); });
+      }
+      processed += batch.length;
+      var pct = Math.min(100, Math.round((processed / total) * 100));
+      progressBar.style.width = pct + '%';
+      progressText.textContent = pct + '% (' + processed + '/' + total + ')';
+    }
+
+    progressBar.style.width = '100%';
+    progressText.textContent = '100% — 完了';
+
+    var successCount = 0, failCount = 0;
+    allResults.forEach(function(r) {
+      if (r.status === 'success' || r.status === 'created' || r.status === 'updated') successCount++;
+      else failCount++;
+    });
+
+    var resultCard = document.getElementById('caBulkResultCard');
+    resultCard.style.display = '';
+    var tmpl = CA_BULK_TEMPLATES[type];
+
+    var resultSummary = '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    resultSummary += '<span style="background:#e8f5e9;padding:4px 12px;border-radius:4px;font-size:13px">✅ 成功: ' + successCount + '件</span>';
+    if (failCount > 0) {
+      resultSummary += '<span style="background:#ffebee;padding:4px 12px;border-radius:4px;font-size:13px">❌ 失敗: ' + failCount + '件</span>';
+    }
+    resultSummary += '</div>';
+    document.getElementById('caBulkResultSummary').innerHTML = resultSummary;
+
+    var rHeadHtml = '<tr><th>#</th><th>結果</th>';
+    tmpl.headers.forEach(function(h) { rHeadHtml += '<th>' + escH(h) + '</th>'; });
+    rHeadHtml += '<th>詳細</th></tr>';
+    document.getElementById('caBulkResultHead').innerHTML = rHeadHtml;
+
+    var rBodyHtml = '';
+    _caBulkParsedRows.forEach(function(obj, idx) {
+      var r = allResults[idx] || {};
+      var icon = (r.status === 'success' || r.status === 'created' || r.status === 'updated') ? '✅' : '❌';
+      var rowStyle = (r.status === 'success' || r.status === 'created' || r.status === 'updated') ? '' : 'background:#fff3e0';
+      rBodyHtml += '<tr style="' + rowStyle + '"><td>' + (idx + 1) + '</td><td>' + icon + '</td>';
+      tmpl.keys.forEach(function(k) { rBodyHtml += '<td>' + escH(obj[k] || '') + '</td>'; });
+      rBodyHtml += '<td style="font-size:11px;color:#888">' + escH(r.error || r.message || '') + '</td></tr>';
+    });
+    document.getElementById('caBulkResultBody').innerHTML = rBodyHtml;
+
+    showToast('✅ 一括登録が完了しました（成功: ' + successCount + '件）');
+  } catch(e) {
+    showToast('⚠️ 一括登録に失敗しました: ' + (e.message || '不明なエラー'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '一括登録を実行';
+  }
+}
+
+// Drop zone click handler
+(function() {
+  var dz = document.getElementById('caBulkDropZone');
+  if (dz) {
+    dz.addEventListener('click', function() {
+      document.getElementById('caBulkFileInput').click();
+    });
+  }
+})();
 
 </script>
 <footer style="background:#f5f5f5;padding:16px 20px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee">
