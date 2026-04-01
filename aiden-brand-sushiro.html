@@ -464,8 +464,20 @@ function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').rep
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_SLUG = 'sumibite-shibuya'; // storesのslugからbrandを逆引き
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _urlParams = new URLSearchParams(window.location.search);
+const _brandParam = _urlParams.get('brand'); // e.g. 'ikinari-steak', 'sumibite'
+const DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
+
+async function resolveBrandId() {
+  if (!_brandParam) return DEFAULT_BRAND_ID;
+  var prefix = _brandParam.split('-')[0];
+  var { data } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+  if (data && data.length > 0) return data[0].brand_id;
+  var { data: exact } = await sb.from('stores').select('brand_id').eq('slug', _brandParam).limit(1);
+  if (exact && exact.length > 0) return exact[0].brand_id;
+  return DEFAULT_BRAND_ID;
+}
 
 /* =====================================================
    BRAND CONFIG（管理画面 / Supabase brands テーブルから取得）
@@ -913,7 +925,10 @@ function toggleVideo() {
 }
 function goStoreSearch(area) {
   var q = area || document.getElementById('store-search-q').value;
-  window.location.href = './aiden-brand-stores.html' + (q ? '?q='+encodeURIComponent(q) : '');
+  var params = [];
+  if (_brandParam) params.push('brand=' + encodeURIComponent(_brandParam));
+  if (q) params.push('q=' + encodeURIComponent(q));
+  window.location.href = './aiden-brand-stores.html' + (params.length ? '?' + params.join('&') : '');
 }
 
 // ===== SUPABASE DATA LOADER =====
@@ -921,10 +936,8 @@ var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュ�
 
 async function loadFromSupabase() {
   try {
-    // 1. Get brand via store slug
-    var storeRes = await sb.from('stores').select('brand_id').eq('slug', BRAND_SLUG).single();
-    if (!storeRes.data) throw new Error('Store not found');
-    var brandId = storeRes.data.brand_id;
+    // 1. Resolve brand_id from URL param or default
+    var brandId = await resolveBrandId();
 
     // 2. Load brand config
     var brandRes = await sb.from('brands').select('id, name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value, sns_line, sns_x, sns_instagram, sns_facebook, sns_tiktok, sns_youtube, sns_threads, company_url, recruit_url, hero_catchphrase').eq('id', brandId).single();
@@ -1037,6 +1050,15 @@ function renderDemoNews() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // Propagate ?brand= param to internal navigation links
+  if (_brandParam) {
+    document.querySelectorAll('a[href]').forEach(function(a) {
+      var h = a.getAttribute('href');
+      if (h && h.startsWith('./aiden-brand-') && !h.includes('brand=')) {
+        a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
+      }
+    });
+  }
   await loadFromSupabase();
   applyBrandConfig();
   renderSns();

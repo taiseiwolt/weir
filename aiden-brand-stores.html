@@ -423,6 +423,8 @@ function applyBrand() {
   r.style.setProperty('--brand-font-color', c.fontColor);
   r.style.setProperty('--brand-font', "'"+c.fontFamily+"',sans-serif");
   document.getElementById('logo-text').textContent = c.logoTextValue;
+  var mark = document.querySelector('.header-logo-mark');
+  if (mark && c.logoMarkEmoji) mark.textContent = c.logoMarkEmoji;
 }
 
 function toggleNav() {
@@ -438,11 +440,38 @@ function getUrlParam(key) {
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const _urlParams = new URLSearchParams(window.location.search);
+const _brandParam = _urlParams.get('brand');
+var BRAND_ID = DEFAULT_BRAND_ID;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+async function resolveBrandId() {
+  if (!_brandParam) return DEFAULT_BRAND_ID;
+  var prefix = _brandParam.split('-')[0];
+  var { data } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+  if (data && data.length > 0) return data[0].brand_id;
+  var { data: exact } = await sb.from('stores').select('brand_id').eq('slug', _brandParam).limit(1);
+  if (exact && exact.length > 0) return exact[0].brand_id;
+  return DEFAULT_BRAND_ID;
+}
+
+async function loadBrandConfig() {
+  var { data: b } = await sb.from('brands').select('name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value').eq('id', BRAND_ID).single();
+  if (!b) return;
+  BRAND_CONFIG.primaryColor = b.primary_color || BRAND_CONFIG.primaryColor;
+  BRAND_CONFIG.primaryDark = b.primary_dark || BRAND_CONFIG.primaryDark;
+  BRAND_CONFIG.primaryLight = b.primary_light || BRAND_CONFIG.primaryLight;
+  BRAND_CONFIG.headerBg = b.header_bg || BRAND_CONFIG.headerBg;
+  BRAND_CONFIG.headerTextColor = b.header_text_color || BRAND_CONFIG.headerTextColor;
+  BRAND_CONFIG.fontColor = b.font_color || BRAND_CONFIG.fontColor;
+  BRAND_CONFIG.fontFamily = b.font_family || BRAND_CONFIG.fontFamily;
+  BRAND_CONFIG.logoMarkEmoji = b.logo_mark_emoji || BRAND_CONFIG.logoMarkEmoji;
+  BRAND_CONFIG.logoTextValue = b.logo_text_value || BRAND_CONFIG.logoTextValue;
+}
+
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, is_active, description').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails
@@ -455,7 +484,7 @@ async function loadStoresFromSupabase() {
   STORES = stores.map(function(s, i) {
     var prefCity = (s.address || '').substring(0, 3);
     return {
-      id: s.slug || s.id, uuid: s.id, name: s.name.replace('焼肉 炭火亭 ','炭火亭 '), pref: prefCity, city: '',
+      id: s.slug || s.id, uuid: s.id, name: s.name, pref: prefCity, city: '',
       addr: s.address || '', station: '', hours: '17:00〜23:00',
       bg: thumbMap[s.id] ? 'url('+thumbMap[s.id]+') center/cover no-repeat' : bgs[i % bgs.length],
       thumbUrl: thumbMap[s.id] || null,
@@ -466,7 +495,30 @@ async function loadStoresFromSupabase() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+  BRAND_ID = await resolveBrandId();
+  try { await loadBrandConfig(); } catch(e) { /* ignored */ }
   try { await loadStoresFromSupabase(); } catch(e) { /* ignored */ }
+  // Re-initialize reservation store dropdown with DB-loaded STORES
+  var sel = document.getElementById('rm-store');
+  if (sel) {
+    sel.innerHTML = '<option value="">店舗を選択してください</option>';
+    STORES.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s.uuid || s.id;
+      opt.textContent = s.name;
+      opt.dataset.name = s.name;
+      sel.appendChild(opt);
+    });
+  }
+  // Propagate ?brand= param to internal navigation links
+  if (_brandParam) {
+    document.querySelectorAll('a[href]').forEach(function(a) {
+      var h = a.getAttribute('href');
+      if (h && h.startsWith('./aiden-brand-') && !h.includes('brand=')) {
+        a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
+      }
+    });
+  }
   applyBrand();
   buildAreaGrid();
   buildAttrChips();
