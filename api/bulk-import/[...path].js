@@ -59,6 +59,10 @@ export default async function handler(req, res) {
   const auth = await requireAuth(req, res);
   if (!auth) return;
 
+  // Require admin/owner role (staff_accounts with owner or admin role)
+  const isAdmin = await checkAdminRole(auth.user);
+  if (!isAdmin) return error(res, '管理者権限が必要です', 403);
+
   const rawPath = req.query.path || '';
   const segments = (Array.isArray(rawPath) ? rawPath.join('/') : rawPath)
     .split('/')
@@ -282,6 +286,19 @@ function validateInput(type, rows) {
 }
 
 // ---------------------------------------------------------------------------
+// Admin role check
+// ---------------------------------------------------------------------------
+async function checkAdminRole(user) {
+  const { data } = await supabase
+    .from('staff_accounts')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .in('role', ['owner', 'admin'])
+    .limit(1);
+  return data && data.length > 0;
+}
+
+// ---------------------------------------------------------------------------
 // Reference resolvers
 // ---------------------------------------------------------------------------
 async function noopResolve(row) {
@@ -376,11 +393,21 @@ async function lookupBrand(row) {
 }
 
 async function lookupStore(row) {
+  // Prefer slug match; fall back to name match if slug is empty
+  if (row.slug) {
+    const { data } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('brand_id', row.brand_id)
+      .eq('slug', row.slug)
+      .maybeSingle();
+    if (data) return data;
+  }
   const { data } = await supabase
     .from('stores')
     .select('id')
     .eq('brand_id', row.brand_id)
-    .eq('slug', row.slug)
+    .eq('name', row.name)
     .maybeSingle();
   return data;
 }
@@ -474,7 +501,8 @@ async function exportCorporations() {
   const { data, error: err } = await supabase
     .from('corporations')
     .select('id, name, representative, status, website_url, recruit_url')
-    .order('name');
+    .order('name')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return data || [];
 }
@@ -483,7 +511,8 @@ async function exportBrands() {
   const { data, error: err } = await supabase
     .from('brands')
     .select('id, name, slug, tagline, main_color, logo_emoji, font, corporations(name)')
-    .order('name');
+    .order('name')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((b) => ({
     name: b.name,
@@ -500,7 +529,8 @@ async function exportStores() {
   const { data, error: err } = await supabase
     .from('stores')
     .select('id, name, slug, address, phone, email, genre, lat, lng, has_takeout, has_delivery, reservation_enabled, min_order_amount, prep_time_minutes, brands(slug)')
-    .order('name');
+    .order('name')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((s) => ({
     name: s.name,
@@ -524,7 +554,8 @@ async function exportCategories() {
   const { data, error: err } = await supabase
     .from('categories')
     .select('id, name, sort_order, brands(slug)')
-    .order('sort_order');
+    .order('sort_order')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((c) => ({
     name: c.name,
@@ -537,7 +568,8 @@ async function exportProducts() {
   const { data, error: err } = await supabase
     .from('products')
     .select('id, name, description, sort_order, sale_status, brands(slug), categories(name)')
-    .order('sort_order');
+    .order('sort_order')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((p) => ({
     name: p.name,
@@ -553,7 +585,8 @@ async function exportSizes() {
   const { data, error: err } = await supabase
     .from('product_sizes')
     .select('product_id, name, price, sort_order, products(name, brands(slug))')
-    .order('sort_order');
+    .order('sort_order')
+    .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((s) => ({
     product_name: s.products?.name || '',
