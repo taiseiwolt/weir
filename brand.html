@@ -1113,7 +1113,8 @@ async function loadFromSupabase() {
           var d = new Date(n.published_at);
           var ds = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
           var catLabel = NEWS_CAT_MAP[n.category] || n.category;
-          return '<div class="news-item"><span class="news-date">' + ds + '</span><span class="news-cat ' + escH(n.category) + '">' + escH(catLabel) + '</span><span class="news-title"><a href="' + escH(n.url || '#') + '">' + escH(n.title) + '</a></span></div>';
+          var detailUrl = './brand-news-detail.html?news_id=' + encodeURIComponent(n.id) + (_brandParam ? '&brand=' + encodeURIComponent(_brandParam) : '');
+          return '<div class="news-item"><span class="news-date">' + ds + '</span><span class="news-cat ' + escH(n.category) + '">' + escH(catLabel) + '</span><span class="news-title"><a href="' + escH(detailUrl) + '">' + escH(n.title) + '</a></span></div>';
         }).join('');
       }
     }

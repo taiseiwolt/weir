@@ -189,7 +189,7 @@ function render() {
     html += '<div class="news-item">'
       +'<span class="news-date">'+escH(n.date)+'</span>'
       +'<span class="news-cat '+escH(n.cat)+'">'+escH(t(catKey))+'</span>'
-      +'<span class="news-title-text"><a href="#">'+escH(title)+'</a></span>'
+      +'<span class="news-title-text"><a href="./brand-news-detail.html?news_id='+encodeURIComponent(n.news_id || '')+(_brandParam ? '&brand='+encodeURIComponent(_brandParam) : '')+'">'+escH(title)+'</a></span>'
       +'</div>';
   });
   document.getElementById('news-list').innerHTML = html || '<div style="padding:24px;text-align:center;color:var(--text3)">—</div>';
@@ -236,6 +236,7 @@ const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const BRAND_ID = '22222222-0000-0000-0000-000000000001';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _brandParam = new URLSearchParams(window.location.search).get('brand');
 
 async function loadNewsFromSupabase() {
   var {data: news} = await sb.from('brand_news').select('id, brand_id, title, category, published_at').eq('brand_id', BRAND_ID).order('published_at', {ascending: false});
@@ -243,7 +244,7 @@ async function loadNewsFromSupabase() {
   NEWS_DATA = news.map(function(n, i) {
     var d = new Date(n.published_at);
     var ds = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
-    return { id: i+1, date: ds, cat: n.category, title: {ja: n.title, en: n.title, zh: n.title, ko: n.title, fr: n.title, it: n.title, id: n.title} };
+    return { id: i+1, news_id: n.id, date: ds, cat: n.category, title: {ja: n.title, en: n.title, zh: n.title, ko: n.title, fr: n.title, it: n.title, id: n.title} };
   });
 }
 

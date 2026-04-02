@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ニュース</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand-primary: #D32F2F;
+  --brand-primary-dark: #B71C1C;
+  --brand-primary-light: #FFEBEE;
+  --brand-header-bg: #D32F2F;
+  --brand-header-text: #FFFFFF;
+  --brand-font: 'Noto Sans JP', sans-serif;
+  --brand-font-color: #333333;
+  --text2: #666; --text3: #999;
+  --bg: #fff; --bg2: #F8F8F8;
+  --border: #E0E0E0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--brand-font);color:var(--brand-font-color);background:var(--bg2);font-size:14px;line-height:1.6}
+a{color:inherit;text-decoration:none}
+
+/* Header */
+.header{background:var(--brand-header-bg);position:sticky;top:0;z-index:1000}
+.header-main{max-width:1100px;margin:0 auto;display:flex;align-items:center;height:56px;padding:0 20px;gap:16px}
+.header-logo a{display:flex;align-items:center}
+.header-logo-text{color:var(--brand-header-text);font-size:20px;font-weight:700;font-family:'Noto Serif JP',serif;letter-spacing:.05em;white-space:nowrap}
+.header-back{color:var(--brand-header-text);font-size:14px;margin-left:auto}
+
+/* Breadcrumb */
+.breadcrumb{max-width:800px;margin:20px auto 0;padding:0 20px;font-size:12px;color:var(--text3)}
+.breadcrumb a{color:var(--brand-primary);text-decoration:underline}
+
+/* Article */
+.news-detail{max-width:800px;margin:16px auto 40px;padding:0 20px}
+.news-detail-card{background:white;border-radius:8px;border:1px solid var(--border);overflow:hidden}
+.news-detail-header{padding:28px 28px 0}
+.news-detail-meta{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.news-date{font-size:13px;color:var(--text3)}
+.news-cat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px}
+.news-cat.store{color:#D32F2F;background:#FFEBEE}
+.news-cat.corp{color:#1565C0;background:#E3F2FD}
+.news-cat.menu{color:#00796B;background:#E0F2F1}
+.news-cat.info{color:#F57F17;background:#FFF8E1}
+.news-detail-title{font-size:22px;font-weight:700;line-height:1.5;margin-bottom:20px}
+.news-detail-image{padding:0 28px}
+.news-detail-image img{width:100%;border-radius:6px;margin-bottom:20px}
+.news-detail-body{padding:0 28px 28px;line-height:1.9;font-size:15px}
+.news-detail-body h1,.news-detail-body h2,.news-detail-body h3{margin:24px 0 12px;font-weight:700}
+.news-detail-body h2{font-size:18px;border-bottom:2px solid var(--brand-primary);padding-bottom:6px}
+.news-detail-body h3{font-size:16px}
+.news-detail-body p{margin-bottom:12px}
+.news-detail-body ul,.news-detail-body ol{margin:8px 0 16px 24px}
+.news-detail-body img{max-width:100%;border-radius:4px;margin:12px 0}
+.news-detail-back{padding:20px 28px;border-top:1px solid var(--border);text-align:center}
+.news-detail-back a{color:var(--brand-primary);font-size:14px;font-weight:500}
+.news-detail-back a:hover{text-decoration:underline}
+
+/* Footer */
+footer{background:#222;color:rgba(255,255,255,.7);margin-top:40px}
+.footer-bottom{padding:16px 20px}
+.footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
+.footer-bottom-links{display:flex;gap:16px}
+.footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4)}
+.footer-bottom-links a:hover{color:white}
+.powered{font-size:10px;color:rgba(255,255,255,.2)}
+
+/* Empty state */
+.news-empty{text-align:center;padding:60px 20px;color:var(--text3)}
+
+@media(max-width:600px){
+  .news-detail-header{padding:20px 16px 0}
+  .news-detail-image{padding:0 16px}
+  .news-detail-body{padding:0 16px 20px}
+  .news-detail-back{padding:16px}
+  .news-detail-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-main">
+    <div class="header-logo">
+      <a href="./brand.html">
+        <span class="header-logo-text" id="logo-text">ブランド名</span>
+      </a>
+    </div>
+    <a href="./aiden-brand-news.html" class="header-back">← ニュース一覧</a>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <a href="./brand.html">トップ</a> &gt;
+  <a href="./aiden-brand-news.html">ニュース</a> &gt;
+  <span id="news-bc-title">記事</span>
+</nav>
+
+<main class="news-detail">
+  <div class="news-detail-card" id="news-article" style="display:none">
+    <div class="news-detail-header">
+      <div class="news-detail-meta">
+        <span class="news-date" id="news-date"></span>
+        <span class="news-cat" id="news-cat"></span>
+      </div>
+      <h1 class="news-detail-title" id="news-title"></h1>
+    </div>
+    <div class="news-detail-image" id="news-image"></div>
+    <div class="news-detail-body" id="news-body"></div>
+    <div class="news-detail-back">
+      <a href="./aiden-brand-news.html">← ニュース一覧に戻る</a>
+    </div>
+  </div>
+  <div class="news-empty" id="news-empty" style="display:none">
+    <p>記事が見つかりませんでした。</p>
+    <a href="./aiden-brand-news.html" style="color:var(--brand-primary)">ニュース一覧に戻る</a>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-bottom">
+    <div class="footer-bottom-inner">
+      <span class="footer-copyright" id="footer-copyright">© 2026 All rights reserved.</span>
+      <div class="footer-bottom-links">
+        <a href="./legal/privacy.html">プライバシーポリシー</a>
+        <a href="./legal/terms.html">利用規約</a>
+      </div>
+      <span class="powered">Powered by AIden</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _urlParams = new URLSearchParams(window.location.search);
+const _brandParam = _urlParams.get('brand');
+const _newsId = _urlParams.get('news_id');
+const DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
+
+var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュー', info:'お知らせ'};
+
+async function resolveBrandId() {
+  var hostname = window.location.hostname;
+  if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+    var { data: domainMatch } = await sb.from('brands').select('id').eq('custom_domain', hostname).limit(1);
+    if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
+  }
+  if (!_brandParam) return DEFAULT_BRAND_ID;
+  var { data: brandBySlug } = await sb.from('brands').select('id').eq('slug', _brandParam).limit(1);
+  if (brandBySlug && brandBySlug.length > 0) return brandBySlug[0].id;
+  var prefix = _brandParam.split('-')[0];
+  var { data } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+  if (data && data.length > 0) return data[0].brand_id;
+  return DEFAULT_BRAND_ID;
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  // Propagate brand param to nav links
+  if (_brandParam) {
+    document.querySelectorAll('a[href]').forEach(function(a) {
+      var h = a.getAttribute('href');
+      if (h && (h.startsWith('./aiden-brand-') || h.startsWith('./brand')) && !h.includes('brand=')) {
+        a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
+      }
+    });
+  }
+
+  try {
+    var brandId = await resolveBrandId();
+
+    // Load brand config for styling
+    var { data: brand } = await sb.from('brands').select('name, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_text_type, logo_text_value').eq('id', brandId).single();
+    if (brand) {
+      var root = document.documentElement;
+      if (brand.primary_color) root.style.setProperty('--brand-primary', brand.primary_color);
+      if (brand.primary_dark) root.style.setProperty('--brand-primary-dark', brand.primary_dark);
+      if (brand.primary_light) root.style.setProperty('--brand-primary-light', brand.primary_light);
+      if (brand.header_bg) root.style.setProperty('--brand-header-bg', brand.header_bg);
+      if (brand.header_text_color) root.style.setProperty('--brand-header-text', brand.header_text_color);
+      if (brand.font_color) root.style.setProperty('--brand-font-color', brand.font_color);
+
+      var logoText = document.getElementById('logo-text');
+      if (brand.logo_text_type === 'image' && brand.logo_text_value) {
+        logoText.innerHTML = '<img src="' + escH(brand.logo_text_value) + '" alt="' + escH(brand.name) + '" style="height:28px;object-fit:contain">';
+      } else {
+        logoText.textContent = brand.logo_text_value || brand.name || '';
+      }
+
+      document.getElementById('footer-copyright').textContent = '© 2026 ' + (brand.name || '') + ' All rights reserved.';
+    }
+
+    // Load article
+    if (!_newsId) {
+      document.getElementById('news-empty').style.display = 'block';
+      return;
+    }
+
+    var { data: article } = await sb.from('brand_news')
+      .select('id, title, category, published_at, image_url, body, body_html, url')
+      .eq('id', _newsId)
+      .single();
+
+    if (!article) {
+      document.getElementById('news-empty').style.display = 'block';
+      return;
+    }
+
+    // Render article
+    document.getElementById('news-article').style.display = 'block';
+    document.getElementById('news-title').textContent = article.title;
+    document.getElementById('news-bc-title').textContent = article.title;
+
+    var d = new Date(article.published_at);
+    document.getElementById('news-date').textContent = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+
+    var catEl = document.getElementById('news-cat');
+    catEl.textContent = NEWS_CAT_MAP[article.category] || article.category || '';
+    if (article.category) catEl.className = 'news-cat ' + article.category;
+
+    if (article.image_url) {
+      document.getElementById('news-image').innerHTML = '<img src="' + escH(article.image_url) + '" alt="' + escH(article.title) + '">';
+    }
+
+    var bodyEl = document.getElementById('news-body');
+    if (article.body_html) {
+      bodyEl.innerHTML = article.body_html;
+    } else if (article.body) {
+      bodyEl.innerHTML = '<p>' + escH(article.body).replace(/\n/g, '</p><p>') + '</p>';
+    }
+
+    document.title = article.title + ' | ' + (brand ? brand.name : '');
+
+  } catch(e) {
+    document.getElementById('news-empty').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
