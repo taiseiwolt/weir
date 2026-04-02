@@ -282,8 +282,6 @@ footer{background:#222;color:rgba(255,255,255,.7)}
     <div class="header-logo">
       <a href="#">
         <span style="display:flex;align-items:center;gap:10px">
-          <!-- ロゴマーク：管理画面でjpg/png/svgをアップロード。未設定時は絵文字 -->
-          <span class="header-logo-mark" id="logo-mark">🔥</span>
           <!-- ロゴテキスト：管理画面で画像アップロードまたはフリーテキスト入力 -->
           <span class="header-logo-text" id="logo-text">炭火亭</span>
         </span>
@@ -292,7 +290,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
     <nav class="header-nav">
       <a href="./aiden-brand-menu.html" class="header-nav-link" data-i18n="nav_menu">メニュー</a>
       <a href="./aiden-brand-stores.html" class="header-nav-link" data-i18n="nav_stores">お店を探す</a>
-      <a href="./aiden-membership.html" class="header-nav-link" data-i18n="nav_membership">会員プログラム</a>
+      <a href="./aiden-membership.html" class="header-nav-link" data-i18n="nav_membership">会員特典</a>
       <a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="openResModal()">📅 来店予約</a>
       <a href="./aiden-order.html" class="header-nav-link cta" data-i18n="nav_order">🥡 お持ち帰り・デリバリー</a>
     </nav>
@@ -323,7 +321,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
   </div>
   <a href="./aiden-brand-menu.html" data-i18n="nav_menu">📖 メニュー</a>
   <a href="./aiden-brand-stores.html" data-i18n="nav_stores">📍 お店を探す</a>
-  <a href="./aiden-membership.html" data-i18n="nav_membership">🏆 会員プログラム</a>
+  <a href="./aiden-membership.html" data-i18n="nav_membership">🏆 会員特典</a>
   <a href="#campaign" data-i18n="nav_campaign">🎉 おすすめ</a>
 </div>
 
@@ -440,7 +438,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
     <!-- メニュー -->
     <div><div class="footer-nav-title" data-i18n="footer_menu">メニュー</div><div class="footer-nav-list"><a href="./aiden-brand-menu.html" data-i18n="f_grand_menu">グランドメニュー</a><a href="./aiden-brand-menu.html" data-i18n="f_yakiniku">焼肉・特選肉</a><a href="./aiden-brand-menu.html" data-i18n="f_rice">ご飯・麺</a><a href="./aiden-brand-menu.html" data-i18n="f_drink">ドリンク</a><a href="./aiden-brand-menu.html" data-i18n="f_course">コース・プラン</a></div></div>
     <!-- サービス -->
-    <div><div class="footer-nav-title" data-i18n="footer_service">サービス</div><div class="footer-nav-list"><a href="javascript:void(0)" data-i18n="cta_reserve" onclick="openResModal()">来店予約</a><a href="./aiden-order.html?mode=takeout" data-i18n="cta_takeout">お持ち帰り</a><a href="./aiden-order.html?mode=delivery" data-i18n="cta_delivery">デリバリー</a><a href="./aiden-membership.html" data-i18n="nav_membership">会員プログラム</a></div></div>
+    <div><div class="footer-nav-title" data-i18n="footer_service">サービス</div><div class="footer-nav-list"><a href="javascript:void(0)" data-i18n="cta_reserve" onclick="openResModal()">来店予約</a><a href="./aiden-order.html?mode=takeout" data-i18n="cta_takeout">お持ち帰り</a><a href="./aiden-order.html?mode=delivery" data-i18n="cta_delivery">デリバリー</a><a href="./aiden-membership.html" data-i18n="nav_membership">会員特典</a></div></div>
     <!-- 会社情報・採用情報 -->
     <div>
       <div class="footer-nav-title" data-i18n="footer_company">会社情報</div>
@@ -563,7 +561,7 @@ var BRAND_CONFIG = {
    ===================================================== */
 var I18N = {
   ja: {
-    nav_menu:'メニュー', nav_stores:'お店を探す', nav_membership:'会員プログラム', nav_reserve:'📅 来店予約',
+    nav_menu:'メニュー', nav_stores:'お店を探す', nav_membership:'会員特典', nav_reserve:'📅 来店予約',
     nav_order:'🥡 お持ち帰り・デリバリー', nav_order_short:'🥡 お持ち帰り', nav_campaign:'🎉 おすすめ',
     hero_catch:'うまい肉を、炭火で。\nうまい肉で、心も一杯。', hero_btn:'🔥 炭火亭のこだわり',
     sec_recommend:'おすすめ', sec_recommend_more:'おすすめ一覧',
@@ -601,7 +599,7 @@ var I18N = {
     area_aichi:'愛知', area_fukuoka:'福岡', area_hokkaido:'北海道', area_all:'全国一覧'
   },
   en: {
-    nav_menu:'Menu', nav_stores:'Find a Store', nav_membership:'Membership', nav_reserve:'📅 Reservation',
+    nav_menu:'Menu', nav_stores:'Find a Store', nav_membership:'Member Benefits', nav_reserve:'📅 Reservation',
     nav_order:'🥡 Takeout / Delivery', nav_order_short:'🥡 Takeout', nav_campaign:'🎉 Featured',    hero_catch:'Great meat, charcoal-grilled.\nGreat meat, full hearts.', hero_btn:'🔥 Our Commitment',
     sec_recommend:'Featured', sec_recommend_more:'See All',
     season_title:'🌸 Spring Classics', season_sub:'Seasonal limited menu now available', season_more:'See Seasonal Items',
@@ -638,7 +636,7 @@ var I18N = {
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'All Stores'
   },
   zh: {
-    nav_menu:'菜单', nav_stores:'查找门店', nav_reserve:'📅 预约',
+    nav_menu:'菜单', nav_stores:'查找门店', nav_membership:'会员特典', nav_reserve:'📅 预约',
     nav_order:'🥡 外带·外送', nav_order_short:'🥡 外带', nav_campaign:'🎉 推荐',
     hero_catch:'好肉，炭火烤。\n好肉，满足每一刻。', hero_btn:'🔥 我们的坚持',
     sec_recommend:'推荐', sec_recommend_more:'查看全部',
@@ -675,7 +673,7 @@ var I18N = {
     area_aichi:'爱知', area_fukuoka:'福冈', area_hokkaido:'北海道', area_all:'全国门店'
   },
   ko: {
-    nav_menu:'메뉴', nav_stores:'매장 찾기', nav_reserve:'📅 예약',
+    nav_menu:'메뉴', nav_stores:'매장 찾기', nav_membership:'회원 혜택', nav_reserve:'📅 예약',
     nav_order:'🥡 포장·배달', nav_order_short:'🥡 포장', nav_campaign:'🎉 추천',
     hero_catch:'맛있는 고기를, 숯불로.\n맛있는 고기로, 마음도 가득.', hero_btn:'🔥 숯불정의 고집',
     sec_recommend:'추천', sec_recommend_more:'전체 보기',
@@ -712,7 +710,7 @@ var I18N = {
     area_aichi:'아이치', area_fukuoka:'후쿠오카', area_hokkaido:'홋카이도', area_all:'전국 매장'
   },
   fr: {
-    nav_menu:'Menu', nav_stores:'Trouver un restaurant', nav_reserve:'📅 Réservation',
+    nav_menu:'Menu', nav_stores:'Trouver un restaurant', nav_membership:'Avantages membres', nav_reserve:'📅 Réservation',
     nav_order:'🥡 À emporter / Livraison', nav_order_short:'🥡 À emporter', nav_campaign:'🎉 À la une',
     hero_catch:'Bonne viande, au charbon de bois.\nBonne viande, cœur comblé.', hero_btn:'🔥 Notre engagement',
     sec_recommend:'À la une', sec_recommend_more:'Voir tout',
@@ -749,7 +747,7 @@ var I18N = {
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'Tous les restaurants'
   },
   it: {
-    nav_menu:'Menu', nav_stores:'Trova un ristorante', nav_reserve:'📅 Prenotazione',
+    nav_menu:'Menu', nav_stores:'Trova un ristorante', nav_membership:'Vantaggi membri', nav_reserve:'📅 Prenotazione',
     nav_order:'🥡 Asporto / Consegna', nav_order_short:'🥡 Asporto', nav_campaign:'🎉 In evidenza',
     hero_catch:'Carne buona, alla brace.\nCarne buona, cuore pieno.', hero_btn:'🔥 Il nostro impegno',
     sec_recommend:'In evidenza', sec_recommend_more:'Vedi tutto',
@@ -786,7 +784,7 @@ var I18N = {
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'Tutti i ristoranti'
   },
   id: {
-    nav_menu:'Menu', nav_stores:'Cari Restoran', nav_reserve:'📅 Reservasi',
+    nav_menu:'Menu', nav_stores:'Cari Restoran', nav_membership:'Keuntungan Member', nav_reserve:'📅 Reservasi',
     nav_order:'🥡 Bawa Pulang / Pesan Antar', nav_order_short:'🥡 Bawa Pulang', nav_campaign:'🎉 Pilihan',
     hero_catch:'Daging enak, dibakar arang.\nDaging enak, hati penuh.', hero_btn:'🔥 Komitmen Kami',
     sec_recommend:'Pilihan', sec_recommend_more:'Lihat Semua',
@@ -860,14 +858,11 @@ function applyBrandConfig() {
   document.getElementById('font-link').href =
     'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(c.fontFamily) + ':wght@300;400;500;700&display=swap';
 
-  // ロゴマーク
-  var mark = document.getElementById('logo-mark');
+  // ロゴマーク（フッターのみ）
   var footerMark = document.getElementById('footer-logo-mark');
   if (c.logoMarkType === 'image' && c.logoMarkSrc) {
-    mark.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="logo" loading="lazy">';
     footerMark.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="logo" loading="lazy">';
   } else {
-    mark.textContent = c.logoMarkEmoji;
     footerMark.textContent = c.logoMarkEmoji;
   }
   // ロゴテキスト
