@@ -358,20 +358,13 @@ footer{background:#222;color:rgba(255,255,255,.7)}
   </div>
 </div>
 
-<!-- ===== おすすめ ===== -->
+<!-- ===== キャンペーン ===== -->
 <section class="campaign-section" id="campaign">
   <div class="campaign-section-inner">
-    <div class="sec-title"><span data-i18n="sec_recommend">おすすめ</span><a href="#" class="sec-title-more" data-i18n="sec_recommend_more">おすすめ一覧</a></div>
+    <div class="sec-title"><span data-i18n="sec_campaign">キャンペーン</span></div>
     <div class="campaign-scroll" id="campaign-scroll">
-      <div class="campaign-item featured"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0000,#4a0000)"><div style="text-align:center;color:white;padding:12px"><div style="font-size:11px;margin-bottom:4px;opacity:.8" data-i18n="campaign_now">現在実施中の</div><div style="font-size:16px;font-weight:700" data-i18n="campaign_label">キャンペーン</div><div style="font-size:36px;margin-top:8px">▶</div></div></div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#2d1f0a,#8b6914)">🥩</div><div class="campaign-item-title" data-i18n="camp1">北海道産 黒毛和牛 特上カルビ祭</div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1f2d0a,#698b14)">🥩</div><div class="campaign-item-title" data-i18n="camp2">なまら特選3品盛り 期間限定</div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#0a1a2d,#145a8b)">🌸</div><div class="campaign-item-title" data-i18n="camp3">うまい肉に真っすぐ！</div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0a2d,#5a148b)">🎭</div><div class="campaign-item-title" data-i18n="camp4">炭火亭×アニメコラボ 2/4〜</div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#0a2d1a,#148b5a)">🎉</div><div class="campaign-item-title" data-i18n="camp5">「人気料理家」監修 創作焼肉</div></div>
-      <div class="campaign-item"><div class="campaign-item-img" style="background:linear-gradient(135deg,#2d1a00,#8b5200)">🍜</div><div class="campaign-item-title" data-i18n="camp6">名店監修 特製クッパ登場</div></div>
+      <!-- Populated dynamically from brand_campaigns table -->
     </div>
-    <div style="text-align:center;margin-top:16px"><a href="#" style="display:inline-block;padding:10px 32px;border:1px solid var(--border);border-radius:3px;font-size:13px;color:var(--text2)" data-i18n="sec_recommend_more">おすすめ一覧</a></div>
   </div>
 </section>
 
@@ -584,7 +577,7 @@ var I18N = {
     nav_menu:'メニュー', nav_stores:'お店を探す', nav_membership:'会員特典', nav_reserve:'📅 来店予約',
     nav_order:'🥡 お持ち帰り・デリバリー', nav_order_short:'🥡 お持ち帰り', nav_campaign:'🎉 おすすめ',
     hero_catch:'うまい肉を、炭火で。\nうまい肉で、心も一杯。', hero_btn:'🔥 炭火亭のこだわり',
-    sec_recommend:'おすすめ', sec_recommend_more:'おすすめ一覧',
+    sec_campaign:'キャンペーン',
     season_title:'🌸 春の定番商品', season_sub:'季節限定の絶品メニューが登場', season_more:'季節の定番商品を見る',
     cta_reserve:'来店予約', cta_reserve_sub:'空席確認・来店予約',
     cta_takeout:'お持ち帰り', cta_takeout_sub:'テイクアウト注文',
@@ -595,10 +588,6 @@ var I18N = {
     sns_title:'公式SNS', sns_sub:'フォローして最新情報をゲットしよう',
     footer_desc:'厳選した国産黒毛和牛を備長炭で焼き上げる本格焼肉。',
     footer_menu:'メニュー', footer_service:'サービス', footer_company:'企業情報',
-    campaign_now:'現在実施中の', campaign_label:'キャンペーン',
-    camp1:'北海道産 黒毛和牛 特上カルビ祭', camp2:'なまら特選3品盛り 期間限定',
-    camp3:'うまい肉に真っすぐ！', camp4:'炭火亭×アニメコラボ 2/4〜',
-    camp5:'「人気料理家」監修 創作焼肉', camp6:'名店監修 特製クッパ登場',
     guide1:'LINE公式アカウント<br>友だち募集中！', guide2:'デジタル炭火亭ギフト<br>贈り物に最適',
     guide3:'60歳以上のお客様対象<br>シニアカード配布中', guide4:'キャッシュレス決済が<br>さらに便利になりました！',
     cat_store:'お店情報', cat_corp:'会社情報', cat_menu:'メニュー',
@@ -621,7 +610,7 @@ var I18N = {
   en: {
     nav_menu:'Menu', nav_stores:'Find a Store', nav_membership:'Member Benefits', nav_reserve:'📅 Reservation',
     nav_order:'🥡 Takeout / Delivery', nav_order_short:'🥡 Takeout', nav_campaign:'🎉 Featured',    hero_catch:'Great meat, charcoal-grilled.\nGreat meat, full hearts.', hero_btn:'🔥 Our Commitment',
-    sec_recommend:'Featured', sec_recommend_more:'See All',
+    sec_campaign:'Campaigns',
     season_title:'🌸 Spring Classics', season_sub:'Seasonal limited menu now available', season_more:'See Seasonal Items',
     cta_reserve:'Reservation', cta_reserve_sub:'Check availability',
     cta_takeout:'Takeout', cta_takeout_sub:'Order for pickup',
@@ -632,10 +621,6 @@ var I18N = {
     sns_title:'Official SNS', sns_sub:'Follow us for the latest updates',
     footer_desc:'Premium Japanese wagyu, grilled over charcoal.',
     footer_menu:'Menu', footer_service:'Services', footer_company:'Company',
-    campaign_now:'Currently running', campaign_label:'Campaign',
-    camp1:'Hokkaido Wagyu Premium Kalbi Festival', camp2:'Special 3-item Platter – Limited Time',
-    camp3:'Straight to the Best Meat!', camp4:'Sumibite × Anime Collab from Feb 4',
-    camp5:'Creative Yakiniku by Popular Chef', camp6:'Special Koppamtang by Renowned Chef',
     guide1:'Official LINE Account<br>Now Accepting Friends!', guide2:'Digital Sumibite Gift<br>Perfect for Presents',
     guide3:'For Customers 60+<br>Senior Card Available', guide4:'Cashless Payment<br>Now Even More Convenient!',
     cat_store:'Store Info', cat_corp:'Company', cat_menu:'Menu',
@@ -659,7 +644,7 @@ var I18N = {
     nav_menu:'菜单', nav_stores:'查找门店', nav_membership:'会员特典', nav_reserve:'📅 预约',
     nav_order:'🥡 外带·外送', nav_order_short:'🥡 外带', nav_campaign:'🎉 推荐',
     hero_catch:'好肉，炭火烤。\n好肉，满足每一刻。', hero_btn:'🔥 我们的坚持',
-    sec_recommend:'推荐', sec_recommend_more:'查看全部',
+    sec_campaign:'活动',
     season_title:'🌸 春季限定', season_sub:'季节限定精品菜单', season_more:'查看季节菜单',
     cta_reserve:'预约', cta_reserve_sub:'查询空位・席位预约',
     cta_takeout:'外带', cta_takeout_sub:'自取点餐',
@@ -669,10 +654,6 @@ var I18N = {
     sns_title:'官方社交媒体', sns_sub:'关注我们获取最新信息',
     footer_desc:'精选国产黑毛和牛，备长炭烧烤。',
     footer_menu:'菜单', footer_service:'服务', footer_company:'公司信息',
-    campaign_now:'正在进行中', campaign_label:'活动',
-    camp1:'北海道和牛特上牛肋排节', camp2:'精选三品拼盘 限时供应',
-    camp3:'直奔好肉！', camp4:'炭火亭×动漫联名 2/4起',
-    camp5:'人气料理家监制 创意烤肉', camp6:'名店监制 特制牛骨汤登场',
     guide1:'LINE官方账号<br>欢迎加好友！', guide2:'数字礼品券<br>送礼首选',
     guide3:'60岁以上顾客专享<br>老年卡发放中', guide4:'无现金支付<br>更加便利！',
     cat_store:'门店信息', cat_corp:'公司信息', cat_menu:'菜单',
@@ -696,7 +677,7 @@ var I18N = {
     nav_menu:'메뉴', nav_stores:'매장 찾기', nav_membership:'회원 혜택', nav_reserve:'📅 예약',
     nav_order:'🥡 포장·배달', nav_order_short:'🥡 포장', nav_campaign:'🎉 추천',
     hero_catch:'맛있는 고기를, 숯불로.\n맛있는 고기로, 마음도 가득.', hero_btn:'🔥 숯불정의 고집',
-    sec_recommend:'추천', sec_recommend_more:'전체 보기',
+    sec_campaign:'캠페인',
     season_title:'🌸 봄 한정 메뉴', season_sub:'계절 한정 특별 메뉴 등장', season_more:'계절 메뉴 보기',
     cta_reserve:'예약', cta_reserve_sub:'빈 자리 확인・예약',
     cta_takeout:'포장', cta_takeout_sub:'테이크아웃 주문',
@@ -706,10 +687,6 @@ var I18N = {
     sns_title:'공식 SNS', sns_sub:'팔로우하고 최신 정보를 받아보세요',
     footer_desc:'엄선한 국산 흑모화우를 비장탄으로 구운 정통 야키니쿠.',
     footer_menu:'메뉴', footer_service:'서비스', footer_company:'기업 정보',
-    campaign_now:'현재 진행 중인', campaign_label:'캠페인',
-    camp1:'홋카이도산 와규 특상 갈비 축제', camp2:'특선 3품 모둠 기간 한정',
-    camp3:'맛있는 고기를 향해 직진!', camp4:'탄화정×애니메 콜라보 2/4~',
-    camp5:'인기 요리사 감수 창작 야키니쿠', camp6:'명점 감수 특제 곰탕 등장',
     guide1:'LINE 공식 계정<br>친구 추가 모집 중!', guide2:'디지털 선물권<br>선물로 제격',
     guide3:'60세 이상 고객 대상<br>시니어 카드 배포 중', guide4:'캐시리스 결제<br>더욱 편리해졌습니다!',
     cat_store:'매장 정보', cat_corp:'회사 정보', cat_menu:'메뉴',
@@ -733,7 +710,7 @@ var I18N = {
     nav_menu:'Menu', nav_stores:'Trouver un restaurant', nav_membership:'Avantages membres', nav_reserve:'📅 Réservation',
     nav_order:'🥡 À emporter / Livraison', nav_order_short:'🥡 À emporter', nav_campaign:'🎉 À la une',
     hero_catch:'Bonne viande, au charbon de bois.\nBonne viande, cœur comblé.', hero_btn:'🔥 Notre engagement',
-    sec_recommend:'À la une', sec_recommend_more:'Voir tout',
+    sec_campaign:'Campagnes',
     season_title:'🌸 Spécialités de saison', season_sub:'Menu limité disponible', season_more:'Voir le menu saisonnier',
     cta_reserve:'Réservation', cta_reserve_sub:'Vérifier la disponibilité',
     cta_takeout:'À emporter', cta_takeout_sub:'Commander à emporter',
@@ -743,10 +720,6 @@ var I18N = {
     sns_title:'SNS Officiels', sns_sub:'Suivez-nous pour les dernières nouvelles',
     footer_desc:'Wagyu japonais premium grillé au charbon de bois.',
     footer_menu:'Menu', footer_service:'Services', footer_company:'Entreprise',
-    campaign_now:'En cours', campaign_label:'Campagne',
-    camp1:'Festival Wagyu Hokkaido Kalbi', camp2:'Plateau 3 spécialités – Limité',
-    camp3:'Droit au but : la meilleure viande!', camp4:'Sumibite × Collab Anime dès le 4/2',
-    camp5:'Yakiniku créatif par un chef réputé', camp6:'Soupe spéciale par un chef renommé',
     guide1:'Compte LINE Officiel<br>Rejoignez-nous!', guide2:'Bon cadeau numérique<br>Idéal en cadeau',
     guide3:'Pour les 60 ans et plus<br>Carte Senior disponible', guide4:'Paiement sans espèces<br>Plus pratique que jamais!',
     cat_store:'Info magasin', cat_corp:'Entreprise', cat_menu:'Menu',
@@ -770,7 +743,7 @@ var I18N = {
     nav_menu:'Menu', nav_stores:'Trova un ristorante', nav_membership:'Vantaggi membri', nav_reserve:'📅 Prenotazione',
     nav_order:'🥡 Asporto / Consegna', nav_order_short:'🥡 Asporto', nav_campaign:'🎉 In evidenza',
     hero_catch:'Carne buona, alla brace.\nCarne buona, cuore pieno.', hero_btn:'🔥 Il nostro impegno',
-    sec_recommend:'In evidenza', sec_recommend_more:'Vedi tutto',
+    sec_campaign:'Campagne',
     season_title:'🌸 Stagionale', season_sub:'Menu stagionale disponibile', season_more:'Vedi menu stagionale',
     cta_reserve:'Prenotazione', cta_reserve_sub:'Controlla disponibilità',
     cta_takeout:'Asporto', cta_takeout_sub:'Ordina da asporto',
@@ -780,10 +753,6 @@ var I18N = {
     sns_title:'SNS Ufficiali', sns_sub:'Seguici per le ultime novità',
     footer_desc:'Wagyu giapponese premium grigliato su carbone di legna.',
     footer_menu:'Menu', footer_service:'Servizi', footer_company:'Azienda',
-    campaign_now:'In corso', campaign_label:'Campagna',
-    camp1:'Festival Wagyu Hokkaido Kalbi', camp2:'Piatto 3 specialità – Limitato',
-    camp3:'Dritto alla carne migliore!', camp4:'Sumibite × Collab Anime dal 4/2',
-    camp5:'Yakiniku creativo dallo chef', camp6:'Zuppa speciale dello chef',
     guide1:'Account LINE Ufficiale<br>Seguici!', guide2:'Gift Card Digitale<br>Perfetto come regalo',
     guide3:'Per clienti 60+<br>Carta Senior disponibile', guide4:'Pagamento cashless<br>Ancora più comodo!',
     cat_store:'Info negozio', cat_corp:'Azienda', cat_menu:'Menu',
@@ -807,7 +776,7 @@ var I18N = {
     nav_menu:'Menu', nav_stores:'Cari Restoran', nav_membership:'Keuntungan Member', nav_reserve:'📅 Reservasi',
     nav_order:'🥡 Bawa Pulang / Pesan Antar', nav_order_short:'🥡 Bawa Pulang', nav_campaign:'🎉 Pilihan',
     hero_catch:'Daging enak, dibakar arang.\nDaging enak, hati penuh.', hero_btn:'🔥 Komitmen Kami',
-    sec_recommend:'Pilihan', sec_recommend_more:'Lihat Semua',
+    sec_campaign:'Kampanye',
     season_title:'🌸 Menu Musiman', season_sub:'Menu musiman terbatas tersedia', season_more:'Lihat Menu Musiman',
     cta_reserve:'Reservasi', cta_reserve_sub:'Cek ketersediaan meja',
     cta_takeout:'Bawa Pulang', cta_takeout_sub:'Pesan untuk dibawa',
@@ -817,10 +786,6 @@ var I18N = {
     sns_title:'SNS Resmi', sns_sub:'Ikuti kami untuk informasi terbaru',
     footer_desc:'Wagyu Jepang premium yang dibakar di atas arang.',
     footer_menu:'Menu', footer_service:'Layanan', footer_company:'Perusahaan',
-    campaign_now:'Sedang berlangsung', campaign_label:'Kampanye',
-    camp1:'Festival Wagyu Hokkaido Kalbi', camp2:'Paket 3 Spesial – Terbatas',
-    camp3:'Langsung ke Daging Terbaik!', camp4:'Sumibite × Kolaborasi Anime mulai 4/2',
-    camp5:'Yakiniku Kreatif oleh Chef Populer', camp6:'Sup Spesial oleh Chef Ternama',
     guide1:'Akun LINE Resmi<br>Daftar Sekarang!', guide2:'Gift Card Digital<br>Hadiah Sempurna',
     guide3:'Untuk Pelanggan 60+<br>Kartu Senior Tersedia', guide4:'Pembayaran Cashless<br>Semakin Mudah!',
     cat_store:'Info Toko', cat_corp:'Perusahaan', cat_menu:'Menu',
@@ -983,12 +948,6 @@ function applyBrandConfig() {
   // フッターブランド説明
   var footerDesc = document.querySelector('.footer-brand-desc');
   if (footerDesc && c.brandDescription) footerDesc.textContent = c.brandDescription;
-
-  // おすすめ一覧リンク → メニューページ
-  var menuUrl = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
-  document.querySelectorAll('.sec-title-more, .campaign-section a[data-i18n="sec_recommend_more"]').forEach(function(a) {
-    a.href = menuUrl;
-  });
 }
 
 /* =====================================================
@@ -1086,6 +1045,41 @@ async function loadFromSupabase() {
       renderHeroCarousel(heroSlidesRes.data, brandRes.data ? brandRes.data.primary_color : null);
     }
 
+    // Load campaigns
+    var today = new Date().toISOString().split('T')[0];
+    var campaignsRes = await sb.from('brand_campaigns')
+      .select('id, title, description, media_url, media_type, link_url, start_date, end_date, sort_order')
+      .eq('brand_id', brandId)
+      .eq('is_active', true)
+      .or('start_date.is.null,start_date.lte.' + today)
+      .or('end_date.is.null,end_date.gte.' + today)
+      .order('sort_order');
+
+    if (campaignsRes.data && campaignsRes.data.length > 0) {
+      var cs = document.getElementById('campaign-scroll');
+      if (cs) {
+        cs.innerHTML = campaignsRes.data.map(function(c) {
+          var mediaHtml = '';
+          if (c.media_url) {
+            if (c.media_type === 'video') {
+              mediaHtml = '<video src="' + escH(c.media_url) + '" controls preload="metadata" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px"></video>';
+            } else {
+              mediaHtml = '<div class="campaign-item-img" style="background:url(' + encodeURI(c.media_url) + ') center/cover no-repeat"></div>';
+            }
+          } else {
+            mediaHtml = '<div class="campaign-item-img" style="background:linear-gradient(135deg,var(--brand-primary-dark),var(--brand-primary))"></div>';
+          }
+          var wrapper = c.link_url ? 'a href="' + escH(c.link_url) + '"' : 'div';
+          var wrapperClose = c.link_url ? 'a' : 'div';
+          return '<' + wrapper + ' class="campaign-item" style="text-decoration:none;color:inherit">' + mediaHtml + '<div class="campaign-item-title">' + escH(c.title) + '</div></' + wrapperClose + '>';
+        }).join('');
+      }
+    } else {
+      // Hide campaign section if no campaigns
+      var campSection = document.querySelector('.campaign-section');
+      if (campSection) campSection.style.display = 'none';
+    }
+
     // 3. Load stores for reservation dropdown
     var storesRes = await sb.from('stores').select('id,name').eq('brand_id', brandId).order('name');
     if (storesRes.data && storesRes.data.length > 0) {
@@ -1128,7 +1122,6 @@ async function loadFromSupabase() {
     var mediaRes = await sb.from('media').select('id, entity_type, entity_id, media_type, url, title, sort_order').eq('entity_type', 'brand').eq('entity_id', brandId).order('sort_order');
     if (mediaRes.data && mediaRes.data.length > 0) {
       var heroMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_hero'; });
-      var recMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_recommend'; });
       var guideMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_guide'; });
 
       // Hero background image (fallback if no brand_hero_slides)
@@ -1136,18 +1129,6 @@ async function loadFromSupabase() {
         renderHeroCarousel(heroMedia.map(function(m) {
           return { media_url: m.url, media_type: 'image', alt_text: m.title };
         }), BRAND_CONFIG.primaryColor);
-      }
-
-      // Recommend section
-      if (recMedia.length > 0) {
-        var cs = document.getElementById('campaign-scroll');
-        if (cs) {
-          var menuLink = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
-          cs.innerHTML = '<a href="' + escH(menuLink) + '" class="campaign-item featured" style="text-decoration:none;color:inherit"><div class="campaign-item-img" style="background:linear-gradient(135deg,#1a0000,#4a0000)"><div style="text-align:center;color:white;padding:12px"><div style="font-size:11px;margin-bottom:4px;opacity:.8">現在実施中の</div><div style="font-size:16px;font-weight:700">キャンペーン</div><div style="font-size:36px;margin-top:8px">▶</div></div></div></a>'
-            + recMedia.map(function(m){
-              return '<a href="' + escH(menuLink) + '" class="campaign-item" style="text-decoration:none;color:inherit"><div class="campaign-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="campaign-item-title">' + escH(m.title || '') + '</div></a>';
-            }).join('');
-        }
       }
 
       // Guide section
