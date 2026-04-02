@@ -15,10 +15,12 @@
     { "source": "/api/orders/:id/:action", "destination": "/api/orders/__root?id=:id&action=:action" },
     { "source": "/api/orders/:id", "destination": "/api/orders/__root?id=:id" },
     { "source": "/api/chat", "destination": "/api/chat/__root" },
-    { "source": "/", "destination": "/aiden-brand-sushiro.html" },
+    { "source": "/", "destination": "/brand.html" },
     { "source": "/legal", "destination": "/legal/index.html" },
     { "source": "/legal/", "destination": "/legal/index.html" },
     { "source": "/legal/:path", "destination": "/legal/:path" },
+    { "source": "/aiden-brand-sushiro.html", "destination": "/brand.html" },
+    { "source": "/:slug((?!api|legal|aiden-|brand|404|index|test-|e2e-|playwright|seed-|qa-|docs).*)", "destination": "/brand.html?brand=:slug" },
     { "source": "/((?!api/|legal/).*)", "destination": "/404.html" }
   ],
   "headers": [

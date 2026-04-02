@@ -8,7 +8,7 @@
     <meta property="og:title" content="焼肉 炭火亭 | うまい肉を、炭火で。">
     <meta property="og:description" content="焼肉 炭火亭の公式サイト。こだわりの炭火焼きで最高の焼肉体験を。">
     <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-brand-sushiro.html">
+    <meta property="og:url" content="https://aiden-jp.net/brand.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AIden">
     <meta name="twitter:card" content="summary_large_image">
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (_brandParam) {
     document.querySelectorAll('a[href]').forEach(function(a) {
       var h = a.getAttribute('href');
-      if (h && h.startsWith('./aiden-brand-') && !h.includes('brand=')) {
+      if (h && (h.startsWith('./aiden-brand-') || h === './brand.html') && !h.includes('brand=')) {
         a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
       }
     });

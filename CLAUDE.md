@@ -70,7 +70,7 @@ aiden-demo/
 ├── aiden-brand-menu.html             # ブランドメニュー一覧
 ├── aiden-brand-news.html             # ブランドニュース
 ├── aiden-brand-stores.html           # ブランド店舗一覧
-├── aiden-brand-sushiro.html          # ブランドHPトップ（スシローデモ）
+├── brand.html                        # ブランドHPトップ（スシローデモ）
 ├── aiden-customer-admin.html         # 顧客管理画面（店舗管理者向け）
 ├── aiden-guest-order.html            # ゲスト注文フロー（UIプロトタイプ）
 ├── aiden-membership.html             # メンバーシッププログラム
