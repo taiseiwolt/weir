@@ -1060,6 +1060,19 @@ let STORE_DATA = {
 
 // Current order mode (passed from aiden-order-v17)
 let orderMode = 'delivery'; // 'takeout' or 'delivery'
+// Read type from URL parameter
+(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var typeParam = urlParams.get('type');
+  if (typeParam === 'takeout' || typeParam === 'delivery' || typeParam === 'dinein') {
+    orderMode = typeParam;
+  }
+  // Also check sessionStorage for mode passed from order page
+  try {
+    var stored = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+    if (stored.orderMode && !typeParam) orderMode = stored.orderMode;
+  } catch(e) {}
+})();
 let userAddress = ''; // entered address text
 let userLat = null;
 let userLng = null;
