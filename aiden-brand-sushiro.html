@@ -1075,10 +1075,12 @@ async function loadFromSupabase() {
     if (companyLinks) {
       var html = '';
       if (brandRes.data && brandRes.data.memo) {
-        var lines = brandRes.data.memo.split('\n');
-        lines.forEach(function(line) {
-          if (line.trim()) html += '<span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">' + escH(line.trim()) + '</span>';
-        });
+        var lines = brandRes.data.memo.split('\n').filter(function(l){ return l.trim(); });
+        if (lines.length >= 1) html += '<span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">運営会社: ' + escH(lines[0].trim()) + '</span>';
+        if (lines.length >= 2) html += '<span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">所在地: ' + escH(lines[1].trim()) + '</span>';
+        for (var li = 2; li < lines.length; li++) {
+          html += '<span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">' + escH(lines[li].trim()) + '</span>';
+        }
       }
       if (BRAND_CONFIG.companyUrl) html += '<a href="' + escH(BRAND_CONFIG.companyUrl) + '" target="_blank" rel="noopener" style="font-size:12px">公式サイト</a>';
       if (BRAND_CONFIG.recruitUrl) html += '<br><a href="' + escH(BRAND_CONFIG.recruitUrl) + '" target="_blank" rel="noopener" style="font-size:12px">採用情報</a>';
