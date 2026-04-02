@@ -196,7 +196,7 @@ img{max-width:100%}
 
 /* ===== FOOTER ===== */
 footer{background:#222;color:rgba(255,255,255,.7)}
-.footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr;gap:36px}
+.footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
 .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .footer-logo-mark{width:36px;height:36px;background:var(--brand-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;font-weight:700;flex-shrink:0;overflow:hidden}
 .footer-logo-mark img{width:100%;height:100%;object-fit:cover;border-radius:50%}
@@ -215,7 +215,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 .powered{font-size:10px;color:rgba(255,255,255,.2)}
 
 /* ===== FLOAT ORDER ===== */
-.float-order{position:fixed;bottom:20px;right:20px;z-index:500}
+.float-order{position:fixed;bottom:20px;right:15px;z-index:500}
 .float-order-btn{display:flex;align-items:center;gap:10px;background:var(--brand-primary);color:white;padding:13px 20px;border-radius:50px;box-shadow:0 4px 20px rgba(211,47,47,.5);border:none;font-family:var(--brand-font);font-size:13px;font-weight:700;letter-spacing:.05em;transition:all .2s;text-decoration:none}
 .float-order-btn:hover{background:var(--brand-primary-dark);transform:translateY(-2px)}
 .float-order-pulse{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#FF8F00;animation:pulse 2s infinite}
@@ -445,20 +445,23 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 <footer>
   <div class="footer-main">
     <div>
-      <div class="footer-logo"><div class="footer-logo-mark" id="footer-logo-mark">🔥</div><div class="footer-logo-text" id="footer-logo-text">炭火亭</div></div>
+      <div class="footer-logo"><div class="footer-logo-text" id="footer-logo-text">炭火亭</div></div>
       <div class="footer-brand-desc" data-i18n="footer_desc">厳選した国産黒毛和牛を備長炭で焼き上げる本格焼肉。</div>
     </div>
     <!-- メニュー -->
     <div><div class="footer-nav-title" data-i18n="footer_menu">メニュー</div><div class="footer-nav-list"><a href="./aiden-brand-menu.html" data-i18n="f_grand_menu">グランドメニュー</a><a href="./aiden-brand-menu.html" data-i18n="f_yakiniku">焼肉・特選肉</a><a href="./aiden-brand-menu.html" data-i18n="f_rice">ご飯・麺</a><a href="./aiden-brand-menu.html" data-i18n="f_drink">ドリンク</a><a href="./aiden-brand-menu.html" data-i18n="f_course">コース・プラン</a></div></div>
     <!-- サービス -->
     <div><div class="footer-nav-title" data-i18n="footer_service">サービス</div><div class="footer-nav-list"><a href="javascript:void(0)" data-i18n="cta_reserve" onclick="openResModal()">来店予約</a><a href="./aiden-order.html?mode=takeout" data-i18n="cta_takeout">お持ち帰り</a><a href="./aiden-order.html?mode=delivery" data-i18n="cta_delivery">デリバリー</a><a href="./aiden-membership.html" data-i18n="nav_membership">会員特典</a></div></div>
-    <!-- 会社情報・採用情報 -->
+    <!-- 会社情報 -->
     <div>
       <div class="footer-nav-title" data-i18n="footer_company">会社情報</div>
       <div class="footer-nav-list" id="footer-company-links">
         <!-- companyUrl/recruitUrl が設定されている場合のみ表示（applyBrand()で動的生成） -->
       </div>
-      <div class="footer-nav-title" style="margin-top:16px" data-i18n="footer_news">ニュース・キャンペーン</div>
+    </div>
+    <!-- ニュース・キャンペーン -->
+    <div>
+      <div class="footer-nav-title" data-i18n="footer_news">ニュース・キャンペーン</div>
       <div class="footer-nav-list"><a href="./aiden-brand-news.html" data-i18n="news_more_link">ニュース一覧</a></div>
     </div>
   </div>
@@ -916,22 +919,18 @@ function applyBrandConfig() {
   document.getElementById('font-link').href =
     'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(c.fontFamily) + ':wght@300;400;500;700&display=swap';
 
-  // ロゴマーク（フッターのみ）
-  var footerMark = document.getElementById('footer-logo-mark');
-  if (c.logoMarkType === 'image' && c.logoMarkSrc) {
-    footerMark.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="logo" loading="lazy">';
-  } else {
-    footerMark.textContent = c.logoMarkEmoji;
-  }
   // ロゴテキスト
   var txt = document.getElementById('logo-text');
   var footerTxt = document.getElementById('footer-logo-text');
   if (c.logoTextType === 'image' && c.logoTextValue) {
     txt.innerHTML = '<img src="'+escH(c.logoTextValue)+'" alt="'+escH(c.name)+'" loading="lazy">';
-    footerTxt.textContent = c.name;
+    footerTxt.innerHTML = '<img src="'+escH(c.logoTextValue)+'" alt="'+escH(c.name)+'" loading="lazy" style="height:32px;object-fit:contain">';
+  } else if (c.logoMarkType === 'image' && c.logoMarkSrc) {
+    txt.textContent = c.logoTextValue;
+    footerTxt.innerHTML = '<img src="'+escH(c.logoMarkSrc)+'" alt="'+escH(c.name)+'" loading="lazy" style="height:28px;object-fit:contain;margin-right:8px;vertical-align:middle"><span>'+escH(c.logoTextValue || c.name)+'</span>';
   } else {
     txt.textContent = c.logoTextValue;
-    footerTxt.textContent = c.logoTextValue;
+    footerTxt.textContent = c.logoTextValue || c.name;
   }
 
   // ページタイトル
