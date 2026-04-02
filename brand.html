@@ -90,6 +90,20 @@ img{max-width:100%}
 .hero-catch{font-size:clamp(24px,4vw,44px);font-weight:700;color:white;line-height:1.4;margin-bottom:20px;font-family:'Noto Serif JP',serif;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 .hero-play-pause{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.5);color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:14px;display:flex;align-items:center;justify-content:center}
 
+/* ===== HERO CAROUSEL ===== */
+.hero-carousel{position:relative;width:100%;height:100%}
+.hero-slides{display:flex;transition:transform .6s ease;height:100%}
+.hero-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center}
+.hero-slide img{max-width:100%;max-height:100%;object-fit:contain}
+.hero-slide video{max-width:100%;max-height:100%;object-fit:contain}
+.hero-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.hero-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);border:none;cursor:pointer;padding:0;transition:background .2s}
+.hero-dot.active{background:white}
+.hero-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.3);color:white;border:none;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.hero-arrow:hover{background:rgba(0,0,0,.5)}
+.hero-arrow.prev{left:12px}
+.hero-arrow.next{right:12px}
+
 /* ===== CAMPAIGN ===== */
 .campaign-section{padding:32px 0;background:white}
 .campaign-section-inner{max-width:1100px;margin:0 auto;padding:0 20px}
@@ -327,14 +341,20 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 
 <!-- ===== HERO ===== -->
 <div class="hero">
-  <div class="hero-video-wrap">
-    <div class="hero-video-placeholder" id="hero-bg">🥩</div>
+  <div class="hero-video-wrap" id="hero-wrap">
+    <div class="hero-carousel" id="hero-carousel">
+      <div class="hero-slides" id="hero-slides">
+        <div class="hero-slide" id="hero-bg" style="background:linear-gradient(135deg,#1a0000 0%,#4a0e0e 40%,#2a0000 100%);display:flex;align-items:center;justify-content:center;font-size:120px">🥩</div>
+      </div>
+      <button class="hero-arrow prev" onclick="heroSlide(-1)">&#8249;</button>
+      <button class="hero-arrow next" onclick="heroSlide(1)">&#8250;</button>
+      <div class="hero-dots" id="hero-dots"></div>
+    </div>
     <div class="hero-overlay">
       <div class="hero-content">
         <div class="hero-catch" id="hero-catch" data-i18n="hero_catch">うまい肉を、炭火で。<br>うまい肉で、心も一杯。</div>
       </div>
     </div>
-    <button class="hero-play-pause" id="hero-pp" onclick="toggleVideo()">⏸</button>
   </div>
 </div>
 
@@ -843,6 +863,79 @@ function changeLang(lang) {
 }
 
 /* =====================================================
+   HERO CAROUSEL
+   ===================================================== */
+var heroCurrentSlide = 0;
+var heroSlideCount = 1;
+var heroAutoplayTimer = null;
+
+function heroSlide(dir) {
+  heroCurrentSlide = (heroCurrentSlide + dir + heroSlideCount) % heroSlideCount;
+  updateHeroSlide();
+  resetHeroAutoplay();
+}
+
+function heroGoTo(idx) {
+  heroCurrentSlide = idx;
+  updateHeroSlide();
+  resetHeroAutoplay();
+}
+
+function updateHeroSlide() {
+  var slides = document.getElementById('hero-slides');
+  if (slides) slides.style.transform = 'translateX(-' + (heroCurrentSlide * 100) + '%)';
+  document.querySelectorAll('.hero-dot').forEach(function(d, i) {
+    d.classList.toggle('active', i === heroCurrentSlide);
+  });
+}
+
+function resetHeroAutoplay() {
+  if (heroAutoplayTimer) clearInterval(heroAutoplayTimer);
+  if (heroSlideCount > 1) {
+    heroAutoplayTimer = setInterval(function() {
+      heroCurrentSlide = (heroCurrentSlide + 1) % heroSlideCount;
+      updateHeroSlide();
+    }, 5000);
+  }
+}
+
+function renderHeroCarousel(slides, brandColor) {
+  var container = document.getElementById('hero-slides');
+  var dotsContainer = document.getElementById('hero-dots');
+  if (!container || !slides || slides.length === 0) return;
+
+  var bgColor = brandColor || 'var(--brand-primary)';
+  container.innerHTML = slides.map(function(s) {
+    if (s.media_type === 'video') {
+      return '<div class="hero-slide" style="background:' + escH(bgColor) + '"><video src="' + escH(s.media_url) + '" autoplay muted loop playsinline style="max-width:100%;max-height:100%;object-fit:contain"></video></div>';
+    }
+    return '<div class="hero-slide" style="background:' + escH(bgColor) + '"><img src="' + escH(s.media_url) + '" alt="' + escH(s.alt_text || '') + '" loading="lazy"></div>';
+  }).join('');
+
+  heroSlideCount = slides.length;
+  heroCurrentSlide = 0;
+
+  if (dotsContainer && slides.length > 1) {
+    dotsContainer.innerHTML = slides.map(function(_, i) {
+      return '<button class="hero-dot' + (i === 0 ? ' active' : '') + '" onclick="heroGoTo(' + i + ')"></button>';
+    }).join('');
+  }
+
+  resetHeroAutoplay();
+
+  // Touch/swipe support
+  var startX = 0;
+  var wrap = document.getElementById('hero-wrap');
+  if (wrap) {
+    wrap.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive: true});
+    wrap.addEventListener('touchend', function(e) {
+      var diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) heroSlide(diff > 0 ? 1 : -1);
+    }, {passive: true});
+  }
+}
+
+/* =====================================================
    BRAND CONFIG 適用
    ===================================================== */
 function applyBrandConfig() {
@@ -937,10 +1030,6 @@ document.addEventListener('click', function(e) {
     if (nav) { nav.classList.remove('open'); document.getElementById('hamburger').textContent = '☰'; }
   }
 });
-function toggleVideo() {
-  var btn = document.getElementById('hero-pp');
-  btn.textContent = btn.textContent === '⏸' ? '▶' : '⏸';
-}
 function goStoreSearch(area) {
   var q = area || document.getElementById('store-search-q').value;
   var params = [];
@@ -953,6 +1042,7 @@ function goStoreSearch(area) {
 var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュー', info:'お知らせ'};
 
 async function loadFromSupabase() {
+  var heroSlidesRes = null;
   try {
     // 1. Resolve brand_id from URL param or default
     var brandId = await resolveBrandId();
@@ -988,6 +1078,12 @@ async function loadFromSupabase() {
         var heroEl = document.getElementById('hero-catch');
         if (heroEl) heroEl.textContent = b.hero_catchphrase;
       }
+    }
+
+    // Load hero slides for carousel
+    heroSlidesRes = await sb.from('brand_hero_slides').select('media_url, media_type, alt_text, sort_order').eq('brand_id', brandId).eq('is_active', true).order('sort_order');
+    if (heroSlidesRes.data && heroSlidesRes.data.length > 0) {
+      renderHeroCarousel(heroSlidesRes.data, brandRes.data ? brandRes.data.primary_color : null);
     }
 
     // 3. Load stores for reservation dropdown
@@ -1035,13 +1131,11 @@ async function loadFromSupabase() {
       var recMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_recommend'; });
       var guideMedia = mediaRes.data.filter(function(m){ return m.media_type === 'brand_guide'; });
 
-      // Hero background image
-      if (heroMedia.length > 0) {
-        var heroBg = document.getElementById('hero-bg');
-        if (heroBg) {
-          heroBg.textContent = '';
-          heroBg.style.background = 'url(' + encodeURI(heroMedia[0].url) + ') center/cover no-repeat';
-        }
+      // Hero background image (fallback if no brand_hero_slides)
+      if (heroMedia.length > 0 && !(heroSlidesRes && heroSlidesRes.data && heroSlidesRes.data.length > 0)) {
+        renderHeroCarousel(heroMedia.map(function(m) {
+          return { media_url: m.url, media_type: 'image', alt_text: m.title };
+        }), BRAND_CONFIG.primaryColor);
       }
 
       // Recommend section
