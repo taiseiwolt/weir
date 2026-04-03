@@ -1229,6 +1229,10 @@ window.addEventListener('load', async function(){
     }
   });
 
+  /* Override header lang-select to use local changeLang wrapper */
+  var langSel = document.getElementById('lang-select');
+  if (langSel) langSel.onchange = function() { changeLang(this.value); };
+
   /* Map */
   var el = document.getElementById('main-map');
   if(el){

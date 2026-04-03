@@ -6,11 +6,14 @@
 <title>注文の最終確認 | AIden モバイルオーダー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="./aiden-common.css">
+<script src="./aiden-common.js"></script>
 <style>
 :root {
-  --brand: #D32F2F;
-  --brand-dark: #B71C1C;
-  --brand-light: #FFEBEE;
+  --brand: var(--brand-primary);
+  --brand-dark: var(--brand-primary-dark);
+  --brand-light: var(--brand-primary-light);
   --brand-lighter: #FFF5F5;
   --text: #1A1A2E;
   --text-mid: #555;
@@ -416,9 +419,6 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 .section:nth-child(5) { animation-delay:.2s; }
 </style>
 <script src="https://js.stripe.com/v3/"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
 </head>
 <body>
 

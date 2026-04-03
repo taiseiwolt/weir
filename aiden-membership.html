@@ -16,8 +16,8 @@
 <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
 <meta name="description" content="お得な会員特典やポイントプログラムをご紹介します。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="aiden-common.css">
-<script src="aiden-common.js"></script>
+<link rel="stylesheet" href="./aiden-common.css">
+<script src="./aiden-common.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -28,7 +28,7 @@
   --bg: #F5F5F5;
   --card: #FFFFFF;
   --border: #E0E0E0;
-  --font: 'Noto Sans JP', sans-serif;
+  --font: var(--brand-font, 'Noto Sans JP', sans-serif);
   --radius: 12px;
   --shadow: 0 2px 12px rgba(0,0,0,.08);
   --gold: #F9A825; --gold-bg: #FFF8E1;
@@ -321,14 +321,16 @@ async function loadMembershipData(brandId) {
 // ===================================================================
 // INIT via AidenCommon
 // ===================================================================
-AidenCommon.init({
-  header: 'brand',
-  footer: true,
-  onBrandLoaded: function(brand) {
-    document.title = (brand.name || '') + ' | 会員特典';
-    document.getElementById('heroTitle').textContent = (brand.name || '') + 'の会員プログラム';
-    loadMembershipData(brand.id);
-  }
+document.addEventListener('DOMContentLoaded', async function() {
+  await AidenCommon.init({
+    header: 'brand',
+    footer: true,
+    onBrandLoaded: function(brand) {
+      document.title = (brand.name || '') + ' | 会員特典';
+      document.getElementById('heroTitle').textContent = (brand.name || '') + 'の会員プログラム';
+      loadMembershipData(brand.id);
+    }
+  });
 });
 </script>
 </body>

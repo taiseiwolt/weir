@@ -922,8 +922,8 @@ AidenCommon.changeLang = function(lang) {
   buildMenu();
 };
 
-document.addEventListener('DOMContentLoaded', function(){
-  AidenCommon.init({
+document.addEventListener('DOMContentLoaded', async function(){
+  await AidenCommon.init({
     header: 'brand',
     footer: true,
     onBrandLoaded: function(brand) {
@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
-<footer id="aiden-footer"></footer>
+<div id="aiden-footer"></div>
 
 <div class="res-modal-bg" id="res-modal-bg">
   <div class="res-modal">

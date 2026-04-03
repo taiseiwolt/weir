@@ -379,31 +379,33 @@ async function loadStoresFromSupabase() {
 /* =====================================================
    Init via AidenCommon
    ===================================================== */
-AidenCommon.init({
-  header: 'brand',
-  footer: true,
-  onBrandLoaded: async function(brand) {
-    document.title = brand.name + ' | 店舗一覧';
-    BRAND_ID = brand.id;
-    try { await loadStoresFromSupabase(); } catch(e) { /* ignored */ }
-    // Re-initialize reservation store dropdown with DB-loaded STORES
-    var sel = document.getElementById('rm-store');
-    if (sel) {
-      sel.innerHTML = '<option value="">店舗を選択してください</option>';
-      STORES.forEach(function(s) {
-        var opt = document.createElement('option');
-        opt.value = s.uuid || s.id;
-        opt.textContent = s.name;
-        opt.dataset.name = s.name;
-        sel.appendChild(opt);
-      });
+document.addEventListener('DOMContentLoaded', async function() {
+  await AidenCommon.init({
+    header: 'brand',
+    footer: true,
+    onBrandLoaded: async function(brand) {
+      document.title = brand.name + ' | 店舗一覧';
+      BRAND_ID = brand.id;
+      try { await loadStoresFromSupabase(); } catch(e) { /* ignored */ }
+      // Re-initialize reservation store dropdown with DB-loaded STORES
+      var sel = document.getElementById('rm-store');
+      if (sel) {
+        sel.innerHTML = '<option value="">店舗を選択してください</option>';
+        STORES.forEach(function(s) {
+          var opt = document.createElement('option');
+          opt.value = s.uuid || s.id;
+          opt.textContent = s.name;
+          opt.dataset.name = s.name;
+          sel.appendChild(opt);
+        });
+      }
+      buildAreaGrid();
+      buildAttrChips();
+      var q = getUrlParam('q');
+      if (q) document.getElementById('search-q').value = q;
+      filterStores();
     }
-    buildAreaGrid();
-    buildAttrChips();
-    var q = getUrlParam('q');
-    if (q) document.getElementById('search-q').value = q;
-    filterStores();
-  }
+  });
 });
 </script>
 
