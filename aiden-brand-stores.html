@@ -77,8 +77,7 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 .store-card-body{padding:12px 14px 14px}
 .store-card-name{font-size:14px;font-weight:700;margin-bottom:4px}
 .store-card-addr{font-size:12px;color:var(--text2);margin-bottom:6px}
-.store-card-station{font-size:12px;color:var(--brand-primary);margin-bottom:8px;display:flex;align-items:center;gap:4px}
-.store-card-station::before{content:'🚉';font-size:12px}
+.store-card-station{font-size:12px;color:var(--text3);margin-top:4px}
 .store-card-attrs{display:flex;flex-wrap:wrap;gap:4px}
 .store-attr-tag{font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:10px;color:var(--text2);background:var(--bg2)}
 .store-attr-tag.on{border-color:var(--brand-primary);color:var(--brand-primary);background:var(--brand-primary-light)}
@@ -157,8 +156,8 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 <div id="aiden-header"></div>
 
 <div class="page-hero">
-  <h1>店舗を探す</h1>
-  <p>炭火亭の全店舗一覧</p>
+  <h1 data-i18n="page_title">店舗を探す</h1>
+  <p id="stores-subtitle"></p>
 </div>
 
 <!-- 検索エリア -->
@@ -232,18 +231,18 @@ var STORE_ATTRS = [
    storeUrl: 個店ページのURL（aiden-store.html等）
    ===================================================== */
 let STORES = [
-  { id:'shibuya', name:'炭火亭 渋谷店',  pref:'東京都', city:'渋谷区', addr:'東京都渋谷区恵比寿1-2-3',  station:'渋谷駅 徒歩5分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a0000,#5a1a1a)', avail:'ok',   attrs:['parking','credit','qrpay','cash','elevator','multi_toilet'], storeUrl:'./aiden-store.html' },
-  { id:'shinjuku', name:'炭火亭 新宿東口店', pref:'東京都', city:'新宿区', addr:'東京都新宿区新宿3-1-1', station:'新宿駅 徒歩3分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#1a1a00,#5a5a00)', avail:'few',  attrs:['credit','qrpay','cash','smoking'], storeUrl:'./aiden-store.html' },
-  { id:'ikebukuro', name:'炭火亭 池袋店', pref:'東京都', city:'豊島区', addr:'東京都豊島区南池袋1-1-1', station:'池袋駅 徒歩4分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#001a00,#005a00)', avail:'ok',   attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet','diaper'], storeUrl:'./aiden-store.html' },
-  { id:'ebisu', name:'炭火亭 恵比寿店',   pref:'東京都', city:'渋谷区', addr:'東京都渋谷区恵比寿4-5-6',  station:'恵比寿駅 徒歩2分', hours:'18:00〜23:00', bg:'linear-gradient(135deg,#001a1a,#005a5a)', avail:'full', attrs:['credit','qrpay','cash'], storeUrl:'./aiden-store.html' },
-  { id:'yokohama', name:'炭火亭 横浜店',  pref:'神奈川県', city:'横浜市', addr:'神奈川県横浜市西区南幸1-1', station:'横浜駅 徒歩6分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a001a,#5a005a)', avail:'ok',   attrs:['parking','credit','qrpay','cash','elevator'], storeUrl:'./aiden-store.html' },
-  { id:'kawasaki', name:'炭火亭 川崎店',  pref:'神奈川県', city:'川崎市', addr:'神奈川県川崎市川崎区駅前本町1', station:'川崎駅 徒歩3分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#001a2a,#005a7a)', avail:'few',  attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet'], storeUrl:'./aiden-store.html' },
-  { id:'umeda', name:'炭火亭 梅田店',    pref:'大阪府', city:'大阪市', addr:'大阪府大阪市北区梅田1-1-1', station:'梅田駅 徒歩4分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#2a1a00,#7a5000)', avail:'ok',   attrs:['credit','qrpay','cash','smoking'], storeUrl:'./aiden-store.html' },
-  { id:'namba', name:'炭火亭 難波店',    pref:'大阪府', city:'大阪市', addr:'大阪府大阪市中央区難波3-1', station:'難波駅 徒歩2分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#2a002a,#7a007a)', avail:'ok',   attrs:['credit','qrpay','cash'], storeUrl:'./aiden-store.html' },
-  { id:'nagoya', name:'炭火亭 名古屋栄店', pref:'愛知県', city:'名古屋市', addr:'愛知県名古屋市中区栄3-1', station:'栄駅 徒歩4分',   hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a1a,#007a4a)', avail:'few',  attrs:['parking','credit','qrpay','cash','elevator','multi_toilet'], storeUrl:'./aiden-store.html' },
-  { id:'fukuoka', name:'炭火亭 天神店',  pref:'福岡県', city:'福岡市', addr:'福岡県福岡市中央区天神2-1', station:'天神駅 徒歩3分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a2a,#007a7a)', avail:'ok',   attrs:['credit','qrpay','cash'], storeUrl:'./aiden-store.html' },
-  { id:'sapporo', name:'炭火亭 札幌大通店', pref:'北海道', city:'札幌市', addr:'北海道札幌市中央区大通西4', station:'大通駅 徒歩2分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a1a2a,#4a4a7a)', avail:'ok',   attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet','diaper'], storeUrl:'./aiden-store.html' },
-  { id:'sendai', name:'炭火亭 仙台店',   pref:'宮城県', city:'仙台市', addr:'宮城県仙台市青葉区中央1-1', station:'仙台駅 徒歩5分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a00,#007a00)', avail:'few',  attrs:['parking','credit','cash'], storeUrl:'./aiden-store.html' },
+  { id:'shibuya', name:'炭火亭 渋谷店',  pref:'東京都', city:'渋谷区', addr:'東京都渋谷区恵比寿1-2-3',  station:'渋谷駅 徒歩5分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a0000,#5a1a1a)', avail:'ok',   attrs:['parking','credit','qrpay','cash','elevator','multi_toilet'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'shinjuku', name:'炭火亭 新宿東口店', pref:'東京都', city:'新宿区', addr:'東京都新宿区新宿3-1-1', station:'新宿駅 徒歩3分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#1a1a00,#5a5a00)', avail:'few',  attrs:['credit','qrpay','cash','smoking'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'ikebukuro', name:'炭火亭 池袋店', pref:'東京都', city:'豊島区', addr:'東京都豊島区南池袋1-1-1', station:'池袋駅 徒歩4分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#001a00,#005a00)', avail:'ok',   attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet','diaper'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'ebisu', name:'炭火亭 恵比寿店',   pref:'東京都', city:'渋谷区', addr:'東京都渋谷区恵比寿4-5-6',  station:'恵比寿駅 徒歩2分', hours:'18:00〜23:00', bg:'linear-gradient(135deg,#001a1a,#005a5a)', avail:'full', attrs:['credit','qrpay','cash'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'yokohama', name:'炭火亭 横浜店',  pref:'神奈川県', city:'横浜市', addr:'神奈川県横浜市西区南幸1-1', station:'横浜駅 徒歩6分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a001a,#5a005a)', avail:'ok',   attrs:['parking','credit','qrpay','cash','elevator'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'kawasaki', name:'炭火亭 川崎店',  pref:'神奈川県', city:'川崎市', addr:'神奈川県川崎市川崎区駅前本町1', station:'川崎駅 徒歩3分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#001a2a,#005a7a)', avail:'few',  attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'umeda', name:'炭火亭 梅田店',    pref:'大阪府', city:'大阪市', addr:'大阪府大阪市北区梅田1-1-1', station:'梅田駅 徒歩4分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#2a1a00,#7a5000)', avail:'ok',   attrs:['credit','qrpay','cash','smoking'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'namba', name:'炭火亭 難波店',    pref:'大阪府', city:'大阪市', addr:'大阪府大阪市中央区難波3-1', station:'難波駅 徒歩2分',  hours:'17:00〜24:00', bg:'linear-gradient(135deg,#2a002a,#7a007a)', avail:'ok',   attrs:['credit','qrpay','cash'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'nagoya', name:'炭火亭 名古屋栄店', pref:'愛知県', city:'名古屋市', addr:'愛知県名古屋市中区栄3-1', station:'栄駅 徒歩4分',   hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a1a,#007a4a)', avail:'few',  attrs:['parking','credit','qrpay','cash','elevator','multi_toilet'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'fukuoka', name:'炭火亭 天神店',  pref:'福岡県', city:'福岡市', addr:'福岡県福岡市中央区天神2-1', station:'天神駅 徒歩3分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a2a,#007a7a)', avail:'ok',   attrs:['credit','qrpay','cash'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'sapporo', name:'炭火亭 札幌大通店', pref:'北海道', city:'札幌市', addr:'北海道札幌市中央区大通西4', station:'大通駅 徒歩2分', hours:'17:00〜23:00', bg:'linear-gradient(135deg,#1a1a2a,#4a4a7a)', avail:'ok',   attrs:['parking','handicap_parking','credit','qrpay','cash','elevator','multi_toilet','diaper'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
+  { id:'sendai', name:'炭火亭 仙台店',   pref:'宮城県', city:'仙台市', addr:'宮城県仙台市青葉区中央1-1', station:'仙台駅 徒歩5分',  hours:'17:00〜23:00', bg:'linear-gradient(135deg,#002a00,#007a00)', avail:'few',  attrs:['parking','credit','cash'], reservationEnabled:true, storeUrl:'./aiden-store.html' },
 ];
 
 /* =====================================================
@@ -324,14 +323,18 @@ function renderResults(stores) {
       + '<div class="pref-header"><h2>'+escH(pref)+'</h2><span class="pref-count">'+list.length+'店舗</span></div>'
       + '<div class="store-grid">';
     list.forEach(function(s) {
-      var availLabel = s.avail==='ok' ? '空あり' : s.avail==='few' ? '残りわずか' : '満席';
-      var availCls   = s.avail==='ok' ? 'avail-ok' : s.avail==='few' ? 'avail-few' : 'avail-full';
+      var availHtml = '';
+      if (s.reservationEnabled) {
+        var availLabel = s.avail==='ok' ? '空あり' : s.avail==='few' ? '残りわずか' : '満席';
+        var availCls   = s.avail==='ok' ? 'avail-ok' : s.avail==='few' ? 'avail-few' : 'avail-full';
+        availHtml = '<span class="store-avail '+availCls+'">'+availLabel+'</span>';
+      }
       var attrTags = STORE_ATTRS.map(function(a){
         var on = s.attrs.indexOf(a.key) > -1;
         return on ? '<span class="store-attr-tag on">'+a.icon+' '+a.label+'</span>' : '';
       }).join('');
       html += '<a class="store-card" href="'+escH(s.storeUrl)+'">'
-        + '<div class="store-card-img" style="background:'+escH(s.bg)+'">'+(s.thumbUrl ? '' : '🏪')+'<span class="store-avail '+availCls+'">'+availLabel+'</span></div>'
+        + '<div class="store-card-img" style="background:'+escH(s.bg)+'">'+(s.thumbUrl ? '' : '🏪')+availHtml+'</div>'
         + '<div class="store-card-body">'
         + '<div class="store-card-name">'+escH(s.name)+'</div>'
         + '<div class="store-card-addr">'+escH(s.addr)+'</div>'
@@ -353,7 +356,7 @@ function getUrlParam(key) {
 var BRAND_ID = null;
 
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status, reservation_enabled').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails
@@ -362,15 +365,37 @@ async function loadStoresFromSupabase() {
   var thumbMap = {};
   if (thumbs) thumbs.forEach(function(t){ thumbMap[t.entity_id] = t.url; });
 
+  // Load store hours
+  var {data: hoursData} = await sb.from('store_hours')
+    .select('store_id, day_of_week, open_time, close_time, is_closed')
+    .in('store_id', storeIds)
+    .order('day_of_week');
+
+  var today = new Date().getDay(); // 0=Sunday
+  var hoursMap = {};
+  if (hoursData) {
+    hoursData.forEach(function(h) {
+      if (!hoursMap[h.store_id]) hoursMap[h.store_id] = {};
+      hoursMap[h.store_id][h.day_of_week] = h;
+    });
+  }
+
   var bgs = ['linear-gradient(135deg,#1a0000,#5a1a1a)','linear-gradient(135deg,#1a1a00,#5a5a00)','linear-gradient(135deg,#001a00,#005a00)','linear-gradient(135deg,#001a1a,#005a5a)','linear-gradient(135deg,#1a001a,#5a005a)','linear-gradient(135deg,#001a2a,#005a7a)','linear-gradient(135deg,#2a1a00,#7a5000)'];
   STORES = stores.map(function(s, i) {
     var prefCity = (s.address || '').substring(0, 3);
+    var todayHours = hoursMap[s.id] && hoursMap[s.id][today];
+    var hoursText = '17:00〜23:00'; // fallback
+    if (todayHours) {
+      if (todayHours.is_closed) hoursText = '本日定休日';
+      else hoursText = todayHours.open_time.slice(0,5) + '〜' + todayHours.close_time.slice(0,5);
+    }
     return {
       id: s.slug || s.id, uuid: s.id, name: s.name, pref: prefCity, city: '',
-      addr: s.address || '', station: '', hours: '17:00〜23:00',
+      addr: s.address || '', station: '', hours: hoursText,
       bg: thumbMap[s.id] ? 'url('+thumbMap[s.id]+') center/cover no-repeat' : bgs[i % bgs.length],
       thumbUrl: thumbMap[s.id] || null,
       avail: s.status === 'open' ? 'ok' : s.status === 'closed' ? 'full' : 'few',
+      reservationEnabled: s.reservation_enabled || false,
       attrs: ['credit','qrpay','cash'], storeUrl: './aiden-store.html'
     };
   });
@@ -385,6 +410,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     footer: true,
     onBrandLoaded: async function(brand) {
       document.title = brand.name + ' | 店舗一覧';
+      var sub = document.getElementById('stores-subtitle');
+      if (sub) sub.textContent = (brand.name || '') + 'の全店舗一覧';
       BRAND_ID = brand.id;
       try { await loadStoresFromSupabase(); } catch(e) { /* ignored */ }
       // Re-initialize reservation store dropdown with DB-loaded STORES

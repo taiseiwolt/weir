@@ -324,7 +324,7 @@ img{max-width:100%}
 </section>
 
 <!-- ===== SNS ===== -->
-<section class="sns-section"><div class="sns-inner"><div class="sns-title" id="sns-title">公式SNS</div><div class="sns-sub" data-i18n="sns_sub">フォローして最新情報をゲットしよう</div><div class="sns-icons" id="sns-icons"></div></div></section>
+<section class="sns-section"><div class="sns-inner"><div class="sns-title" id="sns-title" data-i18n="sns_title">公式SNS</div><div class="sns-sub" data-i18n="sns_sub">フォローして最新情報をゲットしよう</div><div class="sns-icons" id="sns-icons"></div></div></section>
 
 <!-- ===== FOOTER (rendered by aiden-common.js) ===== -->
 <div id="aiden-footer"></div>
@@ -646,7 +646,7 @@ AidenCommon.addTranslations({
     season_title:'🌸 Spring Classics', season_sub:'Seasonal limited menu now available', season_more:'See Seasonal Items',
     cta_reserve_sub:'Check availability', cta_takeout_sub:'Order for pickup', cta_delivery_sub:'Delivered to your door',
     store_search_title:'Find a Store', store_search_placeholder:'Search by area, station, or store name', search_btn:'Search',
-    guide_title:'News & Information', news_title:'News', news_more:'See All News',
+    guide_title:' — News & Information', news_title:'News', news_more:'See All News',
     sns_title:'Official SNS', sns_sub:'Follow us for the latest updates',
     guide1:'Official LINE Account<br>Now Accepting Friends!', guide2:'Digital Sumibite Gift<br>Perfect for Presents',
     guide3:'For Customers 60+<br>Senior Card Available', guide4:'Cashless Payment<br>Now Even More Convenient!',
@@ -759,7 +759,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
       // Guide section title
       var guideTitle = document.querySelector('.guide-section .sec-title');
-      if (guideTitle) guideTitle.textContent = (brand.name || '') + 'からのご案内';
+      if (guideTitle) guideTitle.textContent = (brand.name || '') + AidenCommon.t('guide_title');
       // Update OGP for custom domain / brand
       if (brand.name) {
         var ogTitle = document.querySelector('meta[property="og:title"]');
@@ -768,6 +768,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (twitterTitle) twitterTitle.content = brand.name;
         var ogSiteName = document.querySelector('meta[property="og:site_name"]');
         if (ogSiteName) ogSiteName.content = brand.name;
+      }
+      if (brand.brand_description) {
+        var ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.setAttribute('content', brand.brand_description);
+        var twDesc = document.querySelector('meta[name="twitter:description"]');
+        if (twDesc) twDesc.setAttribute('content', brand.brand_description);
       }
     }
   });
