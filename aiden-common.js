@@ -47,10 +47,18 @@
   /* =============================================================
      4. resolveBrandId() — brand ID resolution
      ============================================================= */
-  function resolveBrandId() {
-    // 1. Custom domain mapping (future use)
-    var host = window.location.hostname;
-    // Could add custom domain → brand_id mapping here
+  async function resolveBrandId() {
+    // 1. Custom domain detection (highest priority)
+    var hostname = window.location.hostname;
+    if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+      var client = getSb();
+      if (client) {
+        try {
+          var res = await client.from('brands').select('id').eq('custom_domain', hostname).limit(1);
+          if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].id };
+        } catch (e) { /* fall through */ }
+      }
+    }
 
     // 2. ?brand= slug parameter
     var params = new URLSearchParams(window.location.search);
@@ -348,7 +356,7 @@
     var html = '<header class="header">' +
       '<div class="header-main">' +
         '<div class="header-logo">' +
-          '<a href="./aiden-brand-sushiro.html' + bp + '">' +
+          '<a href="./brand.html' + bp + '">' +
             '<span style="display:flex;align-items:center;gap:10px">' +
               renderLogoMark(brand) +
               renderLogoText(brand) +
@@ -358,6 +366,7 @@
         '<nav class="header-nav">' +
           '<a href="./aiden-brand-menu.html' + bp + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
           '<a href="./aiden-brand-stores.html' + bp + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
+          '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
           '<a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
           '<a href="./aiden-order.html' + bp + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
         '</nav>' +
@@ -372,7 +381,8 @@
         '<a href="./aiden-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery">' + t('cta_delivery') + '</a>' +
       '</div>' +
       '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-      '<a href="./aiden-brand-stores.html' + bp + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
+      '<a href="./aiden-brand-stores.html' + bp + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
+      '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
     '</div>';
 
     el.innerHTML = html;
@@ -556,7 +566,7 @@
       AidenCommon.lang = savedLang;
     }
 
-    var resolved = resolveBrandId();
+    var resolved = await resolveBrandId();
     var timedOut = false;
     var brandLoaded = false;
 
