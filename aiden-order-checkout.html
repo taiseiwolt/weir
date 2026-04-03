@@ -645,10 +645,14 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
     <div class="section">
       <div class="section-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        クーポンを使用する
+        クーポンの利用
       </div>
       <div class="coupon-radio-group">
-        <div class="coupon-radio active" onclick="selectCouponMode('code')">
+        <div class="coupon-radio active" onclick="selectCouponMode('none')">
+          <div class="coupon-radio-dot"></div>
+          <span class="coupon-radio-label">使用しない</span>
+        </div>
+        <div class="coupon-radio" onclick="selectCouponMode('code')">
           <div class="coupon-radio-dot"></div>
           <span class="coupon-radio-label">クーポンコードを入力する</span>
         </div>
@@ -657,7 +661,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
           <span class="coupon-radio-label">クーポンを利用する</span>
         </div>
       </div>
-      <div class="coupon-code-form show" id="couponCodeForm">
+      <div class="coupon-code-form" id="couponCodeForm">
         <input type="text" class="form-input" id="couponCodeInput" placeholder="クーポンコードを入力…">
         <button onclick="applyCouponCode()">適用</button>
       </div>
@@ -1004,7 +1008,7 @@ async function loadCheckoutData() {
 let mode = 'delivery'; // updated after loadCheckoutData()
 let selectedTime = 'now';
 let selectedPayment = null;
-let selectedCouponMode = 'code';
+let selectedCouponMode = 'none';
 let appliedCoupon = null;
 
 // ===================================================================
@@ -1361,7 +1365,7 @@ function selectPayment(id, el) {
 function selectCouponMode(newMode) {
   selectedCouponMode = newMode;
   document.querySelectorAll('.coupon-radio').forEach((r,i) => {
-    r.classList.toggle('active', (i===0 && newMode==='code') || (i===1 && newMode==='list'));
+    r.classList.toggle('active', (i===0 && newMode==='none') || (i===1 && newMode==='code') || (i===2 && newMode==='list'));
   });
   document.getElementById('couponCodeForm').classList.toggle('show', newMode==='code');
   document.getElementById('couponList').classList.toggle('show', newMode==='list');
