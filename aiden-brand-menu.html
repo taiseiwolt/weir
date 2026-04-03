@@ -17,39 +17,19 @@
     <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
     <meta name="description" content="炭火亭のメニュー一覧。こだわりの炭火焼きをお楽しみください。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./aiden-common.css">
+<script src="./aiden-common.js"></script>
+<link id="font-link" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* ===== Page-level CSS variable aliases ===== */
 :root {
-  --brand-primary:#D32F2F; --brand-primary-dark:#B71C1C; --brand-primary-light:#FFEBEE;
-  --brand-header-bg:#D32F2F; --brand-header-text:#FFFFFF;
-  --brand-font:'Noto Sans JP',sans-serif; --brand-font-color:#333;
-  --text2:#666; --text3:#999; --bg:#fff; --bg2:#F8F8F8; --border:#E0E0E0;
-  --tag-recommend:#D32F2F; --tag-limited:#F57C00; --tag-season:#2E7D32;
+  --tag-recommend:var(--brand-primary); --tag-limited:#F57C00; --tag-season:#2E7D32;
   --tag-sale:#7B1FA2; --tag-rank1:#C9A227; --tag-rank2:#78909C; --tag-rank3:#8D6E63;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:var(--brand-font);color:var(--brand-font-color);background:var(--bg);font-size:14px;line-height:1.6}
 a{color:inherit;text-decoration:none} button{cursor:pointer}
-
-.header{background:var(--brand-header-bg);position:sticky;top:0;z-index:1000}
-.header-main{max-width:1100px;margin:0 auto;display:flex;align-items:center;height:56px;padding:0 20px}
-.header-logo a{display:flex;align-items:center;gap:10px;margin-right:32px}
-.header-logo-mark{width:44px;height:44px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.header-logo-text{color:var(--brand-header-text);font-size:20px;font-weight:700;font-family:'Noto Serif JP',serif;white-space:nowrap}
-.header-nav{display:flex;align-items:center;flex:1}
-.header-nav-link{color:var(--brand-header-text);font-size:13px;font-weight:500;padding:0 14px;height:56px;display:flex;align-items:center;white-space:nowrap;transition:background .15s;border:none;background:none;font-family:var(--brand-font);cursor:pointer;text-decoration:none}
-.header-nav-link:hover{background:rgba(0,0,0,.15)}
-.header-nav-link.cta{background:rgba(0,0,0,.25);border-radius:3px;margin:0 3px;height:38px;font-weight:700;font-size:12px;padding:0 12px}
-.header-nav-link.active{background:rgba(0,0,0,.2);border-bottom:3px solid white}
-.lang-select-wrap{margin-left:auto;position:relative;flex-shrink:0}
-.lang-select{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:var(--brand-header-text);font-size:11px;padding:4px 22px 4px 8px;border-radius:3px;cursor:pointer;font-family:var(--brand-font);outline:none}
-.lang-select option{background:#333;color:#fff}
-.lang-select-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--brand-header-text);font-size:9px}
-.header-hamburger{display:none;background:none;border:none;color:var(--brand-header-text);font-size:26px;margin-left:auto;padding:8px}
-.mobile-nav{display:none;position:fixed;top:56px;left:0;right:0;background:var(--brand-primary-dark);z-index:999;flex-direction:column;padding:8px 0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.mobile-nav.open{display:flex}
-.mobile-nav a{color:white;font-size:14px;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.1)}
 
 .page-hero{background:var(--brand-primary);padding:28px 20px;text-align:center;color:white}
 .page-hero h1{font-size:28px;font-weight:700;font-family:'Noto Serif JP',serif}
@@ -112,7 +92,6 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
   .cat-sidebar-title{display:none}
   .cat-sidebar-item{flex-shrink:0;border-bottom:none;border-right:1px solid var(--border);padding:10px 14px;width:auto}
   .menu-grid{grid-template-columns:repeat(2,1fr)}
-  .header-nav{display:none}.header-hamburger{display:block}
 }
 @media(max-width:480px){.menu-grid{grid-template-columns:1fr}}
 /* ===== 来店予約モーダル ===== */
@@ -168,44 +147,7 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 </head>
 <body>
 
-<header class="header">
-  <div class="header-main">
-    <div class="header-logo">
-      <a href="./brand.html">
-        <span class="header-logo-mark" id="logo-mark">🔥</span>
-        <span class="header-logo-text" id="logo-text">炭火亭</span>
-      </a>
-    </div>
-    <nav class="header-nav">
-      <a href="./aiden-brand-menu.html" class="header-nav-link active" data-i18n="nav_menu">メニュー</a>
-      <a href="./aiden-brand-stores.html" class="header-nav-link" data-i18n="nav_stores">お店を探す</a>
-      <a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="openResModal()">📅 来店予約</a>
-      <a href="./aiden-order.html" class="header-nav-link cta" data-i18n="nav_order">🥡 お持ち帰り・デリバリー</a>
-    </nav>
-    <div class="lang-select-wrap">
-      <select class="lang-select" id="lang-select" onchange="changeLang(this.value)">
-        <option value="ja">言語/Language</option>
-        <option value="ja">日本語</option>
-        <option value="en">English</option>
-        <option value="zh">中文</option>
-        <option value="ko">한국어</option>
-        <option value="fr">français</option>
-        <option value="it">Italiano</option>
-        <option value="id">Bahasa Indonesia</option>
-      </select>
-      <span class="lang-select-arrow">▼</span>
-    </div>
-    <button class="header-hamburger" id="hamburger" onclick="toggleNav()">☰</button>
-  </div>
-</header>
-
-<div class="mobile-nav" id="mobile-nav">
-  <a href="./brand.html" data-i18n="nav_top">🏠 トップ</a>
-  <a href="./aiden-brand-menu.html" data-i18n="nav_menu">📖 メニュー</a>
-  <a href="./aiden-brand-stores.html" data-i18n="nav_stores">📍 お店を探す</a>
-  <a href="javascript:void(0)" data-i18n="nav_reserve" onclick="openResModal()">📅 来店予約</a>
-  <a href="./aiden-order.html" data-i18n="nav_order">🥡 お持ち帰り・デリバリー</a>
-</div>
+<div id="aiden-header"></div>
 
 <div class="page-hero">
   <h1 data-i18n="page_title">メニュー</h1>
@@ -227,26 +169,13 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 </div>
 
 <script>
-function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-/* =====================================================
-   BRAND CONFIG
-   ===================================================== */
-var BRAND_CONFIG = {
-  name:'焼肉 炭火亭', fontFamily:'Noto Sans JP',
-  primaryColor:'#D32F2F', primaryDark:'#B71C1C', primaryLight:'#FFEBEE',
-  headerBg:'#D32F2F', headerTextColor:'#FFFFFF', fontColor:'#333333',
-  logoMarkType:'emoji', logoMarkEmoji:'🔥', logoMarkSrc:'',
-  logoTextType:'text', logoTextValue:'炭火亭',
-  tagColors:{
-    recommend:'#D32F2F', limited:'#F57C00', season:'#2E7D32',
-    sale:'#7B1FA2', rank1:'#C9A227', rank2:'#78909C', rank3:'#8D6E63'
-  }
-};
+var escH = AidenCommon.escH;
+var sb = AidenCommon.getSb();
 
 /* =====================================================
-   i18n — UI文言 + カテゴリ名 + 商品名 + アウトライン
+   Page-specific translations
    ===================================================== */
-var I18N = {
+AidenCommon.addTranslations({
   ja:{
     nav_top:'トップ', nav_menu:'メニュー', nav_stores:'お店を探す',
     nav_reserve:'📅 来店予約', nav_order:'🥡 お持ち帰り・デリバリー',
@@ -757,7 +686,7 @@ var I18N = {
     det_icecream:'Es krim vanilla kaya dengan krim segar Hokkaido. Penutup BBQ yang sempurna.',
     det_annin:'Tahu almond autentik dengan aroma harum. Disajikan dengan saus buah.',
   }
-};
+});
 
 /* =====================================================
    MENU_DATA — 商品データ（テキストはi18nキーで参照）
@@ -831,8 +760,7 @@ let MENU_DATA = [
   }
 ];
 
-var currentLang = 'ja';
-function t(key){ return (I18N[currentLang]&&I18N[currentLang][key]!==undefined)?I18N[currentLang][key]:(I18N['ja'][key]||key); }
+function t(key){ return AidenCommon.t(key); }
 
 function calcDiscount(price, discount) {
   if (!discount) return null;
@@ -926,71 +854,9 @@ window.addEventListener('scroll', function() {
   if (activeId) setActive(activeId);
 });
 
-function changeLang(lang) {
-  if (!I18N[lang]) return;
-  currentLang = lang;
-  document.querySelectorAll('[data-i18n]').forEach(function(el){
-    var k = el.getAttribute('data-i18n');
-    if (I18N[lang][k] !== undefined) el.textContent = I18N[lang][k];
-  });
-  document.getElementById('html-root').lang = lang;
-  buildMenu(); // カテゴリ・商品名・アウトラインを再描画
-}
-
-function applyBrand() {
-  var c = BRAND_CONFIG, r = document.documentElement;
-  r.style.setProperty('--brand-primary', c.primaryColor);
-  r.style.setProperty('--brand-primary-dark', c.primaryDark);
-  r.style.setProperty('--brand-primary-light', c.primaryLight);
-  r.style.setProperty('--brand-header-bg', c.headerBg);
-  r.style.setProperty('--brand-header-text', c.headerTextColor);
-  r.style.setProperty('--brand-font-color', c.fontColor);
-  r.style.setProperty('--brand-font', "'"+c.fontFamily+"',sans-serif");
-  if (c.tagColors) Object.keys(c.tagColors).forEach(function(k){ r.style.setProperty('--tag-'+k, c.tagColors[k]); });
-  var mark = document.getElementById('logo-mark');
-  mark.innerHTML = (c.logoMarkType==='image'&&c.logoMarkSrc) ? '<img src="'+c.logoMarkSrc+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" loading="lazy">' : c.logoMarkEmoji;
-  var txt = document.getElementById('logo-text');
-  txt.innerHTML = (c.logoTextType==='image'&&c.logoTextValue) ? '<img src="'+c.logoTextValue+'" style="height:32px" loading="lazy">' : escH(c.logoTextValue);
-}
-function toggleNav() {
-  var nav = document.getElementById('mobile-nav');
-  nav.classList.toggle('open');
-  document.getElementById('hamburger').textContent = nav.classList.contains('open') ? '✕' : '☰';
-}
 // ===== API CONFIG =====
 const API_BASE = 'https://aiden-jp.net'; // Production domain
-const DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
-const _urlParams = new URLSearchParams(window.location.search);
-const _brandParam = _urlParams.get('brand');
-var BRAND_ID = DEFAULT_BRAND_ID;
-
-async function resolveBrandId() {
-  if (!_brandParam) return DEFAULT_BRAND_ID;
-  var prefix = _brandParam.split('-')[0];
-  var { data } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
-  if (data && data.length > 0) return data[0].brand_id;
-  var { data: exact } = await sb.from('stores').select('brand_id').eq('slug', _brandParam).limit(1);
-  if (exact && exact.length > 0) return exact[0].brand_id;
-  return DEFAULT_BRAND_ID;
-}
-
-async function loadBrandConfig() {
-  var { data: b } = await sb.from('brands').select('name, font_family, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_mark_type, logo_mark_emoji, logo_mark_src, logo_text_type, logo_text_value').eq('id', BRAND_ID).single();
-  if (!b) return;
-  BRAND_CONFIG.name = b.name || BRAND_CONFIG.name;
-  BRAND_CONFIG.fontFamily = b.font_family || BRAND_CONFIG.fontFamily;
-  BRAND_CONFIG.primaryColor = b.primary_color || BRAND_CONFIG.primaryColor;
-  BRAND_CONFIG.primaryDark = b.primary_dark || BRAND_CONFIG.primaryDark;
-  BRAND_CONFIG.primaryLight = b.primary_light || BRAND_CONFIG.primaryLight;
-  BRAND_CONFIG.headerBg = b.header_bg || BRAND_CONFIG.headerBg;
-  BRAND_CONFIG.headerTextColor = b.header_text_color || BRAND_CONFIG.headerTextColor;
-  BRAND_CONFIG.fontColor = b.font_color || BRAND_CONFIG.fontColor;
-  BRAND_CONFIG.logoMarkType = b.logo_mark_type || BRAND_CONFIG.logoMarkType;
-  BRAND_CONFIG.logoMarkEmoji = b.logo_mark_emoji || BRAND_CONFIG.logoMarkEmoji;
-  BRAND_CONFIG.logoMarkSrc = b.logo_mark_src || BRAND_CONFIG.logoMarkSrc;
-  BRAND_CONFIG.logoTextType = b.logo_text_type || BRAND_CONFIG.logoTextType;
-  BRAND_CONFIG.logoTextValue = b.logo_text_value || BRAND_CONFIG.logoTextValue;
-}
+var BRAND_ID = null;
 
 async function loadReservationStores() {
   var { data: stores } = await sb.from('stores').select('id, name').eq('brand_id', BRAND_ID).order('name');
@@ -1008,11 +874,6 @@ async function apiFetch(path) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-
-// Supabase fallback
-const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadMenuFromSupabase() {
   // Try API first
@@ -1054,23 +915,37 @@ async function loadMenuFromSupabase() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', async function(){
-  BRAND_ID = await resolveBrandId();
-  try { await loadBrandConfig(); } catch(e) { /* ignored */ }
-  try { await loadMenuFromSupabase(); } catch(e) { /* ignored */ }
-  try { await loadReservationStores(); } catch(e) { /* ignored */ }
-  // Propagate ?brand= param to internal navigation links
-  if (_brandParam) {
-    document.querySelectorAll('a[href]').forEach(function(a) {
-      var h = a.getAttribute('href');
-      if (h && h.startsWith('./aiden-brand-') && !h.includes('brand=')) {
-        a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
-      }
-    });
-  }
-  applyBrand(); buildMenu();
+// Override changeLang to also rebuild menu
+var _origChangeLang = AidenCommon.changeLang;
+AidenCommon.changeLang = function(lang) {
+  _origChangeLang(lang);
+  buildMenu();
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  AidenCommon.init({
+    header: 'brand',
+    footer: true,
+    onBrandLoaded: function(brand) {
+      BRAND_ID = brand.id;
+      document.title = escH(brand.name) + ' | メニュー';
+      // Update page hero subtitle with brand name
+      var heroSub = document.querySelector('.page-hero p');
+      if (heroSub) heroSub.textContent = (brand.name || '') + 'のグランドメニュー';
+      // Load menu data from DB, then rebuild
+      Promise.all([
+        loadMenuFromSupabase().catch(function(){}),
+        loadReservationStores().catch(function(){})
+      ]).then(function() {
+        buildMenu();
+      });
+    }
+  });
 });
 </script>
+
+<footer id="aiden-footer"></footer>
+
 <div class="res-modal-bg" id="res-modal-bg">
   <div class="res-modal">
     <div class="res-modal-header">
