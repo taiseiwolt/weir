@@ -672,7 +672,7 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
         <button class="step-close" onclick="closeAddrModal()">✕</button>
       </div>
       <div class="addr-body">
-        <div class="addr-big-title" id="s3-big" data-i18n="s3_big">こちらで<br>よろしいですか？</div>
+        <div class="addr-big-title" id="s3-big" data-i18n="s3_big">こちらでよろしいですか？</div>
         <div class="addr-sub" id="s3-sub" data-i18n="s3_sub">配達先住所が正しいことを確認してください。</div>
         <div class="addr-confirm-map">
           <div id="confirm-mini-map"></div>
@@ -972,7 +972,7 @@ AidenCommon.addTranslations({
     s1_note:'ハイフンなしで入力してください',
     s2_title:'住所を確認・編集', s2_big:'住所を入力してください',
     s2_sub:'番地・号まで正確に入力してください',
-    s3_title:'位置を確認', s3_big:'こちらで<br>よろしいですか？',
+    s3_title:'位置を確認', s3_big:'こちらでよろしいですか？',
     s3_sub:'配達先住所が正しいことを確認してください。',
     s3_pin:'🗺️ 地図を動かして・拡大縮小してピン位置を調整できます',
     btn_continue:'続ける', btn_change:'住所を変更する', btn_use:'この住所を利用する',
@@ -991,7 +991,7 @@ AidenCommon.addTranslations({
     s1_note:'No hyphen required',
     s2_title:'Confirm Address', s2_big:'Enter your address',
     s2_sub:'Include building number',
-    s3_title:'Confirm location', s3_big:'Does this look<br>correct?',
+    s3_title:'Confirm location', s3_big:'Does this look correct?',
     s3_sub:'Please confirm your delivery address.',
     s3_pin:'🗺️ Move or zoom the map to adjust the pin position',
     btn_continue:'Continue', btn_change:'Change address', btn_use:'Use this address',
@@ -1010,7 +1010,7 @@ AidenCommon.addTranslations({
     s1_note:'无需输入连字符',
     s2_title:'确认地址', s2_big:'请输入地址',
     s2_sub:'请输入详细门牌号',
-    s3_title:'确认位置', s3_big:'确认无误<br>吗？',
+    s3_title:'确认位置', s3_big:'确认无误吗？',
     s3_sub:'请确认配送地址是否正确。',
     s3_pin:'🗺️ 移动或缩放地图来调整位置',
     btn_continue:'继续', btn_change:'更改地址', btn_use:'使用此地址',
@@ -1029,7 +1029,7 @@ AidenCommon.addTranslations({
     s1_note:'하이픈 없이 입력하세요',
     s2_title:'주소 확인', s2_big:'주소를 입력하세요',
     s2_sub:'번지까지 정확히 입력하세요',
-    s3_title:'위치 확인', s3_big:'이 주소가<br>맞으신가요?',
+    s3_title:'위치 확인', s3_big:'이 주소가 맞으신가요?',
     s3_sub:'배달 주소를 확인해 주세요.',
     s3_pin:'🗺️ 지도를 이동하거나 확대·축소하여 위치를 조정하세요',
     btn_continue:'계속', btn_change:'주소 변경', btn_use:'이 주소 사용',
@@ -1048,7 +1048,7 @@ AidenCommon.addTranslations({
     s1_note:'Sans tiret',
     s2_title:"Confirmer l'adresse", s2_big:'Entrez votre adresse',
     s2_sub:'Incluez le numéro de bâtiment',
-    s3_title:'Confirmer la position', s3_big:'Est-ce<br>correct ?',
+    s3_title:'Confirmer la position', s3_big:'Est-ce correct ?',
     s3_sub:'Veuillez confirmer votre adresse de livraison.',
     s3_pin:'🗺️ Déplacez ou zoomez la carte pour ajuster la position',
     btn_continue:'Continuer', btn_change:"Changer l'adresse", btn_use:'Utiliser cette adresse',
@@ -1067,7 +1067,7 @@ AidenCommon.addTranslations({
     s1_note:'Senza trattino',
     s2_title:"Conferma l'indirizzo", s2_big:'Inserisci il tuo indirizzo',
     s2_sub:'Includi il numero civico',
-    s3_title:'Conferma posizione', s3_big:'Va bene<br>così?',
+    s3_title:'Conferma posizione', s3_big:'Va bene così?',
     s3_sub:'Conferma il tuo indirizzo di consegna.',
     s3_pin:'🗺️ Sposta o ingrandisci la mappa per regolare la posizione',
     btn_continue:'Continua', btn_change:"Cambia indirizzo", btn_use:'Usa questo indirizzo',
@@ -1086,7 +1086,7 @@ AidenCommon.addTranslations({
     s1_note:'Tanpa tanda hubung',
     s2_title:'Konfirmasi Alamat', s2_big:'Masukkan alamat Anda',
     s2_sub:'Sertakan nomor bangunan',
-    s3_title:'Konfirmasi lokasi', s3_big:'Apakah ini<br>benar?',
+    s3_title:'Konfirmasi lokasi', s3_big:'Apakah ini benar?',
     s3_sub:'Harap konfirmasi alamat pengiriman Anda.',
     s3_pin:'🗺️ Geser atau perbesar peta untuk menyesuaikan posisi',
     btn_continue:'Lanjutkan', btn_change:'Ganti alamat', btn_use:'Gunakan alamat ini',
@@ -1643,6 +1643,16 @@ function useAddress(){
   userAddress  = street + (building ? ' ' + building : '');
   userLat = pinLat !== null ? pinLat : pendingLat;
   userLng = pinLng !== null ? pinLng : pendingLng;
+  // Save address data to sessionStorage for order-store/checkout pages
+  try {
+    sessionStorage.setItem('aiden_user_address', JSON.stringify({
+      address: userAddress,
+      lat: userLat,
+      lng: userLng,
+      street: street,
+      building: building
+    }));
+  } catch(e) {}
   closeAddrModal();
   document.getElementById('addr-btn-text').textContent = userAddress;
   if(mainMap){
@@ -1774,7 +1784,10 @@ function onOrderBtnClick(btn){
       storeHours: s.hours,
       hasTakeout: s.hasTakeout,
       hasDelivery: s.hasDelivery,
-      orderMode: orderMode
+      orderMode: orderMode,
+      userAddress: userAddress,
+      userLat: userLat,
+      userLng: userLng
     }));
   } catch(e) { /* ignored */ }
 
