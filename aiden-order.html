@@ -1221,8 +1221,8 @@ window.addEventListener('load', async function(){
     header: 'order',
     footer: true,
     onBack: function() {
-      var slug = AidenCommon.brand ? AidenCommon.brand.slug : '';
-      window.location.href = './brand.html' + (slug ? '?brand=' + slug : '');
+      var bid = AidenCommon.brand ? AidenCommon.brand.id : '';
+      window.location.href = './brand.html' + (bid ? '?brand_id=' + bid : '');
     },
     onBrandLoaded: function(brand) {
       document.title = (brand.name || '') + ' | モバイルオーダー';

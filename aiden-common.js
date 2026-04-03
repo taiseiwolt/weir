@@ -15,7 +15,7 @@
   var DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
   var TIMEOUT_MS = 3000;
 
-  var BRAND_COLUMNS = 'id,name,slug,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain';
+  var BRAND_COLUMNS = 'id,name,display_id,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain';
 
   /* =============================================================
      2. escH() — XSS escape helper
@@ -60,20 +60,34 @@
       }
     }
 
-    // 2. ?brand= slug parameter
+    // 2. URL parameters
     var params = new URLSearchParams(window.location.search);
+    var brandIdParam = params.get('brand_id');
+    if (brandIdParam) return { type: 'id', value: brandIdParam };
+
     var brandSlug = params.get('brand');
-    if (brandSlug) return { type: 'slug', value: brandSlug };
+    if (brandSlug) {
+      // Resolve slug via store table (brands table has no slug column)
+      var client = getSb();
+      if (client) {
+        try {
+          // Try store slug prefix match
+          var prefix = brandSlug.split('-')[0];
+          var res = await client.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+          if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].brand_id };
+          // Try exact store slug match
+          var exact = await client.from('stores').select('brand_id').eq('slug', brandSlug).limit(1);
+          if (exact.data && exact.data.length > 0) return { type: 'id', value: exact.data[0].brand_id };
+        } catch (e) { /* fall through to default */ }
+      }
+      // Slug didn't resolve — fall through to sessionStorage / default
+    }
 
-    // 3. ?brand_id= UUID parameter
-    var brandId = params.get('brand_id');
-    if (brandId) return { type: 'id', value: brandId };
-
-    // 4. sessionStorage
+    // 3. sessionStorage
     var stored = sessionStorage.getItem('aiden_brand_id');
     if (stored) return { type: 'id', value: stored };
 
-    // 5. Default
+    // 4. Default
     return { type: 'id', value: DEFAULT_BRAND_ID };
   }
 
@@ -84,13 +98,8 @@
     var client = getSb();
     if (!client) return Promise.reject(new Error('Supabase not loaded'));
 
-    var query = client.from('brands').select(BRAND_COLUMNS);
-
-    if (resolved.type === 'slug') {
-      query = query.eq('slug', resolved.value);
-    } else {
-      query = query.eq('id', resolved.value);
-    }
+    // resolveBrandId always resolves to an ID now
+    var query = client.from('brands').select(BRAND_COLUMNS).eq('id', resolved.value);
 
     return query.single().then(function(res) {
       if (res.error) throw res.error;
@@ -280,7 +289,6 @@
      11. buildBrandParam(brand) — helper to build URL query param
      ============================================================= */
   function buildBrandParam(brand) {
-    if (brand && brand.slug) return '?brand=' + encodeURIComponent(brand.slug);
     if (brand && brand.id) return '?brand_id=' + encodeURIComponent(brand.id);
     return '';
   }
