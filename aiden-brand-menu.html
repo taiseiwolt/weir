@@ -93,6 +93,7 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
   .cat-sidebar-item{flex-shrink:0;border-bottom:none;border-right:1px solid var(--border);padding:10px 14px;width:auto}
   .menu-grid{grid-template-columns:repeat(2,1fr)}
 }
+.price-notes{max-width:1100px;margin:0 auto;padding:8px 20px 16px;font-size:11px;color:var(--text3);line-height:1.8}
 @media(max-width:480px){.menu-grid{grid-template-columns:1fr}}
 /* ===== 来店予約モーダル ===== */
 .res-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center}
@@ -151,7 +152,12 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 
 <div class="page-hero">
   <h1 data-i18n="page_title">メニュー</h1>
-  <p data-i18n="page_sub">炭火亭のグランドメニュー</p>
+  <p data-i18n="page_sub">グランドメニュー</p>
+</div>
+
+<!-- Price annotation area (populated from admin when available) -->
+<div class="price-notes" id="price-notes" style="display:none">
+  <div class="price-notes-text" id="price-notes-text"></div>
 </div>
 
 <div class="menu-page">
@@ -179,7 +185,7 @@ AidenCommon.addTranslations({
   ja:{
     nav_top:'トップ', nav_menu:'メニュー', nav_stores:'お店を探す',
     nav_reserve:'📅 来店予約', nav_order:'🥡 お持ち帰り・デリバリー',
-    page_title:'メニュー', page_sub:'炭火亭のグランドメニュー',
+    page_title:'メニュー', page_sub:'グランドメニュー',
     cat_label:'カテゴリ', tax_note:'税込価格 ／ 価格は変更になる場合があります',
     tag_recommend:'おすすめ', tag_limited:'期間限定', tag_season:'季節限定',
     tag_sale:'割引中', tag_rank1:'一番人気', tag_rank2:'二番人気', tag_rank3:'三番人気',
@@ -932,6 +938,12 @@ document.addEventListener('DOMContentLoaded', async function(){
       // Update page hero subtitle with brand name
       var heroSub = document.querySelector('.page-hero p');
       if (heroSub) heroSub.textContent = (brand.name || '') + 'のグランドメニュー';
+      // Price notes - show if brand has price annotation data (populated from admin when available)
+      if (brand.memo) {
+        var pn = document.getElementById('price-notes');
+        var pnt = document.getElementById('price-notes-text');
+        if (pn && pnt) { pnt.textContent = brand.memo; pn.style.display = ''; }
+      }
       // Load menu data from DB, then rebuild
       Promise.all([
         loadMenuFromSupabase().catch(function(){}),
