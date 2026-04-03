@@ -710,11 +710,38 @@ function renderAI(){
 function renderAICharts(){const el=document.getElementById('aiChart');if(!el)return;const d=[{n:'SNS投稿文生成',v:620},{n:'AI画像生成',v:480},{n:'口コミ返信提案',v:390},{n:'POP作成',v:210},{n:'チャットサポート',v:142}];const mx=Math.max(...d.map(x=>x.v));el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
 
 // ===== AI SNS投稿生成 =====
+async function checkAiQuotaAndPrompt(storeDisplayId,interactionType){
+  const s=STORES.find(x=>x.id===storeDisplayId);
+  if(!s||!s._uuid)return true;
+  try{
+    const{data,error}=await sb.rpc('check_ai_quota',{p_store_id:s._uuid,p_interaction_type:interactionType});
+    if(error)return true;
+    if(!data.allowed){
+      openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>⚠️ STD月間上限に達しました</h3>'+
+        '<p style="font-size:13px;margin:16px 0">PRO（¥4,980/月）にアップグレードすると無制限でご利用いただけます。</p>'+
+        '<div class="btn-group"><button class="btn btn-primary" onclick="upgradeFromQuota(\''+storeDisplayId+'\');closeModal()">アップグレード</button>'+
+        '<button class="btn btn-secondary" onclick="closeModal()">今月はここまで</button></div>');
+      return false;
+    }
+    if(data.remaining>0&&data.remaining<=Math.ceil(data.limit*0.2)){
+      showToast('残り'+data.remaining+'回。PROなら無制限');
+    }
+    return true;
+  }catch(e){return true;}
+}
+async function upgradeFromQuota(storeDisplayId){
+  const s=STORES.find(x=>x.id===storeDisplayId);
+  if(!s)return;
+  const b=BRANDS.find(x=>x.id===s.brandId);
+  if(b)await toggleSvc(b.id,'ai_pro','brand');
+}
+
 async function aiGenerateSnsPost(){
   var storeId=document.getElementById('aiSnsStore').value;
   var platform=document.getElementById('aiSnsPlatform').value;
   var topic=document.getElementById('aiSnsTopic').value.trim();
   if(!storeId){alert('店舗を選択してください');return;}
+  if(!await checkAiQuotaAndPrompt(storeId,'sns_post'))return;
   var btn=document.getElementById('aiSnsBtn');
   btn.disabled=true;btn.textContent='生成中...';
   document.getElementById('aiSnsResult').innerHTML='<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:#888">AIが投稿文を生成中...</div></div>';
@@ -763,6 +790,7 @@ async function aiGeneratePopImage(){
   var prompt=document.getElementById('aiPopPrompt').value.trim();
   if(!storeId){alert('店舗を選択してください');return;}
   if(!prompt){alert('内容を入力してください');return;}
+  if(!await checkAiQuotaAndPrompt(storeId,'pop_image'))return;
   var btn=document.getElementById('aiPopBtn');
   btn.disabled=true;btn.textContent='生成中（30秒程度）...';
   document.getElementById('aiPopResult').innerHTML='<div style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:#888">DALL-E 3がPOP画像を生成中...<br><span style="font-size:10px">通常20〜40秒かかります</span></div></div>';
