@@ -1,0 +1,95 @@
+/* =============================================================
+   aiden-common.css — AIden 共通スタイル
+   FOUC制御 / CSS変数デフォルト / Header Type A & B / Footer / Responsive
+   ============================================================= */
+
+/* ===== FOUC Control ===== */
+body:not(.aiden-ready) { opacity: 0; }
+body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
+
+/* ===== CSS Variable Defaults (neutral fallback) ===== */
+:root {
+  --brand-primary: #666;
+  --brand-primary-dark: #444;
+  --brand-primary-light: #f5f5f5;
+  --brand-header-bg: #FFFFFF;
+  --brand-header-text: #333333;
+  --brand-font: 'Noto Sans JP', sans-serif;
+  --brand-font-color: #333333;
+  --text2: #666; --text3: #999;
+  --bg: #fff; --bg2: #F8F8F8;
+  --border: #E0E0E0;
+  --shadow: 0 2px 8px rgba(0,0,0,.1);
+  --gold: #C9A227;
+}
+
+/* ===== Header Type A (Brand Pages) ===== */
+.header{background:var(--brand-header-bg);position:sticky;top:0;z-index:1000}
+.header-main{max-width:1100px;margin:0 auto;display:flex;align-items:center;height:56px;padding:0 20px;gap:0}
+.header-logo{margin-right:32px;flex-shrink:0}
+.header-logo a{display:flex;align-items:center}
+.header-logo-mark{width:44px;height:44px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin-right:10px;flex-shrink:0;overflow:hidden}
+.header-logo-mark img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.header-logo-text{color:var(--brand-header-text);font-size:20px;font-weight:700;font-family:'Noto Serif JP',serif;letter-spacing:.05em;white-space:nowrap}
+.header-logo-text img{height:32px;object-fit:contain}
+.header-nav{display:flex;align-items:center;flex:1}
+.header-nav-link{color:var(--brand-header-text);font-size:13px;font-weight:500;padding:0 14px;height:56px;display:flex;align-items:center;white-space:nowrap;transition:background .15s;border:none;background:none;font-family:var(--brand-font);text-decoration:none;cursor:pointer}
+.header-nav-link:hover{background:rgba(0,0,0,.15)}
+.header-nav-link.active{background:rgba(0,0,0,.1)}
+.header-nav-link.cta{background:rgba(0,0,0,.25);border-radius:3px;margin:0 3px;height:38px;font-weight:700;font-size:12px;padding:0 12px}
+.header-nav-link.cta:hover{background:rgba(0,0,0,.4)}
+.lang-select-wrap{margin-left:auto;position:relative;flex-shrink:0}
+.lang-select{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:var(--brand-header-text);font-size:11px;padding:4px 22px 4px 8px;border-radius:3px;cursor:pointer;font-family:var(--brand-font);outline:none}
+.lang-select:hover{background:rgba(255,255,255,.25)}
+.lang-select option{background:#333;color:#fff}
+.lang-select-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--brand-header-text);font-size:9px}
+.header-hamburger{display:none;background:none;border:none;color:var(--brand-header-text);font-size:26px;margin-left:auto;padding:8px}
+.mobile-nav{display:none;position:fixed;top:56px;left:0;right:0;background:var(--brand-primary-dark);z-index:999;flex-direction:column;padding:8px 0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.mobile-nav.open{display:flex}
+.mobile-nav a,.mobile-nav button{color:white;font-size:14px;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--brand-font);width:100%;text-align:left;cursor:pointer}
+.mobile-nav a:hover,.mobile-nav button:hover{background:rgba(0,0,0,.15)}
+.mobile-nav-cta{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.mobile-nav-cta a,.mobile-nav-cta button{background:rgba(255,255,255,.15);padding:12px;border-radius:4px;text-align:center;font-weight:700;font-size:13px;border:none;justify-content:center}
+
+/* ===== Header Type B (Order Pages) ===== */
+.header--order{position:fixed;top:0;left:0;right:0;z-index:200}
+.header--order .header-main{justify-content:space-between}
+.header--order .header-back{background:none;border:none;color:var(--brand-header-text);font-size:20px;padding:8px;cursor:pointer;display:flex;align-items:center}
+.header--order .header-center{position:absolute;left:50%;transform:translateX(-50%)}
+.header--order .header-actions{display:flex;align-items:center;gap:8px}
+.header--order .header-cart{position:relative;background:none;border:none;color:var(--brand-header-text);font-size:20px;cursor:pointer;padding:8px}
+.header--order .header-cart-badge{position:absolute;top:2px;right:2px;background:white;color:var(--brand-header-bg);font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.header--order .header-signin{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:var(--brand-header-text);font-size:11px;padding:6px 12px;border-radius:3px;cursor:pointer;font-family:var(--brand-font);white-space:nowrap}
+.header--order .header-signin:hover{background:rgba(255,255,255,.3)}
+.aiden-order-body{padding-top:56px}
+
+/* ===== Footer ===== */
+footer.aiden-footer{background:#222;color:rgba(255,255,255,.7)}
+.aiden-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
+.aiden-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.aiden-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
+.aiden-footer .footer-brand-desc{font-size:12px;line-height:1.8;opacity:.6}
+.aiden-footer .footer-nav-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.15)}
+.aiden-footer .footer-nav-list{display:flex;flex-direction:column;gap:9px}
+.aiden-footer .footer-nav-list a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;text-decoration:none}
+.aiden-footer .footer-nav-list a:hover{color:white}
+.aiden-footer .footer-bottom{border-top:1px solid rgba(255,255,255,.1);padding:16px 20px}
+.aiden-footer .footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.aiden-footer .footer-bottom-links{display:flex;gap:16px;flex-wrap:wrap}
+.aiden-footer .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4);text-decoration:none}
+.aiden-footer .footer-bottom-links a:hover{color:white}
+.aiden-footer .footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
+.aiden-footer .powered{font-size:10px;color:rgba(255,255,255,.2)}
+
+/* ===== Responsive ===== */
+@media(max-width:900px){
+  .header-nav{display:none}
+  .header-hamburger{display:block}
+  .lang-select-wrap{margin-left:0}
+  .aiden-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}
+}
+@media(max-width:600px){
+  .aiden-footer .footer-main{grid-template-columns:1fr}
+  .aiden-footer .footer-bottom-inner{flex-direction:column;align-items:flex-start}
+  .aiden-footer .footer-bottom-links{flex-wrap:wrap}
+}
