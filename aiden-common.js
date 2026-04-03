@@ -555,7 +555,7 @@
   /* =============================================================
      20. init(options) — main entry point
      ============================================================= */
-  function init(options) {
+  async function init(options) {
     options = options || {};
     var headerType = options.header !== undefined ? options.header : 'brand';
     var showFooter = options.footer !== undefined ? options.footer : true;
