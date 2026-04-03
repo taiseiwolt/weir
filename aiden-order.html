@@ -8,10 +8,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="./aiden-common.css">
+<script src="./aiden-common.js"></script>
 <style>
 
 :root{
-  --brand:#D32F2F; --brand-dark:#B71C1C; --brand-light:#FFEBEE;
+  --brand:var(--brand-primary, #D32F2F); --brand-dark:var(--brand-primary-dark, #B71C1C); --brand-light:var(--brand-primary-light, #FFEBEE);
   --text:#1a1a1a;  --text2:#555;         --text3:#999;
   --bg:#f5f5f5;    --white:#fff;
   --border:#e8e8e8; --border2:#ddd;
@@ -19,36 +22,20 @@
   --shadow:0 2px 12px rgba(0,0,0,.08);
   --shadow-lg:0 8px 32px rgba(0,0,0,.18);
   --radius:12px;
-  --font:'Noto Sans JP',sans-serif;
+  --font:var(--brand-font, 'Noto Sans JP',sans-serif);
   --panel-w:400px;
   --hdr-h:56px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:var(--font);color:var(--text);font-size:14px;line-height:1.6;background:var(--white);overflow:hidden;touch-action:manipulation}
+body.aiden-order-body{padding-top:0!important} /* padding handled by #page-wrap */
 button{font-family:var(--font);cursor:pointer;border:none;background:none}
 input,select,textarea{font-family:var(--font);font-size:16px!important}
 
-/* ===== PAGE LAYOUT — header + screen fill exactly 100vh ===== */
-#page-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+/* ===== PAGE LAYOUT — header(fixed) + screen fill exactly 100vh ===== */
+#page-wrap{display:flex;flex-direction:column;height:100vh;padding-top:56px;overflow:hidden}
 
-/* ===== HEADER ===== */
-.app-header{
-  height:var(--hdr-h);flex-shrink:0;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;border-bottom:1px solid var(--border);
-  background:var(--white);position:relative;z-index:200;
-}
-.app-logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px;text-decoration:none;color:var(--text)}
-.app-logo-icon{width:32px;height:32px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
-.hdr-right{display:flex;align-items:center;gap:10px}
-.lang-sel-wrap{position:relative}
-.lang-sel{appearance:none;padding:5px 22px 5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:700;background:var(--white);color:var(--text2);cursor:pointer;font-family:var(--font)}
-.lang-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text3);pointer-events:none}
-.hdr-signin{font-size:13px;font-weight:700;color:var(--text2);cursor:pointer}
-.cart-hdr-btn{display:none;align-items:center;gap:6px;background:var(--brand);color:white;border-radius:20px;padding:6px 14px 6px 10px;font-size:13px;font-weight:700;transition:background .15s;cursor:pointer;border:none}
-.cart-hdr-btn.show{display:flex}
-.cart-hdr-btn:hover{background:var(--brand-dark)}
-.cart-hdr-badge{background:white;color:var(--brand);border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
+/* ===== HEADER (managed by aiden-common.js) ===== */
 
 /* ===== SCREEN SYSTEM ===== */
 /* Screen 1: fill the remaining height (100vh - header) */
@@ -213,7 +200,7 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
 
 /* Category tabs */
 .cat-tabs-wrap{
-  position:sticky;top:56px;z-index:100;
+  position:sticky;top:0;z-index:100;
   background:white;border-bottom:1px solid var(--border);
 }
 .cat-tabs{
@@ -614,32 +601,8 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
 <body>
 <div id="page-wrap">
 
-<!-- ===== HEADER ===== -->
-<header class="app-header">
-  <a class="app-logo" href="./brand.html">
-    <div class="app-logo-icon">🔥</div>
-    <span>炭火亭</span>
-  </a>
-  <div class="hdr-right">
-    <div class="lang-sel-wrap">
-      <select class="lang-sel" id="lang-sel" onchange="changeLang(this.value)">
-        <option value="ja">日本語</option>
-        <option value="en">English</option>
-        <option value="zh">中文</option>
-        <option value="ko">한국어</option>
-        <option value="fr">Français</option>
-        <option value="it">Italiano</option>
-        <option value="id">Indonesia</option>
-      </select>
-      <div class="lang-arrow">▼</div>
-    </div>
-    <button class="cart-hdr-btn" id="cart-hdr-btn" onclick="goScreen('menu')">
-      <div class="cart-hdr-badge" id="cart-hdr-badge">0</div>
-      <span id="cart-hdr-label">カート</span>
-    </button>
-    <span class="hdr-signin" id="hdr-signin">サインイン</span>
-  </div>
-</header>
+<!-- ===== HEADER (rendered by aiden-common.js) ===== -->
+<div id="aiden-header"></div>
 
 <!-- ===== SCREEN 1: STORE SELECT ===== -->
 <div id="screen-store" class="s-show">
@@ -647,16 +610,16 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
   <div class="store-panel">
     <div class="panel-top">
       <!-- 順序: 住所ラベル → 住所ボタン → 店舗タイトル → タブ -->
-      <div class="panel-title sub" id="lbl-addr-title">住所を入力してください</div>
+      <div class="panel-title sub" id="lbl-addr-title" data-i18n="addr_title">住所を入力してください</div>
       <button class="addr-btn" id="addr-btn" onclick="openAddrModal()">
         <span class="addr-btn-icon">📍</span>
-        <span class="addr-btn-text" id="addr-btn-text">住所を入力・変更する</span>
+        <span class="addr-btn-text" id="addr-btn-text" data-i18n="addr_placeholder">住所を入力・変更する</span>
       </button>
-      <div class="panel-title main" id="lbl-store-title">店舗を選択してください</div>
+      <div class="panel-title main" id="lbl-store-title" data-i18n="store_title">店舗を選択してください</div>
       <!-- 左=お持ち帰り / 右=デリバリー -->
       <div class="mode-tabs">
-        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')">🚶 お持ち帰り</button>
-        <button class="mode-tab"        id="tab-delivery" onclick="setMode('delivery')">🚲 デリバリー</button>
+        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')" data-i18n="mode_t">🚶 お持ち帰り</button>
+        <button class="mode-tab"        id="tab-delivery" onclick="setMode('delivery')" data-i18n="mode_d">🚲 デリバリー</button>
       </div>
     </div>
     <div class="store-list-wrap">
@@ -676,41 +639,41 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
     <div class="addr-step active" id="addr-step-1">
       <div class="addr-step-hdr">
         <div style="width:34px"></div>
-        <span class="step-hdr-title" id="s1-title">住所を入力</span>
+        <span class="step-hdr-title" id="s1-title" data-i18n="s1_title">住所を入力</span>
         <button class="step-close" onclick="closeAddrModal()">✕</button>
       </div>
       <div class="addr-body">
-        <div class="addr-big-title" id="s1-big">郵便番号を入力</div>
-        <div class="addr-sub" id="s1-sub">7桁の郵便番号で住所を自動補完します</div>
+        <div class="addr-big-title" id="s1-big" data-i18n="s1_big">郵便番号を入力</div>
+        <div class="addr-sub" id="s1-sub" data-i18n="s1_sub">7桁の郵便番号で住所を自動補完します</div>
         <input class="addr-f zip" id="addr-zip" type="tel" placeholder="例：150-0001" maxlength="8" oninput="onZipInput(this.value)">
-        <div class="addr-f-note" id="s1-note">ハイフンなしで入力してください</div>
+        <div class="addr-f-note" id="s1-note" data-i18n="s1_note">ハイフンなしで入力してください</div>
       </div>
     </div>
     <!-- Step 2: Free text -->
     <div class="addr-step" id="addr-step-2">
       <div class="addr-step-hdr">
         <button class="step-back" onclick="goAddrStep(1)">←</button>
-        <span class="step-hdr-title" id="s2-title">住所を確認・編集</span>
+        <span class="step-hdr-title" id="s2-title" data-i18n="s2_title">住所を確認・編集</span>
         <button class="step-close" onclick="closeAddrModal()">✕</button>
       </div>
       <div class="addr-body">
-        <div class="addr-big-title" id="s2-big">住所を入力してください</div>
-        <div class="addr-sub" id="s2-sub">番地・号まで正確に入力してください</div>
+        <div class="addr-big-title" id="s2-big" data-i18n="s2_big">住所を入力してください</div>
+        <div class="addr-sub" id="s2-sub" data-i18n="s2_sub">番地・号まで正確に入力してください</div>
         <input class="addr-f street" id="addr-street" type="text" placeholder="東京都渋谷区恵比寿1丁目2-3">
         <input class="addr-f" id="addr-building" type="text" placeholder="マンション名・部屋番号（任意）">
-        <button class="addr-continue" id="btn-continue" onclick="geocodeAndNext()">続ける</button>
+        <button class="addr-continue" id="btn-continue" onclick="geocodeAndNext()" data-i18n="btn_continue">続ける</button>
       </div>
     </div>
     <!-- Step 3: Confirm -->
     <div class="addr-step" id="addr-step-3">
       <div class="addr-step-hdr">
         <button class="step-back" onclick="goAddrStep(2)">←</button>
-        <span class="step-hdr-title" id="s3-title">位置を確認</span>
+        <span class="step-hdr-title" id="s3-title" data-i18n="s3_title">位置を確認</span>
         <button class="step-close" onclick="closeAddrModal()">✕</button>
       </div>
       <div class="addr-body">
-        <div class="addr-big-title" id="s3-big">こちらで<br>よろしいですか？</div>
-        <div class="addr-sub" id="s3-sub">配達先住所が正しいことを確認してください。</div>
+        <div class="addr-big-title" id="s3-big" data-i18n="s3_big">こちらで<br>よろしいですか？</div>
+        <div class="addr-sub" id="s3-sub" data-i18n="s3_sub">配達先住所が正しいことを確認してください。</div>
         <div class="addr-confirm-map">
           <div id="confirm-mini-map"></div>
           <!-- 中央固定ピン -->
@@ -724,9 +687,9 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
           </svg>
         </div>
         <div class="addr-confirm-addr-text" id="confirm-addr-text"></div>
-        <div class="addr-pin-note" id="s3-pin">📌 ピンをドラッグして正確な位置を調整できます</div>
-        <button class="addr-btn-change" id="btn-change" onclick="goAddrStep(2)">住所を変更する</button>
-        <button class="addr-btn-use"    id="btn-use"    onclick="useAddress()">この住所を利用する</button>
+        <div class="addr-pin-note" id="s3-pin" data-i18n="s3_pin">📌 ピンをドラッグして正確な位置を調整できます</div>
+        <button class="addr-btn-change" id="btn-change" onclick="goAddrStep(2)" data-i18n="btn_change">住所を変更する</button>
+        <button class="addr-btn-use"    id="btn-use"    onclick="useAddress()" data-i18n="btn_use">この住所を利用する</button>
       </div>
     </div>
   </div>
@@ -974,17 +937,7 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
 <div class="toast" id="toast"></div>
 </div>
 <script>
-function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-
-/* ============================================================
-   BRAND
-   ============================================================ */
-var BRAND = {primaryColor:'#D32F2F', primaryDark:'#B71C1C'};
-(function(){
-  var r = document.documentElement;
-  r.style.setProperty('--brand', BRAND.primaryColor);
-  r.style.setProperty('--brand-dark', BRAND.primaryDark);
-})();
+var escH = AidenCommon.escH;
 
 /* ============================================================
    STORES — aiden-brand-stores.html と同期
@@ -1006,15 +959,14 @@ var STORES = [
 ];
 
 /* ============================================================
-   I18N — 7言語
+   I18N — page-specific translations (merged into AidenCommon)
    ============================================================ */
-var LNG = {
+AidenCommon.addTranslations({
   ja:{
     addr_title:'住所を入力してください',
     addr_placeholder:'住所を入力・変更する',
     store_title:'店舗を選択してください',
     mode_t:'🚶 お持ち帰り', mode_d:'🚲 デリバリー',
-    signin:'サインイン', cart:'カート',
     s1_title:'住所を入力', s1_big:'郵便番号を入力',
     s1_sub:'7桁の郵便番号で住所を自動補完します',
     s1_note:'ハイフンなしで入力してください',
@@ -1034,7 +986,6 @@ var LNG = {
     addr_placeholder:'Enter or change address',
     store_title:'Select a store',
     mode_t:'🚶 Takeout', mode_d:'🚲 Delivery',
-    signin:'Sign In', cart:'Cart',
     s1_title:'Enter Address', s1_big:'Enter postal code',
     s1_sub:'Auto-fill address from postal code',
     s1_note:'No hyphen required',
@@ -1054,7 +1005,6 @@ var LNG = {
     addr_placeholder:'输入或更改地址',
     store_title:'请选择门店',
     mode_t:'🚶 外带', mode_d:'🚲 外送',
-    signin:'登录', cart:'购物车',
     s1_title:'输入地址', s1_big:'输入邮政编码',
     s1_sub:'自动补全地址',
     s1_note:'无需输入连字符',
@@ -1074,7 +1024,6 @@ var LNG = {
     addr_placeholder:'주소 입력 또는 변경',
     store_title:'매장을 선택하세요',
     mode_t:'🚶 포장', mode_d:'🚲 배달',
-    signin:'로그인', cart:'장바구니',
     s1_title:'주소 입력', s1_big:'우편번호 입력',
     s1_sub:'우편번호로 주소 자동완성',
     s1_note:'하이픈 없이 입력하세요',
@@ -1094,7 +1043,6 @@ var LNG = {
     addr_placeholder:"Entrer ou modifier l'adresse",
     store_title:'Sélectionner un restaurant',
     mode_t:'🚶 À emporter', mode_d:'🚲 Livraison',
-    signin:'Se connecter', cart:'Panier',
     s1_title:'Entrer une adresse', s1_big:'Entrez le code postal',
     s1_sub:"Complétion auto de l'adresse",
     s1_note:'Sans tiret',
@@ -1114,7 +1062,6 @@ var LNG = {
     addr_placeholder:"Inserisci o modifica l'indirizzo",
     store_title:'Seleziona un ristorante',
     mode_t:'🚶 Asporto', mode_d:'🚲 Consegna',
-    signin:'Accedi', cart:'Carrello',
     s1_title:'Inserisci indirizzo', s1_big:'Inserisci il CAP',
     s1_sub:"Compilazione automatica dell'indirizzo",
     s1_note:'Senza trattino',
@@ -1134,7 +1081,6 @@ var LNG = {
     addr_placeholder:'Masukkan atau ubah alamat',
     store_title:'Pilih restoran',
     mode_t:'🚶 Bawa Pulang', mode_d:'🚲 Pesan Antar',
-    signin:'Masuk', cart:'Keranjang',
     s1_title:'Masukkan Alamat', s1_big:'Masukkan kode pos',
     s1_sub:'Alamat diisi otomatis',
     s1_note:'Tanpa tanda hubung',
@@ -1149,12 +1095,11 @@ var LNG = {
     lbl_t:'Bawa Pulang', lbl_d:'Pesan Antar', lbl_td:'Bawa Pulang & Pesan Antar',
     from:'dari Anda'
   }
-};
+});
 
 /* ============================================================
    STATE
    ============================================================ */
-var currentLang    = 'ja';
 var orderMode      = 'takeout';  /* デフォルト: お持ち帰り */
 var selectedStore  = null;
 var cart           = [];
@@ -1179,59 +1124,21 @@ var storeMarkers   = {};
 var hlStore        = null;
 
 /* ============================================================
-   t() — Screen2-4 JS が使う翻訳ヘルパー（キーをそのまま返す）
+   t() / L_() — translation helpers (delegate to AidenCommon)
    ============================================================ */
-function t(key){ return key; }
+function t(key){ return AidenCommon.t(key); }
+function L_(key){ return AidenCommon.t(key); }
 
 /* ============================================================
-   L_() — Screen1 の翻訳ヘルパー
-   ============================================================ */
-function L_(key){
-  var d = LNG[currentLang];
-  return (d && d[key] !== undefined) ? d[key] : (LNG.ja[key] || key);
-}
-
-/* ============================================================
-   LANG
+   changeLang — delegate to AidenCommon + refresh dynamic parts
    ============================================================ */
 function changeLang(lang){
-  if(!LNG[lang]) return;
-  currentLang = lang;
-  document.getElementById('html-root').lang = lang;
-
-  function set(id, val, html){
-    var el = document.getElementById(id);
-    if(!el) return;
-    if(html) el.innerHTML = val; else el.textContent = val;
+  AidenCommon.changeLang(lang);
+  /* addr-btn-text may show user address instead of placeholder */
+  if(userAddress){
+    var el = document.getElementById('addr-btn-text');
+    if(el) el.textContent = userAddress;
   }
-
-  /* パネル */
-  set('lbl-addr-title',  L_('addr_title'));
-  set('addr-btn-text',   userAddress || L_('addr_placeholder'));
-  set('lbl-store-title', L_('store_title'));
-  /* モードタブ */
-  set('tab-takeout',  L_('mode_t'));
-  set('tab-delivery', L_('mode_d'));
-  /* ヘッダー */
-  set('hdr-signin',      L_('signin'));
-  set('cart-hdr-label',  L_('cart'));
-  /* モーダル Step1 */
-  set('s1-title', L_('s1_title'));
-  set('s1-big',   L_('s1_big'));
-  set('s1-sub',   L_('s1_sub'));
-  set('s1-note',  L_('s1_note'));
-  /* モーダル Step2 */
-  set('s2-title', L_('s2_title'));
-  set('s2-big',   L_('s2_big'));
-  set('s2-sub',   L_('s2_sub'));
-  set('btn-continue', L_('btn_continue'));
-  /* モーダル Step3 */
-  set('s3-title', L_('s3_title'));
-  set('s3-big',   L_('s3_big'), true);
-  set('s3-sub',   L_('s3_sub'));
-  set('s3-pin',   L_('s3_pin'));
-  set('btn-change', L_('btn_change'));
-  set('btn-use',    L_('btn_use'));
   /* 店舗リスト再描画 */
   renderStoreList();
 }
@@ -1257,17 +1164,17 @@ function goScreen(name){
     window.scrollTo(0, 0);
   }
   /* カートボタン */
-  var cb = document.getElementById('cart-hdr-btn');
+  var cb = document.getElementById('aiden-header-cart');
   if(name === 'menu'){
     renderMenu();
     updateCartBar();
   } else if(name === 'checkout'){
     renderCheckout();
-    cb.classList.remove('show');
+    if(cb) cb.style.display = 'none';
   } else if(name === 'tracking'){
-    cb.classList.remove('show');
+    if(cb) cb.style.display = 'none';
   } else {
-    cb.classList.remove('show');
+    if(cb) cb.style.display = 'none';
   }
 }
 
@@ -1308,7 +1215,20 @@ function makeUserIcon(){
   });
 }
 
-window.addEventListener('load', function(){
+window.addEventListener('load', async function(){
+  /* ── AidenCommon init ── */
+  await AidenCommon.init({
+    header: 'order',
+    footer: true,
+    onBack: function() {
+      var slug = AidenCommon.brand ? AidenCommon.brand.slug : '';
+      window.location.href = './brand.html' + (slug ? '?brand=' + slug : '');
+    },
+    onBrandLoaded: function(brand) {
+      document.title = (brand.name || '') + ' | モバイルオーダー';
+    }
+  });
+
   /* Map */
   var el = document.getElementById('main-map');
   if(el){
@@ -1849,12 +1769,12 @@ function cartTotal(){ return cart.reduce(function(s,ci){ return s + calcItemTota
 
 function updateCartBar(){
   var n  = cartCount();
-  var cb = document.getElementById('cart-hdr-btn');
+  var cb = document.getElementById('aiden-header-cart');
+  var badge = document.getElementById('aiden-cart-badge');
   var br = document.getElementById('cart-bar');
   if(n > 0){
-    cb.classList.add('show');
-    var badge = document.getElementById('cart-hdr-badge');
-    if(badge) badge.textContent = n;
+    if(cb) cb.style.display = '';
+    if(badge){ badge.style.display = ''; badge.textContent = n; }
     if(br){
       br.classList.add('show');
       var cnt = document.getElementById('cart-bar-count');
@@ -1863,7 +1783,8 @@ function updateCartBar(){
       if(tot) tot.textContent = '¥' + cartTotal().toLocaleString();
     }
   } else {
-    cb.classList.remove('show');
+    if(cb) cb.style.display = 'none';
+    if(badge) badge.style.display = 'none';
     if(br) br.classList.remove('show');
   }
 }
@@ -2473,20 +2394,9 @@ function downloadReceipt(){
   },800);
 }
 
-/* =====================================================
-   TOAST
-   ===================================================== */
-var toastTimer=null;
-
-/* =====================================================
-   INIT
-   ===================================================== */
-
+var etaInterval = null;
+var trackingStepIdx = 0;
 </script>
-<footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
-  <div style="margin-bottom:6px"><a href="/aiden-tokushoho.html" style="color:#666;margin:0 8px">特定商取引法に基づく表示</a><a href="./legal/terms.html" style="color:#666;margin:0 8px">利用規約</a><a href="./legal/privacy.html" style="color:#666;margin:0 8px">プライバシーポリシー</a></div>
-  <div>お問い合わせ: <a href="mailto:support@aiden-jp.net" style="color:#666">support@aiden-jp.net</a></div>
-  <div style="margin-top:4px">Powered by AIden</div>
-</footer>
+<div id="aiden-footer"></div>
 </body>
 </html>
