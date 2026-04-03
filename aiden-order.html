@@ -1463,7 +1463,7 @@ function geocodeAndNext(){
   btn.disabled = true;
 
   /* Nominatim API でジオコーディング（住所→緯度経度） */
-  var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
+  var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&viewbox=122.93,45.56,153.99,24.04&bounded=1&q='
             + encodeURIComponent(query);
   fetch(url, {headers:{'Accept-Language':'ja'}})
     .then(function(res){ return res.json(); })
@@ -1523,7 +1523,7 @@ function onZipInput(val){
 
   /* Nominatim: addressdetails=1 で構造化住所を取得（全国対応・日英両対応） */
   var url = 'https://nominatim.openstreetmap.org/search'
-          + '?format=json&limit=1&countrycodes=jp&addressdetails=1&postalcode=' + key;
+          + '?format=json&limit=1&countrycodes=jp&viewbox=122.93,45.56,153.99,24.04&bounded=1&addressdetails=1&postalcode=' + key;
 
   fetch(url, {headers:{'Accept-Language':'ja,en', 'User-Agent':'AidenOrderApp/1.0'}})
     .then(function(res){ return res.json(); })
