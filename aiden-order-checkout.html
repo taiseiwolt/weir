@@ -2521,5 +2521,19 @@ document.addEventListener('keydown', function(e) {
   }
 });
 </script>
+<script src="aiden-chat-widget.js"></script>
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  if (typeof AidenChatWidget !== 'undefined') {
+    window._aidenChat = new AidenChatWidget({
+      contextType: 'enduser',
+      storeId: params.get('store_id') || params.get('sid') || null,
+      supabaseClient: typeof sb !== 'undefined' ? sb : null,
+      apiBase: 'https://aiden-jp.net',
+    });
+  }
+})();
+</script>
 </body>
 </html>
