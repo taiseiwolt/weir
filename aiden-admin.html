@@ -212,6 +212,8 @@ async function loadAllData(){
   });
 }
 
+async function getToken(){return(await sb.auth.getSession()).data.session?.access_token||'';}
+
 // AUTH CHECK — redirect if not authenticated
 (async()=>{
   try{const{data:{session}}=await sb.auth.getSession();if(!session){window.location.href='/';return;}}catch(e){}
@@ -1119,7 +1121,7 @@ function renderCorpPage(c){
   '<div class="page-subtitle">'+c.id+' / '+c.rep+' / '+statusBadge(c.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)"><div class="stat-card purple"><div class="sc-label">ブランド数</div><div class="sc-val">'+brands.length+'</div></div><div class="stat-card blue"><div class="sc-label">店舗数</div><div class="sc-val">'+stores.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card orange"><div class="sc-label">アカウント数</div><div class="sc-val">'+accounts.length+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div></div>'+
-  '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
+  '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveCorpBasic(\''+c.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
   '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント</div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
@@ -1134,7 +1136,7 @@ function renderBrandPage(b){
   '<div class="page-subtitle">'+b.id+' / '+b.slug+' / '+ss.length+'店舗 / '+statusBadge(b.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card purple"><div class="sc-label">店舗数</div><div class="sc-val">'+ss.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+ss.reduce((s,x)=>s+x.orders,0).toLocaleString()+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'brand\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'brand\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'design\')">デザイン</div><div class="tab" onclick="switchTab(\'brand\',this,\'hp\')">HP設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'news\')">ニュース</div><div class="tab" onclick="switchTab(\'brand\',this,\'campaign\')">キャンペーン</div><div class="tab" onclick="switchTab(\'brand\',this,\'coupon\')">クーポン</div><div class="tab" onclick="switchTab(\'brand\',this,\'member\')">会員・CRM</div><div class="tab" onclick="switchTab(\'brand\',this,\'menu\')">メニュー管理</div><div class="tab" onclick="switchTab(\'brand\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'brand\',this,\'pii\')">個人情報アクセス</div><div class="tab" onclick="switchTab(\'brand\',this,\'related\')">法人・店舗</div></div>'+
-  '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" value="'+b.name+'"></div><div class="form-group"><label>スラッグ</label><input type="text" value="'+b.slug+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+b.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント</label><select><option selected>Noto Sans JP</option><option>Noto Serif JP</option></select></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>📷 Instagram</label><input type="url" placeholder=""></div><div class="form-group"><label>🕊 X</label><input type="url" placeholder=""></div><div class="form-group"><label>💬 LINE</label><input type="url" placeholder=""></div><div class="form-group"><label>🎵 TikTok</label><input type="url" placeholder=""></div></div></div></div>'+
+  '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandBasic(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" value="'+b.name+'"></div><div class="form-group"><label>スラッグ</label><input type="text" value="'+b.slug+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+b.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント</label><select><option selected>Noto Sans JP</option><option>Noto Serif JP</option></select></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>📷 Instagram</label><input type="url" placeholder=""></div><div class="form-group"><label>🕊 X</label><input type="url" placeholder=""></div><div class="form-group"><label>💬 LINE</label><input type="url" placeholder=""></div><div class="form-group"><label>🎵 TikTok</label><input type="url" placeholder=""></div></div></div></div>'+
   '<div class="tab-content" id="brand-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">法人（'+cp.name+'）でONになっているサービスのみ選択可能です。ここでONにしたサービスは配下店舗で選択できます。</p><div class="svc-grid">'+renderServiceCards(b.id,'brand',cp.id)+'</div></div></div>'+
   '<div class="tab-content" id="brand-design"><div class="card"><div class="card-title">デザイン設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>メインカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="'+b.mainColor+'" style="width:40px;height:36px;border:none;cursor:pointer"><input type="text" value="'+b.mainColor+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px"></div></div><div class="form-group"><label>ヘッダー文字色</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="#FFFFFF" style="width:40px;height:36px;border:none;cursor:pointer"><input type="text" value="#FFFFFF" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px"></div></div></div></div><div class="card"><div class="card-title">ロゴ</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 ドラッグ&ドロップ</div></div></div>'+
   '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+b.slug+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select><option selected>公開中</option><option>非公開</option></select></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定すると、URLに「aiden」が表示されなくなります</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'📎 画像追加\')">＋ 追加</button></span></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px"><div style="width:180px;aspect-ratio:16/9;background:#f5f6fa;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-light)">サンプル画像 1</div><div style="width:180px;aspect-ratio:16/9;background:#f5f6fa;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-light)">サンプル画像 2</div></div><div style="font-size:11px;color:var(--text-light)">複数枚登録可能。ドラッグで順序変更。5秒間隔で自動スクロールします。</div></div></div>'+
@@ -1183,7 +1185,7 @@ async function savePiiAccessSettings(brandId){
   if(!b)return;
   const settings=b.pii_access_settings||{...PII_ACCESS_DEFAULTS};
   try{
-    const{error}=await sb.from('brands').update({pii_access_settings:settings}).eq('id',brandId);
+    const{error}=await sb.from('brands').update({pii_access_settings:settings}).eq('id',b._uuid||brandId);
     if(error)throw error;
     showToast('✅ 個人情報アクセス設定を保存しました');
     logAudit('update_service_settings','brands',brandId,{type:'pii_access_settings',settings});
@@ -1201,7 +1203,7 @@ function renderStorePage(s){
   '<div class="page-subtitle">'+s.id+' / '+s.addr+' / '+statusBadge(s.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(s.revenue)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+s.orders.toLocaleString()+'</div></div><div class="stat-card orange"><div class="sc-label">客単価</div><div class="sc-val">'+(s.orders>0?Y(Math.round(s.revenue/s.orders)):'—')+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'flags\')">機能</div><div class="tab" onclick="switchTab(\'store\',this,\'sales\')">売上</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div><div class="tab" onclick="switchTab(\'store\',this,\'related\')">法人・ブランド</div></div>'+
-  '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div></div></div></div>'+
+  '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div></div></div></div>'+
   '<div class="tab-content" id="store-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド（'+(br?br.name:'—')+'）でONになっているサービスのみ選択可能です。</p><div class="svc-grid">'+renderServiceCards(s.id,'store',br?br.id:null)+'</div></div></div>'+
   '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
   '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="text" value="6席"></div><div class="form-group"><label>喫煙</label><select><option selected>全席禁煙</option></select></div><div class="form-group"><label>子連れ</label><select><option selected>同伴不可</option></select></div><div class="form-group"><label>サービス料</label><input type="number" value="10"></div></div></div></div>'+
@@ -1237,7 +1239,7 @@ async function saveAdminDelivery(storeId){
       delivery_fee:deliveryFee,min_order_amount:minOrder,min_order_policy:minOrderPolicy,
       small_order_surcharge_max:surchargeMax,prep_time_minutes:prepTime,
       delivery_radius_km:deliveryRadius,min_order_apply_types:minOrderApplyTypes
-    }).eq('id',storeId);
+    }).eq('id',s._uuid||storeId);
     if(error)throw error;
     showToast('✅ 配達設定を保存しました');
     logAudit('update_store_settings','stores',storeId,{deliveryFee,minOrder,minOrderPolicy,surchargeMax,prepTime,deliveryRadius,minOrderApplyTypes});
@@ -1262,7 +1264,7 @@ async function saveAdminReservation(storeId){
       reservation_enabled:enabled,reservation_confirmation_mode:confMode,
       reservation_require_card:requireCard,reservation_cancellation_fee:cancelFee,
       reservation_cancel_deadline_hours:cancelDeadline
-    }).eq('id',storeId);
+    }).eq('id',s._uuid||storeId);
     if(error)throw error;
     showToast('✅ 予約設定を保存しました');
     logAudit('update_reservation_settings','stores',storeId,{enabled,confMode,requireCard,cancelFee,cancelDeadline});
@@ -1335,12 +1337,17 @@ function openAddCorpModal(){
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveCorp()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-function saveCorp(){
+async function saveCorp(){
   const name=document.getElementById('addCorpName').value.trim();
   const rep=document.getElementById('addCorpRep').value.trim();
   if(!name||!rep){showToast('⚠️ 法人名と代表者は必須です');return;}
-  CORPS.push({id:genId('CRP-'),name:name,rep:rep,status:document.getElementById('addCorpStatus').value,created:new Date().toISOString().split('T')[0]});
-  closeModal();showToast('✅ 法人を追加しました');renderPage();
+  const status=document.getElementById('addCorpStatus').value;
+  try{
+    const res=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,representative:rep,status:status})});
+    const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
+    CORPS.push({_uuid:d.data.id,id:d.data.display_id,name:name,rep:rep,status:status,created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:''});
+    closeModal();showToast('✅ 法人を追加しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 function openAddBrandModal(){
@@ -1354,12 +1361,20 @@ function openAddBrandModal(){
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveBrand()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-function saveBrand(){
+async function saveBrand(){
   const name=document.getElementById('addBrandName').value.trim();
   const slug=document.getElementById('addBrandSlug').value.trim();
   if(!name||!slug){showToast('⚠️ ブランド名とスラッグは必須です');return;}
-  BRANDS.push({id:genId('BRD-'),corpId:document.getElementById('addBrandCorp').value,name:name,slug:slug,status:document.getElementById('addBrandStatus').value,mainColor:document.getElementById('addBrandColor').value});
-  closeModal();showToast('✅ ブランドを追加しました');renderPage();
+  const corpDisplayId=document.getElementById('addBrandCorp').value;
+  const corp=CORPS.find(c=>c.id===corpDisplayId);
+  if(!corp){showToast('⚠️ 法人を選択してください');return;}
+  const mainColor=document.getElementById('addBrandColor').value;
+  try{
+    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,slug:slug,corp_id:corp._uuid,main_color:mainColor,is_active:true})});
+    const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
+    BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'active',mainColor:mainColor,pii_access_settings:{...PII_ACCESS_DEFAULTS}});
+    closeModal();showToast('✅ ブランドを追加しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 function openAddStoreModal(){
@@ -1373,11 +1388,20 @@ function openAddStoreModal(){
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveStore()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-function saveStore(){
+async function saveStore(){
   const name=document.getElementById('addStoreName').value.trim();
   if(!name){showToast('⚠️ 店舗名は必須です');return;}
-  STORES.push({id:genId('STR-'),brandId:document.getElementById('addStoreBrand').value,name:name,status:document.getElementById('addStoreStatus').value,addr:document.getElementById('addStoreAddr').value.trim(),tel:document.getElementById('addStoreTel').value.trim(),orders:0,revenue:0});
-  closeModal();showToast('✅ 店舗を追加しました');renderPage();
+  const brandDisplayId=document.getElementById('addStoreBrand').value;
+  const brand=BRANDS.find(b=>b.id===brandDisplayId);
+  if(!brand){showToast('⚠️ ブランドを選択してください');return;}
+  const addr=document.getElementById('addStoreAddr').value.trim();
+  const tel=document.getElementById('addStoreTel').value.trim();
+  try{
+    const res=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,brand_id:brand._uuid,address:addr,phone:tel,is_active:true})});
+    const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
+    STORES.push({_uuid:d.data.id,id:d.data.display_id,brandId:brandDisplayId,name:name,status:'active',addr:addr,tel:tel,orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
+    closeModal();showToast('✅ 店舗を追加しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 function openAddAccountModal(){
@@ -1390,16 +1414,62 @@ function openAddAccountModal(){
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveAccount()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
-function saveAccount(){
+async function saveAccount(){
   const name=document.getElementById('addAccName').value.trim();
   const email=document.getElementById('addAccEmail').value.trim();
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
   const role=document.getElementById('addAccRole').value;
   const corpId=document.getElementById('addAccCorp').value;
+  // For now, just add to local array (full DB integration in Task E2)
   const newId=genId('ACC-');
   ACCOUNTS.push({id:newId,name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
   logAudit('add_account','accounts',null,{name,email,role,corpId});
   closeModal();showToast('✅ アカウントを追加しました');renderPage();
+}
+
+async function saveCorpBasic(corpDisplayId){
+  const c=CORPS.find(x=>x.id===corpDisplayId);
+  if(!c)return;
+  const inputs=document.querySelectorAll('#corp-basic input');
+  const name=inputs[0]?.value.trim()||c.name;
+  const rep=inputs[1]?.value.trim()||c.rep;
+  const website=inputs[4]?.value.trim()||'';
+  const recruit=inputs[5]?.value.trim()||'';
+  try{
+    const res=await fetch('/api/admin/corporations/'+c._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,representative:rep,website_url:website,recruit_url:recruit})});
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
+    c.name=name;c.rep=rep;c.website_url=website;c.recruit_url=recruit;
+    showToast('✅ 法人情報を保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function saveBrandBasic(brandDisplayId){
+  const b=BRANDS.find(x=>x.id===brandDisplayId);
+  if(!b)return;
+  const inputs=document.querySelectorAll('#brand-basic input[type="text"]');
+  const name=inputs[0]?.value.trim()||b.name;
+  const slug=inputs[1]?.value.trim()||b.slug;
+  try{
+    const res=await fetch('/api/admin/brands/'+b._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,slug:slug})});
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
+    b.name=name;b.slug=slug;
+    showToast('✅ ブランド情報を保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function saveStoreBasic(storeDisplayId){
+  const s=STORES.find(x=>x.id===storeDisplayId);
+  if(!s)return;
+  const inputs=document.querySelectorAll('#store-basic input');
+  const name=inputs[0]?.value.trim()||s.name;
+  const addr=inputs[2]?.value.trim()||s.addr;
+  const tel=inputs[3]?.value.trim()||s.tel;
+  try{
+    const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,address:addr,phone:tel})});
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
+    s.name=name;s.addr=addr;s.tel=tel;
+    showToast('✅ 店舗情報を保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
