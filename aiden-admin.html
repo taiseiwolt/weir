@@ -1186,7 +1186,7 @@ function renderCorpPage(c){
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント一覧</div></div>'+
   '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveCorpBasic(\''+c.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
-  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント</div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+a.lastLogin+'</td></tr>').join('')+'</tbody></table></div></div>'+
+  '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント一覧 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(a.lastLogin||'—')+'</td><td><button class="btn btn-secondary btn-sm" style="margin-right:4px" onclick="openEditAccountModal(\''+a.id+'\')">編集</button><button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
   '<div class="tab-content" id="corp-stores"><div class="card"><div class="card-title">店舗一覧（'+stores.length+'）</div><table class="data-table"><thead><tr><th>ブランド</th><th>店舗名</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+stores.map(s=>{const br=getBrandForStore(s);return '<tr><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+'</tbody></table></div></div>';
 }
@@ -1515,11 +1515,40 @@ async function saveAccount(){
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
   const role=document.getElementById('addAccRole').value;
   const corpId=document.getElementById('addAccCorp').value;
-  // For now, just add to local array (full DB integration in Task E2)
   const newId=genId('ACC-');
   ACCOUNTS.push({id:newId,name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
   logAudit('add_account','accounts',null,{name,email,role,corpId});
   closeModal();showToast('✅ アカウントを追加しました');renderPage();
+}
+function openEditAccountModal(accId){
+  const a=ACCOUNTS.find(x=>x.id===accId);
+  if(!a)return;
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 アカウント編集</h3>'+
+  '<div class="form-grid">'+
+  '<div class="form-group"><label>氏名</label><input type="text" id="editAccName" value="'+a.name+'"></div>'+
+  '<div class="form-group"><label>メールアドレス</label><input type="email" id="editAccEmail" value="'+a.email+'"></div>'+
+  '<div class="form-group"><label>権限</label><select id="editAccRole"><option value="staff"'+(a.role==='staff'?' selected':'')+'>Staff</option><option value="admin"'+(a.role==='admin'?' selected':'')+'>Admin</option><option value="owner"'+(a.role==='owner'?' selected':'')+'>Owner</option></select></div>'+
+  '</div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="saveEditAccount(\''+a.id+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+async function saveEditAccount(accId){
+  const a=ACCOUNTS.find(x=>x.id===accId);
+  if(!a)return;
+  const name=document.getElementById('editAccName').value.trim();
+  const email=document.getElementById('editAccEmail').value.trim();
+  const role=document.getElementById('editAccRole').value;
+  if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
+  a.name=name;a.email=email;a.role=role;
+  logAudit('edit_account','accounts',accId,{name,email,role});
+  closeModal();showToast('✅ アカウントを更新しました');renderPage();
+}
+async function deleteAccount(accId){
+  const a=ACCOUNTS.find(x=>x.id===accId);
+  if(!a)return;
+  if(!confirm(a.name+'のアカウントを削除しますか？'))return;
+  ACCOUNTS.splice(ACCOUNTS.indexOf(a),1);
+  logAudit('delete_account','accounts',accId,{name:a.name});
+  showToast('✅ アカウントを削除しました');renderPage();
 }
 
 async function saveCorpBasic(corpDisplayId){
