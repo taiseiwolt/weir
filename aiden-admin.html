@@ -418,12 +418,51 @@ function renderPage(){
 
 // ===== DASHBOARD =====
 function renderDashboard(){
-  const tO=STORES.reduce((s,x)=>s+x.orders,0),tR=STORES.reduce((s,x)=>s+x.revenue,0);
+  const KPI_CATS=[
+    {key:'takeout',name:'お持ち帰り',color:'#0F6E56',svcKey:'mo_takeout',feeRate:0.040},
+    {key:'delivery',name:'デリバリー',color:'#993C1D',svcKey:'mo_delivery',feeRate:0.040},
+    {key:'dinein',name:'店内注文',color:'#185FA5',svcKey:'mo_dinein',feeRate:0.038},
+    {key:'additional',name:'追加サービス',color:'#534AB7',svcKey:null,feeRate:0},
+  ];
+  function kpiCard(label,value,color){
+    return '<div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid '+color+';box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.06)\'"><div style="font-size:10px;color:var(--text-light);margin-bottom:4px">'+label+'</div><div style="font-size:18px;font-weight:800">'+value+'</div></div>';
+  }
+  function renderSection(cat){
+    let stores,corps,brands;
+    if(cat.svcKey){
+      stores=STORES.filter(s=>getSvc(s.id,cat.svcKey));
+      const brandIds=[...new Set(stores.map(s=>s.brandId))];
+      brands=BRANDS.filter(b=>brandIds.includes(b.id));
+      const corpIds=[...new Set(brands.map(b=>b.corpId))];
+      corps=CORPS.filter(c=>corpIds.includes(c.id));
+    }else{
+      // Additional services: count entities with any paid service active
+      const paidKeys=SERVICES.filter(s=>s.cost==='paid').map(s=>s.key);
+      stores=STORES.filter(s=>paidKeys.some(k=>getSvc(s.id,k)));
+      const brandIds=[...new Set(stores.map(s=>s.brandId))];
+      brands=BRANDS.filter(b=>brandIds.includes(b.id));
+      const corpIds=[...new Set(brands.map(b=>b.corpId))];
+      corps=CORPS.filter(c=>corpIds.includes(c.id));
+    }
+    const tO=stores.reduce((s,x)=>s+x.orders,0);
+    const tR=stores.reduce((s,x)=>s+x.revenue,0);
+    const fee=Math.round(tR*cat.feeRate);
+    const mrr=cat.svcKey?fee:89600;
+    return '<div style="margin-bottom:24px"><div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:3px;background:'+cat.color+';display:inline-block"></span>'+cat.name+'</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px">'+
+      kpiCard('法人数',corps.length,cat.color)+
+      kpiCard('ブランド数',brands.length,cat.color)+
+      kpiCard('店舗数',stores.length,cat.color)+
+      kpiCard('注文数',tO.toLocaleString(),cat.color)+
+      kpiCard('GMV',Y(tR),cat.color)+
+      kpiCard('手数料',Y(fee),cat.color)+
+      kpiCard('MRR',Y(mrr),cat.color)+
+      '</div></div>';
+  }
   return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">AIdenプラットフォーム全体のKPI概要</div>'+
-  '<div class="stat-row"><div class="stat-card purple"><div class="sc-label">登録法人数</div><div class="sc-val">'+CORPS.length+'</div><div class="sc-sub"><span class="sc-change up">+1 今月</span></div></div><div class="stat-card blue"><div class="sc-label">総ブランド数</div><div class="sc-val">'+BRANDS.length+'</div></div><div class="stat-card green"><div class="sc-label">総店舗数</div><div class="sc-val">'+STORES.length+'</div><div class="sc-sub"><span class="sc-change up">+3 今月</span></div></div><div class="stat-card orange"><div class="sc-label">月間注文数</div><div class="sc-val">'+tO.toLocaleString()+'</div><div class="sc-sub"><span class="sc-change up">↑ 18.2%</span></div></div></div>'+
-  '<div class="stat-row"><div class="stat-card purple"><div class="sc-label">月間GMV</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card green"><div class="sc-label">手数料収入</div><div class="sc-val">'+Y(Math.round(tR*0.0062))+'</div></div><div class="stat-card blue"><div class="sc-label">追加サービス収入</div><div class="sc-val">'+Y(89600)+'</div><div class="sc-sub">AI PRO/EXPERT・CRM PRO/EXPERT等</div></div><div class="stat-card orange"><div class="sc-label">MRR</div><div class="sc-val">'+Y(Math.round(tR*0.0062)+89600)+'</div></div></div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div class="card"><div class="card-title">📈 法人別GMV</div><div id="dashGMV"></div></div>'+
-  '<div class="card"><div class="card-title">🕐 直近アクティビティ</div><div class="log-row"><span class="log-time">03-11 10:23</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>炭火亭 渋谷店 — ¥12,800</div><div class="log-row"><span class="log-time">03-11 10:15</span><span class="log-badge" style="background:#dfe6e9;color:#636e72">登録</span>カフェブリーズ — トライアル開始</div><div class="log-row"><span class="log-time">03-11 09:45</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>ラーメン風雲 新宿本店 — ¥1,980</div><div class="log-row"><span class="log-time">03-11 09:30</span><span class="log-badge" style="background:#ffeaa7;color:#d68910">決済</span>スミビフーズ — 月額決済完了</div></div></div>';
+  KPI_CATS.map(c=>renderSection(c)).join('')+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div class="card"><div class="card-title">📈 法人別GMV</div><div id="dashGMV" style="max-height:300px;overflow-y:auto"></div></div>'+
+  '<div class="card"><div class="card-title">🕐 直近アクティビティ</div><div style="max-height:300px;overflow-y:auto"><div class="log-row"><span class="log-time">03-11 10:23</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>炭火亭 渋谷店 — ¥12,800</div><div class="log-row"><span class="log-time">03-11 10:15</span><span class="log-badge" style="background:#dfe6e9;color:#636e72">登録</span>カフェブリーズ — トライアル開始</div><div class="log-row"><span class="log-time">03-11 09:45</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>ラーメン風雲 新宿本店 — ¥1,980</div><div class="log-row"><span class="log-time">03-11 09:30</span><span class="log-badge" style="background:#ffeaa7;color:#d68910">決済</span>スミビフーズ — 月額決済完了</div></div></div></div>';
 }
 function renderDashCharts(){const el=document.getElementById('dashGMV');if(!el)return;const d=CORPS.map(c=>({n:c.name.replace(/株式会社|有限会社/g,''),v:getStoresForCorp(c).reduce((s,x)=>s+x.revenue,0)}));const mx=Math.max(...d.map(x=>x.v));el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n.substring(0,8)+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+Y(x.v)+'</span></div></div></div>').join('');}
 
