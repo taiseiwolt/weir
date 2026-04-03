@@ -1039,6 +1039,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     switchMode(mode);
     validateForm();
     loadSavedAddresses();
+
+    // Prefill address from sessionStorage
+    var addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
+    if (addrData.street || addrData.address) {
+      var newAddrForm = document.getElementById('newAddressForm');
+      if (newAddrForm) newAddrForm.style.display = '';
+
+      if (addrData.street) {
+        var addrLine = document.getElementById('addrLineInput');
+        if (addrLine && !addrLine.value) addrLine.value = addrData.street;
+      }
+      if (addrData.building) {
+        var addrBuilding = document.getElementById('addrBuildingInput');
+        if (addrBuilding && !addrBuilding.value) addrBuilding.value = addrData.building;
+      }
+    }
   } catch(e) { console.error('Checkout init error:', e); }
 });
 
