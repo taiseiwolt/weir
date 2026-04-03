@@ -103,11 +103,11 @@
 <div class="toast" id="toast"></div>
 <script>
 // DATA
-const CORPS=[{id:'CRP-Xk9mPr2',name:'株式会社スミビフーズ',rep:'近重 泰輔',status:'active',created:'2026-01-15',stripe_account_id:null,rep_email:'taisei@sumbibi.com'},{id:'CRP-Pq7mN2k',name:'株式会社麺道楽',rep:'田中 一郎',status:'active',created:'2026-02-01',stripe_account_id:null,rep_email:'tanaka@mendouraku.com'},{id:'CRP-Wy4cR8j',name:'有限会社カフェブリーズ',rep:'佐藤 美咲',status:'trial',created:'2026-03-01',stripe_account_id:null,rep_email:'sato@cafebreeze.com'}];
+let CORPS=[];
 const PII_ACCESS_DEFAULTS={member_name:true,member_email:true,member_phone:true,member_address:true,order_history:true,guest_info:false};
-const BRANDS=[{id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭',slug:'sumibite',status:'active',mainColor:'#DC3232',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲',slug:'fuuun-ramen',status:'active',mainColor:'#FF6B35',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極',slug:'tsukemen-kiwami',status:'active',mainColor:'#1B4332',pii_access_settings:{...PII_ACCESS_DEFAULTS}},{id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze',slug:'cafe-breeze',status:'trial',mainColor:'#5BA4A4',pii_access_settings:{...PII_ACCESS_DEFAULTS}}];
-const STORES=[{id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',name:'渋谷店',status:'active',addr:'東京都渋谷区道玄坂1-12-5',tel:'03-6452-1234',orders:245,revenue:3680000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',name:'新宿東口店',status:'active',addr:'東京都新宿区新宿3-1-1',tel:'03-5321-0001',orders:312,revenue:4150000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',name:'池袋店',status:'active',addr:'東京都豊島区南池袋1-1-1',tel:'03-5950-0001',orders:198,revenue:2980000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',name:'恵比寿店',status:'active',addr:'東京都渋谷区恵比寿4-5-6',tel:'03-6450-0001',orders:156,revenue:2450000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',name:'六本木店',status:'active',addr:'東京都港区六本木3-2-1',tel:'03-6430-0001',orders:278,revenue:5120000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',name:'銀座店',status:'active',addr:'東京都中央区銀座5-8-1',tel:'03-3571-0001',orders:189,revenue:3900000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',name:'表参道店',status:'active',addr:'東京都渋谷区神宮前4-1-1',tel:'03-5410-0001',orders:134,revenue:2780000,deliveryRadius:5,deliveryFee:770,minOrder:1500,minOrderPolicy:'surcharge',surchargeMax:1500,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',name:'新宿本店',status:'active',addr:'東京都新宿区新宿3-5-1',tel:'03-5320-0010',orders:520,revenue:3120000,deliveryRadius:3,deliveryFee:500,minOrder:1000,minOrderPolicy:'surcharge',surchargeMax:1000,prepTime:20,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',name:'渋谷店',status:'active',addr:'東京都渋谷区宇田川町2-1',tel:'03-6450-0010',orders:410,revenue:2460000,deliveryRadius:3,deliveryFee:500,minOrder:1000,minOrderPolicy:'surcharge',surchargeMax:1000,prepTime:20,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}},{id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',name:'代官山店',status:'trial',addr:'東京都渋谷区猿楽町10-1',tel:'03-6455-0001',orders:45,revenue:340000,deliveryRadius:2,deliveryFee:300,minOrder:800,minOrderPolicy:'surcharge',surchargeMax:800,prepTime:15,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}}];
-const ACCOUNTS=[{id:'ACC-tU7dJ9y',name:'近重 泰輔',email:'taisei@sumbibi.com',role:'owner',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-11'},{id:'ACC-vW8eK2z',name:'山田 太郎',email:'yamada@sumbibi.com',role:'admin',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-10'},{id:'ACC-xY9fL3a',name:'鈴木 花子',email:'suzuki@sumbibi.com',role:'staff',corpId:'CRP-Xk9mPr2',status:'active',lastLogin:'2026-03-09'},{id:'ACC-zA2gM4b',name:'田中 一郎',email:'tanaka@mendouraku.com',role:'owner',corpId:'CRP-Pq7mN2k',status:'active',lastLogin:'2026-03-11'},{id:'ACC-bC3hN5c',name:'佐藤 美咲',email:'sato@cafebreeze.com',role:'owner',corpId:'CRP-Wy4cR8j',status:'active',lastLogin:'2026-03-08'}];
+let BRANDS=[];
+let STORES=[];
+let ACCOUNTS=[];
 const BANS=[
   {id:'BAN-tU4tX6n',email:'spam@test.com',ban_type:'global',store_id:null,store_name:null,reason:'不正注文の繰り返し',reason_cat:'fraud',banned_by:'Taisei',banned_at:'2026-02-15',expires_at:null,is_active:true,unbanned_at:null,unban_reason:null},
   {id:'BAN-vW5uY7p',email:'troll@example.com',ban_type:'global',store_id:null,store_name:null,reason:'いたずら注文',reason_cat:'prank',banned_by:'Taisei',banned_at:'2026-02-20',expires_at:null,is_active:true,unbanned_at:null,unban_reason:null},
@@ -139,15 +139,9 @@ const SERVICES=[
   {key:'new_store',name:'新規出店',icon:'🏗',cat:'その他',cost:'paid',desc:'出店計画・物件分析支援'},
 ];
 // Service state: { entityId: { serviceKey: true/false } }
-const svcState={};
+let svcState={};
 function getSvc(entityId,key){return !!(svcState[entityId]&&svcState[entityId][key]);}
 function setSvc(entityId,key,val){if(!svcState[entityId])svcState[entityId]={};svcState[entityId][key]=val;}
-// Init demo data: CRP0001 has most services ON
-SERVICES.forEach(s=>{setSvc('CRP-Xk9mPr2',s.key,true);setSvc('BRD-aB3kX9m',s.key,true);});
-['STR-dF5tY7n','STR-eG6uZ8p','STR-fH7vA9q','STR-gJ8wB2r','STR-hK9xC3s','STR-jL2yD4t','STR-kM3zE5u'].forEach(sid=>{['mo_dinein','mo_takeout','mo_delivery','ai_std','crm_std'].forEach(k=>setSvc(sid,k,true));});
-setSvc('CRP-Pq7mN2k','mo_dinein',true);setSvc('CRP-Pq7mN2k','mo_takeout',true);setSvc('CRP-Pq7mN2k','ai_std',true);setSvc('CRP-Pq7mN2k','crm_std',true);
-setSvc('BRD-Tn6jL5w','mo_dinein',true);setSvc('BRD-Tn6jL5w','mo_takeout',true);setSvc('BRD-Tn6jL5w','ai_std',true);
-setSvc('STR-nP4aF6v','mo_dinein',true);setSvc('STR-nP4aF6v','mo_takeout',true);setSvc('STR-qR5bG7w','mo_dinein',true);
 
 // HELPERS
 const Y=n=>'¥'+n.toLocaleString();
@@ -172,6 +166,51 @@ function getCorpForStore(s){const br=getBrandForStore(s);return br?CORPS.find(c=
 const SUPABASE_URL='https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY='sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// DB DATA LOADING
+async function loadAllData(){
+  const [{data:corpsRaw},{data:brandsRaw},{data:storesRaw},{data:svcRaw}]=await Promise.all([
+    sb.from('corporations').select('*'),
+    sb.from('brands').select('*, corporations(display_id)'),
+    sb.from('stores').select('*, brands(display_id)'),
+    sb.from('service_subscriptions').select('*').eq('is_active',true),
+  ]);
+  // Map corporations
+  CORPS=(corpsRaw||[]).map(r=>({
+    _uuid:r.id, id:r.display_id, name:r.name, rep:r.representative||'',
+    status:r.status||'active', created:(r.created_at||'').split('T')[0],
+    stripe_account_id:r.stripe_account_id, rep_email:r.rep_email||'',
+    website_url:r.website_url||'', recruit_url:r.recruit_url||''
+  }));
+  // Map brands
+  BRANDS=(brandsRaw||[]).map(r=>({
+    _uuid:r.id, id:r.display_id, corpId:r.corporations?.display_id||'',
+    name:r.name, slug:r.slug||'', status:r.is_active===false?'inactive':'active',
+    mainColor:r.main_color||'#6c5ce7', pii_access_settings:{...PII_ACCESS_DEFAULTS}
+  }));
+  // Map stores
+  STORES=(storesRaw||[]).map(r=>({
+    _uuid:r.id, id:r.display_id, brandId:r.brands?.display_id||'',
+    name:r.name, status:r.is_active===false?'inactive':'active',
+    addr:r.address||'', tel:r.phone||'', orders:0, revenue:0,
+    deliveryRadius:r.delivery_radius||5, deliveryFee:r.delivery_fee||0,
+    minOrder:r.min_order_amount||0, minOrderPolicy:'surcharge',
+    surchargeMax:r.min_order_amount||0, prepTime:r.prep_time_minutes||30,
+    minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}
+  }));
+  // ACCOUNTS stays empty for now - will be loaded in Task E2
+  ACCOUNTS=[];
+  // Load service subscriptions into svcState
+  svcState={};
+  const uuidToDisplayId={};
+  CORPS.forEach(c=>{uuidToDisplayId[c._uuid]=c.id;});
+  BRANDS.forEach(b=>{uuidToDisplayId[b._uuid]=b.id;});
+  STORES.forEach(s=>{uuidToDisplayId[s._uuid]=s.id;});
+  (svcRaw||[]).forEach(r=>{
+    const did=uuidToDisplayId[r.entity_id];
+    if(did)setSvc(did,r.service_key,true);
+  });
+}
 
 // AUTH CHECK — redirect if not authenticated
 (async()=>{
@@ -3136,7 +3175,11 @@ switchTab=function(prefix,el,tabId){
 };
 
 // INIT
-renderPage();
+(async()=>{
+  document.getElementById('content').innerHTML='<div style="text-align:center;padding:60px"><div class="spinner" style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div><div style="margin-top:12px;font-size:13px;color:#999">データを読み込み中...</div></div>';
+  try{await loadAllData();}catch(e){console.error('loadAllData error',e);}
+  renderPage();
+})();
 </script>
 <footer style="background:#f5f5f5;border-top:1px solid #e0e0e0;padding:16px 20px;text-align:center;font-size:11px;color:#999;margin-top:24px">
   <div style="margin-bottom:6px"><a href="/aiden-tokushoho.html" style="color:#666;margin:0 8px">特定商取引法に基づく表示</a></div>
