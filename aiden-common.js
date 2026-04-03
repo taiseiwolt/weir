@@ -374,7 +374,7 @@
         '<nav class="header-nav">' +
           '<a href="./aiden-brand-menu.html' + bp + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
           '<a href="./aiden-brand-stores.html' + bp + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
-          '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
+          '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership" id="nav-membership-link">' + t('nav_membership') + '</a>' +
           '<a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
           '<a href="./aiden-order.html' + bp + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
         '</nav>' +
