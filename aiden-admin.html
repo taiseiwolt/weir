@@ -1300,26 +1300,58 @@ function renderServiceCards(entityId, level, parentId){
   }).join('');
 }
 
-function toggleSvc(entityId,key,level){
+const SVC_PRICES={ai_pro:4980,ai_expert:9800,crm_pro:4980,crm_expert:9800};
+function getEntityUuid(displayId,level){
+  if(level==='corp')return CORPS.find(c=>c.id===displayId)?._uuid;
+  if(level==='brand')return BRANDS.find(b=>b.id===displayId)?._uuid;
+  if(level==='store')return STORES.find(s=>s.id===displayId)?._uuid;
+}
+function nextMonth1st(){const d=new Date();d.setMonth(d.getMonth()+1);d.setDate(1);return d.toISOString().split('T')[0];}
+
+async function toggleSvc(entityId,key,level){
   const cur=getSvc(entityId,key);
-  setSvc(entityId,key,!cur);
-  // If turning OFF at corp level, also turn OFF for all child brands and stores
-  if(level==='corp'&&cur){
-    const brands=getBrandsForCorp(CORPS.find(c=>c.id===entityId));
-    brands.forEach(b=>{
-      setSvc(b.id,key,false);
-      getStoresForBrand(b).forEach(s=>setSvc(s.id,key,false));
-    });
+  const newVal=!cur;
+  const svc=SERVICES.find(s=>s.key===key);
+  const svcName=svc.name;
+  // Paid service confirmations
+  if(svc.cost==='paid'&&newVal){
+    const price=SVC_PRICES[key]||0;
+    if(!confirm('月額¥'+price.toLocaleString()+'が発生します。'+svcName+'を有効化しますか？'))return;
   }
-  // If turning OFF at brand level, also turn OFF for all child stores
-  if(level==='brand'&&cur){
+  if(svc.cost==='paid'&&!newVal){
+    if(!confirm(svcName+'を無効化します。翌月1日からダウングレードされます。'))return;
+  }
+  // DB write
+  const uuid=getEntityUuid(entityId,level);
+  const entityType=level==='corp'?'corporation':level;
+  const downgradeAt=(!newVal&&svc.cost==='paid')?nextMonth1st():null;
+  try{
+    await fetch('/api/admin/service-subscriptions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({entity_type:entityType,entity_id:uuid,service_key:key,is_active:newVal,plan_price:SVC_PRICES[key]||0,downgrade_at:downgradeAt})});
+  }catch(e){/* continue with local update */}
+  // Update in-memory
+  setSvc(entityId,key,newVal);
+  // Cascade OFF to children
+  if(level==='corp'&&!newVal){
+    const brands=getBrandsForCorp(CORPS.find(c=>c.id===entityId));
+    for(const b of brands){
+      setSvc(b.id,key,false);
+      const bu=b._uuid;if(bu)fetch('/api/admin/service-subscriptions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({entity_type:'brand',entity_id:bu,service_key:key,is_active:false})}).catch(()=>{});
+      for(const s of getStoresForBrand(b)){
+        setSvc(s.id,key,false);
+        const su=s._uuid;if(su)fetch('/api/admin/service-subscriptions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({entity_type:'store',entity_id:su,service_key:key,is_active:false})}).catch(()=>{});
+      }
+    }
+  }
+  if(level==='brand'&&!newVal){
     const stores=getStoresForBrand(BRANDS.find(b=>b.id===entityId));
-    stores.forEach(s=>setSvc(s.id,key,false));
+    for(const s of stores){
+      setSvc(s.id,key,false);
+      const su=s._uuid;if(su)fetch('/api/admin/service-subscriptions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({entity_type:'store',entity_id:su,service_key:key,is_active:false})}).catch(()=>{});
+    }
   }
   renderPage();
-  const svcName=SERVICES.find(s=>s.key===key).name;
-  showToast(cur?'❌ '+svcName+' をOFFにしました':'✅ '+svcName+' をONにしました');
-  logAudit('update_service_settings','services',null,{entityId,service:key,level,enabled:!cur,serviceName:svcName});
+  showToast(newVal?'✅ '+svcName+' をONにしました':'❌ '+svcName+' をOFFにしました');
+  logAudit('update_service_settings','services',null,{entityId,service:key,level,enabled:newVal,serviceName:svcName});
 }
 
 // ===== ID GENERATOR =====
