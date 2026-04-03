@@ -676,7 +676,8 @@ function renderAI(){
   '</div>'+
   // --- 利用状況タブ ---
   '<div class="tab-content active" id="ai-usage">'+
-    '<div class="card"><div class="card-title">🤖 AI機能別利用状況（全体）</div><div id="aiChart"></div></div>'+
+    '<div class="card"><div class="card-title">🤖 AI機能別利用状況（今月） <span class="ct-right" style="font-size:11px;color:var(--text-light)">STD: 上限あり / PRO・EXPERT: 無制限</span></div><div id="aiUsageCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px"></div></div>'+
+    '<div class="card"><div class="card-title">📊 月間推移（過去6ヶ月）</div><div id="aiChart"></div></div>'+
   '</div>'+
   // --- SNS投稿生成タブ ---
   '<div class="tab-content" id="ai-sns">'+
@@ -707,7 +708,43 @@ function renderAI(){
     '<div class="card"><div class="card-title">⚙️ AI機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">SNS投稿文自動生成</div><div style="font-size:10px;color:var(--text-light)">ブランドトーンに合わせた投稿文</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI画像生成</div><div style="font-size:10px;color:var(--text-light)">メニュー写真加工・SNS用画像</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI口コミ返信提案</div><div style="font-size:10px;color:var(--text-light)">返信文の自動生成</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AIチャットサポート</div><div style="font-size:10px;color:var(--text-light)">エンドユーザー向けチャットボット</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>'+
   '</div>';
 }
-function renderAICharts(){const el=document.getElementById('aiChart');if(!el)return;const d=[{n:'SNS投稿文生成',v:620},{n:'AI画像生成',v:480},{n:'口コミ返信提案',v:390},{n:'POP作成',v:210},{n:'チャットサポート',v:142}];const mx=Math.max(...d.map(x=>x.v));el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
+async function renderAICharts(){
+  const cardsEl=document.getElementById('aiUsageCards');
+  const chartEl=document.getElementById('aiChart');
+  if(!cardsEl&&!chartEl)return;
+  const AI_TYPES={review_reply:{name:'口コミ返信',limit:10},sns_post:{name:'SNS投稿生成',limit:10},pop_image:{name:'POP画像',limit:1},monthly_comment:{name:'月次コメント',limit:1}};
+  // Current month usage
+  const now=new Date();const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  const{data:usage}=await sb.from('ai_monthly_usage').select('*').gte('month',monthStart);
+  // Aggregate by type
+  const byType={};
+  (usage||[]).forEach(r=>{byType[r.interaction_type]=(byType[r.interaction_type]||0)+r.usage_count;});
+  if(cardsEl){
+    cardsEl.innerHTML=Object.entries(AI_TYPES).map(([key,cfg])=>{
+      const used=byType[key]||0;const pct=cfg.limit>0?Math.min(100,Math.round(used/cfg.limit*100)):0;
+      const color=pct>=100?'#e94560':pct>=80?'#fdcb6e':'var(--accent)';
+      return '<div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">'+
+        '<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+cfg.name+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px"><span style="font-size:24px;font-weight:800">'+used+'</span><span style="font-size:12px;color:var(--text-light)">/ '+cfg.limit+'回</span></div>'+
+        '<div style="background:#f0f0f0;border-radius:4px;height:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:4px;transition:width .3s"></div></div>'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:4px">残り '+(cfg.limit-used>0?cfg.limit-used:0)+'回</div></div>';
+    }).join('');
+  }
+  // Past 6 months chart
+  if(chartEl){
+    const sixMonthsAgo=new Date(now.getFullYear(),now.getMonth()-5,1).toISOString();
+    const{data:trends}=await sb.from('ai_monthly_usage').select('*').gte('month',sixMonthsAgo);
+    const monthly={};
+    (trends||[]).forEach(r=>{
+      const m=r.month.substring(0,7);
+      monthly[m]=(monthly[m]||0)+r.usage_count;
+    });
+    const months=Object.keys(monthly).sort();
+    if(months.length===0){chartEl.innerHTML='<div class="empty-state" style="padding:20px;text-align:center;color:var(--text-light)">データなし</div>';return;}
+    const mx=Math.max(...Object.values(monthly));
+    chartEl.innerHTML=months.map(m=>{const v=monthly[m];return '<div class="chart-bar-row"><div class="chart-bar-label">'+m+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+v+'回</span></div></div></div>';}).join('');
+  }
+}
 
 // ===== AI SNS投稿生成 =====
 async function checkAiQuotaAndPrompt(storeDisplayId,interactionType){
