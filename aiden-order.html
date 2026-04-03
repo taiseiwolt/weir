@@ -1182,9 +1182,10 @@ function goScreen(name){
    MAP
    ============================================================ */
 function makeStoreIcon(s, hl){
-  var bg     = hl ? '#D32F2F' : (s.avail === 'full' ? '#bbb' : '#1a1a1a');
+  var brandColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#D32F2F';
+  var bg     = hl ? brandColor : (s.avail === 'full' ? '#bbb' : '#1a1a1a');
   var border = hl ? '#fff' : '#fff';
-  var shadow = hl ? '0 2px 8px rgba(211,47,47,.55)' : '0 2px 6px rgba(0,0,0,.35)';
+  var shadow = hl ? '0 2px 8px rgba(0,0,0,.45)' : '0 2px 6px rgba(0,0,0,.35)';
   var size   = hl ? 36 : 30;
   var half   = size / 2;
   var inner  = Math.round(size * 0.28);
@@ -1721,6 +1722,22 @@ function renderStoreList(){
 
   var el = document.getElementById('store-list');
   if(el) el.innerHTML = html;
+
+  /* Hover highlight: mouseenter/mouseleave on store cards */
+  list.forEach(function(s){
+    var card = document.getElementById('sc-' + s.id);
+    if(!card) return;
+    card.addEventListener('mouseenter', function(){
+      if(hlStore === s.id) return; // already selected
+      var m = storeMarkers[s.id];
+      if(m) m.setIcon(makeStoreIcon(s, true));
+    });
+    card.addEventListener('mouseleave', function(){
+      if(hlStore === s.id) return; // keep selected highlight
+      var m = storeMarkers[s.id];
+      if(m) m.setIcon(makeStoreIcon(s, false));
+    });
+  });
 }
 
 function onCardClick(el){
