@@ -2207,6 +2207,9 @@ async function placeOrder() {
       const customerEmail = document.getElementById('custEmail').value.trim();
       const customerPhone = document.getElementById('custPhone').value.trim();
 
+      var addrData = {};
+      try { addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}'); } catch(e) {}
+
       const orderPayload = {
         store_id: CHECKOUT_DATA.storeId || null,
         order_type: channel,
@@ -2223,6 +2226,8 @@ async function placeOrder() {
           ? (CHECKOUT_DATA.deliveryTimeMin || 60)
           : (CHECKOUT_DATA.prepTimeMinutes || 30),
         delivery_address: mode === 'delivery' ? (CHECKOUT_DATA.userAddress || null) : null,
+        delivery_lat: mode === 'delivery' ? (addrData.lat || null) : null,
+        delivery_lng: mode === 'delivery' ? (addrData.lng || null) : null,
         aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
         normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
         member_id: sessionStorage.getItem('aiden_member_id') || null,
