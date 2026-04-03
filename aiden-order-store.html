@@ -724,7 +724,7 @@ img { max-width:100%; display:block; }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span>配達サービスエリア外です</span>
   </div>
-  <p class="info-bar-notice" id="infoBarNotice">こちらのレストランはあなたのエリアに対応しておりませんが、お持ち帰り注文で直接のお受け取りが可能です。</p>
+  <p class="info-bar-notice" id="infoBarNotice" style="display:none"></p>
   <div class="info-bar-badges" id="infoBarBadges">
     <span class="info-badge" id="badgeDeliveryFee"></span>
     <span class="info-badge" id="badgeDeliveryTime"></span>
@@ -1015,9 +1015,16 @@ let orderMode = 'delivery'; // 'takeout' or 'delivery'
     if (stored.orderMode && !typeParam) orderMode = stored.orderMode;
   } catch(e) {}
 })();
-let userAddress = ''; // entered address text
-let userLat = null;
-let userLng = null;
+// Read address from sessionStorage (set by aiden-order.html)
+var _addrData = {};
+var _storedData = {};
+try {
+  _addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
+  _storedData = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+} catch(e) {}
+let userAddress = _addrData.address || _storedData.userAddress || '';
+let userLat = _addrData.lat || _storedData.userLat || null;
+let userLng = _addrData.lng || _storedData.userLng || null;
 let isOutOfDeliveryArea = false;
 let isStoreClosed = false; // true if outside business hours
 
@@ -1439,6 +1446,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (cartBtn) cartBtn.addEventListener('click', function() { openOrderModal(); });
     }
   });
+
+  // Connect signin button to checkout flow
+  var signinBtn = document.getElementById('aiden-header-signin');
+  if (signinBtn) {
+    signinBtn.addEventListener('click', function() { goToCheckout(); });
+  }
 
   await loadFromSupabase();
 
@@ -2486,9 +2499,11 @@ function checkDeliveryZone() {
   if(isOutOfDeliveryArea) {
     alertEl.classList.add('show');
     noticeEl.textContent = 'こちらのレストランはあなたのエリアに対応しておりませんが、お持ち帰り注文で直接のお受け取りが可能です。';
+    noticeEl.style.display = '';
   } else {
     alertEl.classList.remove('show');
     noticeEl.textContent = 'デリバリーでお届けできます。';
+    noticeEl.style.display = '';
   }
 }
 
@@ -2551,6 +2566,8 @@ function goToCheckout() {
     heroImg: STORE_DATA.storeHeroImg,
     orderMode: orderMode,
     userAddress: userAddress,
+    userLat: userLat,
+    userLng: userLng,
     deliveryFee: STORE_DATA.deliveryFee,
     deliveryTimeMin: STORE_DATA.deliveryTimeMin,
     deliveryTimeMax: STORE_DATA.deliveryTimeMax,

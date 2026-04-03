@@ -421,7 +421,7 @@
           '<button class="header-cart" id="aiden-header-cart" style="display:none" aria-label="' + t('cart') + '">' +
             '🛒<span class="header-cart-badge" id="aiden-cart-badge" style="display:none">0</span>' +
           '</button>' +
-          '<button class="header-signin" data-i18n="signin">' + t('signin') + '</button>' +
+          '<button class="header-signin" id="aiden-header-signin" data-i18n="signin">' + t('signin') + '</button>' +
         '</div>' +
       '</div>' +
     '</header>';
