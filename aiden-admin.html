@@ -180,21 +180,24 @@ async function loadAllData(){
     stripe_account_id:r.stripe_account_id, rep_email:r.rep_email||'',
     website_url:r.website_url||'', recruit_url:r.recruit_url||''
   }));
-  // Map brands
+  // Map brands (DB: primary_color not main_color, no slug, no is_active)
   BRANDS=(brandsRaw||[]).map(r=>({
     _uuid:r.id, id:r.display_id, corpId:r.corporations?.display_id||'',
-    name:r.name, slug:r.slug||'', status:r.is_active===false?'inactive':'active',
-    mainColor:r.main_color||'#6c5ce7', pii_access_settings:{...PII_ACCESS_DEFAULTS}
+    name:r.name, slug:r.display_id||'', status:'active',
+    mainColor:r.primary_color||'#6c5ce7', pii_access_settings:r.pii_access_settings||{...PII_ACCESS_DEFAULTS}
   }));
-  // Map stores
+  // Map stores (DB: status column exists, delivery_radius_km not delivery_radius)
   STORES=(storesRaw||[]).map(r=>({
     _uuid:r.id, id:r.display_id, brandId:r.brands?.display_id||'',
-    name:r.name, status:r.is_active===false?'inactive':'active',
+    name:r.name, status:r.status||'active',
     addr:r.address||'', tel:r.phone||'', orders:0, revenue:0,
-    deliveryRadius:r.delivery_radius||5, deliveryFee:r.delivery_fee||0,
-    minOrder:r.min_order_amount||0, minOrderPolicy:'surcharge',
-    surchargeMax:r.min_order_amount||0, prepTime:r.prep_time_minutes||30,
-    minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}
+    deliveryRadius:r.delivery_radius_km||5, deliveryFee:r.delivery_fee||0,
+    minOrder:r.min_order_amount||0, minOrderPolicy:r.min_order_policy||'surcharge',
+    surchargeMax:r.small_order_surcharge_max||0, prepTime:r.prep_time_minutes||30,
+    minOrderApplyTypes:r.min_order_apply_types||{dinein:false,takeout:true,delivery:true},
+    reservationEnabled:r.reservation_enabled, resConfMode:r.reservation_confirmation_mode,
+    resRequireCard:r.reservation_require_card, resCancelFee:r.reservation_cancellation_fee,
+    resCancelDeadline:r.reservation_cancel_deadline_hours
   }));
   // ACCOUNTS stays empty for now - will be loaded in Task E2
   ACCOUNTS=[];
@@ -1436,7 +1439,7 @@ async function toggleSvc(entityId,key,level){
   }
   // DB write
   const uuid=getEntityUuid(entityId,level);
-  const entityType=level==='corp'?'corporation':level;
+  const entityType=level;
   const downgradeAt=(!newVal&&svc.cost==='paid')?nextMonth1st():null;
   try{
     await fetch('/api/admin/service-subscriptions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({entity_type:entityType,entity_id:uuid,service_key:key,is_active:newVal,plan_price:SVC_PRICES[key]||0,downgrade_at:downgradeAt})});
@@ -1513,7 +1516,7 @@ async function saveBrand(){
   if(!corp){showToast('⚠️ 法人を選択してください');return;}
   const mainColor=document.getElementById('addBrandColor').value;
   try{
-    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,slug:slug,corp_id:corp._uuid,main_color:mainColor,is_active:true})});
+    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,corp_id:corp._uuid,primary_color:mainColor})});
     const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
     BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'active',mainColor:mainColor,pii_access_settings:{...PII_ACCESS_DEFAULTS}});
     closeModal();showToast('✅ ブランドを追加しました');renderPage();
