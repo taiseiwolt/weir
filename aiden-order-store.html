@@ -940,21 +940,21 @@ var escH = AidenCommon.escH;
 
 let STORE_DATA = {
   // Brand info
-  brandName: '炭火亭',
-  brandLogoText: '炭',
+  brandName: '',
+  brandLogoText: '',
   brandColor: '#D32F2F',
 
-  // Store info (from aiden-store-v5.3)
-  storeName: '焼肉 炭火亭 渋谷店',
-  storeDescription: '新しい焼肉の文化をここから始める。最上級に厳選を重ねた「黒毛和牛」を一番新鮮に、一番美味しく。焼肉の全てが凝縮されたエンターテイメントと新しい正道焼肉の始まりをぜひご体感ください。牛肉に精通した近重泰輔が繋ぐ意志と更なる進化を歴史を作る「炭火焼肉」。料理長の目利きで厳選した和牛はもちろん、食材一つ一つに拘り、唯一無二の新しい焼肉を創り上げました。また、日本人の「おもてなしの心」をテーマにしたきめ細かいサービスで、お客様をおもてなし致します。',
-  storeHeroImg: 'https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=400&fit=crop',
+  // Store info (loaded from DB)
+  storeName: '',
+  storeDescription: '',
+  storeHeroImg: '',
 
-  // Location
-  lat: 35.6595,
-  lng: 139.7005,
-  address: '東京都渋谷区道玄坂1-12-5 渋谷マークシティ B1F',
-  zip: '150-0043',
-  phone: '+81354567890',
+  // Location (default: Tokyo center)
+  lat: 35.6762,
+  lng: 139.6503,
+  address: '',
+  zip: '',
+  phone: '',
 
   // Store page URL (aiden-store.html)
   storePageUrl: 'aiden-store.html',
@@ -1413,6 +1413,11 @@ async function loadFromSupabase() {
     }
 
   } catch(e) {
+    var noticeEl = document.getElementById('infoBarNotice');
+    if (noticeEl) {
+      noticeEl.textContent = '店舗情報の取得に失敗しました。ページを更新してください。';
+      noticeEl.style.display = '';
+    }
   }
 }
 
