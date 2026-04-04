@@ -1083,6 +1083,28 @@ content.innerHTML = `
         <div class="form-group full"><label>衛生対策</label><textarea rows="2" id="facilityHygiene">消毒液設置、定期換気、従業員マスク着用</textarea></div>
       </div>
     </div>
+    <div class="card" style="margin-top:16px" id="custTableMgmtCard">
+      <div class="card-title">テーブル管理
+        <span class="ct-right">
+          <button class="btn btn-primary btn-sm" onclick="custShowAddTableModal(currentEditStoreId)">＋ 追加</button>
+        </span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>テーブル番号</th>
+            <th>テーブル名</th>
+            <th>席数</th>
+            <th>フロア</th>
+            <th>ステータス</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="custStoreTablesBody">
+          <tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">読み込み中...</td></tr>
+        </tbody>
+      </table>
+    </div>
     <div class="btn-group"><button class="btn btn-primary" onclick="saveFacility()">💾 保存</button></div>
     </div><!-- /bulk-step2 -->
   </div>
@@ -4998,7 +5020,7 @@ function openSingleStoreEditGeneric(selectorId, editId, targetId, storeName) {
   if(store) {
     currentEditStoreId = store.id;
     currentEditStoreIds = [store.id];
-    if(editId === 'storeFacilityEdit') loadFacilityForm(store);
+    if(editId === 'storeFacilityEdit') { loadFacilityForm(store); custLoadStoreTables(store.id); }
     if(editId === 'storeMediaEdit') renderMediaGrids(store);
   }
   if(editId === 'storeDeliveryEdit') {
@@ -16383,6 +16405,107 @@ function aiCopyReply(text) {
     document.body.removeChild(ta);
     showToast('✅ クリップボードにコピーしました');
   });
+}
+
+// ===== TABLE MANAGEMENT (Customer Admin) =====
+async function custLoadStoreTables(storeId) {
+  const tbody = document.getElementById('custStoreTablesBody');
+  if (!tbody) return;
+  try {
+    const { data, error } = await sb.from('store_tables').select('*').eq('store_id', storeId).order('table_number');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">テーブルが登録されていません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(t =>
+      '<tr>' +
+      '<td>' + escH(t.table_number || '') + '</td>' +
+      '<td>' + escH(t.table_name || '') + '</td>' +
+      '<td>' + escH(String(t.capacity || '')) + '</td>' +
+      '<td>' + escH(t.floor || '') + '</td>' +
+      '<td>' + (t.is_active ? '<span style="color:#27ae60;font-size:11px;font-weight:600">有効</span>' : '<span style="color:#999;font-size:11px">無効</span>') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="btn btn-secondary btn-sm" onclick="custEditStoreTable(\'' + escH(t.id) + '\',\'' + escH(storeId) + '\')">編集</button> ' +
+        '<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="custDeleteStoreTable(\'' + escH(t.id) + '\',\'' + escH(storeId) + '\')">削除</button>' +
+      '</td>' +
+      '</tr>'
+    ).join('');
+  } catch (e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e94560;font-size:12px;padding:16px">読み込みエラー</td></tr>';
+  }
+}
+
+function custShowAddTableModal(storeId) {
+  if (!storeId) { showToast('⚠️ 店舗を選択してください'); return; }
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3>テーブル追加</h3>' +
+    '<input type="hidden" id="custTableModalStoreId" value="' + escH(storeId) + '">' +
+    '<input type="hidden" id="custTableModalId" value="">' +
+    '<div class="form-grid">' +
+      '<div class="form-group"><label>テーブル番号 <span style="color:#e94560">*</span></label><input type="text" id="custTableModalNumber" placeholder="例: A1" required></div>' +
+      '<div class="form-group"><label>テーブル名</label><input type="text" id="custTableModalName" placeholder="例: 窓側テーブル"></div>' +
+      '<div class="form-group"><label>席数 <span style="color:#e94560">*</span></label><input type="number" id="custTableModalCapacity" value="2" min="1"></div>' +
+      '<div class="form-group"><label>フロア</label><select id="custTableModalFloor"><option value="1F">1F</option><option value="2F">2F</option><option value="3F">3F</option></select></div>' +
+      '<div class="form-group full"><label><input type="checkbox" id="custTableModalActive" checked> 有効</label></div>' +
+    '</div>' +
+    '<div class="btn-group"><button class="btn btn-primary" onclick="custSaveStoreTable(\'' + escH(storeId) + '\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>'
+  );
+}
+
+async function custEditStoreTable(tableId, storeId) {
+  try {
+    const { data, error } = await sb.from('store_tables').select('*').eq('id', tableId).single();
+    if (error) throw error;
+    custShowAddTableModal(storeId);
+    document.getElementById('custTableModalId').value = tableId;
+    document.getElementById('custTableModalNumber').value = data.table_number || '';
+    document.getElementById('custTableModalName').value = data.table_name || '';
+    document.getElementById('custTableModalCapacity').value = data.capacity || 2;
+    document.getElementById('custTableModalFloor').value = data.floor || '1F';
+    document.getElementById('custTableModalActive').checked = data.is_active !== false;
+    document.querySelector('#genericModalBody h3').textContent = 'テーブル編集';
+  } catch (e) {
+    showToast('❌ 取得エラー: ' + e.message);
+  }
+}
+
+async function custSaveStoreTable(storeId) {
+  const tableId = document.getElementById('custTableModalId').value;
+  const table_number = document.getElementById('custTableModalNumber').value.trim();
+  const table_name = document.getElementById('custTableModalName').value.trim();
+  const capacity = parseInt(document.getElementById('custTableModalCapacity').value) || 2;
+  const floor = document.getElementById('custTableModalFloor').value;
+  const is_active = document.getElementById('custTableModalActive').checked;
+  if (!table_number) { showToast('⚠️ テーブル番号は必須です'); return; }
+  try {
+    if (tableId) {
+      const { error } = await sb.from('store_tables').update({ table_number, table_name, capacity, floor, is_active, updated_at: new Date().toISOString() }).eq('id', tableId);
+      if (error) throw error;
+      showToast('✅ テーブルを更新しました');
+    } else {
+      const { error } = await sb.from('store_tables').insert({ store_id: storeId, table_number, table_name, capacity, floor, is_active });
+      if (error) throw error;
+      showToast('✅ テーブルを追加しました');
+    }
+    closeModal();
+    custLoadStoreTables(storeId);
+  } catch (e) {
+    showToast('❌ 保存エラー: ' + e.message);
+  }
+}
+
+async function custDeleteStoreTable(tableId, storeId) {
+  if (!confirm('このテーブルを削除しますか？')) return;
+  try {
+    const { error } = await sb.from('store_tables').delete().eq('id', tableId);
+    if (error) throw error;
+    showToast('🗑 テーブルを削除しました');
+    custLoadStoreTables(storeId);
+  } catch (e) {
+    showToast('❌ 削除エラー: ' + e.message);
+  }
 }
 
 (function(){
