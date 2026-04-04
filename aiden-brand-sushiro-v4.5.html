@@ -275,8 +275,6 @@ footer{background:#222;color:rgba(255,255,255,.7)}
     <div class="header-logo">
       <a href="#">
         <span style="display:flex;align-items:center;gap:10px">
-          <!-- ロゴマーク：管理画面でjpg/png/svgをアップロード。未設定時は絵文字 -->
-          <span class="header-logo-mark" id="logo-mark">🔥</span>
           <!-- ロゴテキスト：管理画面で画像アップロードまたはフリーテキスト入力 -->
           <span class="header-logo-text" id="logo-text">炭火亭</span>
         </span>
@@ -425,7 +423,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 <footer>
   <div class="footer-main">
     <div>
-      <div class="footer-logo"><div class="footer-logo-mark" id="footer-logo-mark">🔥</div><div class="footer-logo-text" id="footer-logo-text">炭火亭</div></div>
+      <div class="footer-logo"><div class="footer-logo-text" id="footer-logo-text">炭火亭</div></div>
       <div class="footer-brand-desc" data-i18n="footer_desc">厳選した国産黒毛和牛を備長炭で焼き上げる本格焼肉。</div>
     </div>
     <!-- メニュー -->
@@ -458,6 +456,11 @@ const DEFAULT_BRAND_SLUG = 'sumibite-shibuya'; // デフォルト店舗slug
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const _urlParams = new URLSearchParams(window.location.search);
 const _brandParam = _urlParams.get('brand');
+
+function escH(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 async function resolveBrandId() {
   if (_brandParam) {
@@ -538,7 +541,8 @@ var BRAND_CONFIG = {
 
   /* 外部リンク（管理画面で設定。未設定の場合はフッターに表示しない） */
   companyUrl: '',   /* 会社ホームページURL（例: 'https://example.co.jp'） */
-  recruitUrl: ''    /* 採用ページURL（例: 'https://example.co.jp/recruit'） */
+  recruitUrl: '',   /* 採用ページURL（例: 'https://example.co.jp/recruit'） */
+  memo: ''          /* 法人名・所在地等（Supabase brands.memo） */
 };
 
 /* =====================================================
@@ -851,16 +855,6 @@ function applyBrandConfig() {
   document.getElementById('font-link').href =
     'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(c.fontFamily) + ':wght@300;400;500;700&display=swap';
 
-  // ロゴマーク
-  var mark = document.getElementById('logo-mark');
-  var footerMark = document.getElementById('footer-logo-mark');
-  if (c.logoMarkType === 'image' && c.logoMarkSrc) {
-    mark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo">';
-    footerMark.innerHTML = '<img src="'+c.logoMarkSrc+'" alt="logo">';
-  } else {
-    mark.textContent = c.logoMarkEmoji;
-    footerMark.textContent = c.logoMarkEmoji;
-  }
   // ロゴテキスト
   var txt = document.getElementById('logo-text');
   var footerTxt = document.getElementById('footer-logo-text');
@@ -872,14 +866,20 @@ function applyBrandConfig() {
     footerTxt.textContent = c.logoTextValue;
   }
 
-  // 会社情報・採用情報リンク（URLが設定されている場合のみ表示）
+  // 会社情報（brand.memo: 法人名・所在地 + company_url/recruit_url）
   var companyLinks = document.getElementById('footer-company-links');
   if (companyLinks) {
-    var linksHtml = '';
-    if (c.companyUrl) linksHtml += '<a href="'+c.companyUrl+'" target="_blank" rel="noopener" data-i18n="footer_company">会社情報</a>';
-    if (c.recruitUrl) linksHtml += '<a href="'+c.recruitUrl+'" target="_blank" rel="noopener" data-i18n="footer_recruit">採用情報</a>';
-    if (!linksHtml) linksHtml = '<span style="font-size:12px;color:var(--text3)">—</span>';
-    companyLinks.innerHTML = linksHtml;
+    var html = '';
+    if (c.memo) {
+      var lines = c.memo.split('\n');
+      lines.forEach(function(line) {
+        if (line.trim()) html += '<span style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">' + escH(line.trim()) + '</span>';
+      });
+    }
+    if (c.companyUrl) html += '<a href="'+escH(c.companyUrl)+'" target="_blank" rel="noopener" style="font-size:12px">公式サイト</a>';
+    if (c.recruitUrl) html += '<br><a href="'+escH(c.recruitUrl)+'" target="_blank" rel="noopener" style="font-size:12px">採用情報</a>';
+    if (html) companyLinks.innerHTML = html;
+    else companyLinks.innerHTML = '<span style="font-size:12px;color:var(--text3)">—</span>';
   }
 }
 
@@ -969,6 +969,7 @@ async function loadFromSupabase() {
       BRAND_CONFIG.sns.threads = b.sns_threads || '';
       BRAND_CONFIG.companyUrl = b.company_url || '';
       BRAND_CONFIG.recruitUrl = b.recruit_url || '';
+      BRAND_CONFIG.memo = b.memo || '';
       if (b.hero_catchphrase) {
         var heroEl = document.getElementById('hero-catch');
         if (heroEl) heroEl.textContent = b.hero_catchphrase;
@@ -1008,6 +1009,16 @@ async function loadFromSupabase() {
           var catLabel = NEWS_CAT_MAP[n.category] || n.category;
           return '<div class="news-item"><span class="news-date">' + ds + '</span><span class="news-cat ' + n.category + '">' + catLabel + '</span><span class="news-title"><a href="' + (n.url || '#') + '">' + n.title + '</a></span></div>';
         }).join('');
+      }
+    }
+
+    // 5. Store search section image (use first store thumbnail)
+    var storeSearchImg = document.querySelector('.store-search-img');
+    if (storeSearchImg && storesRes.data && storesRes.data.length > 0) {
+      var thumbRes = await sb.from('media').select('url').eq('entity_type', 'store').eq('media_type', 'store_thumbnail').in('entity_id', storesRes.data.map(function(s){ return s.id; })).limit(1);
+      if (thumbRes.data && thumbRes.data.length > 0) {
+        storeSearchImg.textContent = '';
+        storeSearchImg.style.background = 'url(' + encodeURI(thumbRes.data[0].url) + ') center/cover no-repeat';
       }
     }
   } catch(e) {
