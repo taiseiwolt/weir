@@ -454,8 +454,30 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_SLUG = 'sumibite-shibuya'; // storesのslugからbrandを逆引き
+const DEFAULT_BRAND_SLUG = 'sumibite-shibuya'; // デフォルト店舗slug
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _urlParams = new URLSearchParams(window.location.search);
+const _brandParam = _urlParams.get('brand');
+
+async function resolveBrandId() {
+  // 1. URLパラメータ ?brand= があればそれを解決
+  if (_brandParam) {
+    // brands.slug で直接検索
+    var { data: brandBySlug } = await sb.from('brands').select('id').eq('slug', _brandParam).limit(1);
+    if (brandBySlug && brandBySlug.length > 0) return brandBySlug[0].id;
+    // stores.slug プレフィックスマッチ
+    var prefix = _brandParam.split('-')[0];
+    var { data: storeMatch } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+    if (storeMatch && storeMatch.length > 0) return storeMatch[0].brand_id;
+    // stores.slug 完全一致
+    var { data: exactMatch } = await sb.from('stores').select('brand_id').eq('slug', _brandParam).limit(1);
+    if (exactMatch && exactMatch.length > 0) return exactMatch[0].brand_id;
+  }
+  // 2. デフォルト: 従来の店舗slugから逆引き
+  var { data: storeRes } = await sb.from('stores').select('brand_id').eq('slug', DEFAULT_BRAND_SLUG).single();
+  if (storeRes) return storeRes.brand_id;
+  return null;
+}
 
 /* =====================================================
    BRAND CONFIG（管理画面 / Supabase brands テーブルから取得）
@@ -911,7 +933,10 @@ function toggleVideo() {
 }
 function goStoreSearch(area) {
   var q = area || document.getElementById('store-search-q').value;
-  window.location.href = './aiden-brand-stores.html' + (q ? '?q='+encodeURIComponent(q) : '');
+  var params = [];
+  if (_brandParam) params.push('brand=' + encodeURIComponent(_brandParam));
+  if (q) params.push('q=' + encodeURIComponent(q));
+  window.location.href = './aiden-brand-stores.html' + (params.length ? '?' + params.join('&') : '');
 }
 
 // ===== SUPABASE DATA LOADER =====
@@ -919,10 +944,9 @@ var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュ�
 
 async function loadFromSupabase() {
   try {
-    // 1. Get brand via store slug
-    var storeRes = await sb.from('stores').select('brand_id').eq('slug', BRAND_SLUG).single();
-    if (!storeRes.data) throw new Error('Store not found');
-    var brandId = storeRes.data.brand_id;
+    // 1. Resolve brand ID from URL param or default slug
+    var brandId = await resolveBrandId();
+    if (!brandId) throw new Error('Brand not found');
 
     // 2. Load brand config
     var brandRes = await sb.from('brands').select('*').eq('id', brandId).single();
@@ -1008,6 +1032,15 @@ function renderDemoNews() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // brandパラメータをページ内リンクに伝播
+  if (_brandParam) {
+    document.querySelectorAll('a[href]').forEach(function(a) {
+      var h = a.getAttribute('href');
+      if (h && (h.startsWith('./aiden-brand-') || h.startsWith('./brand') || h.startsWith('./aiden-order')) && !h.includes('brand=')) {
+        a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
+      }
+    });
+  }
   await loadFromSupabase();
   applyBrandConfig();
   renderSns();
