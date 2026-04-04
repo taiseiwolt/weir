@@ -120,10 +120,15 @@ CREATE POLICY "service_role_full_access" ON menu_patterns FOR ALL TO service_rol
 CREATE POLICY "authenticated_read_own_brands" ON menu_patterns FOR SELECT TO authenticated
   USING (
     brand_id IN (
-      SELECT brand_id FROM staff_accounts WHERE auth_user_id = auth.uid()
+      -- corp_id 経由: staff_accounts.corp_id に属する全ブランド
+      SELECT b.id FROM brands b
+        JOIN staff_accounts sa ON sa.corp_id = b.corp_id
+        WHERE sa.auth_user_id = auth.uid()
       UNION
-      SELECT brand_id FROM brand_permissions WHERE account_id IN (
-        SELECT id FROM staff_accounts WHERE auth_user_id = auth.uid()
-      )
+      -- brand_permissions 経由: FC等で個別付与されたブランド
+      SELECT bp.brand_id FROM brand_permissions bp
+        WHERE bp.account_id IN (
+          SELECT sa2.id FROM staff_accounts sa2 WHERE sa2.auth_user_id = auth.uid()
+        )
     )
   );
