@@ -17,12 +17,53 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // 注文金額上限（円）— 環境変数で上書き可能
 const MAX_ORDER_AMOUNT = parseInt(Deno.env.get('MAX_ORDER_AMOUNT') || '50000', 10)
 
-// AIden プラットフォーム手数料率
-const AIDEN_FEE_RATES: Record<string, number> = {
-  dinein: 0.038,
-  takeout: 0.040,
-  pickup: 0.040,
-  delivery: 0.040,
+// fee_schedules から手数料率を動的取得
+async function getFeeRate(
+  supabase: any,
+  corporationId: string,
+  channel: string,
+): Promise<number> {
+  // channel mapping: 'pickup' in DB is 'takeout' fee_type
+  const feeType = channel === 'pickup' ? 'takeout' : channel
+
+  // 1. 期間限定オーバーライドを優先（is_base=false, 有効期間内）
+  const now = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+  const { data: override } = await supabase
+    .from('fee_schedules')
+    .select('rate')
+    .eq('corporation_id', corporationId)
+    .eq('fee_type', feeType)
+    .eq('is_base', false)
+    .lte('effective_from', now)
+    .or(`effective_to.is.null,effective_to.gte.${now}`)
+    .order('effective_from', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (override?.rate != null) {
+    return parseFloat(override.rate)
+  }
+
+  // 2. ベース料率を取得
+  const { data: base } = await supabase
+    .from('fee_schedules')
+    .select('rate')
+    .eq('corporation_id', corporationId)
+    .eq('fee_type', feeType)
+    .eq('is_base', true)
+    .single()
+
+  if (base?.rate != null) {
+    return parseFloat(base.rate)
+  }
+
+  // 3. フォールバック（DB未登録の場合）
+  const FALLBACK_RATES: Record<string, number> = {
+    dinein: 0.038,
+    takeout: 0.040,
+    delivery: 0.040,
+  }
+  return FALLBACK_RATES[feeType] || 0.040
 }
 
 serve(async (req) => {
@@ -323,7 +364,9 @@ serve(async (req) => {
       }
 
       // 4. 手数料計算（割引前の商品小計に対して計算 — CLAUDE.md仕様準拠）
-      const feeRate = AIDEN_FEE_RATES[channel] || 0.040
+      const feeRate = corpId
+        ? await getFeeRate(supabase, corpId, channel)
+        : 0.040
       const applicationFee = Math.round(subtotal * feeRate)
 
       // 5. Stripe PaymentIntent 作成（authorize-on-order → capture-on-delivery）
