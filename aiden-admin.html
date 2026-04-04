@@ -1320,7 +1320,7 @@ function renderStorePage(s){
   '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div></div></div></div>'+
   '<div class="tab-content" id="store-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド（'+(br?br.name:'—')+'）でONになっているサービスのみ選択可能です。</p><div class="svc-grid">'+renderServiceCards(s.id,'store',br?br.id:null)+'</div></div></div>'+
   '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
-  '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="text" value="6席"></div><div class="form-group"><label>喫煙</label><select><option selected>全席禁煙</option></select></div><div class="form-group"><label>子連れ</label><select><option selected>同伴不可</option></select></div><div class="form-group"><label>サービス料</label><input type="number" value="10"></div></div></div></div>'+
+  '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="text" value="6席"></div><div class="form-group"><label>喫煙</label><select><option selected>全席禁煙</option></select></div><div class="form-group"><label>子連れ</label><select><option selected>同伴不可</option></select></div><div class="form-group"><label>サービス料</label><input type="number" value="10"></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">テーブル管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showAddTableModal(\''+s._uuid+'\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>テーブル番号</th><th>テーブル名</th><th>席数</th><th>フロア</th><th>ステータス</th><th></th></tr></thead><tbody id="storeTablesBody"><tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">読み込み中...</td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-reservation"><div class="card"><div class="card-title">予約設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminReservation(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group full"><div class="toggle-row"><label style="font-size:12px;font-weight:600">予約受付</label><label class="toggle-sw"><input type="checkbox" id="adminResEnabled" '+(s.reservationEnabled?'checked':'')+'><span class="slider"></span></label></div></div><div class="form-group"><label>確定方法</label><select id="adminResConfMode" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="auto"'+(s.resConfMode==='auto'?' selected':'')+'>即時確定</option><option value="manual"'+(s.resConfMode!=='auto'?' selected':'')+'>承認制</option></select></div><div class="form-group"><div class="toggle-row"><label style="font-size:12px;font-weight:600">クレカ登録必須</label><label class="toggle-sw"><input type="checkbox" id="adminResRequireCard" '+(s.resRequireCard?'checked':'')+'><span class="slider"></span></label></div></div><div class="form-group"><label>キャンセル料（円）</label><input type="number" id="adminResCancelFee" value="'+(s.resCancelFee||0)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">0 = キャンセル料なし</div></div><div class="form-group"><label>キャンセル締切（時間前）</label><input type="number" id="adminResCancelDeadline" value="'+(s.resCancelDeadline||72)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">この時間を過ぎると店舗承認が必要</div></div></div></div></div>'+
   '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminDelivery(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" id="adminDeliveryRadius" value="'+(s.deliveryRadius||5)+'"></div><div class="form-group"><label>配達料金（円）</label><input type="number" id="adminDeliveryFee" value="'+(s.deliveryFee||770)+'"></div><div class="form-group"><label>最低注文額（円）</label><input type="number" id="adminMinOrderAmount" value="'+(s.minOrder||1500)+'"></div><div class="form-group"><label>最低注文金額未満時の対応</label><select id="adminMinOrderPolicy" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="surcharge"'+(s.minOrderPolicy==="block"?"":' selected')+'>差額を手数料として加算</option><option value="block"'+(s.minOrderPolicy==="block"?' selected':"")+'>注文を受け付けない</option></select></div><div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="adminSmallOrderMax" value="'+(s.surchargeMax||1500)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限</div></div><div class="form-group"><label>調理見積（分）</label><input type="number" id="adminPrepTime" value="'+(s.prepTime||30)+'"></div></div></div><div class="card"><div class="card-title">少額注文手数料の適用対象</div><div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDinein"'+(s.minOrderApplyTypes&&s.minOrderApplyTypes.dinein?" checked":"")+'> 店内飲食</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderTakeout"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.takeout!==false?" checked":"")+'> テイクアウト</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDelivery"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.delivery!==false?" checked":"")+'> デリバリー</label></div><div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div></div></div>'+
   '<div class="tab-content" id="store-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">空欄 = ブランドデフォルト適用</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>当日（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" placeholder="50"></div></div></div></div>'+
@@ -3417,7 +3417,97 @@ switchTab=function(prefix,el,tabId){
   origSwitchTab(prefix,el,tabId);
   if(prefix==='cs'&&tabId==='analytics')loadCSAnalytics();
   if(prefix==='cs'&&tabId==='policies')loadCSPolicies();
+  if(prefix==='store'&&tabId==='facility'){
+    const v=currentView;
+    if(v&&v.id){const st=STORES.find(s=>s.id===v.id);if(st)loadStoreTables(st._uuid);}
+  }
 };
+
+// ===== TABLE MANAGEMENT (Admin) =====
+async function loadStoreTables(storeId){
+  const tbody=document.getElementById('storeTablesBody');
+  if(!tbody)return;
+  try{
+    const{data,error}=await sb.from('store_tables').select('*').eq('store_id',storeId).order('table_number');
+    if(error)throw error;
+    if(!data||data.length===0){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">テーブルが登録されていません</td></tr>';
+      return;
+    }
+    tbody.innerHTML=data.map(t=>'<tr>'+
+      '<td>'+escHtml(t.table_number||'')+'</td>'+
+      '<td>'+escHtml(t.table_name||'')+'</td>'+
+      '<td>'+escHtml(String(t.capacity||''))+'</td>'+
+      '<td>'+escHtml(t.floor||'')+'</td>'+
+      '<td>'+(t.is_active?'<span style="color:#27ae60;font-size:11px;font-weight:600">有効</span>':'<span style="color:#999;font-size:11px">無効</span>')+'</td>'+
+      '<td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="editStoreTable(\''+t.id+'\',\''+storeId+'\')">編集</button> '+
+      '<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteStoreTable(\''+t.id+'\',\''+storeId+'\')">削除</button></td>'+
+      '</tr>').join('');
+  }catch(e){
+    if(tbody)tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e94560;font-size:12px;padding:16px">読み込みエラー</td></tr>';
+  }
+}
+function showAddTableModal(storeId){
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>テーブル追加</h3>'+
+    '<input type="hidden" id="tableModalStoreId" value="'+escHtml(storeId)+'">'+
+    '<input type="hidden" id="tableModalId" value="">'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>テーブル番号 <span style="color:#e94560">*</span></label><input type="text" id="tableModalNumber" placeholder="例: A1" required></div>'+
+      '<div class="form-group"><label>テーブル名</label><input type="text" id="tableModalName" placeholder="例: 窓側テーブル"></div>'+
+      '<div class="form-group"><label>席数 <span style="color:#e94560">*</span></label><input type="number" id="tableModalCapacity" value="2" min="1"></div>'+
+      '<div class="form-group"><label>フロア</label><select id="tableModalFloor"><option value="1F">1F</option><option value="2F">2F</option><option value="3F">3F</option></select></div>'+
+      '<div class="form-group full"><label><input type="checkbox" id="tableModalActive" checked> 有効</label></div>'+
+    '</div>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="saveStoreTable(\''+escHtml(storeId)+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>'
+  );
+}
+async function editStoreTable(tableId,storeId){
+  try{
+    const{data,error}=await sb.from('store_tables').select('*').eq('id',tableId).single();
+    if(error)throw error;
+    showAddTableModal(storeId);
+    document.getElementById('tableModalId').value=tableId;
+    document.getElementById('tableModalNumber').value=data.table_number||'';
+    document.getElementById('tableModalName').value=data.table_name||'';
+    document.getElementById('tableModalCapacity').value=data.capacity||2;
+    document.getElementById('tableModalFloor').value=data.floor||'1F';
+    document.getElementById('tableModalActive').checked=data.is_active!==false;
+    document.querySelector('#modalBody h3').textContent='テーブル編集';
+  }catch(e){showToast('❌ 取得エラー: '+e.message);}
+}
+async function saveStoreTable(storeId){
+  const tableId=document.getElementById('tableModalId').value;
+  const table_number=document.getElementById('tableModalNumber').value.trim();
+  const table_name=document.getElementById('tableModalName').value.trim();
+  const capacity=parseInt(document.getElementById('tableModalCapacity').value)||2;
+  const floor=document.getElementById('tableModalFloor').value;
+  const is_active=document.getElementById('tableModalActive').checked;
+  if(!table_number){showToast('⚠️ テーブル番号は必須です');return;}
+  try{
+    if(tableId){
+      const{error}=await sb.from('store_tables').update({table_number,table_name,capacity,floor,is_active,updated_at:new Date().toISOString()}).eq('id',tableId);
+      if(error)throw error;
+      showToast('✅ テーブルを更新しました');
+    }else{
+      const{error}=await sb.from('store_tables').insert({store_id:storeId,table_number,table_name,capacity,floor,is_active});
+      if(error)throw error;
+      showToast('✅ テーブルを追加しました');
+    }
+    closeModal();
+    loadStoreTables(storeId);
+  }catch(e){showToast('❌ 保存エラー: '+e.message);}
+}
+async function deleteStoreTable(tableId,storeId){
+  if(!confirm('このテーブルを削除しますか？'))return;
+  try{
+    const{error}=await sb.from('store_tables').delete().eq('id',tableId);
+    if(error)throw error;
+    showToast('🗑 テーブルを削除しました');
+    loadStoreTables(storeId);
+  }catch(e){showToast('❌ 削除エラー: '+e.message);}
+}
 
 // INIT
 (async()=>{
