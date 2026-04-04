@@ -274,6 +274,36 @@ aiden-demo/
 - `aiden-template-uiux-analysis.md` — 5テンプレートUIの設計
 - `aiden-stitch-prompts.md` — テンプレート生成プロンプト
 - `aiden-us-brand-pattern-analysis.md` — USブランドUIパターン分析
+- `docs/research/ebica_competitor_full_analysis.xlsx` — 予約管理4社競合分析（下記参照）
+
+## 競合分析資料（2026年4月作成）
+
+格納先: `docs/research/ebica_competitor_full_analysis.xlsx`
+
+### 概要
+ebica / TableCheck / TORETA / レストランボードの4社を対象とした予約管理システムの競合分析。
+9シート構成（ebica機能一覧46件、UIUX設計観点12画面、AIden示唆15件、料金比較8件、部門横断分析42件、即アクション13件、4社機能比較47件、部門別競合分析22件、AIden戦略示唆18件）
+
+### AIdenの差別化ポイント（4社ともゼロの機能）
+- AIレビュー返信（Claude API）
+- AI SNS投稿自動生成（Claude API）
+- AI POP画像生成（Claude API）
+- 30テーブル12カテゴリのデータ蓄積（将来B2Bコンサル基盤）
+- 全注文事前決済（Stripe authorize→capture、ノーショー根本解決）
+- STD ¥0フリーミアム（レストランボード並みの参入障壁低減+AI機能付き）
+
+### 戦略方針
+- 「予約管理」カテゴリで4社と正面から競争しない
+- 新カテゴリ「AI統合型 飲食店経営プラットフォーム」を創出
+- グルメサイト連携数やPOS連携数では勝負しない
+- MO+POS+CRM+AI+予約管理の統合で他社にない価値を提供
+
+### 予約管理サービス設計時の参考ポイント
+- 自動配席ロジック（テーブル×人数×時間帯のルールベース）→ ebica/TORETA参照
+- 満席時代替提案（他時間帯/他店舗の空席自動案内）→ ebica/TableCheck参照
+- 確認ボタン付きリマインダー（ステータス自動更新）→ TableCheck参照
+- ドラッグ&ドロップ型予約カレンダー → TORETA参照
+- 退店後アンケート自動送信 → TORETAカスタマーボイス参照
 
 ---
 
