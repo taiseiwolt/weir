@@ -109,10 +109,8 @@ let BRAND_PERMISSIONS=[];
 let STORES=[];
 let ACCOUNTS=[];
 let BANS=[];
-// COMPENSATION DATA
-const COMP_POINT_LOG=[{id:'CPT-demo001',memberId:'MBR-dE4jP6d',memberName:'高橋 翔太',amount:500,reason:'配送遅延による補填',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-10'},{id:'CPT-demo002',memberId:'MBR-jK7nS9g',memberName:'渡辺 さくら',amount:300,reason:'商品品質クレーム対応',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-08'},{id:'CPT-demo003',memberId:'MBR-fG5kQ7e',memberName:'中村 あゆみ',amount:200,reason:'システム障害によるポイント消失復旧',source:'aiden_compensation',grantedBy:'Taisei',createdAt:'2026-03-05'}];
+// COMPENSATION DATA（補填対象の注文リスト。実データ読み込み完了後はここを差し替え予定）
 const ADMIN_ORDERS=[{id:'ORD-1001',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'高橋 翔太',total:5280,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_3kXm9P2abc',date:'2026-03-11',items:[{name:'特選カルビ',qty:2,price:1280},{name:'ハラミ',qty:1,price:980},{name:'石焼ビビンバ',qty:1,price:780}],aidenPointsUsed:0,normalPointsUsed:200},{id:'ORD-1002',storeId:'STR-eG6uZ8p',storeName:'炭火亭 新宿東口店',brandName:'焼肉 炭火亭',customer:'中村 あゆみ',total:3960,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_7jL5wTn6def',date:'2026-03-10',items:[{name:'上ロース',qty:1,price:1480},{name:'牛タン塩',qty:1,price:1180},{name:'冷麺',qty:1,price:880}],aidenPointsUsed:100,normalPointsUsed:300},{id:'ORD-1003',storeId:'STR-nP4aF6v',storeName:'ラーメン風雲 新宿本店',brandName:'ラーメン風雲',customer:'小林 健太',total:1980,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_9qR5bG7wghi',date:'2026-03-09',items:[{name:'味噌ラーメン',qty:1,price:980},{name:'餃子',qty:1,price:480},{name:'チャーシュー丼',qty:1,price:520}],aidenPointsUsed:0,normalPointsUsed:0},{id:'ORD-1004',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'渡辺 さくら',total:8640,status:'done',paymentStatus:'refunded',paymentIntentId:'pi_test_2pQ9vGk2jkl',date:'2026-03-07',items:[{name:'特選カルビ',qty:3,price:1280},{name:'上ロース',qty:2,price:1480},{name:'生ビール',qty:4,price:550}],aidenPointsUsed:300,normalPointsUsed:0},{id:'ORD-1005',storeId:'STR-qR5bG7w',storeName:'ラーメン風雲 渋谷店',brandName:'ラーメン風雲',customer:'伊藤 大地',total:1460,status:'cancelled',paymentStatus:'paid',paymentIntentId:'pi_test_8nV3sHm8mno',date:'2026-03-06',items:[{name:'醤油ラーメン',qty:1,price:880},{name:'唐揚げ',qty:1,price:580}],aidenPointsUsed:0,normalPointsUsed:0}];
-const REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
 let MEMBERS_DATA=[];
 let GUESTS_DATA=[];
 let MENU=[];
@@ -1556,283 +1554,452 @@ async function aiGenerateMonthlyComment(){
 }
 
 // ===== COMPENSATION (補償管理) =====
-function renderCompensation(){
-  // Stats
-  const totalComp=COMP_POINT_LOG.reduce((s,x)=>s+x.amount,0);
-  const totalRefund=REFUND_LOG.reduce((s,x)=>s+x.amount,0);
-  return '<div class="page-title">補償管理</div><div class="page-subtitle">AIden負担のポイント補填・Stripe返金</div>'+
-  '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
-    '<div class="stat-card purple"><div class="sc-label">補填ポイント付与（累計）</div><div class="sc-val">'+totalComp.toLocaleString()+'pt</div></div>'+
-    '<div class="stat-card orange"><div class="sc-label">補填件数</div><div class="sc-val">'+COMP_POINT_LOG.length+'</div></div>'+
-    '<div class="stat-card blue"><div class="sc-label">返金総額</div><div class="sc-val">'+Y(totalRefund)+'</div></div>'+
-    '<div class="stat-card green"><div class="sc-label">返金件数</div><div class="sc-val">'+REFUND_LOG.length+'</div></div>'+
-  '</div>'+
-  '<div class="tabs" id="compTabs">'+
-    '<div class="tab active" onclick="switchTab(\'comp\',this,\'points\')">🎁 ポイント補填</div>'+
-    '<div class="tab" onclick="switchTab(\'comp\',this,\'refunds\')">💳 返金管理</div>'+
-  '</div>'+
-  '<div class="tab-content active" id="comp-points">'+renderCompPointsTab()+'</div>'+
-  '<div class="tab-content" id="comp-refunds">'+renderCompRefundsTab()+'</div>';
+// 補償方法: ポイント付与 / 返金 / 決済キャンセル の3モードを1画面に統合 (D-44)
+// 補填履歴はDB（point_transactions + orders.refund + audit_logs）から読み取り
+
+// COMPENSATION_HISTORY: unified list of all compensation actions (point/refund/cancel)
+// Shape: {createdAt, memberName, memberId, memberType, brandName, storeName, mode, detail, amount, points, orderId, executedBy}
+let COMPENSATION_HISTORY=[];
+let compHistoryLoaded=false;
+let compFilter={from:'',to:'',brandId:'all',storeId:'all'};
+let compModalMode='point'; // 'point' | 'refund' | 'cancel'
+let compModalOrderId=null;
+let compModalPiStatus=null; // 'authorized' | 'captured' | 'refunded' | 'unknown'
+
+async function loadCompensationHistory(){
+  COMPENSATION_HISTORY=[];
+  // 1) ポイント補填 (point_transactions where source='aiden_compensation')
+  try{
+    const {data:pts}=await sb.from('point_transactions')
+      .select('id,member_id,amount,reason,order_id,granted_by,created_at,source')
+      .eq('source','aiden_compensation')
+      .order('created_at',{ascending:false})
+      .limit(200);
+    (pts||[]).forEach(function(p){
+      COMPENSATION_HISTORY.push({
+        createdAt:p.created_at,
+        memberId:p.member_id,memberName:'—',memberType:'member',
+        brandName:'—',storeName:'—',
+        mode:'point',detail:'ポイント付与',
+        points:p.amount,amount:0,
+        orderId:p.order_id||'',
+        executedBy:p.granted_by||''
+      });
+    });
+  }catch(e){/* DB読み込み失敗時は空のまま */}
+  // 2) 返金 (orders where payment_status in refunded/partially_refunded)
+  try{
+    const {data:refs}=await sb.from('orders')
+      .select('id,display_id,refund_amount,refund_reason,refunded_at,refunded_by,payment_status,total_amount,brand_id,store_id')
+      .in('payment_status',['refunded','partially_refunded'])
+      .not('refunded_at','is',null)
+      .order('refunded_at',{ascending:false})
+      .limit(200);
+    (refs||[]).forEach(function(r){
+      const mode=(r.payment_status==='partially_refunded')?'refund':(r.refund_amount&&r.total_amount&&r.refund_amount<r.total_amount?'refund':'refund');
+      COMPENSATION_HISTORY.push({
+        createdAt:r.refunded_at,
+        memberId:'',memberName:'—',memberType:'guest',
+        brandName:'—',storeName:'—',
+        mode:mode,detail:mode==='refund'?'返金':'決済キャンセル',
+        points:0,amount:r.refund_amount||0,
+        orderId:r.display_id||r.id,
+        executedBy:r.refunded_by||''
+      });
+    });
+  }catch(e){/* 同上 */}
+  COMPENSATION_HISTORY.sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
 }
 
-// --- ポイント補填タブ ---
-function renderCompPointsTab(){
-  return '<div class="card"><div class="card-title">🔍 会員検索</div>'+
-    '<div class="toolbar">'+
-      '<input class="sinput" id="compMemberSearch" placeholder="会員ID / 名前 / 電話番号で検索..." style="width:360px" onkeydown="if(event.key===\'Enter\')searchCompMembers()">'+
-      '<button class="btn btn-p btn-sm" onclick="searchCompMembers()">検索</button>'+
-    '</div>'+
-    '<div id="compMemberResults"></div>'+
+function renderCompensation(){
+  if(!compHistoryLoaded){
+    compHistoryLoaded=true;
+    loadCompensationHistory().then(function(){
+      if(currentView&&currentView.type==='compensation')renderPage();
+    });
+  }
+  const totalPoints=COMPENSATION_HISTORY.filter(function(h){return h.mode==='point';}).reduce(function(s,x){return s+(x.points||0);},0);
+  const totalRefund=COMPENSATION_HISTORY.filter(function(h){return h.mode==='refund';}).reduce(function(s,x){return s+(x.amount||0);},0);
+  const totalCancel=COMPENSATION_HISTORY.filter(function(h){return h.mode==='cancel';}).reduce(function(s,x){return s+(x.amount||0);},0);
+  return '<div class="page-title">補償管理</div><div class="page-subtitle">AIden負担のポイント補填・返金・決済キャンセルを統合管理</div>'+
+  '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
+    '<div class="stat-card purple"><div class="sc-label">補填ポイント（累計）</div><div class="sc-val">'+totalPoints.toLocaleString()+'pt</div></div>'+
+    '<div class="stat-card orange"><div class="sc-label">返金総額</div><div class="sc-val">'+Y(totalRefund)+'</div></div>'+
+    '<div class="stat-card blue"><div class="sc-label">決済キャンセル総額</div><div class="sc-val">'+Y(totalCancel)+'</div></div>'+
+    '<div class="stat-card green"><div class="sc-label">補填件数</div><div class="sc-val">'+COMPENSATION_HISTORY.length+'</div></div>'+
   '</div>'+
-  '<div class="card"><div class="card-title">📋 補填ポイント付与履歴</div>'+
-    (COMP_POINT_LOG.length===0?'<div class="empty">まだ補填ポイントの付与はありません</div>':
-    '<table class="dt"><thead><tr><th>日時</th><th>会員</th><th>付与ポイント</th><th>理由</th><th>実行者</th></tr></thead><tbody>'+
-    COMP_POINT_LOG.slice().reverse().map(function(l){
-      return '<tr><td>'+l.createdAt+'</td><td style="font-weight:600">'+l.memberName+'<div style="font-size:10px;color:var(--text-light)">'+l.memberId+'</div></td>'+
-        '<td><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#e17055;color:#fff">+'+l.amount.toLocaleString()+'pt</span></td>'+
-        '<td style="font-size:11px">'+l.reason+'</td><td>'+l.grantedBy+'</td></tr>';
-    }).join('')+'</tbody></table>')+
+  renderCompExecuteCard()+
+  renderCompHistoryCard();
+}
+
+// --- 補填実行（注文検索→クリックで補填処理モーダル） ---
+function renderCompExecuteCard(){
+  return '<div class="card"><div class="card-title">🎯 補填実行</div>'+
+    '<div class="toolbar">'+
+      '<input class="sinput" id="compOrderSearch" placeholder="注文ID / 店舗名 / 顧客名 / ブランドで検索..." style="width:360px" onkeydown="if(event.key===\'Enter\')searchCompOrders()">'+
+      '<button class="btn btn-p btn-sm" onclick="searchCompOrders()">検索</button>'+
+      '<button class="btn btn-s btn-sm" onclick="showAllCompOrders()">全注文表示</button>'+
+    '</div>'+
+    '<div id="compOrderResults"></div>'+
   '</div>';
 }
 
-function searchCompMembers(){
-  var q=document.getElementById('compMemberSearch').value.trim().toLowerCase();
-  var box=document.getElementById('compMemberResults');
-  if(!q){box.innerHTML='<div class="empty">検索キーワードを入力してください</div>';return;}
-  var results=MEMBERS_DATA.filter(function(m){
-    return m.id.toLowerCase().includes(q)||m.name.toLowerCase().includes(q)||(m.phone||'').includes(q)||(m.email||'').toLowerCase().includes(q);
-  });
-  if(results.length===0){box.innerHTML='<div class="empty">該当する会員が見つかりません</div>';return;}
-  box.innerHTML='<table class="dt"><thead><tr><th>会員ID</th><th>氏名</th><th>ランク</th><th>現在ポイント</th><th>操作</th></tr></thead><tbody>'+
-    results.map(function(m){
-      return '<tr><td style="font-family:monospace;font-size:11px">'+m.id+'</td><td style="font-weight:600">'+m.name+'</td>'+
-        '<td>'+rankBadge(m.rank)+'</td><td style="font-weight:700">'+m.points.toLocaleString()+'pt</td>'+
-        '<td><button class="btn btn-p btn-sm" onclick="openCompPointModal(\''+m.id+'\')">🎁 ポイント付与</button></td></tr>';
+function renderCompOrderResultsTable(orders){
+  if(!orders||orders.length===0)return '<div class="empty">該当する注文が見つかりません</div>';
+  return '<table class="dt"><thead><tr><th>注文ID</th><th>日付</th><th>店舗</th><th>顧客</th><th class="r">金額</th><th>決済</th><th>操作</th></tr></thead><tbody>'+
+    orders.map(function(o){
+      return '<tr><td style="font-family:monospace;font-size:11px">'+escHtml(o.id)+'</td><td>'+escHtml(o.date)+'</td>'+
+        '<td>'+escHtml(o.storeName)+'<div style="font-size:10px;color:var(--text-light)">'+escHtml(o.brandName)+'</div></td>'+
+        '<td style="font-weight:600">'+escHtml(o.customer)+'</td>'+
+        '<td class="r" style="font-weight:700">'+Y(o.total)+'</td>'+
+        '<td>'+paymentStatusBadge(o.paymentStatus)+'</td>'+
+        '<td><button class="btn btn-p btn-sm" onclick="openCompensationModal(\''+o.id+'\')">補填処理</button></td></tr>';
     }).join('')+'</tbody></table>';
 }
 
-function openCompPointModal(memberId){
-  var m=MEMBERS_DATA.find(function(x){return x.id===memberId;});
-  if(!m)return;
+function searchCompOrders(){
+  var q=document.getElementById('compOrderSearch').value.trim().toLowerCase();
+  var box=document.getElementById('compOrderResults');
+  if(!q){box.innerHTML='<div class="empty">検索キーワードを入力してください</div>';return;}
+  var results=ADMIN_ORDERS.filter(function(o){
+    return o.id.toLowerCase().includes(q)||o.storeName.toLowerCase().includes(q)||o.customer.toLowerCase().includes(q)||(o.brandName||'').toLowerCase().includes(q);
+  });
+  box.innerHTML=renderCompOrderResultsTable(results);
+}
+function showAllCompOrders(){
+  document.getElementById('compOrderResults').innerHTML=renderCompOrderResultsTable(ADMIN_ORDERS);
+}
+
+function paymentStatusBadge(s){
+  var m={paid:{bg:'#e6f9f0',c:'#00b894',l:'決済済'},authorized:{bg:'#ffeaa7',c:'#d68910',l:'与信済'},refunded:{bg:'#fab1a0',c:'#d63031',l:'返金済'},partially_refunded:{bg:'#ffeaa7',c:'#d68910',l:'一部返金'}};
+  var st=m[s]||{bg:'#dfe6e9',c:'#636e72',l:s};
+  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
+}
+
+// --- 補填処理モーダル ---
+// D-44: 0-60日=通常表示, 61-90日=CAUTION, 91+日=返金/キャンセル無効
+function daysSinceOrder(o){
+  if(!o||!o.date)return 0;
+  const d=new Date(o.date);
+  return Math.floor((Date.now()-d.getTime())/86400000);
+}
+
+// Stripe PI ステータスをリアルタイム取得（エンドポイント未実装時は order データにフォールバック）
+async function fetchStripePiStatus(o){
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-get-payment-intent',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({payment_intent_id:o.paymentIntentId})
+    });
+    if(res.ok){
+      const data=await res.json();
+      if(data&&data.status){
+        // stripe status values: requires_capture=authorized未キャプチャ, succeeded=capture済
+        if(data.status==='requires_capture')return 'authorized';
+        if(data.status==='succeeded')return o.paymentStatus==='refunded'?'refunded':'captured';
+        if(data.status==='canceled')return 'canceled';
+      }
+    }
+  }catch(e){/* フォールバック */}
+  // Fallback: 既存の order.paymentStatus を使用
+  if(o.paymentStatus==='refunded'||o.paymentStatus==='partially_refunded')return 'refunded';
+  if(o.paymentStatus==='authorized')return 'authorized';
+  return 'captured';
+}
+
+async function openCompensationModal(orderId){
+  const o=ADMIN_ORDERS.find(function(x){return x.id===orderId;});
+  if(!o)return;
+  compModalOrderId=orderId;
+  compModalMode='point';
+  compModalPiStatus='unknown';
+
+  // 一旦ローディング表示
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>🎯 補填処理</h3><div style="padding:40px;text-align:center;color:var(--text-light)">Stripe決済状態を確認中...</div>');
+
+  compModalPiStatus=await fetchStripePiStatus(o);
+  if(compModalOrderId!==orderId)return; // ユーザーがモーダルを閉じた場合
+
+  renderCompensationModal(o);
+}
+
+function renderCompensationModal(o){
+  const days=daysSinceOrder(o);
+  // D-44 期間別制約
+  // 0-60: ok / 61-90: caution (refund/cancelはgray+warning) / 91+: refundは不可
+  const stripeMaxDays=90;
+  const policyMaxDays=60;
+  const refundOver90=days>stripeMaxDays;
+  const refundOver60=days>policyMaxDays;
+  const canCancel=compModalPiStatus==='authorized';
+  const isAlreadyRefunded=compModalPiStatus==='refunded';
+
+  const memberName=o.customer||'ゲスト';
+  const memberType=o.memberId?'会員':'ゲスト';
+  const brandName=o.brandName||'—';
+
+  // ユーザー情報カード
+  const itemsHtml=(o.items||[]).map(function(it){
+    return '<tr><td>'+escHtml(it.name)+'</td><td class="r">×'+it.qty+'</td><td class="r">'+Y(it.price*it.qty)+'</td></tr>';
+  }).join('');
+
+  // モード切替ボタン（禁止状態は視覚的にグレーアウト）
+  const refundDisabled=isAlreadyRefunded||refundOver90;
+  const cancelDisabled=isAlreadyRefunded||!canCancel;
+  const btnStyle=function(mode,color,label,disabled){
+    const active=compModalMode===mode;
+    const base='padding:10px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:'+(disabled?'not-allowed':'pointer')+';border:2px solid '+color+';';
+    const bg=active&&!disabled?color:'#fff';
+    const fg=active&&!disabled?'#fff':color;
+    const op=disabled?'opacity:0.4;':'';
+    const onclick=disabled?'':'onclick="setCompModalMode(\''+mode+'\')"';
+    return '<button '+onclick+' style="'+base+'background:'+bg+';color:'+fg+';'+op+'">'+label+'</button>';
+  };
+
+  const modeButtons='<div style="display:flex;gap:10px;margin-bottom:14px">'+
+    btnStyle('point','#0984e3','🎁 ポイント付与',false)+
+    btnStyle('refund','#d68910','💴 返金',refundDisabled)+
+    btnStyle('cancel','#d63031','🚫 決済キャンセル',cancelDisabled)+
+  '</div>';
+
+  // CAUTION表示
+  let caution='';
+  if(compModalMode==='refund'&&refundOver90){
+    caution='<div style="margin-bottom:12px;padding:12px;background:#ffe3e3;border:1px solid #d63031;border-radius:8px;font-size:11px;color:#d63031;font-weight:600">⚠️ Stripeの返金期限（90日）を超過しています</div>';
+  }else if(compModalMode==='refund'&&refundOver60){
+    caution='<div style="margin-bottom:12px;padding:12px;background:#fff3e0;border:1px solid #e17055;border-radius:8px;font-size:11px;color:#e17055;font-weight:600">⚠️ 対象期間外です（AIden↔顧客間の返金ポリシー 60日超過）。技術的には実行可能です。</div>';
+  }else if(compModalMode==='cancel'&&!canCancel&&!isAlreadyRefunded){
+    caution='<div style="margin-bottom:12px;padding:12px;background:#fff3e0;border:1px solid #e17055;border-radius:8px;font-size:11px;color:#e17055;font-weight:600">⚠️ 決済キャンセルはauthorize済み+未capture状態の注文のみ実行可能です</div>';
+  }else if(isAlreadyRefunded){
+    caution='<div style="margin-bottom:12px;padding:12px;background:#e6f9f0;border-radius:8px;font-size:11px;color:#00b894;font-weight:600">✅ この注文はすでに返金処理済みです</div>';
+  }
+
+  // モード別入力欄
+  let inputPanel='';
+  if(compModalMode==='point'){
+    inputPanel='<div class="form-grid">'+
+      '<div class="form-group full"><label>付与ポイント数 <span style="color:var(--danger)">*</span></label>'+
+        '<input type="number" id="compPointAmount" min="1" placeholder="例: 500">'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:4px">現在保有: <strong>'+((o.currentPoints||0).toLocaleString())+'pt</strong>（会員非紐付け時は—）</div>'+
+      '</div>'+
+      '<div class="form-group full"><label>関連注文（任意）</label>'+
+        '<input type="text" id="compPointOrder" value="'+escHtml(o.id)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+      '<div class="form-group full"><label>補填理由 <span style="color:var(--danger)">*</span></label>'+
+        '<textarea id="compReason" placeholder="補填理由を入力..."></textarea></div>'+
+    '</div>';
+  }else if(compModalMode==='refund'){
+    inputPanel='<div class="form-grid">'+
+      '<div class="form-group full"><label>返金金額（円） <span style="color:var(--danger)">*</span></label>'+
+        '<input type="number" id="compRefundAmount" value="'+(o.total||0)+'" min="1" max="'+(o.total||0)+'">'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:4px">対象注文: '+escHtml(o.id)+' / 上限: '+Y(o.total||0)+'</div>'+
+      '</div>'+
+      '<div class="form-group full"><label>補填理由 <span style="color:var(--danger)">*</span></label>'+
+        '<textarea id="compReason" placeholder="返金理由を入力..."></textarea></div>'+
+    '</div>';
+  }else{
+    inputPanel='<div class="form-grid">'+
+      '<div class="form-group full"><label>キャンセル対象金額</label>'+
+        '<input type="text" value="'+Y(o.total||0)+' (Stripe決済金額を自動適用)" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+      '<div class="form-group full"><label>補填理由 <span style="color:var(--danger)">*</span></label>'+
+        '<textarea id="compReason" placeholder="キャンセル理由を入力..."></textarea></div>'+
+    '</div>';
+  }
+
+  // 実行ボタン（グレーアウト状態を反映）
+  const canExecute=
+    (compModalMode==='point')||
+    (compModalMode==='refund'&&!refundDisabled)||
+    (compModalMode==='cancel'&&!cancelDisabled);
+  const executeBtnColor=compModalMode==='point'?'#0984e3':compModalMode==='refund'?'#d68910':'#d63031';
+  const executeBtnLabel=compModalMode==='point'?'付与実行':compModalMode==='refund'?'返金実行':'キャンセル実行';
+  const executeBtn=canExecute?
+    '<button class="btn" style="background:'+executeBtnColor+';color:#fff" onclick="confirmAndExecuteCompensation()">'+executeBtnLabel+'</button>':
+    '<button class="btn" style="background:#ddd;color:#999;cursor:not-allowed" disabled>'+executeBtnLabel+'</button>';
+
   openModal(
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<h3>🎁 補償ポイント付与</h3>'+
-    '<div style="margin-bottom:16px;padding:14px;background:#f5f6fa;border-radius:10px">'+
-      '<div style="font-weight:700;font-size:14px">'+m.name+'</div>'+
-      '<div style="font-size:11px;color:var(--text-light);margin-top:4px">'+m.id+' / '+rankBadge(m.rank)+' / 現在 <strong>'+m.points.toLocaleString()+'pt</strong></div>'+
+    '<h3>🎯 補填処理</h3>'+
+    '<div style="margin-bottom:14px;padding:14px;background:#f5f6fa;border-radius:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+        '<div><div style="font-weight:700;font-size:14px">'+escHtml(memberName)+' <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#dfe6e9;color:#636e72;margin-left:6px">'+memberType+'</span></div>'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:2px">'+escHtml(o.id)+' / '+escHtml(brandName)+' / '+(days)+'日前</div></div>'+
+        paymentStatusBadge(o.paymentStatus)+
+      '</div>'+
+      '<div style="font-size:11px;font-weight:700;margin:8px 0 4px">対象注文 合計: '+Y(o.total||0)+'</div>'+
+      '<table class="dt" style="margin:4px 0"><thead><tr><th>商品</th><th class="r">数量</th><th class="r">小計</th></tr></thead><tbody>'+
+        itemsHtml+
+      '</tbody></table>'+
     '</div>'+
-    '<div class="form-grid">'+
-      '<div class="form-group full"><label>付与ポイント数 <span style="color:var(--danger)">*</span></label>'+
-        '<input type="number" id="compPointAmount" min="1" placeholder="例: 500"></div>'+
-      '<div class="form-group full"><label>付与理由 <span style="color:var(--danger)">*</span></label>'+
-        '<select id="compPointReasonSelect" onchange="var o=this.value;document.getElementById(\'compPointReason\').value=o===\'other\'?\'\':o;document.getElementById(\'compPointReason\').style.display=o===\'other\'?\'block\':\'none\'">'+
-          '<option value="">-- 選択 --</option>'+
-          '<option value="配送遅延による補填">配送遅延による補填</option>'+
-          '<option value="商品品質クレーム対応">商品品質クレーム対応</option>'+
-          '<option value="システム障害によるポイント復旧">システム障害によるポイント復旧</option>'+
-          '<option value="注文トラブル対応">注文トラブル対応</option>'+
-          '<option value="other">その他（自由記述）</option>'+
-        '</select>'+
-        '<textarea id="compPointReason" style="display:none;margin-top:8px" placeholder="補償理由を入力..."></textarea></div>'+
-    '</div>'+
-    '<div style="margin-top:14px;padding:12px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e17055;line-height:1.6">'+
-      '⚠️ この操作で付与されるポイントは <strong>AIden原資（source: aiden_compensation）</strong>として記録されます。<br>'+
-      '消費時にはFIFOで古いポイントから使われ、AIden原資分の消費額が注文ごとに記録されます。'+
+    modeButtons+
+    caution+
+    inputPanel+
+    '<div style="margin-top:14px;padding:10px;background:#fff;border:1px dashed var(--border);border-radius:8px;font-size:11px;color:var(--text-light)">'+
+      '実行者: <strong id="compExecutorEmail">'+escHtml(getCurrentExecutorEmail())+'</strong>'+
     '</div>'+
     '<div class="btn-group">'+
-      '<button class="btn btn-p" onclick="grantCompPoint(\''+m.id+'\')">付与実行</button>'+
+      executeBtn+
       '<button class="btn btn-s" onclick="closeModal()">キャンセル</button>'+
     '</div>'
   );
 }
 
-async function grantCompPoint(memberId){
-  if(grantCompPoint._p)return; grantCompPoint._p=true;
-  try{
-  var amount=parseInt(document.getElementById('compPointAmount').value);
-  var reasonSelect=document.getElementById('compPointReasonSelect').value;
-  var reasonText=document.getElementById('compPointReason').value.trim();
-  var reason=reasonSelect==='other'?reasonText:(reasonSelect||reasonText);
-  if(!amount||amount<=0){showToast('⚠️ 有効なポイント数を入力してください');return;}
-  if(!reason){showToast('⚠️ 理由は必須です');return;}
-  var m=MEMBERS_DATA.find(function(x){return x.id===memberId;});
-  if(!m)return;
-  // インメモリ更新
-  m.points+=amount;
-  COMP_POINT_LOG.push({
-    id:genId('CPT-'),memberId:m.id,memberName:m.name,
-    amount:amount,reason:reason,source:'aiden_compensation',
-    grantedBy:'Taisei',createdAt:new Date().toISOString().split('T')[0]
-  });
-  // Supabase Edge Function 呼び出し（接続時）
-  try{
-    await fetch(SUPABASE_URL+'/functions/v1/compensation-point-grant',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({member_id:memberId,brand_id:null,amount:amount,reason:reason,granted_by:'Taisei'})
-    });
-  }catch(e){console.warn('Edge Function call skipped:',e);}
-  closeModal();
-  showToast('✅ '+amount+'pt を '+m.name+' に付与しました（AIden原資）');
-  renderPage();
-  }finally{grantCompPoint._p=false;}
+function setCompModalMode(mode){
+  compModalMode=mode;
+  const o=ADMIN_ORDERS.find(function(x){return x.id===compModalOrderId;});
+  if(o)renderCompensationModal(o);
 }
 
-// --- 返金管理タブ ---
-function renderCompRefundsTab(){
-  return '<div class="card"><div class="card-title">🔍 注文検索</div>'+
-    '<div class="toolbar">'+
-      '<input class="sinput" id="refundOrderSearch" placeholder="注文ID / 店舗名 / 顧客名で検索..." style="width:360px" onkeydown="if(event.key===\'Enter\')searchRefundOrders()">'+
-      '<button class="btn btn-p btn-sm" onclick="searchRefundOrders()">検索</button>'+
-      '<button class="btn btn-s btn-sm" onclick="showAllOrders()">全注文表示</button>'+
+function getCurrentExecutorEmail(){
+  try{
+    const user=sb.auth&&sb.auth.user?sb.auth.user():null;
+    if(user&&user.email)return user.email;
+  }catch(e){}
+  // フォールバック: sessionStorageから
+  const cached=sessionStorage.getItem('adminEmail');
+  return cached||'admin@aiden.local';
+}
+
+async function confirmAndExecuteCompensation(){
+  if(confirmAndExecuteCompensation._p)return; confirmAndExecuteCompensation._p=true;
+  try{
+    const o=ADMIN_ORDERS.find(function(x){return x.id===compModalOrderId;});
+    if(!o){showToast('⚠️ 注文が見つかりません');return;}
+    const reason=(document.getElementById('compReason')||{}).value;
+    if(!reason||!reason.trim()){showToast('⚠️ 補填理由は必須です');return;}
+    const executor=getCurrentExecutorEmail();
+
+    if(compModalMode==='point'){
+      const amount=parseInt((document.getElementById('compPointAmount')||{}).value||'0');
+      if(!amount||amount<=0){showToast('⚠️ 有効なポイント数を入力してください');return;}
+      const summary='ポイント付与: '+amount+'pt\n対象会員: '+(o.customer||'—')+'\n実行者: '+executor;
+      if(!confirm(summary+'\n\nよろしいですか？'))return;
+      try{
+        await fetch(SUPABASE_URL+'/functions/v1/compensation-point-grant',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          body:JSON.stringify({member_id:o.memberId||null,brand_id:null,amount:amount,reason:reason.trim(),granted_by:executor,order_id:o.id})
+        });
+      }catch(e){}
+      await writeAuditLog('compensation_point_grant',{order_id:o.id,amount:amount,reason:reason.trim(),executor:executor});
+      COMPENSATION_HISTORY.unshift({createdAt:new Date().toISOString(),memberId:o.memberId||'',memberName:o.customer||'—',memberType:o.memberId?'member':'guest',brandName:o.brandName||'—',storeName:o.storeName||'—',mode:'point',detail:'ポイント付与',points:amount,amount:0,orderId:o.id,executedBy:executor});
+      showToast('✅ '+amount+'pt を付与しました（AIden原資）');
+
+    }else if(compModalMode==='refund'){
+      const amount=parseInt((document.getElementById('compRefundAmount')||{}).value||'0');
+      if(!amount||amount<=0||amount>(o.total||0)){showToast('⚠️ 返金額が不正です');return;}
+      const summary='返金: '+Y(amount)+'\n対象注文: '+o.id+'\n実行者: '+executor;
+      if(!confirm(summary+'\n\nよろしいですか？'))return;
+      try{
+        await fetch(SUPABASE_URL+'/functions/v1/stripe-create-refund',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          body:JSON.stringify({payment_intent_id:o.paymentIntentId,amount:amount,reason:reason.trim(),order_id:o.id,refunded_by:executor})
+        });
+      }catch(e){}
+      o.paymentStatus=amount>=(o.total||0)?'refunded':'partially_refunded';
+      await writeAuditLog('compensation_refund',{order_id:o.id,amount:amount,reason:reason.trim(),executor:executor});
+      COMPENSATION_HISTORY.unshift({createdAt:new Date().toISOString(),memberId:o.memberId||'',memberName:o.customer||'—',memberType:o.memberId?'member':'guest',brandName:o.brandName||'—',storeName:o.storeName||'—',mode:'refund',detail:'返金',points:0,amount:amount,orderId:o.id,executedBy:executor});
+      showToast('✅ '+Y(amount)+' を返金しました');
+
+    }else if(compModalMode==='cancel'){
+      const amount=o.total||0;
+      const summary='決済キャンセル: '+Y(amount)+'\n対象注文: '+o.id+'\n実行者: '+executor;
+      if(!confirm(summary+'\n\nよろしいですか？'))return;
+      try{
+        await fetch(SUPABASE_URL+'/functions/v1/stripe-cancel-payment-intent',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          body:JSON.stringify({payment_intent_id:o.paymentIntentId,reason:reason.trim(),order_id:o.id,canceled_by:executor})
+        });
+      }catch(e){}
+      o.paymentStatus='refunded';
+      await writeAuditLog('compensation_cancel',{order_id:o.id,amount:amount,reason:reason.trim(),executor:executor});
+      COMPENSATION_HISTORY.unshift({createdAt:new Date().toISOString(),memberId:o.memberId||'',memberName:o.customer||'—',memberType:o.memberId?'member':'guest',brandName:o.brandName||'—',storeName:o.storeName||'—',mode:'cancel',detail:'決済キャンセル',points:0,amount:amount,orderId:o.id,executedBy:executor});
+      showToast('✅ 決済をキャンセルしました');
+    }
+
+    closeModal();
+    renderPage();
+  }finally{confirmAndExecuteCompensation._p=false;}
+}
+
+async function writeAuditLog(action,meta){
+  try{
+    await sb.from('audit_logs').insert({
+      action:action,
+      actor_email:meta.executor||'',
+      target_type:'order',
+      target_id:meta.order_id||null,
+      meta:meta,
+      created_at:new Date().toISOString()
+    });
+  }catch(e){/* 監査ログ書き込み失敗は業務ブロックしない */}
+}
+
+// --- 補填履歴（統合表示 + 期間/ブランド/店舗フィルタ） ---
+function renderCompHistoryCard(){
+  const brandOpts='<option value="all">全ブランド</option>'+BRANDS.map(function(b){return '<option value="'+b.id+'"'+(compFilter.brandId===b.id?' selected':'')+'>'+escHtml(b.name)+'</option>';}).join('');
+  const storeOpts='<option value="all">全店舗</option>'+STORES.map(function(s){return '<option value="'+s.id+'"'+(compFilter.storeId===s.id?' selected':'')+'>'+escHtml(s.name)+'</option>';}).join('');
+
+  const filterBar='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">期間:</span>'+
+      '<input type="date" id="compFilterFrom" value="'+(compFilter.from||'')+'" onchange="compFilter.from=this.value;refreshCompHistory()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+
+      '<span style="font-size:11px">〜</span>'+
+      '<input type="date" id="compFilterTo" value="'+(compFilter.to||'')+'" onchange="compFilter.to=this.value;refreshCompHistory()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+
     '</div>'+
-    '<div id="refundOrderResults"></div>'+
-  '</div>'+
-  '<div class="card"><div class="card-title">📋 返金履歴</div>'+
-    (REFUND_LOG.length===0?'<div class="empty">まだ返金処理はありません</div>':
-    '<table class="dt"><thead><tr><th>日時</th><th>注文ID</th><th>返金額</th><th>理由</th><th>実行者</th></tr></thead><tbody>'+
-    REFUND_LOG.slice().reverse().map(function(l){
-      return '<tr><td>'+l.createdAt+'</td><td style="font-family:monospace">'+l.orderId+'</td>'+
-        '<td><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:var(--danger);color:#fff">'+Y(l.amount)+'</span></td>'+
-        '<td style="font-size:11px">'+l.reason+'</td><td>'+l.refundedBy+'</td></tr>';
-    }).join('')+'</tbody></table>')+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">ブランド:</span>'+
+      '<select id="compFilterBrand" onchange="compFilter.brandId=this.value;refreshCompHistory()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+brandOpts+'</select></div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">店舗:</span>'+
+      '<select id="compFilterStore" onchange="compFilter.storeId=this.value;refreshCompHistory()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+storeOpts+'</select></div>'+
+  '</div>';
+
+  return '<div class="card"><div class="card-title">📋 補填履歴</div>'+
+    filterBar+
+    '<div id="compHistoryTableContainer">'+renderCompHistoryTable()+'</div>'+
   '</div>';
 }
 
-function paymentStatusBadge(s){
-  var m={paid:{bg:'#e6f9f0',c:'#00b894',l:'決済済'},refunded:{bg:'#fab1a0',c:'#d63031',l:'返金済'},partially_refunded:{bg:'#ffeaa7',c:'#d68910',l:'一部返金'}};
-  var st=m[s]||{bg:'#dfe6e9',c:'#636e72',l:s};
-  return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.c+'">'+st.l+'</span>';
+function compHistoryFiltered(){
+  let list=COMPENSATION_HISTORY.slice();
+  if(compFilter.from)list=list.filter(function(h){return (h.createdAt||'').slice(0,10)>=compFilter.from;});
+  if(compFilter.to)list=list.filter(function(h){return (h.createdAt||'').slice(0,10)<=compFilter.to;});
+  if(compFilter.brandId!=='all')list=list.filter(function(h){return (h.brandId||'')===compFilter.brandId;});
+  if(compFilter.storeId!=='all')list=list.filter(function(h){return (h.storeId||'')===compFilter.storeId;});
+  return list;
 }
 
-function renderOrderResultsTable(orders){
-  if(orders.length===0)return '<div class="empty">該当する注文が見つかりません</div>';
-  return '<table class="dt"><thead><tr><th>注文ID</th><th>日付</th><th>店舗</th><th>顧客</th><th class="r">金額</th><th>決済</th><th>操作</th></tr></thead><tbody>'+
-    orders.map(function(o){
-      var canRefund=o.paymentStatus==='paid';
-      return '<tr><td style="font-family:monospace;font-size:11px">'+o.id+'</td><td>'+o.date+'</td>'+
-        '<td>'+o.storeName+'<div style="font-size:10px;color:var(--text-light)">'+o.brandName+'</div></td>'+
-        '<td style="font-weight:600">'+o.customer+'</td>'+
-        '<td class="r" style="font-weight:700">'+Y(o.total)+'</td>'+
-        '<td>'+paymentStatusBadge(o.paymentStatus)+'</td>'+
-        '<td><button class="btn '+(canRefund?'btn-d':'btn-s')+' btn-sm" onclick="openRefundModal(\''+o.id+'\')">'+(canRefund?'💳 返金':'詳細')+'</button></td></tr>';
-    }).join('')+'</tbody></table>';
+function renderCompHistoryTable(){
+  const list=compHistoryFiltered();
+  if(list.length===0)return '<div class="empty">補填履歴はありません</div>';
+  // 10件表示+スクロール
+  return '<div style="max-height:440px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">'+
+    '<table class="dt" style="margin:0"><thead><tr>'+
+      '<th>日時</th><th>会員</th><th>補填内容</th><th>補填詳細</th><th>実行者</th><th>対象注文</th>'+
+    '</tr></thead><tbody>'+
+    list.map(function(h){
+      const detailLabel=h.mode==='point'?'+'+(h.points||0).toLocaleString()+'pt':Y(h.amount||0);
+      const modeBadge=h.mode==='point'?
+        '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#0984e320;color:#0984e3">ポイント付与</span>':
+        h.mode==='refund'?
+        '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#d6891020;color:#d68910">返金</span>':
+        '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#d6303120;color:#d63031">決済キャンセル</span>';
+      const when=(h.createdAt||'').replace('T',' ').slice(0,16);
+      return '<tr>'+
+        '<td style="font-size:11px">'+escHtml(when)+'</td>'+
+        '<td style="font-weight:600">'+escHtml(h.memberName||'—')+'<div style="font-size:10px;color:var(--text-light)">'+escHtml(h.memberType||'')+'</div></td>'+
+        '<td>'+modeBadge+'</td>'+
+        '<td style="font-weight:700">'+detailLabel+'</td>'+
+        '<td style="font-size:11px">'+escHtml(h.executedBy||'')+'</td>'+
+        '<td style="font-family:monospace;font-size:11px">'+escHtml(h.orderId||'—')+'</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
 }
 
-function searchRefundOrders(){
-  var q=document.getElementById('refundOrderSearch').value.trim().toLowerCase();
-  var box=document.getElementById('refundOrderResults');
-  if(!q){box.innerHTML='<div class="empty">検索キーワードを入力してください</div>';return;}
-  var results=ADMIN_ORDERS.filter(function(o){
-    return o.id.toLowerCase().includes(q)||o.storeName.toLowerCase().includes(q)||o.customer.toLowerCase().includes(q)||o.brandName.toLowerCase().includes(q);
-  });
-  box.innerHTML=renderOrderResultsTable(results);
-}
-
-function showAllOrders(){
-  document.getElementById('refundOrderResults').innerHTML=renderOrderResultsTable(ADMIN_ORDERS);
-}
-
-function openRefundModal(orderId){
-  var o=ADMIN_ORDERS.find(function(x){return x.id===orderId;});
-  if(!o)return;
-  var isRefunded=o.paymentStatus==='refunded'||o.paymentStatus==='partially_refunded';
-  var itemsHtml=o.items.map(function(it){return '<tr><td>'+it.name+'</td><td class="r">×'+it.qty+'</td><td class="r">'+Y(it.price*it.qty)+'</td></tr>';}).join('');
-  var pointInfo='';
-  if(o.aidenPointsUsed>0||o.normalPointsUsed>0){
-    pointInfo='<div style="margin-top:12px;padding:10px;background:#f5f6fa;border-radius:8px;font-size:11px">'+
-      '<div style="font-weight:700;margin-bottom:4px">ポイント使用内訳</div>'+
-      (o.normalPointsUsed>0?'<div>通常ポイント: <strong>'+o.normalPointsUsed.toLocaleString()+'pt</strong></div>':'')+
-      (o.aidenPointsUsed>0?'<div style="color:#e17055">AIden原資: <strong>'+o.aidenPointsUsed.toLocaleString()+'pt</strong></div>':'')+
-    '</div>';
-  }
-  openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<h3>💳 '+(isRefunded?'注文詳細（返金済）':'返金処理')+'</h3>'+
-    '<div style="margin-bottom:16px;padding:14px;background:#f5f6fa;border-radius:10px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-        '<span style="font-weight:700;font-size:14px">'+o.id+'</span>'+paymentStatusBadge(o.paymentStatus)+
-      '</div>'+
-      '<div style="font-size:11px;color:var(--text-light)">'+o.date+' / '+o.storeName+' / '+o.customer+'</div>'+
-      '<table class="dt" style="margin-top:10px"><thead><tr><th>商品</th><th class="r">数量</th><th class="r">小計</th></tr></thead><tbody>'+
-        itemsHtml+
-        '<tr style="font-weight:700"><td>合計</td><td></td><td class="r">'+Y(o.total)+'</td></tr>'+
-      '</tbody></table>'+
-      pointInfo+
-      '<div style="margin-top:8px;font-size:10px;color:var(--text-light)">PaymentIntent: <code>'+o.paymentIntentId+'</code></div>'+
-    '</div>'+
-    (isRefunded?
-      '<div style="padding:12px;background:#e6f9f0;border-radius:8px;font-size:12px;color:#00b894;font-weight:600">✅ この注文は返金処理済みです</div>':
-      '<div class="form-grid">'+
-        '<div class="form-group full"><label>返金金額（円）<span style="color:var(--danger)"> *</span></label>'+
-          '<input type="number" id="refundAmount" value="'+o.total+'" min="1" max="'+o.total+'">'+
-          '<div style="font-size:10px;color:var(--text-light);margin-top:2px">全額: '+Y(o.total)+' / 部分返金の場合は金額を変更</div>'+
-        '</div>'+
-        '<div class="form-group full"><label>返金理由 <span style="color:var(--danger)">*</span></label>'+
-          '<select id="refundReasonSelect" onchange="var o=this.value;document.getElementById(\'refundReasonText\').style.display=o===\'other\'?\'block\':\'none\'">'+
-            '<option value="">-- 選択 --</option>'+
-            '<option value="商品品質問題">商品品質問題</option>'+
-            '<option value="配送遅延・未着">配送遅延・未着</option>'+
-            '<option value="注文ミス（店舗側）">注文ミス（店舗側）</option>'+
-            '<option value="お客さま都合">お客さま都合</option>'+
-            '<option value="システム障害">システム障害</option>'+
-            '<option value="other">その他（自由記述）</option>'+
-          '</select>'+
-          '<textarea id="refundReasonText" style="display:none;margin-top:8px" placeholder="返金理由を入力..."></textarea>'+
-        '</div>'+
-      '</div>'+
-      '<div style="margin-top:14px;padding:12px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e17055;line-height:1.6">'+
-        '⚠️ この操作は <strong>Stripe Refund API</strong> を通じて返金処理を行います。<br>'+
-        '返金完了後、orders テーブルの payment_status が <code>refunded</code> に更新されます。'+
-      '</div>'+
-      '<div class="btn-group">'+
-        '<button class="btn btn-d" onclick="executeRefund(\''+o.id+'\')">返金実行</button>'+
-        '<button class="btn btn-s" onclick="closeModal()">キャンセル</button>'+
-      '</div>'
-    ));
-
-}
-
-async function executeRefund(orderId){
-  if(executeRefund._p)return; executeRefund._p=true;
-  const refundBtn=document.querySelector('.btn-d[onclick*="executeRefund"]');
-  if(refundBtn){refundBtn.disabled=true;refundBtn.textContent='処理中...';}
-  try{
-  var o=ADMIN_ORDERS.find(function(x){return x.id===orderId;});
-  if(!o)return;
-  var amount=parseInt(document.getElementById('refundAmount').value);
-  var reasonSelect=document.getElementById('refundReasonSelect').value;
-  var reasonText=document.getElementById('refundReasonText').value.trim();
-  var reason=reasonSelect==='other'?reasonText:(reasonSelect||reasonText);
-  if(!amount||amount<=0){showToast('⚠️ 有効な金額を入力してください');return;}
-  if(!reason){showToast('⚠️ 理由は必須です');return;}
-  if(amount>o.total){showToast('⚠️ 返金額は注文金額を超えられません');return;}
-  if(!confirm('注文 '+o.id+' に対して '+Y(amount)+' の返金を実行します。\nこの操作は取り消せません。よろしいですか？'))return;
-  // インメモリ更新
-  o.paymentStatus=amount>=o.total?'refunded':'partially_refunded';
-  REFUND_LOG.push({
-    id:genId('RFD-'),orderId:o.id,amount:amount,reason:reason,
-    refundedBy:'Taisei',createdAt:new Date().toISOString().split('T')[0]
-  });
-  // Supabase Edge Function 呼び出し（接続時）
-  try{
-    var res=await fetch(SUPABASE_URL+'/functions/v1/stripe-create-refund',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({
-        payment_intent_id:o.paymentIntentId,
-        amount:amount,reason:reason,
-        order_id:orderId,refunded_by:'Taisei'
-      })
-    });
-    if(res.ok){
-      var data=await res.json();
-    }
-  }catch(e){console.warn('Edge Function call skipped:',e);}
-  closeModal();
-  showToast('✅ '+Y(amount)+' を返金しました（'+o.id+'）');
-  renderPage();
-  }finally{executeRefund._p=false;if(refundBtn){refundBtn.disabled=false;refundBtn.textContent='返金実行';}}
+function refreshCompHistory(){
+  const c=document.getElementById('compHistoryTableContainer');
+  if(c)c.innerHTML=renderCompHistoryTable();
 }
 
 // ===== CORP DETAIL =====
@@ -4120,22 +4287,12 @@ function updateCostChart(){
 
 // ===== 請求管理（BILLING） =====
 
-// Demo invoice data
-const INVOICES=[
-  {id:'INV-202602',brandId:'BRD-aB3kX9m',brandName:'焼肉 炭火亭',month:'2026-02-01',baseAmount:22940,adjustmentTotal:0,total:22940,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-10'},
-  {id:'INV-202602-2',brandId:'BRD-Tn6jL5w',brandName:'ラーメン風雲',month:'2026-02-01',baseAmount:9800,adjustmentTotal:0,total:9800,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-08'},
-  {id:'INV-202602-3',brandId:'BRD-Hm8nV3s',brandName:'Cafe Breeze',month:'2026-02-01',baseAmount:2100,adjustmentTotal:0,total:2100,status:'paid',issuedAt:'2026-03-03',paidAt:'2026-03-05'},
-  {id:'INV-202603',brandId:'BRD-aB3kX9m',brandName:'焼肉 炭火亭',month:'2026-03-01',baseAmount:25800,adjustmentTotal:0,total:25800,status:'draft',issuedAt:null,paidAt:null},
-  {id:'INV-202603-2',brandId:'BRD-Tn6jL5w',brandName:'ラーメン風雲',month:'2026-03-01',baseAmount:10500,adjustmentTotal:0,total:10500,status:'draft',issuedAt:null,paidAt:null},
-  {id:'INV-202603-3',brandId:'BRD-Hm8nV3s',brandName:'Cafe Breeze',month:'2026-03-01',baseAmount:2300,adjustmentTotal:0,total:2300,status:'draft',issuedAt:null,paidAt:null}
-];
-
-// Invoice adjustments
-const INVOICE_ADJUSTMENTS=[
-  {id:'ADJ-demo001',invoiceId:'INV-202602',brandId:'BRD-aB3kX9m',type:'credit',amount:500,reason:'3/5 システム障害による手数料返還',category:'fee_refund',targetMonth:'2026-02-01',createdBy:'Taisei',createdAt:'2026-03-01'},
-  {id:'ADJ-demo002',invoiceId:null,brandId:'BRD-aB3kX9m',type:'credit',amount:1200,reason:'AIden原資ポイント精算（2月消費分）',category:'point_settlement',targetMonth:'2026-03-01',createdBy:'Taisei',createdAt:'2026-03-10'},
-  {id:'ADJ-demo003',invoiceId:null,brandId:'BRD-Tn6jL5w',type:'debit',amount:3000,reason:'追加カスタマイズ費用',category:'other',targetMonth:'2026-03-01',createdBy:'Taisei',createdAt:'2026-03-12'}
-];
+// Stripe-backed invoice data. Populated via loadStripeBillingData().
+// Shape: {id, corpId, corpName, month, baseAmount, adjustmentTotal, total, status, issuedAt, paidAt, orderLines:[{orderId, orderTotal, feeRate, feeAmount}]}
+// Status domain (D-36): 'unsent' | 'sent' | 'collected' (legacy 'draft'/'issued'/'paid' mapped via mapInvoiceStatus)
+let INVOICES=[];
+let INVOICE_ADJUSTMENTS=[];
+let billingDataLoaded=false;
 
 // Adjustment filter state
 let adjFilter={targetMonth:'',category:'all',brandId:'all'};
@@ -4172,20 +4329,47 @@ function formatMonth(dateStr){
   return d.getFullYear()+'年'+(d.getMonth()+1)+'月';
 }
 
+// Fetch Stripe Billing data. Falls back to empty arrays when Stripe Billing is
+// not configured or the listing endpoint is unavailable — the UI then renders
+// "データなし" / "0件" states per spec (D-36).
+async function loadStripeBillingData(){
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-list-invoices',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({})
+    });
+    if(!res.ok)throw new Error('stripe-list-invoices '+res.status);
+    const data=await res.json();
+    if(data&&Array.isArray(data.invoices)){
+      INVOICES=data.invoices;
+      recalcInvoiceAdjustments();
+      return;
+    }
+  }catch(e){/* Stripe Billing未設定時は空配列のまま */}
+  INVOICES=[];
+}
+
+// Map legacy/new status codes to display label and color
+function mapInvoiceStatus(s){
+  if(s==='collected'||s==='paid')return {label:'収納済',bg:'#e6f9f0',c:'#00b894'};
+  if(s==='sent'||s==='issued')return {label:'送信済み(未収納)',bg:'#dfe6e9',c:'#636e72'};
+  return {label:'未送信(未収納)',bg:'#ffeaa7',c:'#d68910'};
+}
+
 // Recalculate invoice totals based on adjustments
 function recalcInvoiceAdjustments(){
   INVOICES.forEach(inv=>{
-    const adjs=INVOICE_ADJUSTMENTS.filter(a=>a.brandId===inv.brandId&&a.targetMonth===inv.month);
+    const adjs=INVOICE_ADJUSTMENTS.filter(a=>(a.corpId===inv.corpId||a.brandId===inv.brandId)&&a.targetMonth===inv.month);
     let adjTotal=0;
     adjs.forEach(a=>{
       if(a.type==='credit')adjTotal-=a.amount;
       else adjTotal+=a.amount;
     });
     inv.adjustmentTotal=adjTotal;
-    inv.total=inv.baseAmount+adjTotal;
+    inv.total=(inv.baseAmount||0)+adjTotal;
   });
 }
-recalcInvoiceAdjustments();
 
 // Available target months for filter/form
 function toLocalDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -4203,7 +4387,14 @@ function getAvailableMonths(){
 }
 
 function renderBilling(){
-  return '<div class="page-title">請求管理</div><div class="page-subtitle">月次請求書の管理・調整項目の登録</div>'+
+  // Trigger async Stripe data load on first visit; re-render when done.
+  if(!billingDataLoaded){
+    billingDataLoaded=true;
+    loadStripeBillingData().then(function(){
+      if(currentView&&currentView.type==='billing')renderPage();
+    });
+  }
+  return '<div class="page-title">請求管理</div><div class="page-subtitle">Stripe実績の閲覧ダッシュボード・月額プラン課金状況</div>'+
   '<div class="tabs" id="billingTabs">'+
     '<div class="tab active" onclick="switchTab(\'billing\',this,\'invoices\')">🧾 請求書一覧</div>'+
     '<div class="tab" onclick="switchTab(\'billing\',this,\'adjustments\')">📝 調整項目</div>'+
@@ -4215,28 +4406,109 @@ function renderBilling(){
 // --- 請求書一覧タブ ---
 function renderBillingInvoicesTab(){
   const invStatusBadge=function(s){
-    if(s==='paid')return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#e6f9f0;color:#00b894">支払済</span>';
-    if(s==='issued')return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#dfe6e9;color:#636e72">発行済</span>';
-    return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:#ffeaa7;color:#d68910">下書き</span>';
+    const m=mapInvoiceStatus(s);
+    return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+m.bg+';color:'+m.c+'">'+m.label+'</span>';
   };
-  const rows=INVOICES.slice().sort((a,b)=>b.month.localeCompare(a.month)||a.brandName.localeCompare(b.brandName)).map(function(inv){
-    const adjBadge=inv.adjustmentTotal!==0?
-      '<span style="font-size:11px;font-weight:700;color:'+(inv.adjustmentTotal<0?'var(--success)':'var(--danger)')+'"> ('+(inv.adjustmentTotal>0?'+':'')+Y(inv.adjustmentTotal)+')</span>':'';
+  const headerCtrls='<span class="ct-right">'+
+    '<button class="btn btn-s btn-sm" onclick="exportInvoicesCsv()">📤 エクスポート</button> '+
+    '<button class="btn btn-p btn-sm" onclick="regenerateInvoices()">🔁 手動再生成</button>'+
+  '</span>';
+  // Equal-width, left-aligned columns (no horizontal scroll).
+  const thStyle='style="text-align:left;width:11.11%"';
+  const tdStyle='style="text-align:left;font-size:11px;overflow:hidden;text-overflow:ellipsis"';
+  const tableHead='<table class="dt" style="table-layout:fixed;width:100%"><thead><tr>'+
+    '<th '+thStyle+'>請求書ID</th>'+
+    '<th '+thStyle+'>対象月</th>'+
+    '<th '+thStyle+'>法人名</th>'+
+    '<th '+thStyle+'>合計金額</th>'+
+    '<th '+thStyle+'>基本金額</th>'+
+    '<th '+thStyle+'>調整額</th>'+
+    '<th '+thStyle+'>ステータス</th>'+
+    '<th '+thStyle+'>発行日</th>'+
+    '<th '+thStyle+'>操作</th>'+
+    '</tr></thead><tbody>';
+
+  if(!INVOICES||INVOICES.length===0){
+    return '<div class="card"><div class="card-title">🧾 請求書一覧 '+headerCtrls+'</div>'+
+      tableHead+'</tbody></table>'+
+      '<div class="empty" style="padding:24px;text-align:center;color:var(--text-light);font-size:12px">'+
+      'データなし（0件）<div style="margin-top:6px;font-size:10px">Stripe Billing連携の設定後に表示されます</div>'+
+      '</div></div>';
+  }
+
+  const rows=INVOICES.slice().sort(function(a,b){
+    return (b.month||'').localeCompare(a.month||'')||(a.corpName||'').localeCompare(b.corpName||'');
+  }).map(function(inv){
+    const adjTotal=inv.adjustmentTotal||0;
+    const adjDisplay=adjTotal===0?'—':
+      '<span style="font-weight:700;color:'+(adjTotal<0?'var(--success)':'var(--danger)')+'">'+(adjTotal>0?'+':'')+Y(adjTotal)+'</span>';
     return '<tr>'+
-      '<td style="font-family:monospace;font-size:11px">'+inv.id+'</td>'+
-      '<td style="font-weight:600">'+inv.brandName+'</td>'+
-      '<td>'+formatMonth(inv.month)+'</td>'+
-      '<td class="r">'+Y(inv.baseAmount)+'</td>'+
-      '<td class="r">'+adjBadge+'</td>'+
-      '<td class="r" style="font-weight:700">'+Y(inv.total)+'</td>'+
-      '<td>'+invStatusBadge(inv.status)+'</td>'+
-      '<td>'+(inv.issuedAt||'—')+'</td>'+
-      '<td><button class="btn btn-s btn-sm" onclick="showInvoiceDetail(\''+inv.id+'\')">詳細</button></td>'+
+      '<td '+tdStyle+' title="'+escHtml(inv.id)+'"><span style="font-family:monospace">'+escHtml(inv.id)+'</span></td>'+
+      '<td '+tdStyle+'>'+formatMonth(inv.month)+'</td>'+
+      '<td '+tdStyle+' title="'+escHtml(inv.corpName||'')+'"><span style="font-weight:600">'+escHtml(inv.corpName||'—')+'</span></td>'+
+      '<td '+tdStyle+' style="text-align:left;font-weight:700">'+Y(inv.total||0)+'</td>'+
+      '<td '+tdStyle+'>'+Y(inv.baseAmount||0)+'</td>'+
+      '<td '+tdStyle+'>'+adjDisplay+'</td>'+
+      '<td '+tdStyle+'>'+invStatusBadge(inv.status)+'</td>'+
+      '<td '+tdStyle+'>'+(inv.issuedAt||'—')+'</td>'+
+      '<td '+tdStyle+'>'+
+        '<button class="btn btn-s btn-sm" onclick="showInvoiceDetail(\''+inv.id+'\')">詳細</button> '+
+        '<button class="btn btn-s btn-sm" onclick="exportSingleInvoiceCsv(\''+inv.id+'\')">📤</button>'+
+      '</td>'+
     '</tr>';
   });
-  return '<div class="card"><div class="card-title">🧾 請求書一覧 <span class="ct-right"><button class="btn btn-p btn-sm" onclick="generateMonthlyInvoices()">📄 月次請求書生成</button></span></div>'+
-    '<table class="dt"><thead><tr><th>請求書ID</th><th>ブランド</th><th>対象月</th><th class="r">基本金額</th><th class="r">調整額</th><th class="r">合計</th><th>ステータス</th><th>発行日</th><th>操作</th></tr></thead><tbody>'+
-    rows.join('')+'</tbody></table></div>';
+  return '<div class="card"><div class="card-title">🧾 請求書一覧 '+headerCtrls+'</div>'+
+    tableHead+rows.join('')+'</tbody></table></div>';
+}
+
+// CSV export for all invoices (D-36: Stripe dashboard閲覧 + 簡易エクスポート)
+function exportInvoicesCsv(){
+  if(!INVOICES||INVOICES.length===0){showToast('⚠️ エクスポートするデータがありません');return;}
+  const header=['請求書ID','対象月','法人名','合計金額','基本金額','調整額','ステータス','発行日'];
+  const lines=[header.join(',')];
+  INVOICES.forEach(function(inv){
+    const m=mapInvoiceStatus(inv.status);
+    lines.push([
+      '"'+(inv.id||'')+'"','"'+(inv.month||'')+'"','"'+((inv.corpName||'').replace(/"/g,'""'))+'"',
+      (inv.total||0),(inv.baseAmount||0),(inv.adjustmentTotal||0),'"'+m.label+'"','"'+(inv.issuedAt||'')+'"'
+    ].join(','));
+  });
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='invoices_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ CSVをダウンロードしました');
+}
+function exportSingleInvoiceCsv(invId){
+  const inv=INVOICES.find(function(i){return i.id===invId;});
+  if(!inv){showToast('⚠️ 請求書が見つかりません');return;}
+  const header=['項目','値'];
+  const lines=[header.join(',')];
+  const m=mapInvoiceStatus(inv.status);
+  lines.push(['請求書ID','"'+inv.id+'"'].join(','));
+  lines.push(['対象月','"'+inv.month+'"'].join(','));
+  lines.push(['法人名','"'+((inv.corpName||'').replace(/"/g,'""'))+'"'].join(','));
+  lines.push(['合計金額',(inv.total||0)].join(','));
+  lines.push(['基本金額',(inv.baseAmount||0)].join(','));
+  lines.push(['調整額',(inv.adjustmentTotal||0)].join(','));
+  lines.push(['ステータス','"'+m.label+'"'].join(','));
+  lines.push(['発行日','"'+(inv.issuedAt||'')+'"'].join(','));
+  if(inv.orderLines&&inv.orderLines.length){
+    lines.push('');
+    lines.push(['注文ID','注文金額','手数料率','AIden手数料'].join(','));
+    inv.orderLines.forEach(function(ol){
+      lines.push(['"'+ol.orderId+'"',(ol.orderTotal||0),(ol.feeRate||0)+'%',(ol.feeAmount||0)].join(','));
+    });
+  }
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=inv.id+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ '+inv.id+' のCSVをダウンロードしました');
 }
 
 // --- 調整項目タブ ---
@@ -4407,7 +4679,8 @@ function saveAdjustment(){
 function showInvoiceDetail(invId){
   const inv=INVOICES.find(function(i){return i.id===invId;});
   if(!inv)return;
-  const adjs=INVOICE_ADJUSTMENTS.filter(function(a){return a.brandId===inv.brandId&&a.targetMonth===inv.month;});
+  const adjs=INVOICE_ADJUSTMENTS.filter(function(a){return (a.corpId===inv.corpId||a.brandId===inv.brandId)&&a.targetMonth===inv.month;});
+  const statusInfo=mapInvoiceStatus(inv.status);
 
   let adjRows='';
   if(adjs.length===0){
@@ -4419,57 +4692,69 @@ function showInvoiceDetail(invId){
         '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#e6f9f0;color:#00b894">控除</span>':
         '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#fab1a0;color:#d63031">付加</span>';
       const amountStr=a.type==='credit'?'-'+Y(a.amount):'+'+Y(a.amount);
-      return '<tr><td>'+typeBadge+'</td><td>'+ADJ_CATEGORIES[a.category]+'</td><td class="r" style="font-weight:700;color:'+(a.type==='credit'?'var(--success)':'var(--danger)')+'">'+amountStr+'</td><td style="font-size:11px">'+a.reason+'</td></tr>';
+      return '<tr><td>'+typeBadge+'</td><td>'+ADJ_CATEGORIES[a.category]+'</td><td class="r" style="font-weight:700;color:'+(a.type==='credit'?'var(--success)':'var(--danger)')+'">'+amountStr+'</td><td style="font-size:11px">'+escHtml(a.reason||'')+'</td></tr>';
     }).join('')+'</tbody></table>';
   }
 
+  // 注文別明細（Stripe Connectの取引手数料実績）
+  let orderLinesHtml='';
+  const orderLines=inv.orderLines||[];
+  if(orderLines.length===0){
+    orderLinesHtml='<div class="empty" style="padding:16px;font-size:11px">注文別明細データはまだありません（Stripe Connect連携後に表示）</div>';
+  }else{
+    orderLinesHtml='<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">'+
+      '<table class="dt" style="font-size:11px;margin:0"><thead><tr>'+
+      '<th style="text-align:left">注文ID</th>'+
+      '<th style="text-align:left">注文金額</th>'+
+      '<th style="text-align:left">AIden手数料率</th>'+
+      '<th style="text-align:left">AIden手数料</th>'+
+      '</tr></thead><tbody>'+
+      orderLines.map(function(ol){
+        return '<tr>'+
+          '<td style="font-family:monospace">'+escHtml(ol.orderId||'')+'</td>'+
+          '<td>'+Y(ol.orderTotal||0)+'</td>'+
+          '<td>'+(ol.feeRate||0)+'%</td>'+
+          '<td style="font-weight:700">'+Y(ol.feeAmount||0)+'</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+
+  // 縦サイズを現状の1.5倍相当にするため min-height:75vh を付与（横幅は既定700pxのまま）
   openModal(
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
     '<h3>🧾 請求書詳細</h3>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">'+
-      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">請求書ID</div><div style="font-weight:700;font-family:monospace">'+inv.id+'</div></div>'+
-      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">ブランド</div><div style="font-weight:700">'+inv.brandName+'</div></div>'+
+    '<div style="min-height:72vh">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">請求書ID</div><div style="font-weight:700;font-family:monospace">'+escHtml(inv.id)+'</div></div>'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">法人名</div><div style="font-weight:700">'+escHtml(inv.corpName||'—')+'</div></div>'+
       '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">対象月</div><div style="font-weight:700">'+formatMonth(inv.month)+'</div></div>'+
-      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">ステータス</div><div style="font-weight:700">'+(inv.status==='paid'?'支払済':inv.status==='issued'?'発行済':'下書き')+'</div></div>'+
+      '<div style="padding:12px;background:#f5f6fa;border-radius:8px"><div style="font-size:10px;color:var(--text-light)">ステータス</div><div style="font-weight:700">'+statusInfo.label+'</div></div>'+
     '</div>'+
-    '<div style="margin-bottom:16px">'+
-      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>基本金額</span><span style="font-weight:700">'+Y(inv.baseAmount)+'</span></div>'+
-      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>調整額</span><span style="font-weight:700;color:'+(inv.adjustmentTotal<0?'var(--success)':inv.adjustmentTotal>0?'var(--danger)':'var(--text)')+'">'+(inv.adjustmentTotal>0?'+':'')+Y(inv.adjustmentTotal)+'</span></div>'+
-      '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800"><span>合計</span><span>'+Y(inv.total)+'</span></div>'+
+    '<div style="font-size:13px;font-weight:700;margin:14px 0 8px">📋 注文別明細</div>'+
+    orderLinesHtml+
+    '<div style="margin:16px 0">'+
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>基本金額</span><span style="font-weight:700">'+Y(inv.baseAmount||0)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span>調整額</span><span style="font-weight:700;color:'+((inv.adjustmentTotal||0)<0?'var(--success)':(inv.adjustmentTotal||0)>0?'var(--danger)':'var(--text)')+'">'+((inv.adjustmentTotal||0)>0?'+':'')+Y(inv.adjustmentTotal||0)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800"><span>合計</span><span>'+Y(inv.total||0)+'</span></div>'+
     '</div>'+
-    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">📝 調整項目</div>'+adjRows
+    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">📝 調整項目</div>'+adjRows+
+    '</div>'
   );
 }
 
-// --- 月次請求書生成 ---
-function generateMonthlyInvoices(){
-  // 当月の請求書を生成（調整項目を反映）
-  const now=new Date();
-  const curMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
-  const drafts=INVOICES.filter(function(i){return i.month===curMonth&&i.status==='draft';});
-
-  if(drafts.length===0){
-    showToast('⚠️ 生成対象の下書き請求書がありません');return;
-  }
-
-  // 調整項目を反映して発行
-  drafts.forEach(function(inv){
-    const adjs=INVOICE_ADJUSTMENTS.filter(function(a){return a.brandId===inv.brandId&&a.targetMonth===inv.month;});
-    let adjTotal=0;
-    const adjLines=[];
-    adjs.forEach(function(a){
-      if(a.type==='credit'){adjTotal-=a.amount;adjLines.push(ADJ_CATEGORIES[a.category]+'：'+a.reason+' -'+Y(a.amount));}
-      else{adjTotal+=a.amount;adjLines.push(ADJ_CATEGORIES[a.category]+'：'+a.reason+' +'+Y(a.amount));}
-      a.invoiceId=inv.id;
-    });
-    inv.adjustmentTotal=adjTotal;
-    inv.total=inv.baseAmount+adjTotal;
-    inv.status='issued';
-    inv.issuedAt=new Date().toISOString().split('T')[0];
+// --- 手動再生成（Stripe APIを正として請求書データを再取得） ---
+function regenerateInvoices(){
+  billingDataLoaded=false;
+  showToast('🔁 Stripeから請求書データを再取得しています...');
+  loadStripeBillingData().then(function(){
+    billingDataLoaded=true;
+    if(currentView&&currentView.type==='billing')renderPage();
+    if(!INVOICES||INVOICES.length===0){
+      showToast('ℹ️ Stripe Billingのデータはありません（未設定）');
+    }else{
+      showToast('✅ '+INVOICES.length+'件の請求書を再取得しました');
+    }
   });
-
-  showToast('✅ '+drafts.length+'件の請求書を発行しました（調整項目反映済み）');
-  renderPage();
 }
 
 // Tab switch hooks for store facility
