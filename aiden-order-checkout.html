@@ -1913,28 +1913,26 @@ async function placeOrder() {
     }
   }
 
-  // === BAN CHECK ===
+  // === BAN CHECK (Edge Function経由) ===
   var banCheckEmail = document.getElementById('custEmail')?.value.trim();
   var banCheckPhone = document.getElementById('custPhone')?.value.trim();
   var banCheckMemberId = sessionStorage.getItem('aiden_member_id') || null;
   if(banCheckEmail || banCheckPhone || banCheckMemberId){
     try{
-      var orFilters = [];
-      if(banCheckEmail) orFilters.push('target_email.eq.'+banCheckEmail);
-      if(banCheckPhone) orFilters.push('target_phone.eq.'+banCheckPhone);
-      if(banCheckMemberId) orFilters.push('target_id.eq.'+banCheckMemberId);
-      var {data:banHits} = await sb.from('user_bans')
-        .select('id,scope_type,scope_id,ban_type')
-        .eq('is_active', true)
-        .or(orFilters.join(','));
-      if(banHits && banHits.length > 0){
-        var storeUuid = CHECKOUT_DATA.storeId;
-        var applicable = banHits.filter(function(ban){
-          if(ban.scope_type === 'global') return true;
-          if(ban.scope_type === 'store' && ban.scope_id === storeUuid) return true;
-          return false;
-        });
-        if(applicable.length > 0){
+      var banRes = await fetch(SUPABASE_URL + '/functions/v1/check-ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({
+          email: banCheckEmail || undefined,
+          phone: banCheckPhone || undefined,
+          member_id: banCheckMemberId || undefined,
+          store_id: CHECKOUT_DATA.storeId,
+          service_type: mode === 'delivery' ? 'mo_delivery' : 'mo_takeout'
+        })
+      });
+      if(banRes.ok){
+        var banData = await banRes.json();
+        if(banData.banned){
           showBanBlockMessage();
           return;
         }
