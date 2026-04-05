@@ -404,7 +404,7 @@ function applyDateFilter(){
 }
 function renderPage(){
   const el=document.getElementById('content');const v=currentView;
-  if(v.type==='dashboard')el.innerHTML=dateFilterHtml()+renderDashboard();
+  if(v.type==='dashboard'){el.innerHTML=dateFilterHtml()+renderDashboard();initDashboard();}
   else if(v.type==='corps')el.innerHTML=renderCorpsList();
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
@@ -420,7 +420,6 @@ function renderPage(){
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
   // post hooks
-  if(v.type==='dashboard')renderDashCharts();
   if(v.type==='ai')renderAICharts();
   if(v.type==='cost')initCostManagement();
   if(v.type==='brand')initBrandTabs();
@@ -428,54 +427,158 @@ function renderPage(){
 }
 
 // ===== DASHBOARD =====
+const KPI_CATS=[
+  {key:'pickup',name:'お持ち帰り',color:'#0F6E56',orderType:'pickup',feeRate:0.040},
+  {key:'delivery',name:'デリバリー',color:'#993C1D',orderType:'delivery',feeRate:0.040},
+  {key:'dinein',name:'店内注文',color:'#185FA5',orderType:'dinein',feeRate:0.038},
+  {key:'additional',name:'追加サービス',color:'#534AB7',orderType:null,feeRate:0},
+];
 function renderDashboard(){
-  const KPI_CATS=[
-    {key:'takeout',name:'お持ち帰り',color:'#0F6E56',svcKey:'mo_takeout',feeRate:0.040},
-    {key:'delivery',name:'デリバリー',color:'#993C1D',svcKey:'mo_delivery',feeRate:0.040},
-    {key:'dinein',name:'店内注文',color:'#185FA5',svcKey:'mo_dinein',feeRate:0.038},
-    {key:'additional',name:'追加サービス',color:'#534AB7',svcKey:null,feeRate:0},
-  ];
-  function kpiCard(label,value,color){
-    return '<div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid '+color+';box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.06)\'"><div style="font-size:10px;color:var(--text-light);margin-bottom:4px">'+label+'</div><div style="font-size:18px;font-weight:800">'+value+'</div></div>';
+  var kpiLabels=['法人数','ブランド数','店舗数','月間注文数','月間GMV','手数料収入','MRR'];
+  function kpiCard(label,value,color,isAdditional){
+    var comingSoonBadge=isAdditional?'<span style="position:absolute;top:6px;right:6px;font-size:8px;background:#dfe6e9;color:#636e72;padding:1px 5px;border-radius:4px">Coming Soon</span>':'';
+    return '<div style="position:relative;background:#fff;border-radius:10px;padding:14px;border-left:4px solid '+color+';box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:all .15s'+(isAdditional?';opacity:0.45;pointer-events:none':'')+'" onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.06)\'">'+comingSoonBadge+'<div style="font-size:10px;color:var(--text-light);margin-bottom:4px">'+label+'</div><div style="font-size:18px;font-weight:800">'+value+'</div></div>';
   }
   function renderSection(cat){
-    let stores,corps,brands;
-    if(cat.svcKey){
-      stores=STORES.filter(s=>getSvc(s.id,cat.svcKey));
-      const brandIds=[...new Set(stores.map(s=>s.brandId))];
-      brands=BRANDS.filter(b=>brandIds.includes(b.id));
-      const corpIds=[...new Set(brands.map(b=>b.corpId))];
-      corps=CORPS.filter(c=>corpIds.includes(c.id));
-    }else{
-      // Additional services: count entities with any paid service active
-      const paidKeys=SERVICES.filter(s=>s.cost==='paid').map(s=>s.key);
-      stores=STORES.filter(s=>paidKeys.some(k=>getSvc(s.id,k)));
-      const brandIds=[...new Set(stores.map(s=>s.brandId))];
-      brands=BRANDS.filter(b=>brandIds.includes(b.id));
-      const corpIds=[...new Set(brands.map(b=>b.corpId))];
-      corps=CORPS.filter(c=>corpIds.includes(c.id));
-    }
-    const tO=stores.reduce((s,x)=>s+x.orders,0);
-    const tR=stores.reduce((s,x)=>s+x.revenue,0);
-    const fee=Math.round(tR*cat.feeRate);
-    const mrr=cat.svcKey?fee:89600;
-    return '<div style="margin-bottom:24px"><div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:3px;background:'+cat.color+';display:inline-block"></span>'+cat.name+'</div>'+
-      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px">'+
-      kpiCard('法人数',corps.length,cat.color)+
-      kpiCard('ブランド数',brands.length,cat.color)+
-      kpiCard('店舗数',stores.length,cat.color)+
-      kpiCard('注文数',tO.toLocaleString(),cat.color)+
-      kpiCard('GMV',Y(tR),cat.color)+
-      kpiCard('手数料',Y(fee),cat.color)+
-      kpiCard('MRR',Y(mrr),cat.color)+
+    var isAdditional=cat.key==='additional';
+    var headerBadge=isAdditional?' <span style="font-size:9px;background:#dfe6e9;color:#636e72;padding:2px 8px;border-radius:6px;font-weight:500;vertical-align:middle">Coming Soon</span>':'';
+    var val=isAdditional?'—':'—';
+    return '<div style="margin-bottom:24px"><div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:3px;background:'+cat.color+';display:inline-block"></span>'+cat.name+headerBadge+'</div>'+
+      '<div id="dashKpi-'+cat.key+'" style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px">'+
+      kpiLabels.map(function(l){return kpiCard(l,val,cat.color,isAdditional);}).join('')+
       '</div></div>';
   }
+  // Monthly AI Comment store options
+  var storeOpts='<option value="">店舗を選択</option>'+STORES.map(function(s){return '<option value="'+s._uuid+'">'+escHtml(s.name)+'</option>';}).join('');
+  var now=new Date();var monthVal=now.getFullYear()+'-'+(now.getMonth()+1<10?'0':'')+(now.getMonth()+1);
+
   return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">AIdenプラットフォーム全体のKPI概要</div>'+
-  KPI_CATS.map(c=>renderSection(c)).join('')+
+  KPI_CATS.map(function(c){return renderSection(c);}).join('')+
+  // Product KPI & Tech KPI tables
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'+
+  '<div class="card"><div class="card-title">📊 Product KPI</div><div id="dashProductKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
+  '<tr><td>リピート率（2回以上注文）</td><td class="r fw-800" id="kpiRepeatRate">—</td></tr>'+
+  '<tr><td>AI活用率</td><td class="r fw-800" id="kpiAIAdoption">—</td></tr>'+
+  '<tr><td>エンドユーザー再訪率</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
+  '<tr><td>CS問い合わせ件数</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
+  '</tbody></table></div></div>'+
+  '<div class="card"><div class="card-title">🔧 Tech KPI</div><div id="dashTechKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
+  '<tr><td>決済成功率</td><td class="r fw-800" id="kpiPaymentSuccess">—</td></tr>'+
+  '<tr><td>稼働率（Uptime）</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
+  '<tr><td>API平均応答時間</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
+  '<tr><td>インシデント件数</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
+  '</tbody></table></div></div>'+
+  '</div>'+
+  // Monthly AI Comment
+  '<div class="card" style="margin-bottom:16px"><div class="card-title">🤖 月次AIコメント</div>'+
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
+  '<select id="aiMonthlyStore" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;min-width:200px">'+storeOpts+'</select>'+
+  '<input type="month" id="aiMonthlyMonth" value="'+monthVal+'" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+
+  '<button id="aiMonthlyBtn" class="btn btn-primary btn-sm" onclick="aiGenerateMonthlyComment()">🤖 AIコメントを生成</button>'+
+  '</div><div id="aiMonthlyResult" style="min-height:40px"></div></div>'+
+  // GMV chart & Activity feed
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div class="card"><div class="card-title">📈 法人別GMV</div><div id="dashGMV" style="max-height:300px;overflow-y:auto"></div></div>'+
-  '<div class="card"><div class="card-title">🕐 直近アクティビティ</div><div style="max-height:300px;overflow-y:auto"><div class="log-row"><span class="log-time">03-11 10:23</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>炭火亭 渋谷店 — ¥12,800</div><div class="log-row"><span class="log-time">03-11 10:15</span><span class="log-badge" style="background:#dfe6e9;color:#636e72">登録</span>カフェブリーズ — トライアル開始</div><div class="log-row"><span class="log-time">03-11 09:45</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">注文</span>ラーメン風雲 新宿本店 — ¥1,980</div><div class="log-row"><span class="log-time">03-11 09:30</span><span class="log-badge" style="background:#ffeaa7;color:#d68910">決済</span>スミビフーズ — 月額決済完了</div></div></div></div>';
+  '<div class="card"><div class="card-title">🕐 直近アクティビティ</div><div id="dashActivity" style="max-height:300px;overflow-y:auto"><div style="text-align:center;padding:20px;color:#888">読み込み中...</div></div></div></div>';
 }
-function renderDashCharts(){const el=document.getElementById('dashGMV');if(!el)return;const d=CORPS.map(c=>({n:c.name.replace(/株式会社|有限会社/g,''),v:getStoresForCorp(c).reduce((s,x)=>s+x.revenue,0)}));const mx=Math.max(...d.map(x=>x.v));el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n.substring(0,8)+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+Y(x.v)+'</span></div></div></div>').join('');}
+
+async function initDashboard(){
+  await Promise.all([loadDashKPIs(),loadDashActivity(),renderDashGMV()]);
+}
+
+async function loadDashKPIs(){
+  try{
+    // Fetch orders for date range
+    var q=sb.from('orders').select('id,store_id,total_amount,payment_status,customer_id,created_at,application_fee_amount,order_type').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
+    var res=await q;
+    var orders=res.data||[];
+
+    var kpiLabels=['法人数','ブランド数','店舗数','月間注文数','月間GMV','手数料収入','MRR'];
+
+    // Update each active category
+    KPI_CATS.forEach(function(cat){
+      if(!cat.orderType)return; // skip additional
+      var filtered=orders.filter(function(o){return o.order_type===cat.orderType;});
+      var storeIds=[...new Set(filtered.map(function(o){return o.store_id;}))];
+      var matchedStores=STORES.filter(function(s){return storeIds.includes(s._uuid);});
+      var brandIds=[...new Set(matchedStores.map(function(s){return s.brandId;}))];
+      var matchedBrands=BRANDS.filter(function(b){return brandIds.includes(b.id);});
+      var corpIds=[...new Set(matchedBrands.map(function(b){return b.corpId;}))];
+      var matchedCorps=CORPS.filter(function(c){return corpIds.includes(c.id);});
+
+      var orderCount=filtered.length;
+      var gmv=filtered.reduce(function(s,o){return s+(o.total_amount||0);},0);
+      var fee=Math.round(gmv*cat.feeRate);
+      var mrr=fee;
+
+      var values=[matchedCorps.length,matchedBrands.length,matchedStores.length,orderCount.toLocaleString(),Y(gmv),Y(fee),Y(mrr)];
+
+      var el=document.getElementById('dashKpi-'+cat.key);
+      if(el){
+        var cards=el.children;
+        for(var i=0;i<cards.length&&i<values.length;i++){
+          var valDiv=cards[i].querySelector('div:last-child');
+          if(valDiv)valDiv.textContent=values[i];
+        }
+      }
+    });
+
+    // Product KPIs
+    var uniqueCustomers=[...new Set(orders.filter(function(o){return o.customer_id;}).map(function(o){return o.customer_id;}))];
+    if(uniqueCustomers.length>0){
+      var customerOrderCounts={};
+      orders.forEach(function(o){if(o.customer_id){customerOrderCounts[o.customer_id]=(customerOrderCounts[o.customer_id]||0)+1;}});
+      var repeatCustomers=Object.values(customerOrderCounts).filter(function(c){return c>=2;}).length;
+      var repeatRate=uniqueCustomers.length>0?((repeatCustomers/uniqueCustomers.length)*100).toFixed(1)+'%':'—';
+      var rEl=document.getElementById('kpiRepeatRate');
+      if(rEl)rEl.textContent=repeatRate;
+    }
+
+    // AI adoption
+    try{
+      var aiRes=await sb.from('ai_interactions').select('id',{count:'exact',head:true}).gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
+      var aiCount=aiRes.count||0;
+      var totalStores=STORES.length;
+      var aiRate=totalStores>0?((aiCount/totalStores)*100).toFixed(1)+'%':'—';
+      var aEl=document.getElementById('kpiAIAdoption');
+      if(aEl)aEl.textContent=aiRate+' ('+aiCount+'件)';
+    }catch(e){/* ai_interactions table may not exist */}
+
+    // Tech KPI: payment success rate
+    var totalOrders=orders.length;
+    var paidOrders=orders.filter(function(o){return o.payment_status==='paid';}).length;
+    var paymentRate=totalOrders>0?((paidOrders/totalOrders)*100).toFixed(1)+'%':'—';
+    var pEl=document.getElementById('kpiPaymentSuccess');
+    if(pEl)pEl.textContent=paymentRate;
+
+  }catch(e){/* loadDashKPIs error silenced */}
+}
+
+async function loadDashActivity(){
+  var el=document.getElementById('dashActivity');
+  if(!el)return;
+  try{
+    var res=await sb.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(30);
+    var logs=res.data;
+    if(res.error)throw res.error;
+    if(!logs||!logs.length){el.innerHTML='<div class="empty-state">アクティビティはありません</div>';return;}
+    var levelColors={INFO:{bg:'#e6f9f0',fg:'#00b894'},WARN:{bg:'#ffeaa7',fg:'#d68910'},ERR:{bg:'#fab1a0',fg:'#d63031'}};
+    var h='';
+    for(var i=0;i<logs.length;i++){
+      var log=logs[i];
+      var dt=log.created_at?new Date(log.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+      var lv=log.log_level||'INFO';
+      var lc=levelColors[lv]||levelColors.INFO;
+      var desc=escHtml(log.action||'');
+      if(log.entity_type)desc+=' — '+escHtml(log.entity_type);
+      h+='<div class="log-row"><span class="log-time">'+escHtml(dt)+'</span><span class="log-badge" style="background:'+lc.bg+';color:'+lc.fg+'">'+escHtml(lv)+'</span>'+desc+'</div>';
+    }
+    el.innerHTML=h;
+  }catch(e){
+    el.innerHTML='<div style="color:var(--danger);padding:12px;font-size:12px">読み込みエラー: '+escHtml(e.message)+'</div>';
+  }
+}
+
+function renderDashGMV(){var el=document.getElementById('dashGMV');if(!el)return;var d=CORPS.map(c=>({n:c.name.replace(/株式会社|有限会社/g,''),v:getStoresForCorp(c).reduce((s,x)=>s+x.revenue,0)}));var mx=Math.max(...d.map(x=>x.v));if(mx===0)mx=1;el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n.substring(0,8)+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+Y(x.v)+'</span></div></div></div>').join('');}
 
 // ===== CORPS LIST =====
 function renderCorpsList(){
