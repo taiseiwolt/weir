@@ -470,13 +470,13 @@ function renderDashboard(){
   KPI_CATS.map(function(c){return renderSection(c);}).join('')+
   // Product KPI & Tech KPI tables
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'+
-  '<div class="card"><div class="card-title">📊 Product KPI</div><div id="dashProductKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
+  '<div class="card"><div class="card-title">🎯 プロダクトKPI</div><div id="dashProductKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
   '<tr><td>リピート率（2回以上注文）</td><td class="r fw-800" id="kpiRepeatRate">—</td></tr>'+
   '<tr><td>AI活用率</td><td class="r fw-800" id="kpiAIAdoption">—</td></tr>'+
   '<tr><td>エンドユーザー再訪率</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
   '<tr><td>CS問い合わせ件数</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
   '</tbody></table></div></div>'+
-  '<div class="card"><div class="card-title">🔧 Tech KPI</div><div id="dashTechKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
+  '<div class="card"><div class="card-title">⚙️ 技術KPI</div><div id="dashTechKPI"><table class="data-table"><thead><tr><th>指標</th><th class="r">値</th></tr></thead><tbody>'+
   '<tr><td>決済成功率</td><td class="r fw-800" id="kpiPaymentSuccess">—</td></tr>'+
   '<tr><td>稼働率（Uptime）</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
   '<tr><td>API平均応答時間</td><td class="r" style="color:var(--text-light)">（計測準備中）</td></tr>'+
