@@ -1854,8 +1854,87 @@ const BULK_TEMPLATES={
 const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ'};
 let _bulkDbType=null;let _bulkDbItems=null;let _bulkDbErrors=[];
 
-function renderAuditLogPage(){return '<div class="page-title">操作ログ</div><div class="page-subtitle">準備中...</div>';}
-function loadAuditLogs(){}
+// ===== AUDIT LOG =====
+let auditLogPage=1;
+const AUDIT_PAGE_SIZE=50;
+
+function renderAuditLogPage(){
+  return '<div class="page-title">操作ログ</div><div class="page-subtitle">プラットフォーム全体の操作履歴</div>'+
+  '<div class="toolbar" style="margin-bottom:16px">'+
+    '<select id="auditLogLevel" onchange="auditLogPage=1;loadAuditLogs()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit">'+
+      '<option value="">全レベル</option><option value="INFO">INFO</option><option value="WARN">WARN</option><option value="ERR">ERR</option>'+
+    '</select>'+
+    '<input type="date" id="auditDateFrom" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="auditLogPage=1;loadAuditLogs()">'+
+    '<span style="color:var(--text-light)">〜</span>'+
+    '<input type="date" id="auditDateTo" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="auditLogPage=1;loadAuditLogs()">'+
+    '<input type="text" id="auditKeyword" placeholder="キーワード検索..." class="sinput" style="width:200px" oninput="debounceAuditSearch()">'+
+    '<button class="btn btn-secondary btn-sm" onclick="auditLogPage=1;loadAuditLogs()" style="margin-left:auto">🔄 更新</button>'+
+  '</div>'+
+  '<div class="card" style="padding:0"><div id="auditLogBody" style="padding:20px;color:#888;text-align:center">読み込み中...</div></div>'+
+  '<div id="auditLogPager" style="display:flex;justify-content:center;gap:8px;margin-top:16px"></div>';
+}
+
+let _auditDebounce=null;
+function debounceAuditSearch(){clearTimeout(_auditDebounce);_auditDebounce=setTimeout(function(){auditLogPage=1;loadAuditLogs();},400);}
+
+async function loadAuditLogs(){
+  var el=document.getElementById('auditLogBody');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:24px;color:#888">読み込み中...</div>';
+  try{
+    var level=document.getElementById('auditLogLevel')?document.getElementById('auditLogLevel').value:'';
+    var dateFrom=document.getElementById('auditDateFrom')?document.getElementById('auditDateFrom').value:'';
+    var dateTo=document.getElementById('auditDateTo')?document.getElementById('auditDateTo').value:'';
+    var keyword=(document.getElementById('auditKeyword')?document.getElementById('auditKeyword').value:'').trim();
+
+    var q=sb.from('audit_logs').select('*',{count:'exact'}).order('created_at',{ascending:false});
+    if(level)q=q.eq('log_level',level);
+    if(dateFrom)q=q.gte('created_at',dateFrom+'T00:00:00');
+    if(dateTo)q=q.lte('created_at',dateTo+'T23:59:59');
+    if(keyword)q=q.or('action.ilike.%'+keyword+'%,actor_email.ilike.%'+keyword+'%,entity_type.ilike.%'+keyword+'%');
+    var from=(auditLogPage-1)*AUDIT_PAGE_SIZE;
+    q=q.range(from,from+AUDIT_PAGE_SIZE-1);
+
+    var res=await q;
+    var logs=res.data;var count=res.count;var error=res.error;
+    if(error)throw error;
+    if(!logs||!logs.length){el.innerHTML='<div class="empty-state">該当するログはありません</div>';renderAuditPager(0);return;}
+
+    var levelColors={INFO:'background:#e6f9f0;color:#00b894',WARN:'background:#ffeaa7;color:#d68910',ERR:'background:#fab1a0;color:#d63031'};
+    var h='<table class="data-table"><thead><tr><th>日時</th><th>レベル</th><th>操作</th><th>対象</th><th>実行者</th><th>詳細</th></tr></thead><tbody>';
+    for(var i=0;i<logs.length;i++){
+      var log=logs[i];
+      var dt=log.created_at?new Date(log.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'—';
+      var lv=log.log_level||'INFO';
+      var lvStyle=levelColors[lv]||levelColors.INFO;
+      var details=log.details?JSON.stringify(log.details).substring(0,80):'—';
+      h+='<tr>'+
+        '<td style="font-size:11px;color:var(--text-light);white-space:nowrap">'+escHtml(dt)+'</td>'+
+        '<td><span class="log-badge" style="'+lvStyle+'">'+escHtml(lv)+'</span></td>'+
+        '<td style="font-weight:600">'+escHtml(log.action||'')+'</td>'+
+        '<td>'+escHtml((log.entity_type||'')+(log.entity_id?' / '+log.entity_id.substring(0,8):''))+'</td>'+
+        '<td>'+escHtml(log.actor_email||log.user_email||'—')+'</td>'+
+        '<td style="font-size:11px;color:var(--text-light);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escHtml(details)+'">'+escHtml(details)+'</td>'+
+      '</tr>';
+    }
+    h+='</tbody></table>';
+    el.innerHTML=h;
+    renderAuditPager(count||0);
+  }catch(e){el.innerHTML='<div style="color:var(--danger);padding:24px">読み込みエラー: '+escHtml(e.message)+'</div>';}
+}
+
+function renderAuditPager(total){
+  var pager=document.getElementById('auditLogPager');
+  if(!pager)return;
+  var pages=Math.ceil(total/AUDIT_PAGE_SIZE);
+  if(pages<=1){pager.innerHTML='';return;}
+  var h='';
+  for(var i=1;i<=Math.min(pages,10);i++){
+    h+='<button class="btn btn-sm '+(i===auditLogPage?'btn-primary':'btn-secondary')+'" onclick="auditLogPage='+i+';loadAuditLogs()">'+i+'</button>';
+  }
+  if(pages>10)h+='<span style="padding:8px;color:var(--text-light)">... '+pages+'ページ</span>';
+  pager.innerHTML=h;
+}
 
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
