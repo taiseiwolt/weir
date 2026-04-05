@@ -670,7 +670,8 @@ function filterStoresList(){
   var filtered=STORES.filter(function(s){
     if(!q)return true;
     var br=getBrandForStore(s);
-    return s.name.toLowerCase().includes(q)||(br&&br.name.toLowerCase().includes(q))||s.id.toLowerCase().includes(q);
+    var cp=getCorpForStore(s);
+    return s.name.toLowerCase().includes(q)||(br&&br.name.toLowerCase().includes(q))||(cp&&cp.name.toLowerCase().includes(q))||s.id.toLowerCase().includes(q);
   });
   var body=document.getElementById('storeListBody');
   if(body)body.innerHTML=renderStoresRows(filtered);
