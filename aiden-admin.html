@@ -423,7 +423,7 @@ function renderPage(){
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
   else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();}
-  else if(v.type==='system')el.innerHTML=renderSystem();
+  else if(v.type==='system'){el.innerHTML=renderSystem();loadSystemLogPreview();}
   else if(v.type==='ai')el.innerHTML=renderAI();
   else if(v.type==='cost')el.innerHTML=renderCostManagement();
   else if(v.type==='billing')el.innerHTML=renderBilling();
@@ -844,7 +844,24 @@ function renderSystem(){
   '<div class="card"><div class="card-title">🌐 プラットフォーム設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>プラットフォーム名</label><input type="text" value="AIden"></div><div class="form-group"><label>管理者メール</label><input type="email" value="admin@aiden.jp"></div><div class="form-group"><label>言語</label><select><option selected>日本語</option></select></div><div class="form-group"><label>タイムゾーン</label><select><option selected>Asia/Tokyo</option></select></div><div class="form-group"><label>Stripe環境</label><select><option>テスト</option><option selected>本番</option></select></div><div class="form-group"><label>Supabase</label><input type="text" value="iikwusprydaogzeslgdz" readonly style="background:#f5f6fa;color:var(--text-light)"></div></div></div>'+
   '<div class="card"><div class="card-title">🔒 セキュリティ <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">2段階認証の強制</div><div style="font-size:10px;color:var(--text-light)">全Ownerアカウントに2FA必須</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">セッションタイムアウト（30分）</div><div style="font-size:10px;color:var(--text-light)">無操作で自動ログアウト</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">IPホワイトリスト</div><div style="font-size:10px;color:var(--text-light)">許可IPからのみアクセス</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>'+
   '<div class="card"><div class="card-title">💰 手数料テーブル</div><table class="data-table"><thead><tr><th>チャネル</th><th class="r">手数料率</th><th class="r">決済コスト</th><th class="r">AIden純収入</th></tr></thead><tbody><tr><td>テイクアウト</td><td class="r fw-800">4.0%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.7%</td></tr><tr><td>店内注文</td><td class="r fw-800">3.8%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.5%</td></tr><tr><td>デリバリー</td><td class="r fw-800">4.0%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.7%</td></tr></tbody></table><p style="font-size:11px;color:var(--text-light);margin-top:8px">※ Stripe決済手数料（3.3%）はAIden負担。飲食店への振込は売上全額。</p></div>'+
-  '<div class="card"><div class="card-title">📋 システムログ</div><div class="log-row"><span class="log-time">03-11 10:23</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">INFO</span>注文完了 — 炭火亭 渋谷店</div><div class="log-row"><span class="log-time">03-11 09:30</span><span class="log-badge" style="background:#e6f9f0;color:#00b894">OK</span>Stripe決済成功 — スミビフーズ</div><div class="log-row"><span class="log-time">03-11 09:00</span><span class="log-badge" style="background:#dfe6e9;color:#636e72">INFO</span>日次バッチ実行</div><div class="log-row"><span class="log-time">03-10 22:10</span><span class="log-badge" style="background:#ffeaa7;color:#d68910">WARN</span>BAN実行 — spam@test.com</div><div class="log-row"><span class="log-time">03-10 18:30</span><span class="log-badge" style="background:#fab1a0;color:#d63031">ERR</span>AI応答タイムアウト</div></div>';
+  '<div class="card"><div class="card-title">📋 システムログ <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="goTo(\'auditlog\')">全件表示 →</button></span></div><div id="sysLogPreview" style="color:#888;text-align:center">読み込み中...</div></div>';
+}
+
+async function loadSystemLogPreview(){
+  var el=document.getElementById('sysLogPreview');
+  if(!el)return;
+  try{
+    var {data:logs,error}=await sb.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(5);
+    if(error)throw error;
+    if(!logs||!logs.length){el.innerHTML='<div class="empty-state">ログはありません</div>';return;}
+    var levelColors={INFO:'background:#e6f9f0;color:#00b894',WARN:'background:#ffeaa7;color:#d68910',ERR:'background:#fab1a0;color:#d63031'};
+    el.innerHTML=logs.map(function(log){
+      var dt=log.created_at?new Date(log.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+      var lv=log.log_level||'INFO';
+      var style=levelColors[lv]||levelColors.INFO;
+      return '<div class="log-row"><span class="log-time">'+escHtml(dt)+'</span><span class="log-badge" style="'+style+'">'+escHtml(lv)+'</span>'+escHtml(log.action||'')+'</div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
 }
 
 // ===== AI QUALITY =====
