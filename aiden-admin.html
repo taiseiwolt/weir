@@ -207,7 +207,11 @@ async function loadAllData(){
     minOrderApplyTypes:r.min_order_apply_types||{dinein:false,takeout:true,delivery:true},
     reservationEnabled:r.reservation_enabled, resConfMode:r.reservation_confirmation_mode,
     resRequireCard:r.reservation_require_card, resCancelFee:r.reservation_cancellation_fee,
-    resCancelDeadline:r.reservation_cancel_deadline_hours
+    resCancelDeadline:r.reservation_cancel_deadline_hours,
+    seats:r.seats||6, smoking:r.smoking_policy||'no_smoking',
+    children:r.children_policy||'not_allowed',
+    serviceChargeType:r.service_charge_type||'percent',
+    serviceChargeValue:r.service_charge_value||10
   }));
   // Load staff accounts
   const {data:accRaw}=await sb.from('staff_accounts').select('id,display_id,display_name,email,role,corp_id,status,last_login,created_at');
@@ -648,11 +652,28 @@ function renderBrandsList(){
 
 // ===== STORES LIST =====
 function renderStoresList(){
-  return '<div class="page-title">店舗管理</div><div class="page-subtitle">全店舗の一覧・注文状況・売上</div>'+
-  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 店舗名・ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'store\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'store\')">📥 一括登録</button><button class="btn btn-primary btn-sm" onclick="openAddStoreModal()">＋ 店舗追加</button></div></div>'+
-  '<table class="data-table"><thead><tr><th>ID</th><th>ブランド</th><th>店舗名</th><th>ステータス</th><th class="r">月間注文</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+
-  STORES.map(s=>{const br=getBrandForStore(s);return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+s.id+'</code></td><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td>'+statusBadge(s.status)+'</td><td class="r fw-800">'+s.orders.toLocaleString()+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+
+  return '<div class="page-title">店舗管理</div><div class="page-subtitle">全店舗の一覧</div>'+
+  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input id="storeListSearch" class="menu-search" placeholder="🔍 店舗名・ブランド名・IDで検索..." style="width:280px" oninput="filterStoresList()"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'store\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'store\')">📥 一括登録</button><button class="btn btn-primary btn-sm" onclick="openAddStoreModal()">＋ 店舗追加</button></div></div>'+
+  '<table class="data-table"><thead><tr><th>ID</th><th>法人</th><th>ブランド</th><th>店舗名</th><th>導入サービス</th><th>ステータス</th><th></th></tr></thead><tbody id="storeListBody">'+
+  renderStoresRows(STORES)+
   '</tbody></table></div>';
+}
+function renderStoresRows(stores){
+  return stores.map(s=>{
+    var br=getBrandForStore(s),cp=getCorpForStore(s);
+    var svcs=SERVICES.filter(sv=>!sv.comingSoon&&getSvc(s.id,sv.key)).map(sv=>sv.icon).join(' ');
+    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+escHtml(br?br.name:'')+'</td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';
+  }).join('');
+}
+function filterStoresList(){
+  var q=(document.getElementById('storeListSearch').value||'').toLowerCase();
+  var filtered=STORES.filter(function(s){
+    if(!q)return true;
+    var br=getBrandForStore(s);
+    return s.name.toLowerCase().includes(q)||(br&&br.name.toLowerCase().includes(q))||s.id.toLowerCase().includes(q);
+  });
+  var body=document.getElementById('storeListBody');
+  if(body)body.innerHTML=renderStoresRows(filtered);
 }
 
 // ===== USERS =====
@@ -1774,17 +1795,16 @@ function renderStorePage(s){
   '<div class="page-header"><div class="page-title">'+(br?br.name+' ':'')+s.name+'</div><span class="page-type-badge store">店舗</span></div>'+
   '<div class="page-subtitle">'+s.id+' / '+s.addr+' / '+statusBadge(s.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(s.revenue)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+s.orders.toLocaleString()+'</div></div><div class="stat-card orange"><div class="sc-label">客単価</div><div class="sc-val">'+(s.orders>0?Y(Math.round(s.revenue/s.orders)):'—')+'</div></div></div>'+
-  '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'flags\')">機能</div><div class="tab" onclick="switchTab(\'store\',this,\'sales\')">売上</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div><div class="tab" onclick="switchTab(\'store\',this,\'related\')">法人・ブランド</div></div>'+
+  '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'flags\')">機能</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div><div class="tab" onclick="switchTab(\'store\',this,\'related\')">法人・ブランド</div></div>'+
   '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div></div></div></div>'+
   '<div class="tab-content" id="store-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド（'+(br?br.name:'—')+'）でONになっているサービスのみ選択可能です。</p><div class="svc-grid">'+renderServiceCards(s.id,'store',br?br.id:null)+'</div></div></div>'+
-  '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
-  '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="text" value="6席"></div><div class="form-group"><label>喫煙</label><select><option selected>全席禁煙</option></select></div><div class="form-group"><label>子連れ</label><select><option selected>同伴不可</option></select></div><div class="form-group"><label>サービス料</label><input type="number" value="10"></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">テーブル管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showAddTableModal(\''+s._uuid+'\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>テーブル番号</th><th>テーブル名</th><th>席数</th><th>フロア</th><th>ステータス</th><th></th></tr></thead><tbody id="storeTablesBody"><tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">読み込み中...</td></tr></tbody></table></div></div>'+
+  '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="applyAllStoreHours(\''+s._uuid+'\')">全日一括適用</button><button class="btn btn-primary btn-sm" onclick="saveStoreHours(\''+s._uuid+'\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
+  '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreFacility(\''+s._uuid+'\',\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="number" id="facilitySeats" value="'+(s.seats||6)+'" min="1" max="1000"></div><div class="form-group"><label>喫煙</label><select id="facilitySmoking"><option value="no_smoking"'+(s.smoking==='no_smoking'?' selected':'')+'>全席禁煙</option><option value="all_smoking"'+(s.smoking==='all_smoking'?' selected':'')+'>全席喫煙</option><option value="partial"'+(s.smoking==='partial'?' selected':'')+'>一部喫煙可</option></select></div><div class="form-group"><label>子連れ</label><select id="facilityChildren"><option value="allowed"'+(s.children==='allowed'?' selected':'')+'>同伴可</option><option value="not_allowed"'+(s.children==='not_allowed'?' selected':'')+'>同伴不可</option><option value="consultation"'+(s.children==='consultation'?' selected':'')+'>要相談</option></select></div><div class="form-group"><label>サービス料</label><div style="display:flex;gap:8px"><select id="facilityChargeType" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px"><option value="percent"'+(s.serviceChargeType==='percent'?' selected':'')+'>%</option><option value="yen"'+(s.serviceChargeType==='yen'?' selected':'')+'>¥</option></select><input type="number" id="facilityChargeValue" value="'+(s.serviceChargeValue||10)+'" style="flex:1"></div></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">テーブル管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showAddTableModal(\''+s._uuid+'\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>テーブル番号</th><th>テーブル名</th><th>席数</th><th>フロア</th><th>ステータス</th><th></th></tr></thead><tbody id="storeTablesBody"><tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">読み込み中...</td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-reservation"><div class="card"><div class="card-title">予約設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminReservation(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group full"><div class="toggle-row"><label style="font-size:12px;font-weight:600">予約受付</label><label class="toggle-sw"><input type="checkbox" id="adminResEnabled" '+(s.reservationEnabled?'checked':'')+'><span class="slider"></span></label></div></div><div class="form-group"><label>確定方法</label><select id="adminResConfMode" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="auto"'+(s.resConfMode==='auto'?' selected':'')+'>即時確定</option><option value="manual"'+(s.resConfMode!=='auto'?' selected':'')+'>承認制</option></select></div><div class="form-group"><div class="toggle-row"><label style="font-size:12px;font-weight:600">クレカ登録必須</label><label class="toggle-sw"><input type="checkbox" id="adminResRequireCard" '+(s.resRequireCard?'checked':'')+'><span class="slider"></span></label></div></div><div class="form-group"><label>キャンセル料（円）</label><input type="number" id="adminResCancelFee" value="'+(s.resCancelFee||0)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">0 = キャンセル料なし</div></div><div class="form-group"><label>キャンセル締切（時間前）</label><input type="number" id="adminResCancelDeadline" value="'+(s.resCancelDeadline||72)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">この時間を過ぎると店舗承認が必要</div></div></div></div></div>'+
   '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminDelivery(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" id="adminDeliveryRadius" value="'+(s.deliveryRadius||5)+'"></div><div class="form-group"><label>配達料金（円）</label><input type="number" id="adminDeliveryFee" value="'+(s.deliveryFee||770)+'"></div><div class="form-group"><label>最低注文額（円）</label><input type="number" id="adminMinOrderAmount" value="'+(s.minOrder||1500)+'"></div><div class="form-group"><label>最低注文金額未満時の対応</label><select id="adminMinOrderPolicy" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="surcharge"'+(s.minOrderPolicy==="block"?"":' selected')+'>差額を手数料として加算</option><option value="block"'+(s.minOrderPolicy==="block"?' selected':"")+'>注文を受け付けない</option></select></div><div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="adminSmallOrderMax" value="'+(s.surchargeMax||1500)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限</div></div><div class="form-group"><label>調理見積（分）</label><input type="number" id="adminPrepTime" value="'+(s.prepTime||30)+'"></div></div></div><div class="card"><div class="card-title">少額注文手数料の適用対象</div><div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDinein"'+(s.minOrderApplyTypes&&s.minOrderApplyTypes.dinein?" checked":"")+'> 店内飲食</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderTakeout"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.takeout!==false?" checked":"")+'> テイクアウト</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDelivery"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.delivery!==false?" checked":"")+'> デリバリー</label></div><div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div></div></div>'+
   '<div class="tab-content" id="store-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">空欄 = ブランドデフォルト適用</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>当日（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" placeholder="50"></div></div></div></div>'+
   '<div class="tab-content" id="store-media"><div class="card"><div class="card-title">📸 メディア</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 画像をアップロード</div></div></div>'+
   '<div class="tab-content" id="store-flags"><div class="card"><div class="card-title">機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">席のみ予約</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">お持ち帰り</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">デリバリー</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
-  '<div class="tab-content" id="store-sales"><div class="card"><div class="card-title">📊 売上</div><div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card green"><div class="sc-label">売上</div><div class="sc-val">'+Y(s.revenue)+'</div></div><div class="stat-card blue"><div class="sc-label">注文数</div><div class="sc-val">'+s.orders+'</div></div><div class="stat-card orange"><div class="sc-label">客単価</div><div class="sc-val">'+(s.orders>0?Y(Math.round(s.revenue/s.orders)):'—')+'</div></div></div></div></div>'+
   '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody><tr><td>2026-03-10</td><td>ゲスト</td><td>⭐⭐⭐⭐⭐</td><td>最高！</td><td><button class="btn btn-secondary btn-sm">返信</button></td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>'+
   '<div class="tab-content" id="store-related"><div class="card"><div class="card-title">所属法人</div>'+(cp?'<div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div><div class="card"><div class="card-title">所属ブランド</div>'+(br?'<div class="link-card" onclick="goToBrand(\''+br.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+br.name+'</div><div class="lc-sub">'+br.slug+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div></div>';
@@ -1846,12 +1866,107 @@ async function saveAdminReservation(storeId){
     logAudit('update_reservation_settings','stores',storeId,{enabled,confMode,local_only:true});
   }
 }
-function initStoreTabs(){
-  const DAYS=['月曜','火曜','水曜','木曜','金曜','土曜','日曜'];
-  const hg=document.getElementById('storeHoursGrid');
-  if(hg)hg.innerHTML=DAYS.map(d=>'<div class="day-label">'+d+'</div><input type="time" value="17:00"><input type="time" value="23:00"><label class="closed-check"><input type="checkbox"> 定休</label>').join('');
-  const ae=document.getElementById('storeAIChart');
-  if(ae){const d=[{n:'SNS投稿文',v:85},{n:'AI画像',v:62},{n:'口コミ返信',v:48},{n:'POP作成',v:21}];const mx=Math.max(...d.map(x=>x.v));ae.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
+const DAYS_MAP={0:'日曜',1:'月曜',2:'火曜',3:'水曜',4:'木曜',5:'金曜',6:'土曜'};
+const DAYS_ORDER=[1,2,3,4,5,6,0];
+
+async function initStoreTabs(){
+  var s=STORES.find(x=>x.id===currentView.id);
+  if(!s)return;
+  await loadStoreHours(s._uuid);
+  var ae=document.getElementById('storeAIChart');
+  if(ae){var d=[{n:'SNS投稿文',v:85},{n:'AI画像',v:62},{n:'口コミ返信',v:48},{n:'POP作成',v:21}];var mx=Math.max(...d.map(x=>x.v));ae.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
+}
+
+async function loadStoreHours(storeUuid){
+  var hg=document.getElementById('storeHoursGrid');
+  if(!hg)return;
+  var rows=[];
+  try{
+    var {data}=await sb.from('store_hours').select('*').eq('store_id',storeUuid);
+    if(data)rows=data;
+  }catch(e){}
+  var hoursByDay={};
+  rows.forEach(function(r){hoursByDay[r.day_of_week]=r;});
+  hg.innerHTML=DAYS_ORDER.map(function(day){
+    var h=hoursByDay[day]||{open_time:'11:00',close_time:'22:00',is_closed:false};
+    var openVal=(h.open_time||'11:00').substring(0,5);
+    var closeVal=(h.close_time||'22:00').substring(0,5);
+    var closed=!!h.is_closed;
+    var opStyle=closed?' style="opacity:0.4;pointer-events:none"':'';
+    return '<div class="day-label">'+DAYS_MAP[day]+'</div>'+
+      '<input type="time" id="storeHour_'+day+'_open" value="'+openVal+'"'+opStyle+'>'+
+      '<input type="time" id="storeHour_'+day+'_close" value="'+closeVal+'"'+opStyle+'>'+
+      '<label class="closed-check"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>';
+  }).join('');
+}
+
+function toggleDayClosed(day){
+  var cb=document.getElementById('storeHour_'+day+'_closed');
+  var openEl=document.getElementById('storeHour_'+day+'_open');
+  var closeEl=document.getElementById('storeHour_'+day+'_close');
+  if(!cb||!openEl||!closeEl)return;
+  if(cb.checked){
+    openEl.style.opacity='0.4';openEl.style.pointerEvents='none';
+    closeEl.style.opacity='0.4';closeEl.style.pointerEvents='none';
+  }else{
+    openEl.style.opacity='';openEl.style.pointerEvents='';
+    closeEl.style.opacity='';closeEl.style.pointerEvents='';
+  }
+}
+
+function applyAllStoreHours(storeUuid){
+  var openVal=document.getElementById('storeHour_1_open').value;
+  var closeVal=document.getElementById('storeHour_1_close').value;
+  var closed=document.getElementById('storeHour_1_closed').checked;
+  DAYS_ORDER.forEach(function(day){
+    if(day===1)return;
+    document.getElementById('storeHour_'+day+'_open').value=openVal;
+    document.getElementById('storeHour_'+day+'_close').value=closeVal;
+    document.getElementById('storeHour_'+day+'_closed').checked=closed;
+    toggleDayClosed(day);
+  });
+  showToast('✅ 月曜の設定を全日に適用しました');
+}
+
+async function saveStoreHours(storeUuid){
+  var rows=DAYS_ORDER.map(function(day){
+    return {
+      store_id:storeUuid,
+      day_of_week:day,
+      open_time:document.getElementById('storeHour_'+day+'_open').value+':00',
+      close_time:document.getElementById('storeHour_'+day+'_close').value+':00',
+      is_closed:document.getElementById('storeHour_'+day+'_closed').checked
+    };
+  });
+  try{
+    var {error}=await sb.from('store_hours').upsert(rows,{onConflict:'store_id,day_of_week'});
+    if(error)throw error;
+    showToast('✅ 営業時間を保存しました');
+    logAudit('update_store_hours','store_hours',storeUuid,{days:7});
+  }catch(e){
+    showToast('❌ 営業時間の保存に失敗しました');
+  }
+}
+
+async function saveStoreFacility(storeUuid,storeId){
+  var seats=parseInt(document.getElementById('facilitySeats').value)||6;
+  var smoking=document.getElementById('facilitySmoking').value;
+  var children=document.getElementById('facilityChildren').value;
+  var chargeType=document.getElementById('facilityChargeType').value;
+  var chargeValue=parseInt(document.getElementById('facilityChargeValue').value)||0;
+  var s=STORES.find(x=>x._uuid===storeUuid);
+  if(s){s.seats=seats;s.smoking=smoking;s.children=children;s.serviceChargeType=chargeType;s.serviceChargeValue=chargeValue;}
+  try{
+    var {error}=await sb.from('stores').update({
+      seats:seats,smoking_policy:smoking,children_policy:children,
+      service_charge_type:chargeType,service_charge_value:chargeValue
+    }).eq('id',storeUuid);
+    if(error)throw error;
+    showToast('✅ 施設情報を保存しました');
+    logAudit('update_store_facility','stores',storeId,{seats,smoking,children,chargeType,chargeValue});
+  }catch(e){
+    showToast('❌ 施設情報の保存に失敗しました');
+  }
 }
 
 // ===== SERVICE CARDS RENDERER =====
