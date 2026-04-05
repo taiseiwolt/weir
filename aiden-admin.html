@@ -1418,10 +1418,10 @@ function renderBrandPage(b){
   '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandBasic(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" id="brandBasicName" value="'+escHtml(b.name)+'"></div><div class="form-group"><label>スラッグ</label><input type="text" id="brandBasicSlug" value="'+escHtml(b.slug)+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+escHtml(b.id)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント（複数選択可）</label><div id="brandFontChecks" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">'+['Noto Sans JP','Noto Serif JP','M PLUS Rounded 1c','Zen Maru Gothic','Kosugi Maru'].map(function(f){return '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" value="'+f+'"'+(b.fontFamilies.indexOf(f)>=0?' checked':'')+'>'+escHtml(f)+'</label>';}).join('')+'</div></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandSocialLinks(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>Instagram</label><input type="url" id="brandSnsIg" value="'+escHtml(b.socialLinks.instagram||'')+'" placeholder="https://instagram.com/..."></div><div class="form-group"><label>X</label><input type="url" id="brandSnsX" value="'+escHtml(b.socialLinks.x||'')+'" placeholder="https://x.com/..."></div><div class="form-group"><label>LINE</label><input type="url" id="brandSnsLine" value="'+escHtml(b.socialLinks.line||'')+'" placeholder="https://line.me/..."></div><div class="form-group"><label>TikTok</label><input type="url" id="brandSnsTiktok" value="'+escHtml(b.socialLinks.tiktok||'')+'" placeholder="https://tiktok.com/..."></div></div></div></div>'+
   '<div class="tab-content" id="brand-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">法人（'+cp.name+'）でONになっているサービスのみ選択可能です。ここでONにしたサービスは配下店舗で選択できます。</p><div class="svc-grid">'+renderServiceCards(b.id,'brand',cp.id)+'</div></div></div>'+
   '<div class="tab-content" id="brand-design"><div class="card"><div class="card-title">デザイン設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandDesign(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>メインカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignMainColor" value="'+escHtml(b.mainColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignMainColorText\').value=this.value"><input type="text" id="brandDesignMainColorText" value="'+escHtml(b.mainColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignMainColor\').value=this.value"></div></div><div class="form-group"><label>サブカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignSubColor" value="'+escHtml(b.secondaryColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignSubColorText\').value=this.value"><input type="text" id="brandDesignSubColorText" value="'+escHtml(b.secondaryColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignSubColor\').value=this.value"></div></div><div class="form-group"><label>ヘッダー文字色</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignHeaderText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignHeaderTextText\').value=this.value"><input type="text" id="brandDesignHeaderTextText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignHeaderText\').value=this.value"></div></div></div></div><div class="card" style="position:relative;opacity:0.5;pointer-events:none"><span style="position:absolute;top:10px;right:10px;font-size:9px;background:#dfe6e9;color:#636e72;padding:2px 8px;border-radius:4px;font-weight:700">Coming Soon</span><div class="card-title">ロゴ</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">ドラッグ&ドロップでロゴ画像をアップロード</div></div></div>'+
-  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+b.slug+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select><option selected>公開中</option><option>非公開</option></select></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定すると、URLに「aiden」が表示されなくなります</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'📎 画像追加\')">＋ 追加</button></span></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px"><div style="width:180px;aspect-ratio:16/9;background:#f5f6fa;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-light)">サンプル画像 1</div><div style="width:180px;aspect-ratio:16/9;background:#f5f6fa;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-light)">サンプル画像 2</div></div><div style="font-size:11px;color:var(--text-light)">複数枚登録可能。ドラッグで順序変更。5秒間隔で自動スクロールします。</div></div></div>'+
-  '<div class="tab-content" id="brand-news"><div class="card"><div class="card-title">ニュース管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 追加\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>日付</th><th>カテゴリ</th><th>タイトル</th><th>本文</th><th></th></tr></thead><tbody><tr><td>2026-02-21</td><td>お店情報</td><td>新宿東口店 臨時休業</td><td><span style="font-size:11px;color:var(--text-light)">未入力</span></td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集（本文はMarkdown対応）\')">編集</button></td></tr><tr><td>2026-02-20</td><td>メニュー</td><td>特製クッパ 新登場</td><td><span style="font-size:11px;color:var(--text-light)">入力済み</span></td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集（本文はMarkdown対応）\')">編集</button></td></tr></tbody></table><div style="font-size:11px;color:var(--text-light);margin-top:8px">記事本文はMarkdown記法で入力できます。個別記事ページ（brand-news-detail.html）に表示されます。</div></div></div>'+
-  '<div class="tab-content" id="brand-campaign"><div class="card"><div class="card-title">キャンペーン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 追加\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>タイトル</th><th>画像/動画</th><th>期間</th><th>ステータス</th><th></th></tr></thead><tbody><tr><td>春の特別キャンペーン</td><td><span style="color:var(--text-light);font-size:11px">画像あり</span></td><td>2026-03-01 〜 2026-04-30</td><td><span class="status-badge active" style="font-size:10px;padding:2px 8px">公開中</span></td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集\')">編集</button></td></tr><tr><td>GWプレオープン</td><td><span style="color:var(--text-light);font-size:11px">未設定</span></td><td>2026-04-25 〜 2026-05-06</td><td><span class="status-badge" style="font-size:10px;padding:2px 8px;background:#FFF3E0;color:#E65100">予約</span></td><td><button class="btn btn-secondary btn-sm" onclick="showToast(\'📝 編集\')">編集</button></td></tr></tbody></table></div></div>'+
-  '<div class="tab-content" id="brand-coupon"><div class="card"><div class="card-title">クーポン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 追加\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>コード</th><th>名前</th><th class="r">割引</th><th>種別</th><th>期限</th></tr></thead><tbody><tr><td><code>WELCOME10</code></td><td>初回10%OFF</td><td class="r fw-800">10</td><td>%</td><td>2026-03-31</td></tr></tbody></table></div></div>'+
+  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+escHtml(b.slug)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="published"'+((b.hpSettings.status||'published')==='published'?' selected':'')+'>公開中</option><option value="unpublished"'+((b.hpSettings.status)==='unpublished'?' selected':'')+'>非公開</option></select></div><div class="form-group"><label>Meta Description</label><textarea id="brandHpMetaDesc" rows="3" style="font-size:13px">'+escHtml(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+escHtml(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>Favicon URL</label><input type="url" id="brandHpFavicon" value="'+escHtml(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定すると、URLに「aiden」が表示されなくなります</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+escHtml(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="heroSlidesList-'+b.id+'" style="font-size:12px;color:var(--text-light)">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">複数枚登録可能。5秒間隔で自動スクロールします。</div></div></div>'+
+  '<div class="tab-content" id="brand-news"><div class="card"><div class="card-title">ニュース管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddNewsModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandNewsList-'+b.id+'">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">記事本文はMarkdown記法で入力できます。</div></div></div>'+
+  '<div class="tab-content" id="brand-campaign"><div class="card"><div class="card-title">キャンペーン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCampaignModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCampaignList-'+b.id+'">読み込み中...</div></div></div>'+
+  '<div class="tab-content" id="brand-coupon"><div class="card"><div class="card-title">クーポン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCouponModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCouponList-'+b.id+'">読み込み中...</div></div></div>'+
   '<div class="tab-content" id="brand-member"><div class="card"><div class="card-title">会員プログラム <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>プログラム名</label><input type="text" value="'+b.name+' メンバーズ"></div><div class="form-group"><label>ポイント付与率</label><input type="text" value="1%"></div></div></div><div class="card"><div class="card-title">CRM配信</div><div class="toggle-row"><label style="font-size:12px;font-weight:600">メール配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">LINE配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
   '<div class="tab-content" id="brand-menu"><div class="card"><div class="card-title">メニュー管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 新規追加\')">＋ 新規追加</button></span></div><div class="menu-toolbar"><input class="menu-search" placeholder="🔍 商品名で検索..." id="brandMenuSearch" oninput="renderBrandMenu()"><div id="brandMenuCats"></div></div><div class="menu-grid" id="brandMenuGrid"></div></div></div>'+
   '<div class="tab-content" id="brand-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" value="100"></div><div class="form-group"><label>当日（%）</label><input type="number" value="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" value="50"></div></div></div></div>'+
@@ -1430,7 +1430,7 @@ function renderBrandPage(b){
 }
 let brandMenuCat='all';
 function renderBrandMenu(){const q=((document.getElementById('brandMenuSearch')||{}).value||'').toLowerCase();const cats=['all',...new Set(MENU.map(m=>m.cat))];const ce=document.getElementById('brandMenuCats');if(ce)ce.innerHTML=cats.map(c=>'<span class="cat-chip'+(brandMenuCat===c?' active':'')+'" onclick="brandMenuCat=\''+c+'\';renderBrandMenu()">'+(c==='all'?'すべて':c)+'</span>').join(' ');let items=MENU;if(brandMenuCat!=='all')items=items.filter(m=>m.cat===brandMenuCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));const ge=document.getElementById('brandMenuGrid');if(ge)ge.innerHTML=items.map(m=>'<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+m.name+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+m.cat+'</div><div class="mcard-desc">'+m.desc+'</div><div class="mcard-footer"><button onclick="showToast(\'📝 編集\')">編集</button></div></div></div>').join('')||'<div class="empty-state">該当なし</div>';}
-function initBrandTabs(){brandMenuCat='all';renderBrandMenu();}
+function initBrandTabs(){brandMenuCat='all';renderBrandMenu();var b=BRANDS.find(x=>x.id===currentView.id);if(b){loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}}
 
 // ===== PII ACCESS SETTINGS =====
 const PII_FIELDS=[
@@ -1958,6 +1958,366 @@ async function saveBrandDesign(brandDisplayId){
     b.mainColor=mainColor;b.secondaryColor=subColor;b.designSettings=designSettings;
     logAudit('update_brand_design','brands',b._uuid,{mainColor,subColor});
     showToast('✅ デザイン設定を保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== HP SETTINGS + HERO BANNER =====
+async function saveBrandHpSettings(brandDisplayId){
+  var b=BRANDS.find(x=>x.id===brandDisplayId);
+  if(!b)return;
+  var hpSettings={
+    status:document.getElementById('brandHpStatus')?.value||'published',
+    metaDescription:document.getElementById('brandHpMetaDesc')?.value.trim()||'',
+    ogImage:document.getElementById('brandHpOgImage')?.value.trim()||'',
+    favicon:document.getElementById('brandHpFavicon')?.value.trim()||'',
+    customDomain:document.getElementById('brandHpDomain')?.value.trim()||''
+  };
+  try{
+    var {error}=await sb.from('brands').update({hp_settings:hpSettings}).eq('id',b._uuid);
+    if(error)throw error;
+    b.hpSettings=hpSettings;
+    logAudit('update_brand_hp','brands',b._uuid,{hpSettings});
+    showToast('✅ HP設定を保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function loadHeroSlides(brandUuid,brandDisplayId){
+  var el=document.getElementById('heroSlidesList-'+brandDisplayId);
+  if(!el)return;
+  try{
+    var {data,error}=await sb.from('brand_hero_slides').select('*').eq('brand_id',brandUuid).order('sort_order',{ascending:true});
+    if(error)throw error;
+    if(!data||!data.length){el.innerHTML='<div class="empty-state">スライドが登録されていません</div>';return;}
+    el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:12px">'+data.map(function(s){
+      return '<div style="position:relative;width:180px"><img src="'+escHtml(s.media_url)+'" alt="'+escHtml(s.alt_text||'')+'" style="width:180px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--border);border-radius:6px"><div style="font-size:10px;color:var(--text-light);margin-top:2px">順序: '+s.sort_order+'</div><button class="btn btn-secondary btn-sm" style="position:absolute;top:4px;right:4px;padding:2px 6px;font-size:10px" onclick="deleteHeroSlide(\''+s.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">✕</button></div>';
+    }).join('')+'</div>';
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+}
+
+function openAddHeroSlideModal(brandUuid,brandDisplayId){
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>ヒーロースライド追加</h3>'+
+    '<div class="form-grid"><div class="form-group"><label>画像URL *</label><input type="url" id="heroMediaUrl" placeholder="https://..." required></div>'+
+    '<div class="form-group"><label>Alt テキスト</label><input type="text" id="heroAltText" placeholder="画像の説明"></div>'+
+    '<div class="form-group"><label>表示順序</label><input type="number" id="heroSortOrder" value="0" min="0"></div></div>'+
+    '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveHeroSlide(\''+brandUuid+'\',\''+brandDisplayId+'\')">保存</button></div>');
+}
+
+async function saveHeroSlide(brandUuid,brandDisplayId){
+  var url=document.getElementById('heroMediaUrl')?.value.trim();
+  if(!url){showToast('⚠️ 画像URLは必須です');return;}
+  var alt=document.getElementById('heroAltText')?.value.trim()||'';
+  var sort=parseInt(document.getElementById('heroSortOrder')?.value)||0;
+  try{
+    var {error}=await sb.from('brand_hero_slides').insert({brand_id:brandUuid,media_url:url,media_type:'image',alt_text:alt,sort_order:sort,is_active:true});
+    if(error)throw error;
+    logAudit('add_hero_slide','brand_hero_slides',brandUuid,{media_url:url});
+    closeModal();showToast('✅ スライドを追加しました');
+    loadHeroSlides(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function deleteHeroSlide(slideId,brandUuid,brandDisplayId){
+  if(!confirm('このスライドを削除しますか？'))return;
+  try{
+    var {error}=await sb.from('brand_hero_slides').delete().eq('id',slideId);
+    if(error)throw error;
+    logAudit('delete_hero_slide','brand_hero_slides',slideId,{});
+    showToast('✅ スライドを削除しました');
+    loadHeroSlides(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== NEWS CRUD =====
+var NEWS_CAT_LABELS={info:'お店情報',menu:'メニュー',event:'イベント',news:'ニュース'};
+
+async function loadBrandNews(brandUuid,brandDisplayId){
+  var el=document.getElementById('brandNewsList-'+brandDisplayId);
+  if(!el)return;
+  try{
+    var {data,error}=await sb.from('brand_news').select('*').eq('brand_id',brandUuid).order('published_at',{ascending:false});
+    if(error)throw error;
+    if(!data||!data.length){el.innerHTML='<div class="empty-state">ニュースが登録されていません</div>';return;}
+    el.innerHTML='<table class="data-table"><thead><tr><th>日付</th><th>カテゴリ</th><th>タイトル</th><th>本文</th><th>ステータス</th><th></th></tr></thead><tbody>'+data.map(function(n){
+      var catLabel=NEWS_CAT_LABELS[n.category]||n.category||'-';
+      var bodyLabel=n.body_html?'入力済み':'未入力';
+      var statusLabel=n.status==='published'?'<span class="status-badge active" style="font-size:10px;padding:2px 8px">公開</span>':'<span class="status-badge" style="font-size:10px;padding:2px 8px;background:#f5f6fa;color:var(--text-light)">下書き</span>';
+      return '<tr><td>'+(n.published_at||'-')+'</td><td>'+escHtml(catLabel)+'</td><td>'+escHtml(n.title)+'</td><td><span style="font-size:11px;color:var(--text-light)">'+bodyLabel+'</span></td><td>'+statusLabel+'</td><td><button class="btn btn-secondary btn-sm" onclick="openEditNewsModal(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e74c3c" onclick="deleteBrandNews(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">削除</button></td></tr>';
+    }).join('')+'</tbody></table>';
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+}
+
+function newsFormHtml(prefix,d){
+  d=d||{};
+  return '<div class="form-grid"><div class="form-group"><label>タイトル *</label><input type="text" id="'+prefix+'NewsTitle" value="'+escHtml(d.title||'')+'" required></div>'+
+    '<div class="form-group"><label>カテゴリ</label><select id="'+prefix+'NewsCat"><option value="info"'+(d.category==='info'?' selected':'')+'>お店情報</option><option value="menu"'+(d.category==='menu'?' selected':'')+'>メニュー</option><option value="event"'+(d.category==='event'?' selected':'')+'>イベント</option><option value="news"'+(!d.category||d.category==='news'?' selected':'')+'>ニュース</option></select></div>'+
+    '<div class="form-group"><label>公開日</label><input type="date" id="'+prefix+'NewsDate" value="'+escHtml(d.published_at||new Date().toISOString().slice(0,10))+'"></div>'+
+    '<div class="form-group"><label>ステータス</label><select id="'+prefix+'NewsStatus"><option value="published"'+((!d.status||d.status==='published')?' selected':'')+'>公開</option><option value="draft"'+(d.status==='draft'?' selected':'')+'>下書き</option></select></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>画像URL</label><input type="url" id="'+prefix+'NewsUrl" value="'+escHtml(d.url||'')+'" placeholder="https://..."></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>本文（Markdown）</label><textarea id="'+prefix+'NewsBody" rows="6" style="font-size:13px">'+escHtml(d.body_html||'')+'</textarea></div></div>';
+}
+
+function openAddNewsModal(brandUuid,brandDisplayId){
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>ニュース追加</h3>'+newsFormHtml('add',{})+
+    '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveBrandNews(\''+brandUuid+'\',\''+brandDisplayId+'\')">保存</button></div>');
+}
+
+async function saveBrandNews(brandUuid,brandDisplayId){
+  var title=document.getElementById('addNewsTitle')?.value.trim();
+  if(!title){showToast('⚠️ タイトルは必須です');return;}
+  try{
+    var {error}=await sb.from('brand_news').insert({brand_id:brandUuid,title:title,
+      category:document.getElementById('addNewsCat')?.value||'news',
+      published_at:document.getElementById('addNewsDate')?.value||null,
+      status:document.getElementById('addNewsStatus')?.value||'published',
+      url:document.getElementById('addNewsUrl')?.value.trim()||null,
+      body_html:document.getElementById('addNewsBody')?.value.trim()||null});
+    if(error)throw error;
+    logAudit('add_news','brand_news',brandUuid,{title});
+    closeModal();showToast('✅ ニュースを追加しました');
+    loadBrandNews(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function openEditNewsModal(newsId,brandUuid,brandDisplayId){
+  try{
+    var {data,error}=await sb.from('brand_news').select('*').eq('id',newsId).single();
+    if(error)throw error;
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>ニュース編集</h3>'+newsFormHtml('edit',data)+
+      '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="updateBrandNews(\''+newsId+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">更新</button></div>');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function updateBrandNews(newsId,brandUuid,brandDisplayId){
+  var title=document.getElementById('editNewsTitle')?.value.trim();
+  if(!title){showToast('⚠️ タイトルは必須です');return;}
+  try{
+    var {error}=await sb.from('brand_news').update({title:title,
+      category:document.getElementById('editNewsCat')?.value||'news',
+      published_at:document.getElementById('editNewsDate')?.value||null,
+      status:document.getElementById('editNewsStatus')?.value||'published',
+      url:document.getElementById('editNewsUrl')?.value.trim()||null,
+      body_html:document.getElementById('editNewsBody')?.value.trim()||null}).eq('id',newsId);
+    if(error)throw error;
+    logAudit('update_news','brand_news',newsId,{title});
+    closeModal();showToast('✅ ニュースを更新しました');
+    loadBrandNews(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function deleteBrandNews(newsId,brandUuid,brandDisplayId){
+  if(!confirm('このニュースを削除しますか？'))return;
+  try{
+    var {error}=await sb.from('brand_news').delete().eq('id',newsId);
+    if(error)throw error;
+    logAudit('delete_news','brand_news',newsId,{});
+    showToast('✅ ニュースを削除しました');
+    loadBrandNews(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== CAMPAIGN CRUD =====
+function campaignStatus(c){
+  if(!c.is_active)return '<span class="status-badge" style="font-size:10px;padding:2px 8px;background:#f5f6fa;color:var(--text-light)">非公開</span>';
+  var now=new Date().toISOString().slice(0,10);
+  if(c.start_date&&now<c.start_date)return '<span class="status-badge" style="font-size:10px;padding:2px 8px;background:#FFF3E0;color:#E65100">予約</span>';
+  if(c.end_date&&now>c.end_date)return '<span class="status-badge" style="font-size:10px;padding:2px 8px;background:#FFEBEE;color:#C62828">終了</span>';
+  return '<span class="status-badge active" style="font-size:10px;padding:2px 8px">公開中</span>';
+}
+
+async function loadBrandCampaigns(brandUuid,brandDisplayId){
+  var el=document.getElementById('brandCampaignList-'+brandDisplayId);
+  if(!el)return;
+  try{
+    var {data,error}=await sb.from('brand_campaigns').select('*').eq('brand_id',brandUuid).order('sort_order',{ascending:true});
+    if(error)throw error;
+    if(!data||!data.length){el.innerHTML='<div class="empty-state">キャンペーンが登録されていません</div>';return;}
+    el.innerHTML='<table class="data-table"><thead><tr><th>タイトル</th><th>画像/動画</th><th>期間</th><th>ステータス</th><th></th></tr></thead><tbody>'+data.map(function(c){
+      var media=c.media_url?((c.media_type==='video'?'動画':'画像')+'あり'):'未設定';
+      var period=(c.start_date||'?')+' 〜 '+(c.end_date||'?');
+      return '<tr><td>'+escHtml(c.title)+'</td><td><span style="color:var(--text-light);font-size:11px">'+media+'</span></td><td>'+escHtml(period)+'</td><td>'+campaignStatus(c)+'</td><td><button class="btn btn-secondary btn-sm" onclick="openEditCampaignModal(\''+c.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e74c3c" onclick="deleteBrandCampaign(\''+c.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">削除</button></td></tr>';
+    }).join('')+'</tbody></table>';
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+}
+
+function campaignFormHtml(prefix,d){
+  d=d||{};
+  return '<div class="form-grid"><div class="form-group"><label>タイトル *</label><input type="text" id="'+prefix+'CampTitle" value="'+escHtml(d.title||'')+'" required></div>'+
+    '<div class="form-group"><label>メディアタイプ</label><select id="'+prefix+'CampMediaType"><option value="image"'+((!d.media_type||d.media_type==='image')?' selected':'')+'>画像</option><option value="video"'+(d.media_type==='video'?' selected':'')+'>動画</option></select></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>メディアURL</label><input type="url" id="'+prefix+'CampMediaUrl" value="'+escHtml(d.media_url||'')+'" placeholder="https://..."></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>リンクURL</label><input type="url" id="'+prefix+'CampLinkUrl" value="'+escHtml(d.link_url||'')+'" placeholder="https://..."></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>説明</label><textarea id="'+prefix+'CampDesc" rows="3" style="font-size:13px">'+escHtml(d.description||'')+'</textarea></div>'+
+    '<div class="form-group"><label>開始日</label><input type="date" id="'+prefix+'CampStart" value="'+escHtml(d.start_date||'')+'"></div>'+
+    '<div class="form-group"><label>終了日</label><input type="date" id="'+prefix+'CampEnd" value="'+escHtml(d.end_date||'')+'"></div></div>';
+}
+
+function openAddCampaignModal(brandUuid,brandDisplayId){
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>キャンペーン追加</h3>'+campaignFormHtml('add',{})+
+    '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveBrandCampaign(\''+brandUuid+'\',\''+brandDisplayId+'\')">保存</button></div>');
+}
+
+async function saveBrandCampaign(brandUuid,brandDisplayId){
+  var title=document.getElementById('addCampTitle')?.value.trim();
+  if(!title){showToast('⚠️ タイトルは必須です');return;}
+  try{
+    var {error}=await sb.from('brand_campaigns').insert({brand_id:brandUuid,title:title,
+      description:document.getElementById('addCampDesc')?.value.trim()||null,
+      media_url:document.getElementById('addCampMediaUrl')?.value.trim()||null,
+      media_type:document.getElementById('addCampMediaType')?.value||'image',
+      link_url:document.getElementById('addCampLinkUrl')?.value.trim()||null,
+      start_date:document.getElementById('addCampStart')?.value||null,
+      end_date:document.getElementById('addCampEnd')?.value||null,
+      sort_order:0,is_active:true});
+    if(error)throw error;
+    logAudit('add_campaign','brand_campaigns',brandUuid,{title});
+    closeModal();showToast('✅ キャンペーンを追加しました');
+    loadBrandCampaigns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function openEditCampaignModal(campId,brandUuid,brandDisplayId){
+  try{
+    var {data,error}=await sb.from('brand_campaigns').select('*').eq('id',campId).single();
+    if(error)throw error;
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>キャンペーン編集</h3>'+campaignFormHtml('edit',data)+
+      '<div class="form-group" style="margin-top:12px"><label style="font-size:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="editCampActive"'+(data.is_active?' checked':'')+'> 公開する</label></div>'+
+      '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="updateBrandCampaign(\''+campId+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">更新</button></div>');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function updateBrandCampaign(campId,brandUuid,brandDisplayId){
+  var title=document.getElementById('editCampTitle')?.value.trim();
+  if(!title){showToast('⚠️ タイトルは必須です');return;}
+  try{
+    var {error}=await sb.from('brand_campaigns').update({title:title,
+      description:document.getElementById('editCampDesc')?.value.trim()||null,
+      media_url:document.getElementById('editCampMediaUrl')?.value.trim()||null,
+      media_type:document.getElementById('editCampMediaType')?.value||'image',
+      link_url:document.getElementById('editCampLinkUrl')?.value.trim()||null,
+      start_date:document.getElementById('editCampStart')?.value||null,
+      end_date:document.getElementById('editCampEnd')?.value||null,
+      is_active:document.getElementById('editCampActive')?.checked??true}).eq('id',campId);
+    if(error)throw error;
+    logAudit('update_campaign','brand_campaigns',campId,{title});
+    closeModal();showToast('✅ キャンペーンを更新しました');
+    loadBrandCampaigns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function deleteBrandCampaign(campId,brandUuid,brandDisplayId){
+  if(!confirm('このキャンペーンを削除しますか？'))return;
+  try{
+    var {error}=await sb.from('brand_campaigns').delete().eq('id',campId);
+    if(error)throw error;
+    logAudit('delete_campaign','brand_campaigns',campId,{});
+    showToast('✅ キャンペーンを削除しました');
+    loadBrandCampaigns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== COUPON CRUD =====
+var SVC_LABELS={dinein:'店内',takeout:'持帰',delivery:'配達'};
+var PLT_LABELS={aiden:'AIden',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
+
+function couponFormFields(prefix,d){
+  d=d||{};
+  var svcs=['dinein','takeout','delivery'];
+  var plts=['aiden','uber_eats','demaecan','menu','rakuten'];
+  var ts=d.target_services||[];
+  var tp=d.target_platforms||[];
+  return '<div class="form-grid"><div class="form-group"><label>クーポンコード *</label><input type="text" id="'+prefix+'CpnCode" value="'+escHtml(d.code||'')+'" required style="text-transform:uppercase"></div>'+
+    '<div class="form-group"><label>名前 *</label><input type="text" id="'+prefix+'CpnName" value="'+escHtml(d.name||'')+'" required></div>'+
+    '<div class="form-group"><label>割引タイプ</label><select id="'+prefix+'CpnDiscType"><option value="percent"'+((!d.discount_type||d.discount_type==='percent')?' selected':'')+'>%</option><option value="fixed"'+(d.discount_type==='fixed'?' selected':'')+'>円</option></select></div>'+
+    '<div class="form-group"><label>割引値</label><input type="number" id="'+prefix+'CpnDiscVal" value="'+(d.discount_value||'')+'" min="0"></div>'+
+    '<div class="form-group"><label>開始日</label><input type="date" id="'+prefix+'CpnStart" value="'+escHtml(d.start_date||'')+'"></div>'+
+    '<div class="form-group"><label>終了日</label><input type="date" id="'+prefix+'CpnEnd" value="'+escHtml(d.end_date||'')+'"></div>'+
+    '<div class="form-group"><label>最大利用回数</label><input type="number" id="'+prefix+'CpnMaxUses" value="'+(d.max_uses||'')+'" min="0" placeholder="無制限"></div>'+
+    '<div class="form-group"><label>利用済み</label><input type="number" value="'+(d.used_count||0)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>対象サービス</label><div style="display:flex;gap:12px;margin-top:4px">'+svcs.map(function(s){return '<label style="font-size:12px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="'+prefix+'CpnSvc" value="'+s+'"'+(ts.indexOf(s)>=0?' checked':'')+'>'+SVC_LABELS[s]+'</label>';}).join('')+'</div></div>'+
+    '<div class="form-group" style="grid-column:1/-1"><label>対象媒体</label><div style="display:flex;gap:12px;margin-top:4px">'+plts.map(function(p){return '<label style="font-size:12px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="'+prefix+'CpnPlt" value="'+p+'"'+(tp.indexOf(p)>=0?' checked':'')+'>'+PLT_LABELS[p]+'</label>';}).join('')+'</div></div></div>';
+}
+
+function getCouponFormData(prefix){
+  return {
+    code:(document.getElementById(prefix+'CpnCode')?.value.trim()||'').toUpperCase(),
+    name:document.getElementById(prefix+'CpnName')?.value.trim()||'',
+    discount_type:document.getElementById(prefix+'CpnDiscType')?.value||'percent',
+    discount_value:parseFloat(document.getElementById(prefix+'CpnDiscVal')?.value)||0,
+    start_date:document.getElementById(prefix+'CpnStart')?.value||null,
+    end_date:document.getElementById(prefix+'CpnEnd')?.value||null,
+    max_uses:parseInt(document.getElementById(prefix+'CpnMaxUses')?.value)||null,
+    target_services:Array.from(document.querySelectorAll('.'+prefix+'CpnSvc:checked')).map(function(c){return c.value;}),
+    target_platforms:Array.from(document.querySelectorAll('.'+prefix+'CpnPlt:checked')).map(function(c){return c.value;})
+  };
+}
+
+async function loadBrandCoupons(brandUuid,brandDisplayId){
+  var el=document.getElementById('brandCouponList-'+brandDisplayId);
+  if(!el)return;
+  try{
+    var {data,error}=await sb.from('brand_coupons').select('*').eq('brand_id',brandUuid).order('created_at',{ascending:false});
+    if(error)throw error;
+    if(!data||!data.length){el.innerHTML='<div class="empty-state">クーポンが登録されていません</div>';return;}
+    el.innerHTML='<table class="data-table"><thead><tr><th>コード</th><th>名前</th><th>割引</th><th>対象サービス</th><th>対象媒体</th><th>期間</th><th></th></tr></thead><tbody>'+data.map(function(c){
+      var disc=c.discount_type==='percent'?c.discount_value+'%':'¥'+c.discount_value;
+      var svcs=(c.target_services||[]).map(function(s){return SVC_LABELS[s]||s;}).join(', ')||'-';
+      var plts=(c.target_platforms||[]).map(function(p){return PLT_LABELS[p]||p;}).join(', ')||'-';
+      var period=(c.start_date||'?')+' 〜 '+(c.end_date||'?');
+      return '<tr><td><code>'+escHtml(c.code)+'</code></td><td>'+escHtml(c.name)+'</td><td class="r fw-800">'+escHtml(disc)+'</td><td style="font-size:11px">'+escHtml(svcs)+'</td><td style="font-size:11px">'+escHtml(plts)+'</td><td>'+escHtml(period)+'</td><td><button class="btn btn-secondary btn-sm" onclick="openEditCouponModal(\''+c.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e74c3c" onclick="deleteBrandCoupon(\''+c.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">削除</button></td></tr>';
+    }).join('')+'</tbody></table>';
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+}
+
+function openAddCouponModal(brandUuid,brandDisplayId){
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>クーポン追加</h3>'+couponFormFields('add',{})+
+    '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="saveBrandCoupon(\''+brandUuid+'\',\''+brandDisplayId+'\')">保存</button></div>');
+}
+
+async function saveBrandCoupon(brandUuid,brandDisplayId){
+  var d=getCouponFormData('add');
+  if(!d.code){showToast('⚠️ クーポンコードは必須です');return;}
+  if(!d.name){showToast('⚠️ 名前は必須です');return;}
+  d.brand_id=brandUuid;d.is_active=true;d.used_count=0;
+  try{
+    var {error}=await sb.from('brand_coupons').insert(d);
+    if(error)throw error;
+    logAudit('add_coupon','brand_coupons',brandUuid,{code:d.code});
+    closeModal();showToast('✅ クーポンを追加しました');
+    loadBrandCoupons(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function openEditCouponModal(couponId,brandUuid,brandDisplayId){
+  try{
+    var {data,error}=await sb.from('brand_coupons').select('*').eq('id',couponId).single();
+    if(error)throw error;
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>クーポン編集</h3>'+couponFormFields('edit',data)+
+      '<div class="form-group" style="margin-top:12px"><label style="font-size:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="editCpnActive"'+(data.is_active?' checked':'')+'> 有効</label></div>'+
+      '<div style="margin-top:16px;text-align:right"><button class="btn btn-primary" onclick="updateBrandCoupon(\''+couponId+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">更新</button></div>');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function updateBrandCoupon(couponId,brandUuid,brandDisplayId){
+  var d=getCouponFormData('edit');
+  if(!d.code){showToast('⚠️ クーポンコードは必須です');return;}
+  if(!d.name){showToast('⚠️ 名前は必須です');return;}
+  d.is_active=document.getElementById('editCpnActive')?.checked??true;
+  try{
+    var {error}=await sb.from('brand_coupons').update(d).eq('id',couponId);
+    if(error)throw error;
+    logAudit('update_coupon','brand_coupons',couponId,{code:d.code});
+    closeModal();showToast('✅ クーポンを更新しました');
+    loadBrandCoupons(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function deleteBrandCoupon(couponId,brandUuid,brandDisplayId){
+  if(!confirm('このクーポンを削除しますか？'))return;
+  try{
+    var {error}=await sb.from('brand_coupons').delete().eq('id',couponId);
+    if(error)throw error;
+    logAudit('delete_coupon','brand_coupons',couponId,{});
+    showToast('✅ クーポンを削除しました');
+    loadBrandCoupons(brandUuid,brandDisplayId);
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
