@@ -199,8 +199,17 @@ async function loadAllData(){
     resRequireCard:r.reservation_require_card, resCancelFee:r.reservation_cancellation_fee,
     resCancelDeadline:r.reservation_cancel_deadline_hours
   }));
-  // ACCOUNTS stays empty for now - will be loaded in Task E2
-  ACCOUNTS=[];
+  // Load staff accounts
+  const {data:accRaw}=await sb.from('staff_accounts').select('id,display_id,display_name,email,role,corp_id,status,last_login,created_at');
+  ACCOUNTS=(accRaw||[]).map(r=>{
+    const corpDid=CORPS.find(c=>c._uuid===r.corp_id);
+    return {
+      _uuid:r.id, id:r.display_id||r.id.substring(0,8),
+      name:r.display_name||'', email:r.email||'', role:r.role||'staff',
+      corpId:corpDid?corpDid.id:'', status:r.status||'active',
+      lastLogin:r.last_login?(new Date(r.last_login).toISOString().split('T')[0]):'—'
+    };
+  });
   // Load service subscriptions into svcState
   svcState={};
   const uuidToDisplayId={};
@@ -1685,10 +1694,17 @@ async function saveAccount(){
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
   const role=document.getElementById('addAccRole').value;
   const corpId=document.getElementById('addAccCorp').value;
-  const newId=genId('ACC-');
-  ACCOUNTS.push({id:newId,name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
-  logAudit('add_account','accounts',null,{name,email,role,corpId});
-  closeModal();showToast('✅ アカウントを追加しました');renderPage();
+  const corp=CORPS.find(c=>c.id===corpId);
+  try{
+    const {data,error}=await sb.from('staff_accounts').insert({
+      display_name:name, email:email, role:role,
+      corp_id:corp?corp._uuid:null, status:'active'
+    }).select().single();
+    if(error)throw error;
+    ACCOUNTS.push({_uuid:data.id,id:data.display_id||data.id.substring(0,8),name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
+    logAudit('add_account','staff_accounts',data.id,{name,email,role,corpId});
+    closeModal();showToast('✅ アカウントを追加しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 function openEditAccountModal(accId){
   const a=ACCOUNTS.find(x=>x.id===accId);
@@ -1708,17 +1724,25 @@ async function saveEditAccount(accId){
   const email=document.getElementById('editAccEmail').value.trim();
   const role=document.getElementById('editAccRole').value;
   if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  a.name=name;a.email=email;a.role=role;
-  logAudit('edit_account','accounts',accId,{name,email,role});
-  closeModal();showToast('✅ アカウントを更新しました');renderPage();
+  try{
+    const {error}=await sb.from('staff_accounts').update({display_name:name,email:email,role:role}).eq('id',a._uuid);
+    if(error)throw error;
+    a.name=name;a.email=email;a.role=role;
+    logAudit('edit_account','staff_accounts',a._uuid,{name,email,role});
+    closeModal();showToast('✅ アカウントを更新しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 async function deleteAccount(accId){
   const a=ACCOUNTS.find(x=>x.id===accId);
   if(!a)return;
   if(!confirm(a.name+'のアカウントを削除しますか？'))return;
-  ACCOUNTS.splice(ACCOUNTS.indexOf(a),1);
-  logAudit('delete_account','accounts',accId,{name:a.name});
-  showToast('✅ アカウントを削除しました');renderPage();
+  try{
+    const {error}=await sb.from('staff_accounts').delete().eq('id',a._uuid);
+    if(error)throw error;
+    ACCOUNTS.splice(ACCOUNTS.indexOf(a),1);
+    logAudit('delete_account','staff_accounts',a._uuid,{name:a.name});
+    showToast('✅ アカウントを削除しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 async function saveCorpBasic(corpDisplayId){
