@@ -5,9 +5,13 @@ import { supabase } from '../_lib/supabase.js';
 // ---------------------------------------------------------------------------
 // Supported entity types and their configuration
 // ---------------------------------------------------------------------------
+// Allowed product flag values (D-47)
+const PRODUCT_FLAGS = ['おすすめ', '新商品', '期間限定', '人気'];
+
 const TYPE_CONFIG = {
   corporation: {
     table: 'corporations',
+    label: '法人',
     requiredFields: ['name'],
     upsertLookup: lookupCorporation,
     resolveRefs: noopResolve,
@@ -15,6 +19,7 @@ const TYPE_CONFIG = {
   },
   brand: {
     table: 'brands',
+    label: 'ブランド',
     requiredFields: ['name', 'slug', 'corp_name'],
     upsertLookup: lookupBrand,
     resolveRefs: resolveBrandRefs,
@@ -22,6 +27,7 @@ const TYPE_CONFIG = {
   },
   store: {
     table: 'stores',
+    label: '店舗',
     requiredFields: ['name', 'brand_slug'],
     upsertLookup: lookupStore,
     resolveRefs: resolveStoreRefs,
@@ -29,6 +35,7 @@ const TYPE_CONFIG = {
   },
   menu_category: {
     table: 'categories',
+    label: 'メニューカテゴリ',
     requiredFields: ['brand_slug', 'name'],
     upsertLookup: lookupCategory,
     resolveRefs: resolveCategoryRefs,
@@ -36,6 +43,7 @@ const TYPE_CONFIG = {
   },
   menu_product: {
     table: 'products',
+    label: 'メニュー商品',
     requiredFields: ['brand_slug', 'category_name', 'name'],
     upsertLookup: lookupProduct,
     resolveRefs: resolveProductRefs,
@@ -43,6 +51,7 @@ const TYPE_CONFIG = {
   },
   menu_size: {
     table: 'product_sizes',
+    label: '商品サイズ',
     requiredFields: ['brand_slug', 'product_name', 'label', 'price'],
     upsertLookup: lookupSize,
     resolveRefs: resolveSizeRefs,
@@ -71,13 +80,22 @@ export default async function handler(req, res) {
   const route = segments[0];
 
   if (route === 'preview' && req.method === 'POST') {
-    return handlePreview(req, res);
+    return handlePreview(req, res, auth);
   }
   if (route === 'execute' && req.method === 'POST') {
-    return handleExecute(req, res);
+    return handleExecute(req, res, auth);
+  }
+  if (route === 'delete-preview' && req.method === 'POST') {
+    return handleDeletePreview(req, res, auth);
+  }
+  if (route === 'delete-execute' && req.method === 'POST') {
+    return handleDeleteExecute(req, res, auth);
   }
   if (route === 'export' && req.method === 'GET') {
     return handleExport(req, res);
+  }
+  if (route === 'fuzzy-brand' && req.method === 'POST') {
+    return handleFuzzyBrand(req, res);
   }
 
   return error(res, 'Not found', 404);
@@ -86,7 +104,7 @@ export default async function handler(req, res) {
 // ---------------------------------------------------------------------------
 // POST /api/bulk-import/preview
 // ---------------------------------------------------------------------------
-async function handlePreview(req, res) {
+async function handlePreview(req, res, auth) {
   const { type, rows } = req.body || {};
 
   const validation = validateInput(type, rows);
@@ -153,7 +171,7 @@ async function handlePreview(req, res) {
 // ---------------------------------------------------------------------------
 // POST /api/bulk-import/execute
 // ---------------------------------------------------------------------------
-async function handleExecute(req, res) {
+async function handleExecute(req, res, auth) {
   const { type, rows } = req.body || {};
 
   const validation = validateInput(type, rows);
@@ -248,7 +266,203 @@ async function handleExecute(req, res) {
     }
   }
 
+  // Audit log
+  await writeAuditLog(auth, {
+    action: 'bulk_import_execute',
+    entity_type: type,
+    details: { inserted, updated, skipped, error_count: errors.length },
+    log_level: errors.length > 0 ? 'WARN' : 'INFO',
+  });
+
   return ok(res, { inserted, updated, skipped, errors });
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/bulk-import/delete-preview
+// Preview rows targeted for deletion. Same lookup mechanism as preview,
+// but returns existing records flagged as "will delete".
+// ---------------------------------------------------------------------------
+async function handleDeletePreview(req, res, auth) {
+  const { type, rows } = req.body || {};
+  const validation = validateInput(type, rows);
+  if (validation) return error(res, validation);
+
+  const config = TYPE_CONFIG[type];
+  const items = [];
+  const errors = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    try {
+      const resolved = await config.resolveRefs(row);
+      if (resolved._error) {
+        errors.push({ row: i, message: resolved._error });
+        continue;
+      }
+      const existing = await config.upsertLookup(resolved);
+      if (!existing) {
+        errors.push({ row: i, message: '該当レコードが見つかりません' });
+        continue;
+      }
+      items.push({ ...resolved, _existingId: existing.id || null });
+    } catch (e) {
+      errors.push({ row: i, message: e.message });
+    }
+  }
+
+  return ok(res, {
+    items,
+    errors,
+    summary: { total: rows.length, deleteCount: items.length, errorCount: errors.length },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/bulk-import/delete-execute
+// Requires body.confirm === true to prevent accidental calls.
+// ---------------------------------------------------------------------------
+async function handleDeleteExecute(req, res, auth) {
+  const { type, rows, confirm } = req.body || {};
+  if (confirm !== true) {
+    return error(res, '削除実行には confirm:true が必要です');
+  }
+  const validation = validateInput(type, rows);
+  if (validation) return error(res, validation);
+
+  const config = TYPE_CONFIG[type];
+  let deleted = 0;
+  let skipped = 0;
+  const errors = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    try {
+      const resolved = await config.resolveRefs(row);
+      if (resolved._error) {
+        errors.push({ data: row, message: resolved._error });
+        skipped++;
+        continue;
+      }
+      const existing = await config.upsertLookup(resolved);
+      if (!existing) {
+        errors.push({ data: row, message: '該当レコードが見つかりません' });
+        skipped++;
+        continue;
+      }
+
+      if (type === 'menu_size') {
+        const { error: delErr } = await supabase
+          .from(config.table)
+          .delete()
+          .eq('product_id', existing.product_id)
+          .eq('name', existing.name);
+        if (delErr) {
+          errors.push({ data: row, message: delErr.message });
+          skipped++;
+          continue;
+        }
+      } else {
+        const { error: delErr } = await supabase
+          .from(config.table)
+          .delete()
+          .eq('id', existing.id);
+        if (delErr) {
+          errors.push({ data: row, message: delErr.message });
+          skipped++;
+          continue;
+        }
+      }
+      deleted++;
+    } catch (e) {
+      errors.push({ data: row, message: e.message });
+      skipped++;
+    }
+  }
+
+  await writeAuditLog(auth, {
+    action: 'bulk_import_delete',
+    entity_type: type,
+    details: { deleted, skipped, error_count: errors.length },
+    log_level: errors.length > 0 ? 'WARN' : 'INFO',
+  });
+
+  return ok(res, { deleted, skipped, errors });
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/bulk-import/fuzzy-brand
+// Return similar brand names for a given input string (Levenshtein-based).
+// Used by the UI to warn on possible typos.
+// ---------------------------------------------------------------------------
+async function handleFuzzyBrand(req, res) {
+  const { name } = req.body || {};
+  if (!name || typeof name !== 'string') {
+    return error(res, 'name が必要です');
+  }
+  const target = name.trim();
+  const { data: brands } = await supabase
+    .from('brands')
+    .select('id, name, slug')
+    .limit(2000);
+  if (!brands) return ok(res, { matches: [] });
+
+  // Exact match first
+  const exact = brands.find((b) => b.name === target);
+  if (exact) {
+    return ok(res, { exact: exact, matches: [] });
+  }
+
+  // Fuzzy: Levenshtein distance <= max(2, floor(length/4))
+  const threshold = Math.max(2, Math.floor(target.length / 4));
+  const matches = [];
+  for (const b of brands) {
+    const dist = levenshtein(target, b.name);
+    if (dist > 0 && dist <= threshold) {
+      matches.push({ name: b.name, slug: b.slug, distance: dist });
+    }
+  }
+  matches.sort((a, b) => a.distance - b.distance);
+  return ok(res, { exact: null, matches: matches.slice(0, 5) });
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1]
+        ? prev
+        : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = tmp;
+    }
+  }
+  return dp[n];
+}
+
+// ---------------------------------------------------------------------------
+// Audit log writer (best-effort; failures do not break the request)
+// ---------------------------------------------------------------------------
+async function writeAuditLog(auth, payload) {
+  try {
+    await supabase.from('audit_logs').insert({
+      action: payload.action,
+      entity_type: payload.entity_type,
+      actor_email: auth?.user?.email || null,
+      user_email: auth?.user?.email || null,
+      details: payload.details || {},
+      log_level: payload.log_level || 'INFO',
+    });
+  } catch (_e) {
+    // Audit log is best-effort; swallow errors
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -331,7 +545,7 @@ async function resolveCategoryRefs(row) {
 }
 
 async function resolveProductRefs(row) {
-  const { brand_slug, category_name, ...rest } = row;
+  const { brand_slug, category_name, menu_pattern_code, tags, ...rest } = row;
   const brandId = await resolveBrandSlug(brand_slug);
   if (!brandId) return { _error: 'ブランドが見つかりません: ' + brand_slug };
 
@@ -343,7 +557,36 @@ async function resolveProductRefs(row) {
     .maybeSingle();
   if (!cat) return { _error: 'カテゴリが見つかりません: ' + category_name };
 
-  return { ...rest, brand_id: brandId, category_id: cat.id };
+  const out = { ...rest, brand_id: brandId, category_id: cat.id };
+
+  // Resolve menu_pattern_code (D-39) — optional
+  if (menu_pattern_code) {
+    const { data: mp } = await supabase
+      .from('menu_patterns')
+      .select('id')
+      .eq('brand_id', brandId)
+      .eq('code', menu_pattern_code)
+      .maybeSingle();
+    if (!mp) return { _error: 'メニューパターンが見つかりません: ' + menu_pattern_code };
+    out.menu_pattern_id = mp.id;
+  }
+
+  // Product flags (D-47) — comma/pipe-separated string → string[] for products.tags
+  if (tags !== undefined && tags !== '') {
+    let tagList;
+    if (Array.isArray(tags)) {
+      tagList = tags;
+    } else {
+      tagList = String(tags).split(/[,|、]/).map((s) => s.trim()).filter(Boolean);
+    }
+    const invalid = tagList.filter((t) => !PRODUCT_FLAGS.includes(t));
+    if (invalid.length > 0) {
+      return { _error: '無効な商品フラグ: ' + invalid.join(', ') + '（許可: ' + PRODUCT_FLAGS.join('/') + '）' };
+    }
+    out.tags = tagList;
+  }
+
+  return out;
 }
 
 async function resolveSizeRefs(row) {
@@ -464,18 +707,30 @@ function buildPayload(type, resolved) {
     case 'corporation':
       return pick(cleaned, ['name', 'representative', 'status', 'website_url', 'recruit_url']);
     case 'brand':
-      return pick(cleaned, ['corp_id', 'name', 'slug', 'tagline', 'main_color', 'logo_emoji', 'font']);
+      return pick(cleaned, [
+        'corp_id', 'name', 'slug', 'tagline',
+        'main_color', 'secondary_color', 'logo_emoji', 'custom_domain',
+      ]);
     case 'store':
       return pick(cleaned, [
         'brand_id', 'name', 'slug', 'address', 'phone', 'email', 'genre',
         'lat', 'lng', 'has_takeout', 'has_delivery', 'reservation_enabled',
         'min_order_amount', 'prep_time_minutes',
+        // Phase 3 facility columns
+        'seats', 'smoking_policy', 'children_policy',
+        'service_charge_type', 'service_charge_value',
+        // Reservation extras
+        'reservation_confirmation_mode', 'reservation_require_card',
+        'reservation_cancellation_fee', 'reservation_cancel_deadline_hours',
+        'is_paused',
       ]);
     case 'menu_category':
       return pick(cleaned, ['brand_id', 'name', 'sort_order']);
     case 'menu_product':
       return pick(cleaned, [
-        'brand_id', 'category_id', 'name', 'description', 'sort_order', 'sale_status',
+        'brand_id', 'category_id', 'name', 'description',
+        'price', 'image_url', 'sort_order', 'is_available',
+        'menu_pattern_id', 'tags',
       ]);
     case 'menu_size':
       return pick(cleaned, ['product_id', 'name', 'price', 'sort_order']);
@@ -510,7 +765,7 @@ async function exportCorporations() {
 async function exportBrands() {
   const { data, error: err } = await supabase
     .from('brands')
-    .select('id, name, slug, tagline, main_color, logo_emoji, font, corporations(name)')
+    .select('id, name, slug, tagline, main_color, secondary_color, logo_emoji, custom_domain, corporations(name)')
     .order('name')
     .limit(5000);
   if (err) throw new Error(err.message);
@@ -520,22 +775,29 @@ async function exportBrands() {
     corp_name: b.corporations?.name || '',
     tagline: b.tagline,
     main_color: b.main_color,
+    secondary_color: b.secondary_color,
     logo_emoji: b.logo_emoji,
-    font: b.font,
+    custom_domain: b.custom_domain,
   }));
 }
 
 async function exportStores() {
   const { data, error: err } = await supabase
     .from('stores')
-    .select('id, name, slug, address, phone, email, genre, lat, lng, has_takeout, has_delivery, reservation_enabled, min_order_amount, prep_time_minutes, brands(slug)')
+    .select(
+      'id, name, slug, address, phone, email, genre, lat, lng, ' +
+      'has_takeout, has_delivery, reservation_enabled, min_order_amount, prep_time_minutes, ' +
+      'seats, smoking_policy, children_policy, service_charge_type, service_charge_value, ' +
+      'reservation_confirmation_mode, reservation_require_card, reservation_cancellation_fee, ' +
+      'reservation_cancel_deadline_hours, is_paused, brands(slug)'
+    )
     .order('name')
     .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((s) => ({
+    brand_slug: s.brands?.slug || '',
     name: s.name,
     slug: s.slug,
-    brand_slug: s.brands?.slug || '',
     address: s.address,
     phone: s.phone,
     email: s.email,
@@ -547,6 +809,16 @@ async function exportStores() {
     reservation_enabled: s.reservation_enabled,
     min_order_amount: s.min_order_amount,
     prep_time_minutes: s.prep_time_minutes,
+    seats: s.seats,
+    smoking_policy: s.smoking_policy,
+    children_policy: s.children_policy,
+    service_charge_type: s.service_charge_type,
+    service_charge_value: s.service_charge_value,
+    reservation_confirmation_mode: s.reservation_confirmation_mode,
+    reservation_require_card: s.reservation_require_card,
+    reservation_cancellation_fee: s.reservation_cancellation_fee,
+    reservation_cancel_deadline_hours: s.reservation_cancel_deadline_hours,
+    is_paused: s.is_paused,
   }));
 }
 
@@ -567,17 +839,24 @@ async function exportCategories() {
 async function exportProducts() {
   const { data, error: err } = await supabase
     .from('products')
-    .select('id, name, description, sort_order, sale_status, brands(slug), categories(name)')
+    .select(
+      'id, name, description, price, image_url, sort_order, is_available, tags, ' +
+      'brands(slug), categories(name), menu_patterns(code)'
+    )
     .order('sort_order')
     .limit(5000);
   if (err) throw new Error(err.message);
   return (data || []).map((p) => ({
-    name: p.name,
     brand_slug: p.brands?.slug || '',
     category_name: p.categories?.name || '',
+    name: p.name,
     description: p.description,
+    price: p.price,
+    image_url: p.image_url,
     sort_order: p.sort_order,
-    sale_status: p.sale_status,
+    is_available: p.is_available,
+    menu_pattern_code: p.menu_patterns?.code || '',
+    tags: Array.isArray(p.tags) ? p.tags.join('|') : '',
   }));
 }
 

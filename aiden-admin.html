@@ -438,7 +438,7 @@ function renderPage(){
   else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
   else if(v.type==='auditlog'){el.innerHTML=renderAuditLogPage();loadAuditLogs();}
-  else if(v.type==='bulk')el.innerHTML=renderBulkPage();
+  else if(v.type==='bulk'){_bulkDbType=null;_bulkDbMode='upsert';_bulkDbStep=1;_bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;_bulkDbDeleteSelected=null;_bulkDbFuzzyWarnings=[];el.innerHTML=renderBulkPage();}
   else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
@@ -3399,24 +3399,40 @@ function confirmBulkImport(){
 }
 
 // ===== DB-BACKED BULK IMPORT (データ一括管理) =====
+// 許可される商品フラグ（D-47）— API側 PRODUCT_FLAGS と一致させる
+const BULK_PRODUCT_FLAGS=['おすすめ','新商品','期間限定','人気'];
+
 const BULK_TEMPLATES={
   corporation:{
     filename:'aiden_corp_template.csv',format:'csv',
-    headers:['法人名*','代表者*','ステータス(active/trial)','会社HP URL','採用ページURL'],
+    headers:['法人名*','代表者','ステータス(active/trial)','会社HP URL','採用ページURL'],
     keys:['name','representative','status','website_url','recruit_url'],
     sample:[['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
   },
   brand:{
     filename:'aiden_brand_template.csv',format:'csv',
-    headers:['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','ロゴ絵文字','フォント'],
-    keys:['corp_name','name','slug','tagline','main_color','logo_emoji','font'],
-    sample:[['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','🥩','Noto Sans JP']],
+    headers:['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','サブカラー(hex)','ロゴ絵文字','カスタムドメイン'],
+    keys:['corp_name','name','slug','tagline','main_color','secondary_color','logo_emoji','custom_domain'],
+    sample:[['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','#F5A623','🥩','www.example.com']],
   },
   store:{
     filename:'aiden_store_template.xlsx',format:'xlsx',
-    headers:['ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)'],
-    keys:['brand_slug','name','slug','address','phone','email','genre','lat','lng','has_takeout','has_delivery','reservation_enabled','min_order_amount','prep_time_minutes'],
-    sample:[['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005','ON','OFF','ON','1500','30']],
+    headers:[
+      'ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度',
+      'テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)',
+      '座席数','喫煙(no_smoking/all_smoking/partial)','子連れ(allowed/not_allowed/consultation)',
+      'サービス料種別(percent/yen)','サービス料値','予約確認モード(auto/manual)',
+      'カード要否(ON/OFF)','キャンセル料(円)','キャンセル締切(時間)','営業停止(ON/OFF)'
+    ],
+    keys:[
+      'brand_slug','name','slug','address','phone','email','genre','lat','lng',
+      'has_takeout','has_delivery','reservation_enabled','min_order_amount','prep_time_minutes',
+      'seats','smoking_policy','children_policy','service_charge_type','service_charge_value',
+      'reservation_confirmation_mode','reservation_require_card','reservation_cancellation_fee',
+      'reservation_cancel_deadline_hours','is_paused'
+    ],
+    sample:[['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005',
+      'ON','OFF','ON','1500','30','24','no_smoking','not_allowed','percent','10','manual','OFF','0','72','OFF']],
   },
   menu_category:{
     filename:'aiden_menu_category_template.xlsx',format:'xlsx',
@@ -3426,9 +3442,12 @@ const BULK_TEMPLATES={
   },
   menu_product:{
     filename:'aiden_menu_product_template.xlsx',format:'xlsx',
-    headers:['ブランドスラッグ*','カテゴリ名*','商品名*','説明','基本価格','表示順','利用可能(ON/OFF)'],
-    keys:['brand_slug','category_name','name','description','base_price','sort_order','sale_status'],
-    sample:[['sumibite','焼肉','特選カルビ','厳選A5ランク黒毛和牛','1280','1','ON']],
+    headers:[
+      'ブランドスラッグ*','カテゴリ名*','商品名*','説明','価格','画像URL','表示順','利用可能(ON/OFF)',
+      'メニューパターンコード(MP-xxx)','商品フラグ(おすすめ|新商品|期間限定|人気、複数は|区切り)'
+    ],
+    keys:['brand_slug','category_name','name','description','price','image_url','sort_order','is_available','menu_pattern_code','tags'],
+    sample:[['sumibite','焼肉','特選カルビ','厳選A5ランク黒毛和牛','1280','https://example.com/img.jpg','1','ON','MP-001','おすすめ|人気']],
   },
   menu_size:{
     filename:'aiden_menu_size_template.xlsx',format:'xlsx',
@@ -3439,7 +3458,15 @@ const BULK_TEMPLATES={
 };
 
 const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ'};
-let _bulkDbType=null;let _bulkDbItems=null;let _bulkDbErrors=[];
+// State for the 3-step wizard
+let _bulkDbType=null;          // selected entity type
+let _bulkDbMode='upsert';      // 'upsert' (新規+修正) or 'delete'
+let _bulkDbStep=1;             // 1: type/mode/upload, 2: preview, 3: result
+let _bulkDbItems=null;         // preview result items
+let _bulkDbErrors=[];          // preview errors
+let _bulkDbOriginalObjects=null; // raw parsed rows (for "before→after" diff)
+let _bulkDbDeleteSelected=null;  // Set of selected row indices for delete mode
+let _bulkDbFuzzyWarnings=[];     // brand fuzzy match warnings
 
 // ===== AUDIT LOG =====
 let auditLogPage=1;
@@ -3523,35 +3550,97 @@ function renderAuditPager(total){
   pager.innerHTML=h;
 }
 
+function renderBulkStepIndicator(step){
+  function node(n,label){
+    var active=n===step;var done=n<step;
+    var bg=active?'var(--primary)':(done?'#00b894':'#dfe6e9');
+    var col=active||done?'#fff':'#636e72';
+    return '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">'+(done?'✓':n)+'</div>'+
+      '<span style="font-size:12px;font-weight:'+(active?'700':'500')+';color:'+(active?'var(--text)':'var(--text-light)')+'">'+label+'</span>'+
+    '</div>';
+  }
+  return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:#f8f9fa;border-radius:8px">'+
+    node(1,'種別・ファイル選択')+
+    '<div style="flex:1;height:2px;background:#dfe6e9"></div>'+
+    node(2,'プレビュー・検証')+
+    '<div style="flex:1;height:2px;background:#dfe6e9"></div>'+
+    node(3,'実行・結果')+
+  '</div>';
+}
+
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
-  Object.keys(BULK_TEMPLATES).forEach(function(k){opts+='<option value="'+k+'">'+esc(BULK_TYPE_LABELS[k])+'</option>';});
-  return '<div class="page-title">データ一括管理</div><div class="page-subtitle">CSV/Excelで法人・ブランド・店舗・メニューデータを一括登録・更新（DB連携）</div>'+
-  '<div class="card"><div class="card-title">📥 一括インポート</div>'+
-  '<div class="form-grid" style="grid-template-columns:1fr auto auto;gap:12px;align-items:end;margin-bottom:20px">'+
-  '<div class="form-group"><label>データ種別</label><select id="bulkDbType" onchange="onBulkTypeChange()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">'+opts+'</select></div>'+
-  '<div class="form-group"><label>&nbsp;</label><button class="btn btn-s btn-sm" id="btnDlEmpty" onclick="downloadBulkTemplate(false)" style="display:none">📋 空テンプレート</button></div>'+
-  '<div class="form-group"><label>&nbsp;</label><button class="btn btn-s btn-sm" id="btnDlData" onclick="downloadBulkTemplate(true)" style="display:none">📥 既存データ付き</button></div>'+
-  '</div>'+
-  '<div id="bulkDbUploadArea" style="display:none">'+
-  '<div class="upload-zone" id="bulkDbDropZone" onclick="document.getElementById(\'bulkDbFileInput\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="event.preventDefault();this.classList.remove(\'drag\');handleBulkFile(event.dataTransfer.files[0])">'+
-  '<div class="uz-icon">📎</div><p>クリックまたはドラッグ&ドロップ<br><span style="font-size:10px">CSV (.csv) / Excel (.xlsx)</span></p></div>'+
-  '<input type="file" id="bulkDbFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkFile(this.files[0])">'+
-  '</div></div>'+
-  '<div id="bulkDbPreview"></div>'+
-  '<div id="bulkDbProgress" style="display:none" class="card"><div class="card-title">処理中...</div><div style="background:#f0f0f0;border-radius:4px;height:24px;overflow:hidden"><div id="bulkDbProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width .3s;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff"></div></div><div id="bulkDbProgressText" style="font-size:11px;color:var(--text-light);margin-top:8px"></div></div>'+
-  '<div id="bulkDbResult"></div>';
+  Object.keys(BULK_TEMPLATES).forEach(function(k){opts+='<option value="'+k+'"'+(_bulkDbType===k?' selected':'')+'>'+esc(BULK_TYPE_LABELS[k])+'</option>';});
+  return '<div class="page-title">データ一括管理</div>'+
+    '<div class="page-subtitle">CSV/Excelで法人・ブランド・店舗・メニューを一括登録・修正・削除（DB連携）</div>'+
+    renderBulkStepIndicator(_bulkDbStep)+
+    '<div class="card" id="bulkStep1Card"'+(_bulkDbStep===1?'':' style="display:none"')+'>'+
+      '<div class="card-title">📥 Step 1: 種別・モード・ファイル選択</div>'+
+      '<div class="form-grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'+
+        '<div class="form-group"><label>データ種別</label>'+
+          '<select id="bulkDbType" onchange="onBulkTypeChange()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">'+opts+'</select>'+
+        '</div>'+
+        '<div class="form-group"><label>モード</label>'+
+          '<div style="display:flex;gap:16px;margin-top:6px">'+
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">'+
+              '<input type="radio" name="bulkMode" value="upsert"'+(_bulkDbMode==='upsert'?' checked':'')+' onchange="onBulkModeChange(\'upsert\')">'+
+              '新規登録・修正</label>'+
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--danger)">'+
+              '<input type="radio" name="bulkMode" value="delete"'+(_bulkDbMode==='delete'?' checked':'')+' onchange="onBulkModeChange(\'delete\')">'+
+              '🗑️ 削除</label>'+
+          '</div>'+
+          '<div id="bulkModeHint" style="font-size:10px;color:var(--text-light);margin-top:4px">'+
+            (_bulkDbMode==='delete'
+              ? '⚠️ 削除モードは復元不可。プレビューで対象を選択してから実行します。'
+              : '空欄のセルは「変更なし」として扱われます（上書きしません）。')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="bulkTemplateArea" style="display:'+(_bulkDbType?'':'none')+';padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:16px">'+
+        '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px">テンプレートをダウンロードして編集してください</div>'+
+        '<div class="btn-group">'+
+          '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(false)">📋 空テンプレート</button>'+
+          '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(true)">📥 既存データ付き</button>'+
+        '</div>'+
+      '</div>'+
+      '<div id="bulkDbUploadArea" style="display:'+(_bulkDbType?'':'none')+'">'+
+        '<div class="upload-zone" id="bulkDbDropZone" onclick="document.getElementById(\'bulkDbFileInput\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="event.preventDefault();this.classList.remove(\'drag\');handleBulkFile(event.dataTransfer.files[0])">'+
+          '<div class="uz-icon">📎</div><p>クリックまたはドラッグ&ドロップ<br><span style="font-size:10px">CSV (.csv) / Excel (.xlsx)</span></p>'+
+        '</div>'+
+        '<input type="file" id="bulkDbFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkFile(this.files[0])">'+
+      '</div>'+
+    '</div>'+
+    '<div id="bulkStep2Card"'+(_bulkDbStep===2?'':' style="display:none"')+'></div>'+
+    '<div id="bulkDbProgress" style="display:none" class="card"><div class="card-title">処理中...</div><div style="background:#f0f0f0;border-radius:4px;height:24px;overflow:hidden"><div id="bulkDbProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width .3s;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff"></div></div><div id="bulkDbProgressText" style="font-size:11px;color:var(--text-light);margin-top:8px"></div></div>'+
+    '<div id="bulkStep3Card"'+(_bulkDbStep===3?'':' style="display:none"')+'></div>';
+}
+
+function resetBulkWizard(){
+  _bulkDbType=null;_bulkDbMode='upsert';_bulkDbStep=1;
+  _bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;
+  _bulkDbDeleteSelected=null;_bulkDbFuzzyWarnings=[];
+  var el=document.getElementById('content');
+  if(el)el.innerHTML=renderBulkPage();
+}
+
+function onBulkModeChange(mode){
+  _bulkDbMode=mode;
+  var hint=document.getElementById('bulkModeHint');
+  if(hint){
+    hint.innerHTML=mode==='delete'
+      ? '⚠️ 削除モードは復元不可。プレビューで対象を選択してから実行します。'
+      : '空欄のセルは「変更なし」として扱われます（上書きしません）。';
+  }
 }
 
 function onBulkTypeChange(){
   var sel=document.getElementById('bulkDbType').value;
-  _bulkDbType=sel||null;_bulkDbItems=null;_bulkDbErrors=[];
-  document.getElementById('btnDlEmpty').style.display=sel?'':'none';
-  document.getElementById('btnDlData').style.display=sel?'':'none';
-  document.getElementById('bulkDbUploadArea').style.display=sel?'':'none';
-  document.getElementById('bulkDbPreview').innerHTML='';
-  document.getElementById('bulkDbResult').innerHTML='';
-  document.getElementById('bulkDbProgress').style.display='none';
+  _bulkDbType=sel||null;_bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;_bulkDbFuzzyWarnings=[];
+  var tArea=document.getElementById('bulkTemplateArea');
+  var uArea=document.getElementById('bulkDbUploadArea');
+  if(tArea)tArea.style.display=sel?'':'none';
+  if(uArea)uArea.style.display=sel?'':'none';
   var fi=document.getElementById('bulkDbFileInput');if(fi)fi.value='';
 }
 
@@ -3602,9 +3691,17 @@ function handleBulkFile(file){
   if(!file||!_bulkDbType)return;
   var type=_bulkDbType;var tmpl=BULK_TEMPLATES[type];
   var ext=file.name.split('.').pop().toLowerCase();
-  document.getElementById('bulkDbPreview').innerHTML='<div class="card"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 12px"></div><div style="font-size:12px;color:var(--text-light)">ファイルを読み込み中...</div></div></div>';
-  document.getElementById('bulkDbResult').innerHTML='';
-  document.getElementById('bulkDbProgress').style.display='none';
+  // Move to step 2 with loading state
+  _bulkDbStep=2;
+  var step2=document.getElementById('bulkStep2Card');
+  if(step2){
+    step2.style.display='';
+    step2.innerHTML='<div class="card"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 12px"></div><div style="font-size:12px;color:var(--text-light)">ファイルを読み込み中...</div></div></div>';
+  }
+  var el=document.getElementById('content');if(el)el.innerHTML=renderBulkPage();
+  // After re-render, set loader in step2
+  step2=document.getElementById('bulkStep2Card');
+  if(step2)step2.innerHTML='<div class="card"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 12px"></div><div style="font-size:12px;color:var(--text-light)">ファイルを読み込み中...</div></div></div>';
   if(ext==='csv'){
     var reader=new FileReader();
     reader.onload=function(e){var rawRows=parseCSVRows(e.target.result);parsedToPreview(type,tmpl,rawRows);};
@@ -3613,11 +3710,11 @@ function handleBulkFile(file){
     var reader2=new FileReader();
     reader2.onload=function(e){
       try{var wb=XLSX.read(e.target.result,{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var rawRows=XLSX.utils.sheet_to_json(ws,{header:1});parsedToPreview(type,tmpl,rawRows);}
-      catch(err){document.getElementById('bulkDbPreview').innerHTML='<div class="upload-result err">❌ Excel読み込み失敗: '+esc(err.message)+'</div>';}
+      catch(err){var s=document.getElementById('bulkStep2Card');if(s)s.innerHTML='<div class="upload-result err">❌ Excel読み込み失敗: '+esc(err.message)+'</div>';}
     };
     reader2.readAsArrayBuffer(file);
   }else{
-    document.getElementById('bulkDbPreview').innerHTML='<div class="upload-result err">❌ CSVまたはExcel(.xlsx)を選択してください</div>';
+    var s2=document.getElementById('bulkStep2Card');if(s2)s2.innerHTML='<div class="upload-result err">❌ CSVまたはExcel(.xlsx)を選択してください</div>';
   }
 }
 
@@ -3631,7 +3728,8 @@ function parseCSVRows(text){
 }
 
 async function parsedToPreview(type,tmpl,rawRows){
-  var pv=document.getElementById('bulkDbPreview');
+  var pv=document.getElementById('bulkStep2Card');
+  if(!pv)return;
   if(rawRows.length<2){pv.innerHTML='<div class="upload-result err">❌ ヘッダー行+データ行が必要です</div>';return;}
   var dataRows=rawRows.slice(1).filter(function(r){return r.some(function(c){return c&&String(c).trim();});});
   if(!dataRows.length){pv.innerHTML='<div class="upload-result err">❌ データ行がありません</div>';return;}
@@ -3640,70 +3738,193 @@ async function parsedToPreview(type,tmpl,rawRows){
     var obj={};
     tmpl.keys.forEach(function(k,idx){
       var val=row[idx]!==undefined&&row[idx]!==null?String(row[idx]).trim():'';
-      // ON/OFF → boolean conversion for store fields
+      // ON/OFF → boolean conversion
       if(val==='ON')val=true;else if(val==='OFF')val=false;
       obj[k]=val;
     });
     return obj;
   });
-  // Call API preview
+  _bulkDbOriginalObjects=objects.slice();
   pv.innerHTML='<div class="card"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto 12px"></div><div style="font-size:12px;color:var(--text-light)">APIプレビュー中... ('+objects.length+'件)</div></div></div>';
   try{
     var token=(await sb.auth.getSession()).data.session?.access_token;
-    var res=await fetch('/api/bulk-import/preview',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({type:type,rows:objects})});
+    var endpoint=_bulkDbMode==='delete'?'/api/bulk-import/delete-preview':'/api/bulk-import/preview';
+    var res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({type:type,rows:objects})});
     var json=await res.json();
     if(!json.success){pv.innerHTML='<div class="upload-result err">❌ '+esc(json.error)+'</div>';return;}
+    // Brand fuzzy check for upsert mode when type=brand
+    if(_bulkDbMode==='upsert'&&type==='brand'){
+      _bulkDbFuzzyWarnings=await runBrandFuzzyCheck(json.data.items||[]);
+    }else{
+      _bulkDbFuzzyWarnings=[];
+    }
     renderBulkPreviewResult(type,tmpl,json.data,objects);
   }catch(e){pv.innerHTML='<div class="upload-result err">❌ APIエラー: '+esc(e.message)+'</div>';}
 }
 
+// Check each inserted brand row for similar existing brand names
+async function runBrandFuzzyCheck(items){
+  var warnings=[];
+  var token=(await sb.auth.getSession()).data.session?.access_token;
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    if(it._action!=='insert'||!it.name)continue;
+    try{
+      var res=await fetch('/api/bulk-import/fuzzy-brand',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:it.name})});
+      var json=await res.json();
+      if(json.success&&json.data.matches&&json.data.matches.length){
+        warnings.push({row:i,name:it.name,matches:json.data.matches});
+      }
+    }catch(_e){}
+  }
+  return warnings;
+}
+
+// Build a "before → after" diff for an update row using existing DB value vs new value
+function renderDiffForItem(tmpl,item,originalObj){
+  var diffs=[];
+  tmpl.keys.forEach(function(k){
+    if(k==='corp_name'||k==='brand_slug'||k==='category_name'||k==='product_name')return;
+    var newVal=originalObj?originalObj[k]:undefined;
+    if(newVal===undefined||newVal===''||newVal===null)return; // blank = no change
+    diffs.push({key:k,value:newVal});
+  });
+  return diffs;
+}
+
 function renderBulkPreviewResult(type,tmpl,result,objects){
-  var pv=document.getElementById('bulkDbPreview');
-  _bulkDbItems=result.items;_bulkDbErrors=result.errors;
+  var pv=document.getElementById('bulkStep2Card');
+  if(!pv)return;
+  _bulkDbItems=result.items;_bulkDbErrors=result.errors||[];
   var s=result.summary;
-  var h='<div class="card"><div class="card-title">📋 プレビュー結果</div>';
+  var isDelete=_bulkDbMode==='delete';
+  if(isDelete&&!_bulkDbDeleteSelected){
+    _bulkDbDeleteSelected=new Set();
+    (result.items||[]).forEach(function(_it,i){_bulkDbDeleteSelected.add(i);});
+  }
+  var h='<div class="card"><div class="card-title">📋 Step 2: プレビュー・検証'+(isDelete?' <span style="color:var(--danger);font-size:12px">（削除モード）</span>':'')+'</div>';
+
   // Summary stats
   h+='<div class="stat-row" style="margin-bottom:16px"><div class="stat-card purple"><div class="sc-label">合計</div><div class="sc-val">'+s.total+'</div></div>';
-  h+='<div class="stat-card green"><div class="sc-label">新規登録</div><div class="sc-val">'+s.newCount+'</div></div>';
-  h+='<div class="stat-card blue"><div class="sc-label">更新</div><div class="sc-val">'+s.updateCount+'</div></div>';
-  h+='<div class="stat-card" style="border-left-color:'+(s.errorCount>0?'var(--danger)':'var(--border)')+'"><div class="sc-label">エラー</div><div class="sc-val" style="'+(s.errorCount>0?'color:var(--danger)':'')+'">'+s.errorCount+'</div></div></div>';
+  if(isDelete){
+    h+='<div class="stat-card" style="border-left-color:var(--danger)"><div class="sc-label">削除対象</div><div class="sc-val" style="color:var(--danger)">'+(s.deleteCount||0)+'</div></div>';
+  }else{
+    h+='<div class="stat-card green"><div class="sc-label">新規登録</div><div class="sc-val">'+(s.newCount||0)+'</div></div>';
+    h+='<div class="stat-card blue"><div class="sc-label">更新</div><div class="sc-val">'+(s.updateCount||0)+'</div></div>';
+  }
+  h+='<div class="stat-card" style="border-left-color:'+(s.errorCount>0?'var(--danger)':'var(--border)')+'"><div class="sc-label">エラー</div><div class="sc-val" style="'+(s.errorCount>0?'color:var(--danger)':'')+'">'+(s.errorCount||0)+'</div></div></div>';
+
   // Error details
-  if(result.errors.length){
-    h+='<div class="upload-result err" style="margin-bottom:12px">⚠️ '+result.errors.length+'件のエラー:<br>';
-    result.errors.forEach(function(e){h+='・行'+(e.row+2)+': '+esc(e.message)+'<br>';});
+  if(_bulkDbErrors.length){
+    h+='<div class="upload-result err" style="margin-bottom:12px">⚠️ '+_bulkDbErrors.length+'件のエラー:<br>';
+    _bulkDbErrors.forEach(function(e){h+='・行'+((e.row!=null?e.row:0)+2)+': '+esc(e.message)+'<br>';});
     h+='</div>';
   }
+
+  // Brand fuzzy warnings
+  if(_bulkDbFuzzyWarnings&&_bulkDbFuzzyWarnings.length){
+    h+='<div class="upload-result" style="margin-bottom:12px;background:#fff7e6;border:1px solid #f59f00;color:#8a5a00">'+
+      '⚠️ ブランド表記揺れの可能性があります:<br>';
+    _bulkDbFuzzyWarnings.forEach(function(w){
+      var cands=w.matches.map(function(m){return esc(m.name)+'（slug: '+esc(m.slug)+'）';}).join(', ');
+      h+='・行'+(w.row+2)+' 「'+esc(w.name)+'」 → '+cands+' の可能性<br>';
+    });
+    h+='<div style="font-size:10px;margin-top:6px;color:var(--text-light)">※新規ブランドとして追加される予定です。既存ブランドを更新したい場合はCSVを修正してください。</div>';
+    h+='</div>';
+  }
+
   // Preview table
-  if(result.items.length){
-    var dispKeys=tmpl.keys.slice(0,5);
-    var dispHeaders=tmpl.headers.slice(0,5);
-    h+='<div style="overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"><table class="data-table" style="font-size:11px"><thead><tr><th>#</th><th>操作</th>';
+  if(result.items&&result.items.length){
+    var dispKeys=tmpl.keys.slice(0,6);
+    var dispHeaders=tmpl.headers.slice(0,6);
+    h+='<div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">'+
+      '<table class="data-table" style="font-size:11px"><thead><tr>';
+    if(isDelete){
+      h+='<th style="width:40px"><input type="checkbox" id="bulkDeleteAll" checked onchange="toggleBulkDeleteAll(this.checked)"></th>';
+    }
+    h+='<th>#</th><th>操作</th>';
     dispHeaders.forEach(function(hdr){h+='<th>'+esc(hdr.replace(/\*$/,''))+'</th>';});
+    if(!isDelete)h+='<th>変更内容</th>';
     h+='</tr></thead><tbody>';
     result.items.forEach(function(item,i){
-      var badge=item._action==='insert'?'<span style="background:#e6f9f0;color:#00b894;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">🆕 新規</span>':'<span style="background:#dfe6e9;color:#0984e3;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">🔄 更新</span>';
-      h+='<tr><td>'+(i+1)+'</td><td>'+badge+'</td>';
+      var badge;
+      if(isDelete){badge='<span style="background:#fab1a0;color:#b71c1c;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">🗑️ 削除</span>';}
+      else if(item._action==='insert'){badge='<span style="background:#e6f9f0;color:#00b894;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">🆕 新規</span>';}
+      else{badge='<span style="background:#dfe6e9;color:#0984e3;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">🔄 更新</span>';}
+      h+='<tr>';
+      if(isDelete){
+        var checked=_bulkDbDeleteSelected.has(i)?' checked':'';
+        h+='<td><input type="checkbox" class="bulkDeleteRow" data-idx="'+i+'"'+checked+' onchange="toggleBulkDeleteRow('+i+',this.checked)"></td>';
+      }
+      h+='<td>'+(i+1)+'</td><td>'+badge+'</td>';
       dispKeys.forEach(function(k){
         var val=item[k]!==undefined&&item[k]!==null?String(item[k]):'—';
         if(val==='true')val='ON';if(val==='false')val='OFF';
+        if(k==='tags'&&Array.isArray(item[k]))val=item[k].join('|');
         h+='<td>'+esc(val)+'</td>';
       });
+      if(!isDelete){
+        // Build change summary for update rows
+        if(item._action==='update'&&_bulkDbOriginalObjects&&_bulkDbOriginalObjects[i]){
+          var diffs=renderDiffForItem(tmpl,item,_bulkDbOriginalObjects[i]);
+          if(diffs.length){
+            var dh=diffs.slice(0,3).map(function(d){
+              var label=(tmpl.headers[tmpl.keys.indexOf(d.key)]||d.key).replace(/\*$/,'');
+              var v=d.value;if(v===true)v='ON';if(v===false)v='OFF';if(Array.isArray(v))v=v.join('|');
+              return esc(label)+': → '+esc(String(v));
+            }).join('<br>');
+            if(diffs.length>3)dh+='<br>…他'+(diffs.length-3)+'項目';
+            h+='<td style="font-size:10px;color:var(--text-light);max-width:220px">'+dh+'</td>';
+          }else{
+            h+='<td style="font-size:10px;color:var(--text-light)">—</td>';
+          }
+        }else{
+          h+='<td style="font-size:10px;color:#00b894">新規作成</td>';
+        }
+      }
       h+='</tr>';
     });
     h+='</tbody></table></div>';
-    h+='<div class="btn-group" style="margin-top:16px">';
-    if(s.errorCount>0&&s.newCount+s.updateCount===0){
-      h+='<button class="btn btn-p" disabled style="opacity:.5;cursor:not-allowed">実行不可（全件エラー）</button>';
-    }else{
-      h+='<button class="btn btn-p" onclick="executeBulkImport()">✅ '+esc(BULK_TYPE_LABELS[type])+'を登録・更新する（'+(s.newCount+s.updateCount)+'件）</button>';
-    }
-    if(result.errors.length){
-      h+='<button class="btn btn-s" onclick="downloadErrorRows()">📥 エラー行をダウンロード</button>';
-    }
-    h+='</div>';
   }
-  h+='</div>';
+
+  // Action buttons
+  h+='<div class="btn-group" style="margin-top:16px">';
+  h+='<button class="btn btn-s" onclick="resetBulkWizard()">← Step 1 に戻る</button>';
+  if(isDelete){
+    var delCount=_bulkDbDeleteSelected?_bulkDbDeleteSelected.size:0;
+    if(delCount>0){
+      h+='<button class="btn btn-p" style="background:var(--danger);color:#fff" onclick="executeBulkDelete()">🗑️ 選択した'+delCount+'件を削除する</button>';
+    }else{
+      h+='<button class="btn btn-p" disabled style="opacity:.5;cursor:not-allowed">対象を選択してください</button>';
+    }
+  }else{
+    var doCount=(s.newCount||0)+(s.updateCount||0);
+    if(s.errorCount>0&&doCount===0){
+      h+='<button class="btn btn-p" disabled style="opacity:.5;cursor:not-allowed">実行不可（全件エラー）</button>';
+    }else if(doCount>0){
+      h+='<button class="btn btn-p" onclick="executeBulkImport()">✅ '+esc(BULK_TYPE_LABELS[type])+'を登録・更新する（'+doCount+'件）</button>';
+    }
+  }
+  if(_bulkDbErrors&&_bulkDbErrors.length){
+    h+='<button class="btn btn-s" onclick="downloadErrorRows()">📥 エラー行をダウンロード</button>';
+  }
+  h+='</div></div>';
   pv.innerHTML=h;
+}
+
+function toggleBulkDeleteAll(checked){
+  if(!_bulkDbItems)return;
+  _bulkDbDeleteSelected=new Set();
+  if(checked){_bulkDbItems.forEach(function(_it,i){_bulkDbDeleteSelected.add(i);});}
+  // Refresh preview to update button count
+  renderBulkPreviewResult(_bulkDbType,BULK_TEMPLATES[_bulkDbType],{items:_bulkDbItems,errors:_bulkDbErrors,summary:{total:_bulkDbItems.length,deleteCount:_bulkDbDeleteSelected.size,errorCount:_bulkDbErrors.length}},_bulkDbOriginalObjects);
+}
+
+function toggleBulkDeleteRow(idx,checked){
+  if(!_bulkDbDeleteSelected)_bulkDbDeleteSelected=new Set();
+  if(checked)_bulkDbDeleteSelected.add(idx);else _bulkDbDeleteSelected.delete(idx);
+  // Refresh button label only
+  renderBulkPreviewResult(_bulkDbType,BULK_TEMPLATES[_bulkDbType],{items:_bulkDbItems,errors:_bulkDbErrors,summary:{total:_bulkDbItems.length,deleteCount:_bulkDbDeleteSelected.size,errorCount:_bulkDbErrors.length}},_bulkDbOriginalObjects);
 }
 
 async function executeBulkImport(){
@@ -3711,48 +3932,103 @@ async function executeBulkImport(){
   executeBulkImport._running=true;
   var type=_bulkDbType;
   if(!type||!_bulkDbItems||!_bulkDbItems.length){executeBulkImport._running=false;showToast('⚠️ 登録データがありません');return;}
-  // Clean items for API: remove _action, _existingId
   var rows=_bulkDbItems.map(function(item){var o={};Object.keys(item).forEach(function(k){if(k[0]!=='_')o[k]=item[k];});return o;});
   var prog=document.getElementById('bulkDbProgress');
   var bar=document.getElementById('bulkDbProgressBar');
   var txt=document.getElementById('bulkDbProgressText');
-  prog.style.display='';
-  bar.style.width='30%';bar.textContent='送信中...';
-  txt.textContent=rows.length+'件を送信中...';
+  if(prog){prog.style.display='';bar.style.width='30%';bar.textContent='送信中...';txt.textContent=rows.length+'件を送信中...';}
   try{
     var token=(await sb.auth.getSession()).data.session?.access_token;
-    bar.style.width='50%';bar.textContent='処理中...';
+    if(bar){bar.style.width='50%';bar.textContent='処理中...';}
     var res=await fetch('/api/bulk-import/execute',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({type:type,rows:rows})});
-    bar.style.width='90%';
+    if(bar)bar.style.width='100%';
     var json=await res.json();
-    bar.style.width='100%';bar.textContent='完了';
+    if(bar)bar.textContent='完了';
     if(!json.success){
-      txt.textContent='エラー: '+json.error;
-      document.getElementById('bulkDbResult').innerHTML='<div class="upload-result err">❌ '+esc(json.error)+'</div>';
+      if(txt)txt.textContent='エラー: '+json.error;
+      _bulkDbStep=3;
+      var s3e=document.getElementById('bulkStep3Card');
+      var el=document.getElementById('content');if(el)el.innerHTML=renderBulkPage();
+      s3e=document.getElementById('bulkStep3Card');
+      if(s3e)s3e.innerHTML='<div class="card"><div class="upload-result err">❌ '+esc(json.error)+'</div><div class="btn-group" style="margin-top:12px"><button class="btn btn-s" onclick="resetBulkWizard()">最初からやり直す</button></div></div>';
       executeBulkImport._running=false;return;
     }
     var d=json.data;
-    // Show result
-    var rh='<div class="card"><div class="card-title">✅ 実行結果</div>';
-    rh+='<div class="stat-row" style="margin-bottom:16px"><div class="stat-card green"><div class="sc-label">新規登録</div><div class="sc-val">'+d.inserted+'</div></div>';
-    rh+='<div class="stat-card blue"><div class="sc-label">更新</div><div class="sc-val">'+d.updated+'</div></div>';
-    rh+='<div class="stat-card" style="border-left-color:'+(d.skipped>0?'var(--warning)':'var(--border)')+'"><div class="sc-label">スキップ</div><div class="sc-val">'+d.skipped+'</div></div>';
-    rh+='<div class="stat-card" style="border-left-color:'+(d.errors&&d.errors.length>0?'var(--danger)':'var(--border)')+'"><div class="sc-label">エラー</div><div class="sc-val">'+(d.errors?d.errors.length:0)+'</div></div></div>';
-    if(d.errors&&d.errors.length){
-      rh+='<div class="upload-result err" style="margin-bottom:12px">⚠️ エラー詳細:<br>';
-      d.errors.forEach(function(e){rh+='・'+esc(e.message)+'<br>';});
-      rh+='</div>';
+    _bulkDbStep=3;
+    var el2=document.getElementById('content');if(el2)el2.innerHTML=renderBulkPage();
+    var s3=document.getElementById('bulkStep3Card');
+    if(s3){
+      var rh='<div class="card"><div class="card-title">✅ Step 3: 実行結果</div>';
+      rh+='<div class="stat-row" style="margin-bottom:16px"><div class="stat-card green"><div class="sc-label">新規登録</div><div class="sc-val">'+d.inserted+'</div></div>';
+      rh+='<div class="stat-card blue"><div class="sc-label">更新</div><div class="sc-val">'+d.updated+'</div></div>';
+      rh+='<div class="stat-card" style="border-left-color:'+(d.skipped>0?'var(--warning)':'var(--border)')+'"><div class="sc-label">スキップ</div><div class="sc-val">'+d.skipped+'</div></div>';
+      rh+='<div class="stat-card" style="border-left-color:'+(d.errors&&d.errors.length>0?'var(--danger)':'var(--border)')+'"><div class="sc-label">エラー</div><div class="sc-val">'+(d.errors?d.errors.length:0)+'</div></div></div>';
+      if(d.errors&&d.errors.length){
+        rh+='<div class="upload-result err" style="margin-bottom:12px">⚠️ エラー詳細:<br>';
+        d.errors.forEach(function(e){rh+='・'+esc(e.message)+'<br>';});
+        rh+='</div>';
+      }
+      rh+='<div style="font-size:12px;color:var(--success);font-weight:700;margin:8px 0">処理が完了しました</div>';
+      rh+='<div class="btn-group"><button class="btn btn-p" onclick="resetBulkWizard()">🔄 もう一度実行</button></div></div>';
+      s3.innerHTML=rh;
     }
-    rh+='<div style="font-size:12px;color:var(--success);font-weight:700;margin-top:8px">処理が完了しました</div></div>';
-    document.getElementById('bulkDbResult').innerHTML=rh;
-    txt.textContent='完了: 新規'+d.inserted+'件 / 更新'+d.updated+'件 / スキップ'+d.skipped+'件';
     showToast('✅ 一括インポートが完了しました');
   }catch(e){
-    bar.style.width='100%';bar.style.background='var(--danger)';bar.textContent='エラー';
-    txt.textContent='エラー: '+e.message;
-    document.getElementById('bulkDbResult').innerHTML='<div class="upload-result err">❌ '+esc(e.message)+'</div>';
+    _bulkDbStep=3;
+    var el3=document.getElementById('content');if(el3)el3.innerHTML=renderBulkPage();
+    var s3x=document.getElementById('bulkStep3Card');
+    if(s3x)s3x.innerHTML='<div class="card"><div class="upload-result err">❌ '+esc(e.message)+'</div><div class="btn-group" style="margin-top:12px"><button class="btn btn-s" onclick="resetBulkWizard()">最初からやり直す</button></div></div>';
   }
   executeBulkImport._running=false;
+}
+
+async function executeBulkDelete(){
+  if(executeBulkDelete._running){showToast('⚠️ 処理中です');return;}
+  if(!_bulkDbType||!_bulkDbItems||!_bulkDbDeleteSelected||_bulkDbDeleteSelected.size===0){
+    showToast('⚠️ 削除対象がありません');return;
+  }
+  var confirmMsg='選択した '+_bulkDbDeleteSelected.size+' 件を削除します。\nこの操作は取り消せません。本当に実行しますか？';
+  if(!confirm(confirmMsg))return;
+  executeBulkDelete._running=true;
+  var type=_bulkDbType;
+  // Only send selected rows, using original objects (so lookup keys are preserved)
+  var rows=[];
+  _bulkDbDeleteSelected.forEach(function(idx){
+    if(_bulkDbOriginalObjects&&_bulkDbOriginalObjects[idx])rows.push(_bulkDbOriginalObjects[idx]);
+  });
+  try{
+    var token=(await sb.auth.getSession()).data.session?.access_token;
+    var res=await fetch('/api/bulk-import/delete-execute',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({type:type,rows:rows,confirm:true})});
+    var json=await res.json();
+    _bulkDbStep=3;
+    var el=document.getElementById('content');if(el)el.innerHTML=renderBulkPage();
+    var s3=document.getElementById('bulkStep3Card');
+    if(!json.success){
+      if(s3)s3.innerHTML='<div class="card"><div class="upload-result err">❌ '+esc(json.error)+'</div><div class="btn-group" style="margin-top:12px"><button class="btn btn-s" onclick="resetBulkWizard()">最初からやり直す</button></div></div>';
+      executeBulkDelete._running=false;return;
+    }
+    var d=json.data;
+    if(s3){
+      var rh='<div class="card"><div class="card-title">✅ Step 3: 削除結果</div>';
+      rh+='<div class="stat-row" style="margin-bottom:16px"><div class="stat-card" style="border-left-color:var(--danger)"><div class="sc-label">削除</div><div class="sc-val" style="color:var(--danger)">'+d.deleted+'</div></div>';
+      rh+='<div class="stat-card" style="border-left-color:'+(d.skipped>0?'var(--warning)':'var(--border)')+'"><div class="sc-label">スキップ</div><div class="sc-val">'+d.skipped+'</div></div>';
+      rh+='<div class="stat-card" style="border-left-color:'+(d.errors&&d.errors.length>0?'var(--danger)':'var(--border)')+'"><div class="sc-label">エラー</div><div class="sc-val">'+(d.errors?d.errors.length:0)+'</div></div></div>';
+      if(d.errors&&d.errors.length){
+        rh+='<div class="upload-result err" style="margin-bottom:12px">⚠️ エラー詳細:<br>';
+        d.errors.forEach(function(e){rh+='・'+esc(e.message)+'<br>';});
+        rh+='</div>';
+      }
+      rh+='<div class="btn-group"><button class="btn btn-p" onclick="resetBulkWizard()">🔄 もう一度実行</button></div></div>';
+      s3.innerHTML=rh;
+    }
+    showToast('🗑️ 削除処理が完了しました');
+  }catch(e){
+    _bulkDbStep=3;
+    var el2=document.getElementById('content');if(el2)el2.innerHTML=renderBulkPage();
+    var s3x=document.getElementById('bulkStep3Card');
+    if(s3x)s3x.innerHTML='<div class="card"><div class="upload-result err">❌ '+esc(e.message)+'</div><div class="btn-group" style="margin-top:12px"><button class="btn btn-s" onclick="resetBulkWizard()">最初からやり直す</button></div></div>';
+  }
+  executeBulkDelete._running=false;
 }
 
 function downloadErrorRows(){
@@ -3761,8 +4037,7 @@ function downloadErrorRows(){
   var bom='\uFEFF';
   var csv=bom+tmpl.headers.join(',')+',エラー内容\n';
   _bulkDbErrors.forEach(function(e){
-    var rowIdx=e.row;
-    csv+=tmpl.keys.map(function(){return '';}).join(',')+','+'"'+esc(e.message)+'"'+'\n';
+    csv+=tmpl.keys.map(function(){return '';}).join(',')+','+'"'+esc(e.message).replace(/"/g,'""')+'"'+'\n';
   });
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bulk_errors_'+_bulkDbType+'.csv';a.click();
