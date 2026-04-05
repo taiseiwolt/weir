@@ -434,7 +434,7 @@ function renderPage(){
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
   else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();loadUsersData().then(function(){renderMembersList();renderGuestsList();});}
-  else if(v.type==='system'){el.innerHTML=renderSystem();loadSystemLogPreview();}
+  else if(v.type==='system'){el.innerHTML=renderSystem();initSystemSettings();}
   else if(v.type==='ai')el.innerHTML=renderAI();
   else if(v.type==='cost')el.innerHTML=renderCostManagement();
   else if(v.type==='billing')el.innerHTML=renderBilling();
@@ -1031,36 +1031,139 @@ async function executeUnban(banId){
 }
 
 // ===== SYSTEM =====
-function renderSystem(){
-  return '<div class="page-title">システム設定</div><div class="page-subtitle">プラットフォーム全体の設定・セキュリティ</div>'+
-  '<div class="card"><div class="card-title">🌐 プラットフォーム設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>プラットフォーム名</label><input type="text" value="AIden"></div><div class="form-group"><label>管理者メール</label><input type="email" value="admin@aiden.jp"></div><div class="form-group"><label>言語</label><select><option selected>日本語</option></select></div><div class="form-group"><label>タイムゾーン</label><select><option selected>Asia/Tokyo</option></select></div><div class="form-group"><label>Stripe環境</label><select><option>テスト</option><option selected>本番</option></select></div><div class="form-group"><label>Supabase</label><input type="text" value="iikwusprydaogzeslgdz" readonly style="background:#f5f6fa;color:var(--text-light)"></div></div></div>'+
-  '<div class="card"><div class="card-title">🔒 セキュリティ <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">2段階認証の強制</div><div style="font-size:10px;color:var(--text-light)">全Ownerアカウントに2FA必須</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">セッションタイムアウト（30分）</div><div style="font-size:10px;color:var(--text-light)">無操作で自動ログアウト</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">IPホワイトリスト</div><div style="font-size:10px;color:var(--text-light)">許可IPからのみアクセス</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>'+
-  '<div class="card"><div class="card-title">💰 手数料テーブル</div><table class="data-table"><thead><tr><th>チャネル</th><th class="r">手数料率</th><th class="r">決済コスト</th><th class="r">AIden純収入</th></tr></thead><tbody><tr><td>テイクアウト</td><td class="r fw-800">4.0%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.7%</td></tr><tr><td>店内注文</td><td class="r fw-800">3.8%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.5%</td></tr><tr><td>デリバリー</td><td class="r fw-800">4.0%</td><td class="r">3.3%</td><td class="r text-accent fw-800">0.7%</td></tr></tbody></table><p style="font-size:11px;color:var(--text-light);margin-top:8px">※ Stripe決済手数料（3.3%）はAIden負担。飲食店への振込は売上全額。</p></div>'+
-  '<div class="card"><div class="card-title">📋 システムログ <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="goTo(\'auditlog\')">全件表示 →</button></span></div><div id="sysLogPreview" style="color:#888;text-align:center">読み込み中...</div></div>';
+// Platform settings cache (loaded from DB)
+let PLATFORM_SETTINGS={};
+
+async function loadPlatformSettings(){
+  try{
+    const{data,error}=await sb.from('platform_settings').select('key,value');
+    if(error)throw error;
+    PLATFORM_SETTINGS={};
+    (data||[]).forEach(function(r){
+      // value column is TEXT — try JSON.parse, fall back to raw string
+      var v=r.value;
+      if(typeof v==='string'){
+        try{v=JSON.parse(r.value);}catch(_){/* plain text, keep as-is */}
+      }
+      PLATFORM_SETTINGS[r.key]=v;
+    });
+    return PLATFORM_SETTINGS;
+  }catch(e){return{};}
 }
 
-async function loadSystemLogPreview(){
-  var el=document.getElementById('sysLogPreview');
-  if(!el)return;
+function getPS(key,fallback){
+  if(!(key in PLATFORM_SETTINGS))return fallback;
+  var v=PLATFORM_SETTINGS[key];
+  return v==null?fallback:v;
+}
+
+async function savePlatformSetting(key,value){
   try{
-    var {data:logs,error}=await sb.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(5);
+    // Always JSON-encode so booleans/objects/numbers round-trip through TEXT column
+    var encoded=JSON.stringify(value);
+    const{error}=await sb.from('platform_settings').upsert({key:key,value:encoded},{onConflict:'key'});
     if(error)throw error;
-    if(!logs||!logs.length){el.innerHTML='<div class="empty-state">ログはありません</div>';return;}
-    var levelColors={INFO:'background:#e6f9f0;color:#00b894',WARN:'background:#ffeaa7;color:#d68910',ERR:'background:#fab1a0;color:#d63031'};
-    el.innerHTML=logs.map(function(log){
-      var dt=log.created_at?new Date(log.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
-      var lv=log.log_level||'INFO';
-      var style=levelColors[lv]||levelColors.INFO;
-      return '<div class="log-row"><span class="log-time">'+escHtml(dt)+'</span><span class="log-badge" style="'+style+'">'+escHtml(lv)+'</span>'+escHtml(log.action||'')+'</div>';
-    }).join('');
-  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+    PLATFORM_SETTINGS[key]=value;
+    return true;
+  }catch(e){return false;}
+}
+
+function renderSystem(){
+  return '<div class="page-title">システム設定</div><div class="page-subtitle">プラットフォーム全体の設定・セキュリティ</div>'+
+  '<div class="card"><div class="card-title">🌐 プラットフォーム設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePlatformSettingsForm()">保存</button></span></div>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>プラットフォーム名</label><input type="text" id="psPlatformName" value="AIden" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+      '<div class="form-group"><label>管理者メール</label><input type="email" id="psAdminEmail" placeholder="admin@aiden-jp.net"></div>'+
+      '<div class="form-group"><label>言語 <span style="font-size:10px;color:var(--text-light);font-weight:500">(Coming Soon)</span></label><select disabled style="background:#f5f6fa;color:var(--text-light);cursor:not-allowed"><option selected>日本語</option></select></div>'+
+      '<div class="form-group"><label>タイムゾーン</label><select id="psTimezone"><option value="Asia/Tokyo" selected>Asia/Tokyo</option></select></div>'+
+      '<div class="form-group"><label>Stripe環境 <span style="font-size:10px;color:var(--text-light);font-weight:500">(Coming Soon)</span></label><select disabled style="background:#f5f6fa;color:var(--text-light);cursor:not-allowed"><option selected>本番</option></select></div>'+
+      '<div class="form-group"><label>Supabase</label><input type="text" value="接続済み" readonly style="background:#f5f6fa;color:#00b894;font-weight:600"></div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="card"><div class="card-title">🔒 セキュリティ <span class="ct-right"><span style="font-size:10px;color:var(--text-light);margin-right:8px">※POCでは設定保存のみ、実装はPOC後</span><button class="btn btn-primary btn-sm" onclick="saveSecuritySettingsForm()">保存</button></span></div>'+
+    '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">2段階認証の強制</div><div style="font-size:10px;color:var(--text-light)">全Ownerアカウントに2FA必須</div></div><label class="toggle-sw"><input type="checkbox" id="psSecMfa"><span class="slider"></span></label></div>'+
+    '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">セッションタイムアウト（30分）</div><div style="font-size:10px;color:var(--text-light)">無操作で自動ログアウト</div></div><label class="toggle-sw"><input type="checkbox" id="psSecSession"><span class="slider"></span></label></div>'+
+    '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">IPホワイトリスト</div><div style="font-size:10px;color:var(--text-light)">許可IPからのみアクセス</div></div><label class="toggle-sw"><input type="checkbox" id="psSecIpWhitelist"><span class="slider"></span></label></div>'+
+  '</div>';
+}
+
+async function initSystemSettings(){
+  await loadPlatformSettings();
+  var nameEl=document.getElementById('psPlatformName');
+  if(nameEl)nameEl.value=getPS('platform_name','AIden');
+  var emailEl=document.getElementById('psAdminEmail');
+  if(emailEl)emailEl.value=getPS('admin_email','admin@aiden-jp.net');
+  var tzEl=document.getElementById('psTimezone');
+  if(tzEl)tzEl.value=getPS('timezone','Asia/Tokyo');
+  // Security toggles from platform_settings (sec_mfa, sec_session_timeout, sec_ip_whitelist)
+  var mfa=document.getElementById('psSecMfa');if(mfa)mfa.checked=!!getPS('sec_mfa',false);
+  var ss=document.getElementById('psSecSession');if(ss)ss.checked=!!getPS('sec_session_timeout',false);
+  var ip=document.getElementById('psSecIpWhitelist');if(ip)ip.checked=!!getPS('sec_ip_whitelist',false);
+}
+
+async function savePlatformSettingsForm(){
+  var email=document.getElementById('psAdminEmail').value.trim();
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){alert('管理者メールの形式が正しくありません');return;}
+  var ok=await savePlatformSetting('admin_email',email);
+  if(ok)showToast('✅ 保存しました');
+  else showToast('⚠️ 保存に失敗しました');
+}
+
+async function saveSecuritySettingsForm(){
+  var mfa=document.getElementById('psSecMfa').checked;
+  var ss=document.getElementById('psSecSession').checked;
+  var ip=document.getElementById('psSecIpWhitelist').checked;
+  var results=await Promise.all([
+    savePlatformSetting('sec_mfa',mfa),
+    savePlatformSetting('sec_session_timeout',ss),
+    savePlatformSetting('sec_ip_whitelist',ip)
+  ]);
+  if(results.every(Boolean))showToast('✅ 保存しました（UIのみ。実装はPOC後）');
+  else showToast('⚠️ 一部の保存に失敗しました');
 }
 
 // ===== AI QUALITY =====
+// AI filter state (period + entity)
+var aiFilter={period:'thisMonth',corpId:'all',brandId:'all',storeId:'all'};
+
+// P-04 unified AI features.
+// NOTE: AI画像生成 / チャットサポート の無料枠定義はTODO（P-04棚卸し未確定）
+const AI_FEATURES_P04={
+  review_reply:{name:'レビュー返信',limit:10},
+  sns_post:{name:'SNS投稿生成',limit:10},
+  pop_image:{name:'POP画像生成',limit:1},
+  monthly_comment:{name:'月次AIコメント',limit:1},
+  // TODO: 無料枠未定義。P-04棚卸し完了後にlimit値を設定
+  image_gen:{name:'AI画像生成',limit:null,todo:true},
+  chat_support:{name:'チャットサポート',limit:null,todo:true}
+};
+
 function renderAI(){
+  var corpOpts='<option value="all">全法人</option>'+CORPS.map(function(c){return '<option value="'+c.id+'"'+(aiFilter.corpId===c.id?' selected':'')+'>'+escHtml(c.name)+'</option>';}).join('');
+  var brandOpts='<option value="all">全ブランド</option>'+BRANDS.map(function(b){return '<option value="'+b.id+'"'+(aiFilter.brandId===b.id?' selected':'')+'>'+escHtml(b.name)+'</option>';}).join('');
+  var storeOptsFilter='<option value="all">全店舗</option>'+STORES.map(function(s){return '<option value="'+s.id+'"'+(aiFilter.storeId===s.id?' selected':'')+'>'+escHtml(s.name)+'</option>';}).join('');
   var storeOpts=STORES.map(s=>'<option value="'+s.id+'">'+escHtml(s.name)+'</option>').join('');
   return '<div class="page-title">AI品質管理</div><div class="page-subtitle">AI機能の利用状況・生成ツール・品質モニタリング</div>'+
-  '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card purple"><div class="sc-label">AI応答回数（今月）</div><div class="sc-val">1,842</div><div class="sc-sub"><span class="sc-change up">↑ 24%</span></div></div><div class="stat-card green"><div class="sc-label">AI正答率</div><div class="sc-val">94.2%</div><div class="sc-sub">目標: 95%</div></div><div class="stat-card blue"><div class="sc-label">平均応答時間</div><div class="sc-val">1.8秒</div><div class="sc-sub">目標: 2.0秒</div></div></div>'+
+  // KPI cards — dynamically populated via renderAICharts()
+  '<div class="stat-row" id="aiKpiCards" style="grid-template-columns:repeat(3,1fr)">'+
+    '<div class="stat-card purple"><div class="sc-label">AI応答回数（今月）</div><div class="sc-val" id="aiKpiCount">—</div><div class="sc-sub"><span class="sc-change" id="aiKpiDelta">—</span></div></div>'+
+    '<div class="stat-card green"><div class="sc-label">AI正答率</div><div class="sc-val" id="aiKpiAccuracy">—</div><div class="sc-sub">目標: <span id="aiKpiAccuracyTarget">—</span></div></div>'+
+    '<div class="stat-card blue"><div class="sc-label">平均応答時間</div><div class="sc-val" id="aiKpiLatency">—</div><div class="sc-sub">目標: <span id="aiKpiLatencyTarget">—</span></div></div>'+
+  '</div>'+
+  // Filter bar (period + entity)
+  '<div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px">'+
+    '<span style="font-weight:700;color:var(--text-light)">期間:</span>'+
+    '<select id="aiFilterPeriod" onchange="aiFilter.period=this.value;renderAICharts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+
+      '<option value="thisMonth"'+(aiFilter.period==='thisMonth'?' selected':'')+'>今月</option>'+
+      '<option value="lastMonth"'+(aiFilter.period==='lastMonth'?' selected':'')+'>先月</option>'+
+      '<option value="3months"'+(aiFilter.period==='3months'?' selected':'')+'>過去3ヶ月</option>'+
+      '<option value="6months"'+(aiFilter.period==='6months'?' selected':'')+'>過去6ヶ月</option>'+
+    '</select>'+
+    '<span style="font-weight:700;color:var(--text-light);margin-left:8px">対象:</span>'+
+    '<select id="aiFilterCorp" onchange="aiFilter.corpId=this.value;aiFilter.brandId=\'all\';aiFilter.storeId=\'all\';renderPage()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+corpOpts+'</select>'+
+    '<select id="aiFilterBrand" onchange="aiFilter.brandId=this.value;aiFilter.storeId=\'all\';renderAICharts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+brandOpts+'</select>'+
+    '<select id="aiFilterStore" onchange="aiFilter.storeId=this.value;renderAICharts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+storeOptsFilter+'</select>'+
+  '</div></div>'+
   '<div class="tabs" id="aiTabs">'+
     '<div class="tab active" onclick="switchTab(\'ai\',this,\'usage\')">📊 利用状況</div>'+
     '<div class="tab" onclick="switchTab(\'ai\',this,\'sns\')">📱 SNS投稿生成</div>'+
@@ -1069,8 +1172,8 @@ function renderAI(){
   '</div>'+
   // --- 利用状況タブ ---
   '<div class="tab-content active" id="ai-usage">'+
-    '<div class="card"><div class="card-title">🤖 AI機能別利用状況（今月） <span class="ct-right" style="font-size:11px;color:var(--text-light)">STD: 上限あり / PRO・EXPERT: 無制限</span></div><div id="aiUsageCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px"></div></div>'+
-    '<div class="card"><div class="card-title">📊 月間推移（過去6ヶ月）</div><div id="aiChart"></div></div>'+
+    '<div class="card"><div class="card-title">🤖 AI機能別利用状況 <span class="ct-right" style="font-size:11px;color:var(--text-light)">STD: 上限あり / PRO・EXPERT: 無制限</span></div><div id="aiUsageCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div></div>'+
+    '<div class="card"><div class="card-title">📊 推移</div><div id="aiChart"></div></div>'+
   '</div>'+
   // --- SNS投稿生成タブ ---
   '<div class="tab-content" id="ai-sns">'+
@@ -1098,45 +1201,208 @@ function renderAI(){
   '</div>'+
   // --- 設定タブ ---
   '<div class="tab-content" id="ai-settings">'+
-    '<div class="card"><div class="card-title">⚙️ AI機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存しました\')">保存</button></span></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">SNS投稿文自動生成</div><div style="font-size:10px;color:var(--text-light)">ブランドトーンに合わせた投稿文</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI画像生成</div><div style="font-size:10px;color:var(--text-light)">メニュー写真加工・SNS用画像</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI口コミ返信提案</div><div style="font-size:10px;color:var(--text-light)">返信文の自動生成</div></div><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AIチャットサポート</div><div style="font-size:10px;color:var(--text-light)">エンドユーザー向けチャットボット</div></div><label class="toggle-sw"><input type="checkbox"><span class="slider"></span></label></div></div>'+
+    '<div class="card"><div class="card-title">🎯 KPI目標値 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAiKpiTargets()">保存</button></span></div>'+
+      '<div class="form-grid">'+
+        '<div class="form-group"><label>AI正答率 目標 (%)</label><input type="number" id="aiTargetAccuracy" step="0.1" min="0" max="100" placeholder="95.0"></div>'+
+        '<div class="form-group"><label>平均応答時間 目標 (秒)</label><input type="number" id="aiTargetLatency" step="0.1" min="0" placeholder="2.0"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card"><div class="card-title">⚙️ AI機能ON/OFF（対象別） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAiFeatureToggles()">保存</button></span></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px">'+
+        '<span style="font-weight:700;color:var(--text-light)">対象:</span>'+
+        '<select id="aiSettingsEntityType" onchange="onAiSettingsEntityTypeChange()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+
+          '<option value="corp">法人</option>'+
+          '<option value="brand">ブランド</option>'+
+          '<option value="store">店舗</option>'+
+        '</select>'+
+        '<input type="text" id="aiSettingsEntitySearch" placeholder="検索..." oninput="renderAiSettingsEntityOptions()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:180px">'+
+        '<select id="aiSettingsEntityId" onchange="loadAiSettingsForEntity()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:240px"></select>'+
+      '</div>'+
+      '<div id="aiFeatureToggles">'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">レビュー返信</div><div style="font-size:10px;color:var(--text-light)">口コミへの返信文を自動生成</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_review_reply"><span class="slider"></span></label></div>'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">SNS投稿生成</div><div style="font-size:10px;color:var(--text-light)">ブランドトーンに合わせた投稿文</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_sns_post"><span class="slider"></span></label></div>'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">POP画像生成</div><div style="font-size:10px;color:var(--text-light)">DALL-Eによる販促POP生成</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_pop_image"><span class="slider"></span></label></div>'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">月次AIコメント</div><div style="font-size:10px;color:var(--text-light)">経営データの月次分析コメント</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_monthly_comment"><span class="slider"></span></label></div>'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">AI画像生成 <span style="font-size:9px;color:#e17055">(無料枠TODO)</span></div><div style="font-size:10px;color:var(--text-light)">メニュー写真加工・SNS用画像</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_image_gen"><span class="slider"></span></label></div>'+
+        '<div class="toggle-row"><div><div style="font-size:12px;font-weight:600">チャットサポート <span style="font-size:9px;color:#e17055">(無料枠TODO)</span></div><div style="font-size:10px;color:var(--text-light)">エンドユーザー向けチャットボット</div></div><label class="toggle-sw"><input type="checkbox" id="aiTgl_chat_support"><span class="slider"></span></label></div>'+
+      '</div>'+
+    '</div>'+
   '</div>';
 }
+// Compute period range (from,to) for aiFilter
+function getAiPeriodRange(){
+  const now=new Date();
+  let from,to=now;
+  if(aiFilter.period==='thisMonth'){from=new Date(now.getFullYear(),now.getMonth(),1);}
+  else if(aiFilter.period==='lastMonth'){from=new Date(now.getFullYear(),now.getMonth()-1,1);to=new Date(now.getFullYear(),now.getMonth(),0,23,59,59);}
+  else if(aiFilter.period==='3months'){from=new Date(now.getFullYear(),now.getMonth()-2,1);}
+  else{from=new Date(now.getFullYear(),now.getMonth()-5,1);}// 6months
+  return{from:from,to:to};
+}
+
+// Get previous period range (same length, shifted back)
+function getAiPrevPeriodRange(){
+  const r=getAiPeriodRange();
+  const dur=r.to-r.from;
+  return{from:new Date(r.from.getTime()-dur),to:new Date(r.from.getTime()-1)};
+}
+
+// Get store UUIDs matching current filter (for DB queries)
+function getFilteredStoreUuids(){
+  var stores=STORES;
+  if(aiFilter.storeId!=='all'){stores=stores.filter(function(s){return s.id===aiFilter.storeId;});}
+  else if(aiFilter.brandId!=='all'){stores=stores.filter(function(s){return s.brandId===aiFilter.brandId;});}
+  else if(aiFilter.corpId!=='all'){
+    var brandIds=BRANDS.filter(function(b){return b.corpId===aiFilter.corpId;}).map(function(b){return b.id;});
+    stores=stores.filter(function(s){return brandIds.indexOf(s.brandId)!==-1;});
+  }
+  return stores.map(function(s){return s._uuid;}).filter(Boolean);
+}
+
 async function renderAICharts(){
   const cardsEl=document.getElementById('aiUsageCards');
   const chartEl=document.getElementById('aiChart');
-  if(!cardsEl&&!chartEl)return;
-  const AI_TYPES={review_reply:{name:'口コミ返信',limit:10},sns_post:{name:'SNS投稿生成',limit:10},pop_image:{name:'POP画像',limit:1},monthly_comment:{name:'月次コメント',limit:1}};
-  // Current month usage
-  const now=new Date();const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
-  const{data:usage}=await sb.from('ai_monthly_usage').select('*').gte('month',monthStart);
-  // Aggregate by type
+  // Update KPI cards (load platform_settings targets)
+  await loadPlatformSettings();
+  var targetAccuracy=getPS('ai_target_accuracy',95.0);
+  var targetLatency=getPS('ai_target_latency',2.0);
+  var tAccEl=document.getElementById('aiKpiAccuracyTarget');if(tAccEl)tAccEl.textContent=Number(targetAccuracy).toFixed(1)+'%';
+  var tLatEl=document.getElementById('aiKpiLatencyTarget');if(tLatEl)tLatEl.textContent=Number(targetLatency).toFixed(1)+'秒';
+  // Current + prev period usage counts
+  const r=getAiPeriodRange();
+  const pr=getAiPrevPeriodRange();
+  const storeUuids=getFilteredStoreUuids();
+  let curQuery=sb.from('ai_monthly_usage').select('*').gte('month',r.from.toISOString()).lte('month',r.to.toISOString());
+  let prevQuery=sb.from('ai_monthly_usage').select('*').gte('month',pr.from.toISOString()).lte('month',pr.to.toISOString());
+  if(storeUuids.length>0){curQuery=curQuery.in('store_id',storeUuids);prevQuery=prevQuery.in('store_id',storeUuids);}
+  const[curRes,prevRes]=await Promise.all([curQuery,prevQuery]);
+  const usage=curRes.data||[];
+  const prevUsage=prevRes.data||[];
+  const curTotal=usage.reduce(function(s,r){return s+(r.usage_count||0);},0);
+  const prevTotal=prevUsage.reduce(function(s,r){return s+(r.usage_count||0);},0);
+  const kpiCountEl=document.getElementById('aiKpiCount');if(kpiCountEl)kpiCountEl.textContent=curTotal.toLocaleString();
+  const kpiDeltaEl=document.getElementById('aiKpiDelta');
+  if(kpiDeltaEl){
+    if(prevTotal===0){kpiDeltaEl.textContent=curTotal>0?'前期間: 0':'—';kpiDeltaEl.className='sc-change';}
+    else{
+      const pct=((curTotal-prevTotal)/prevTotal*100);
+      const up=pct>=0;
+      kpiDeltaEl.textContent=(up?'↑ ':'↓ ')+Math.abs(pct).toFixed(1)+'%';
+      kpiDeltaEl.className='sc-change '+(up?'up':'down');
+    }
+  }
+  // Quality/latency: no telemetry pipeline yet in POC — display "—"
+  var kpiAcc=document.getElementById('aiKpiAccuracy');if(kpiAcc)kpiAcc.textContent='—';
+  var kpiLat=document.getElementById('aiKpiLatency');if(kpiLat)kpiLat.textContent='—';
+  // Aggregate by type for the current period
   const byType={};
-  (usage||[]).forEach(r=>{byType[r.interaction_type]=(byType[r.interaction_type]||0)+r.usage_count;});
+  usage.forEach(function(rw){byType[rw.interaction_type]=(byType[rw.interaction_type]||0)+(rw.usage_count||0);});
   if(cardsEl){
-    cardsEl.innerHTML=Object.entries(AI_TYPES).map(([key,cfg])=>{
-      const used=byType[key]||0;const pct=cfg.limit>0?Math.min(100,Math.round(used/cfg.limit*100)):0;
-      const color=pct>=100?'#e94560':pct>=80?'#fdcb6e':'var(--accent)';
+    cardsEl.innerHTML=Object.entries(AI_FEATURES_P04).map(function(entry){
+      var key=entry[0],cfg=entry[1];
+      var used=byType[key]||0;
+      if(cfg.todo){
+        return '<div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px dashed #e0d8fc">'+
+          '<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+escHtml(cfg.name)+' <span style="font-size:9px;color:#e17055">(無料枠TODO)</span></div>'+
+          '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px"><span style="font-size:24px;font-weight:800">'+used+'</span><span style="font-size:12px;color:var(--text-light)">回</span></div>'+
+          '<div style="font-size:10px;color:var(--text-light)">P-04棚卸し完了後に無料枠を設定</div></div>';
+      }
+      var limit=cfg.limit||1;
+      var pct=Math.min(100,Math.round(used/limit*100));
+      var color=pct>=100?'#e94560':pct>=80?'#fdcb6e':'var(--accent)';
       return '<div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">'+
-        '<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+cfg.name+'</div>'+
-        '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px"><span style="font-size:24px;font-weight:800">'+used+'</span><span style="font-size:12px;color:var(--text-light)">/ '+cfg.limit+'回</span></div>'+
+        '<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+escHtml(cfg.name)+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px"><span style="font-size:24px;font-weight:800">'+used+'</span><span style="font-size:12px;color:var(--text-light)">/ '+limit+'回</span></div>'+
         '<div style="background:#f0f0f0;border-radius:4px;height:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:4px;transition:width .3s"></div></div>'+
-        '<div style="font-size:10px;color:var(--text-light);margin-top:4px">残り '+(cfg.limit-used>0?cfg.limit-used:0)+'回</div></div>';
+        '<div style="font-size:10px;color:var(--text-light);margin-top:4px">残り '+Math.max(0,limit-used)+'回</div></div>';
     }).join('');
   }
-  // Past 6 months chart
+  // Trend chart (monthly) over the selected period
   if(chartEl){
-    const sixMonthsAgo=new Date(now.getFullYear(),now.getMonth()-5,1).toISOString();
-    const{data:trends}=await sb.from('ai_monthly_usage').select('*').gte('month',sixMonthsAgo);
     const monthly={};
-    (trends||[]).forEach(r=>{
-      const m=r.month.substring(0,7);
-      monthly[m]=(monthly[m]||0)+r.usage_count;
+    usage.forEach(function(rw){
+      var m=(rw.month||'').substring(0,7);
+      if(m)monthly[m]=(monthly[m]||0)+(rw.usage_count||0);
     });
     const months=Object.keys(monthly).sort();
     if(months.length===0){chartEl.innerHTML='<div class="empty-state" style="padding:20px;text-align:center;color:var(--text-light)">データなし</div>';return;}
-    const mx=Math.max(...Object.values(monthly));
-    chartEl.innerHTML=months.map(m=>{const v=monthly[m];return '<div class="chart-bar-row"><div class="chart-bar-label">'+m+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+v+'回</span></div></div></div>';}).join('');
+    const mx=Math.max.apply(null,Object.values(monthly));
+    chartEl.innerHTML=months.map(function(m){var v=monthly[m];return '<div class="chart-bar-row"><div class="chart-bar-label">'+m+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+v+'回</span></div></div></div>';}).join('');
   }
+  // Load settings tab defaults
+  initAiSettingsTab();
+}
+
+// --- AI settings tab helpers ---
+async function saveAiKpiTargets(){
+  var acc=parseFloat(document.getElementById('aiTargetAccuracy').value);
+  var lat=parseFloat(document.getElementById('aiTargetLatency').value);
+  if(isNaN(acc)||isNaN(lat)){alert('数値を入力してください');return;}
+  var ok=await Promise.all([
+    savePlatformSetting('ai_target_accuracy',acc),
+    savePlatformSetting('ai_target_latency',lat)
+  ]);
+  if(ok.every(Boolean)){showToast('✅ 保存しました');renderAICharts();}
+  else showToast('⚠️ 保存に失敗しました');
+}
+
+function initAiSettingsTab(){
+  // Populate target value inputs
+  var accEl=document.getElementById('aiTargetAccuracy');
+  if(accEl&&!accEl.dataset.init){accEl.value=getPS('ai_target_accuracy',95.0);accEl.dataset.init='1';}
+  var latEl=document.getElementById('aiTargetLatency');
+  if(latEl&&!latEl.dataset.init){latEl.value=getPS('ai_target_latency',2.0);latEl.dataset.init='1';}
+  // Populate entity selector (default: corp)
+  renderAiSettingsEntityOptions();
+}
+
+function onAiSettingsEntityTypeChange(){
+  document.getElementById('aiSettingsEntitySearch').value='';
+  renderAiSettingsEntityOptions();
+}
+
+function renderAiSettingsEntityOptions(){
+  var type=document.getElementById('aiSettingsEntityType');
+  if(!type)return;
+  var q=(document.getElementById('aiSettingsEntitySearch').value||'').trim().toLowerCase();
+  var list=[];
+  if(type.value==='corp')list=CORPS;
+  else if(type.value==='brand')list=BRANDS;
+  else list=STORES;
+  if(q)list=list.filter(function(x){return (x.name||'').toLowerCase().indexOf(q)!==-1||(x.id||'').toLowerCase().indexOf(q)!==-1;});
+  var sel=document.getElementById('aiSettingsEntityId');
+  if(!sel)return;
+  sel.innerHTML='<option value="">選択してください</option>'+list.map(function(x){return '<option value="'+escHtml(x.id)+'">'+escHtml(x.name)+'</option>';}).join('');
+  // Clear toggles when entity changes
+  ['review_reply','sns_post','pop_image','monthly_comment','image_gen','chat_support'].forEach(function(k){
+    var el=document.getElementById('aiTgl_'+k);if(el)el.checked=false;
+  });
+}
+
+async function loadAiSettingsForEntity(){
+  var type=document.getElementById('aiSettingsEntityType').value;
+  var id=document.getElementById('aiSettingsEntityId').value;
+  if(!id)return;
+  var key='ai_features_'+type+'_'+id;
+  await loadPlatformSettings();
+  var cfg=getPS(key,null)||{};
+  ['review_reply','sns_post','pop_image','monthly_comment','image_gen','chat_support'].forEach(function(k){
+    var el=document.getElementById('aiTgl_'+k);
+    if(el)el.checked=cfg[k]===true;
+  });
+}
+
+async function saveAiFeatureToggles(){
+  var type=document.getElementById('aiSettingsEntityType').value;
+  var id=document.getElementById('aiSettingsEntityId').value;
+  if(!id){alert('対象を選択してください');return;}
+  var cfg={};
+  ['review_reply','sns_post','pop_image','monthly_comment','image_gen','chat_support'].forEach(function(k){
+    var el=document.getElementById('aiTgl_'+k);cfg[k]=el?el.checked:false;
+  });
+  var key='ai_features_'+type+'_'+id;
+  var ok=await savePlatformSetting(key,cfg);
+  showToast(ok?'✅ 保存しました':'⚠️ 保存に失敗しました');
 }
 
 // ===== AI SNS投稿生成 =====
@@ -3338,13 +3604,14 @@ function downloadErrorRows(){
 
 // ===== COST MANAGEMENT (コスト管理) =====
 
-// --- Content type definitions ---
+// --- Content type definitions (P-04統一ラベル) ---
+// NOTE: pop_image は Phase 0 で DALL-E に切替済
 const COST_CONTENT_TYPES=[
   {key:'monthly_ai_comment',label:'月次AIコメント',model:'Sonnet',costPerUnit:15},
   {key:'product_comment',label:'商品別コメント',model:'Haiku',costPerUnit:2},
-  {key:'review_reply',label:'口コミ返信下書き',model:'Haiku',costPerUnit:11,hasLimit:true},
-  {key:'sns_content',label:'SNSコンテンツ生成',model:'Haiku',costPerUnit:15,hasLimit:true},
-  {key:'pop_image',label:'POP画像生成',model:'テンプレート+テキスト',costPerUnit:3,hasLimit:true},
+  {key:'review_reply',label:'レビュー返信',model:'Haiku',costPerUnit:11,hasLimit:true},
+  {key:'sns_content',label:'SNS投稿生成',model:'Haiku',costPerUnit:15,hasLimit:true},
+  {key:'pop_image',label:'POP画像生成',model:'DALL-E 3',costPerUnit:3,hasLimit:true},
   {key:'competitor_report',label:'競合分析レポート',model:'Sonnet',costPerUnit:39},
   {key:'line_message',label:'LINE配信文面',model:'Haiku',costPerUnit:8},
   {key:'hp_content',label:'HP文章生成',model:'Sonnet',costPerUnit:53},
@@ -3358,7 +3625,6 @@ const COST_CONTENT_TYPES=[
 
 // Plan cost baselines
 const PLAN_COSTS={STD:307,PRO:821,EXPERT:3297};
-const PLAN_ALERT_DEFAULTS={STD:500,PRO:1200,EXPERT:5000};
 
 // --- 5 brands (add 1 more to existing 4) ---
 const COST_BRANDS=[
@@ -3466,10 +3732,6 @@ let costFilter={
   corpId:'all',brandId:'all',storeId:'all'
 };
 
-// Alert settings per store
-const costAlerts={};
-COST_STORES.forEach(s=>{costAlerts[s.id]=PLAN_ALERT_DEFAULTS[s.plan];});
-
 // Helper: filter logs by period
 function getFilteredCostLogs(){
   const now=new Date(2026,2,18);
@@ -3509,8 +3771,7 @@ function renderCostManagement(){
     '<select id="costChartScale" onchange="updateCostChart()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit"><option value="daily">日別</option><option value="weekly">週別</option><option value="monthly" selected>月別</option></select>'+
   '</span></div><div style="position:relative;height:320px"><canvas id="costChart"></canvas></div></div>'+
   '<div id="costContentTable">'+renderCostContentTable()+'</div>'+
-  '<div id="costStoreTable">'+renderCostStoreTable()+'</div>'+
-  '<div id="costAlertSection">'+renderCostAlertSection()+'</div>';
+  '<div id="costStoreTable">'+renderCostStoreTable()+'</div>';
 }
 
 // (A) Filter bar
@@ -3564,7 +3825,6 @@ function refreshCostData(){
   document.getElementById('costSummaryCards').innerHTML=renderCostSummaryCards();
   document.getElementById('costContentTable').innerHTML=renderCostContentTable();
   document.getElementById('costStoreTable').innerHTML=renderCostStoreTable();
-  document.getElementById('costAlertSection').innerHTML=renderCostAlertSection();
   updateCostChart();
 }
 
@@ -3607,77 +3867,142 @@ function renderCostSummaryCards(){
   '</div>';
 }
 
-// (D) Content type breakdown table
+// (D) Content type breakdown table — 左揃え・列幅均等
 function renderCostContentTable(){
   const logs=getFilteredCostLogs();
   const map={};
   COST_CONTENT_TYPES.forEach(ct=>{map[ct.key]={count:0,total:0};});
   logs.forEach(l=>{if(map[l.content_type]){map[l.content_type].count++;map[l.content_type].total+=l.estimated_cost_jpy;}});
 
-  const rows=COST_CONTENT_TYPES.map(ct=>{
-    const d=map[ct.key];
-    const avg=d.count>0?(d.total/d.count).toFixed(0):0;
-    const limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';
-    return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'var(--accent)20;color:var(--accent)':ct.model.includes('Haiku')?'#00b89420;color:#00b894':'#e1705520;color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';
-  });
-
   // Sort by total cost desc
   const sorted=COST_CONTENT_TYPES.map(ct=>({ct,total:map[ct.key].total})).sort((a,b)=>b.total-a.total);
-  const sortedRows=sorted.map(({ct})=>{
-    const d=map[ct.key];
-    const avg=d.count>0?(d.total/d.count).toFixed(0):0;
-    const limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';
-    return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'rgba(108,92,231,.12);color:var(--accent)':ct.model.includes('Haiku')?'rgba(0,184,148,.12);color:#00b894':'rgba(225,112,85,.12);color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';
-  });
 
   // Count regenerates from real logs
   var regenMap={};
   COST_REAL_LOGS.forEach(function(l){if(l.action==='regenerate'){regenMap[l.content_type]=(regenMap[l.content_type]||0)+1;}});
 
+  var modelBadge=function(model){
+    var bg=model.indexOf('Sonnet')!==-1?'rgba(108,92,231,.12);color:var(--accent)':model.indexOf('Haiku')!==-1?'rgba(0,184,148,.12);color:#00b894':'rgba(225,112,85,.12);color:#e17055';
+    return '<span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+bg+'">'+escHtml(model)+'</span>';
+  };
+
   return '<div class="card"><div class="card-title">🤖 AI機能別コスト内訳</div>'+
-    '<table class="dt"><thead><tr><th>AI機能</th><th>モデル</th><th class="r">利用回数</th><th class="r">再生成</th><th class="r">合計コスト</th><th class="r">平均コスト/回</th><th class="r">上限設定</th></tr></thead><tbody>'+
-    sorted.map(function(item){var ct=item.ct;var d=map[ct.key];var avg=d.count>0?(d.total/d.count).toFixed(0):0;var regen=regenMap[ct.key]||0;var limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';return '<tr><td>'+ct.label+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(ct.model.includes('Sonnet')?'rgba(108,92,231,.12);color:var(--accent)':ct.model.includes('Haiku')?'rgba(0,184,148,.12);color:#00b894':'rgba(225,112,85,.12);color:#e17055')+'">'+ct.model+'</span></td><td class="r">'+d.count.toLocaleString()+'</td><td class="r" style="color:#888">'+(regen>0?regen+'回':'—')+'</td><td class="r">'+Y(d.total)+'</td><td class="r">'+Y(Number(avg))+'</td><td class="r">'+limitCell+'</td></tr>';}).join('')+
+    '<table class="dt" style="table-layout:fixed;width:100%"><thead><tr>'+
+      '<th style="text-align:left;width:14.28%">AI機能</th>'+
+      '<th style="text-align:left;width:14.28%">モデル</th>'+
+      '<th style="text-align:left;width:14.28%">利用回数</th>'+
+      '<th style="text-align:left;width:14.28%">再生成</th>'+
+      '<th style="text-align:left;width:14.28%">合計コスト</th>'+
+      '<th style="text-align:left;width:14.28%">平均コスト/回</th>'+
+      '<th style="text-align:left;width:14.32%">上限設定</th>'+
+    '</tr></thead><tbody>'+
+    sorted.map(function(item){
+      var ct=item.ct;var d=map[ct.key];
+      var avg=d.count>0?(d.total/d.count).toFixed(0):0;
+      var regen=regenMap[ct.key]||0;
+      var limitCell=ct.hasLimit?'<span style="color:var(--accent);font-weight:600">上限あり</span>':'<span style="color:var(--text-light)">—</span>';
+      return '<tr>'+
+        '<td style="text-align:left">'+escHtml(ct.label)+'</td>'+
+        '<td style="text-align:left">'+modelBadge(ct.model)+'</td>'+
+        '<td style="text-align:left">'+d.count.toLocaleString()+'</td>'+
+        '<td style="text-align:left;color:#888">'+(regen>0?regen+'回':'—')+'</td>'+
+        '<td style="text-align:left">'+Y(d.total)+'</td>'+
+        '<td style="text-align:left">'+Y(Number(avg))+'</td>'+
+        '<td style="text-align:left">'+limitCell+'</td>'+
+      '</tr>';
+    }).join('')+
     '</tbody></table></div>';
 }
 
-// (E) Store cost table
+// Heavy user detection: 直近2ヶ月以上連続でAIden全店舗のトップ10に入っている
+// Returns Set<storeId> of stores that qualify.
+function computeHeavyUserStores(){
+  // Build month→store→cost map for the most recent 2 complete months
+  const now=new Date(2026,2,18);// demo "now"
+  const months=[];
+  // This month and last month (top10 per month requires presence in both)
+  months.push({year:now.getFullYear(),month:now.getMonth()});
+  var prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+  months.push({year:prev.getFullYear(),month:prev.getMonth()});
+  var top10Sets=months.map(function(m){
+    var from=new Date(m.year,m.month,1);
+    var to=new Date(m.year,m.month+1,0,23,59,59);
+    var acc={};
+    COST_LOGS.forEach(function(l){
+      var d=new Date(l.created_at);
+      if(d>=from&&d<=to){acc[l.store_id]=(acc[l.store_id]||0)+l.estimated_cost_jpy;}
+    });
+    var sorted=Object.entries(acc).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+    return new Set(sorted.map(function(e){return e[0];}));
+  });
+  // Intersection = stores in top10 for both months
+  var heavy=new Set();
+  top10Sets[0].forEach(function(id){if(top10Sets[1].has(id))heavy.add(id);});
+  return heavy;
+}
+
+// (E) Store cost table — top 10 + scroll, 左揃え, 使用率%インライン
 function renderCostStoreTable(){
   const thisM=getThisMonthLogs();
   const storeMap={};
   thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
+
+  const storeCallMap={};
+  thisM.forEach(l=>{storeCallMap[l.store_id]=(storeCallMap[l.store_id]||0)+1;});
+
+  // Compute max cost for 使用率 (relative to top store this month)
+  const maxStoreCost=Math.max.apply(null,Object.values(storeMap).concat([1]));
 
   const rows=COST_STORES.map(s=>{
     const cost=storeMap[s.id]||0;
     const planCost=PLAN_COSTS[s.plan]||0;
     const diff=cost-planCost;
     const isOver=diff>0;
-    const alertLimit=costAlerts[s.id]||PLAN_ALERT_DEFAULTS[s.plan];
-    const alertPct=cost/alertLimit*100;
-    const alertColor=alertPct>=100?'var(--danger)':alertPct>=80?'#e17055':'var(--success)';
+    const usagePct=maxStoreCost>0?(cost/maxStoreCost*100):0;
+    const usageColor=usagePct>=80?'var(--danger)':usagePct>=50?'#e17055':'var(--accent)';
     const grossProfit=Math.round(s.moRevenue*0.0062);
-    return {s,cost,planCost,diff,isOver,alertPct,alertColor,grossProfit};
+    return {s,cost,planCost,diff,isOver,usagePct,usageColor,grossProfit};
   }).sort((a,b)=>b.cost-a.cost);
 
-  // Count API calls per store for heavy user detection
-  const storeCallMap={};
-  thisM.forEach(l=>{storeCallMap[l.store_id]=(storeCallMap[l.store_id]||0)+1;});
-  const callCounts=Object.values(storeCallMap).sort((a,b)=>b-a);
-  const heavyThreshold=callCounts.length>=3?callCounts[2]:callCounts[0]||0; // top 3
+  const heavyUserSet=computeHeavyUserStores();
 
   const trs=rows.map(r=>{
     const calls=storeCallMap[r.s.id]||0;
-    const isHeavy=calls>=heavyThreshold&&calls>0;
+    const isHeavy=heavyUserSet.has(r.s.id);
     const rowStyle=r.isOver?'background:rgba(214,48,49,.05)':isHeavy?'background:rgba(108,92,231,.04)':'';
     const heavyBadge=isHeavy?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(108,92,231,.12);color:var(--accent)">🔥 ヘビーユーザー</span>':'';
-    return '<tr style="'+rowStyle+'"><td>'+r.s.name+heavyBadge+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-bg);color:var(--accent)">'+r.s.plan+'</span></td><td class="r" style="font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--text)')+'">'+Y(r.cost)+'</td><td class="r">'+Y(r.planCost)+'</td><td class="r" style="font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--success)')+'">'+
-    (r.diff>=0?'+':'')+Y(r.diff)+'</td><td class="r">'+Y(r.s.moRevenue)+'</td><td class="r">'+Y(r.grossProfit)+'</td><td class="r" style="font-size:11px">'+calls+'回</td><td><div style="width:60px;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden"><div style="width:'+Math.min(r.alertPct,100)+'%;height:100%;background:'+r.alertColor+';border-radius:3px"></div></div></td></tr>';
+    return '<tr style="'+rowStyle+'">'+
+      '<td style="text-align:left">'+escHtml(r.s.name)+heavyBadge+'</td>'+
+      '<td style="text-align:left"><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-bg);color:var(--accent)">'+r.s.plan+'</span></td>'+
+      '<td style="text-align:left;font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--text)')+'">'+Y(r.cost)+'</td>'+
+      '<td style="text-align:left">'+Y(r.planCost)+'</td>'+
+      '<td style="text-align:left;font-weight:700;color:'+(r.isOver?'var(--danger)':'var(--success)')+'">'+(r.diff>=0?'+':'')+Y(r.diff)+'</td>'+
+      '<td style="text-align:left">'+Y(r.s.moRevenue)+'</td>'+
+      '<td style="text-align:left">'+Y(r.grossProfit)+'</td>'+
+      '<td style="text-align:left;font-size:11px">'+calls+'回</td>'+
+      '<td style="text-align:left"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;font-weight:700;min-width:38px;color:'+r.usageColor+'">'+r.usagePct.toFixed(1)+'%</span><div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden"><div style="width:'+Math.min(r.usagePct,100)+'%;height:100%;background:'+r.usageColor+';border-radius:3px"></div></div></div></td>'+
+    '</tr>';
   });
 
   const srcBadge=_costDataSource==='real'?'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(0,184,148,.12);color:#00b894">🟢 実データ接続中</span>':'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(225,112,85,.12);color:#e17055">デモデータ</span>';
+  const heavyNote='<div style="font-size:10px;color:var(--text-light);margin-bottom:8px">🔥 ヘビーユーザー = 直近2ヶ月以上連続で全店舗トップ10</div>';
+  // Top 10 shown, rest scrollable (~10 rows visible, max-height ~400px)
   return '<div class="card"><div class="card-title">🏪 店舗別コスト一覧 '+srcBadge+' <span class="ct-right"><button class="btn btn-s btn-sm" onclick="downloadCostCSV()">📥 CSVダウンロード</button></span></div>'+
-    '<table class="dt"><thead><tr><th>店舗名</th><th>プラン</th><th class="r">今月AIコスト</th><th class="r">プラン原価</th><th class="r">差額</th><th class="r">MO売上</th><th class="r">粗利</th><th class="r">API呼出</th><th>使用率</th></tr></thead><tbody>'+
+    heavyNote+
+    '<div style="max-height:440px;overflow-y:auto">'+
+    '<table class="dt" style="table-layout:fixed;width:100%"><thead style="position:sticky;top:0;background:#fff;z-index:1"><tr>'+
+      '<th style="text-align:left;width:18%">店舗名</th>'+
+      '<th style="text-align:left;width:8%">プラン</th>'+
+      '<th style="text-align:left;width:11%">今月AIコスト</th>'+
+      '<th style="text-align:left;width:10%">プラン原価</th>'+
+      '<th style="text-align:left;width:10%">差額</th>'+
+      '<th style="text-align:left;width:11%">MO売上</th>'+
+      '<th style="text-align:left;width:9%">粗利</th>'+
+      '<th style="text-align:left;width:9%">API呼出</th>'+
+      '<th style="text-align:left;width:14%">使用率</th>'+
+    '</tr></thead><tbody>'+
     trs.join('')+
-    '</tbody></table></div>';
+    '</tbody></table></div></div>';
 }
 
 // CSV download
@@ -3699,30 +4024,6 @@ function downloadCostCSV(){
   a.href=url;a.download='aiden_cost_report_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();URL.revokeObjectURL(url);
   showToast('📥 CSVをダウンロードしました');
-}
-
-// (F) Alert settings
-function renderCostAlertSection(){
-  const thisM=getThisMonthLogs();
-  const storeMap={};
-  thisM.forEach(l=>{storeMap[l.store_id]=(storeMap[l.store_id]||0)+l.estimated_cost_jpy;});
-
-  const rows=COST_STORES.map(s=>{
-    const cost=storeMap[s.id]||0;
-    const limit=costAlerts[s.id]||PLAN_ALERT_DEFAULTS[s.plan];
-    const pct=Math.round(cost/limit*100);
-    let alertBadge='';
-    if(pct>=100)alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(214,48,49,.12);color:var(--danger)">🔴 上限超過</span>';
-    else if(pct>=80)alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(225,112,85,.12);color:#e17055">🟠 80%到達</span>';
-    else alertBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(0,184,148,.12);color:var(--success)">正常</span>';
-    return '<tr><td>'+s.name+'</td><td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--accent-bg);color:var(--accent)">'+s.plan+'</span></td><td class="r">'+Y(cost)+'</td><td class="r"><input type="number" value="'+limit+'" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;text-align:right" onchange="costAlerts[\''+s.id+'\']=Number(this.value);refreshCostData()"></td><td class="r">'+pct+'%</td><td>'+alertBadge+'</td></tr>';
-  });
-
-  return '<div class="card"><div class="card-title">🚨 アラート設定 <span class="ct-right"><button class="btn btn-p btn-sm" onclick="showToast(\'✅ アラート設定を保存しました\')">保存</button></span></div>'+
-    '<div style="font-size:11px;color:var(--text-light);margin-bottom:12px">店舗ごとの月間AIコスト上限を設定できます。デフォルト: STD ¥500 / PRO ¥1,200 / EXPERT ¥5,000</div>'+
-    '<table class="dt"><thead><tr><th>店舗名</th><th>プラン</th><th class="r">今月コスト</th><th class="r">上限 (¥)</th><th class="r">消化率</th><th>ステータス</th></tr></thead><tbody>'+
-    rows.join('')+
-    '</tbody></table></div>';
 }
 
 // (C) Chart.js cost trend chart
