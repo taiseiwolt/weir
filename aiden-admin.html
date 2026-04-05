@@ -94,6 +94,7 @@
   <div class="nav-item" data-page="billing" onclick="goTo('billing')"><span class="icon">🧾</span><span class="label">請求管理</span></div>
   <div class="sb-div"></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
+  <div class="nav-item" data-page="auditlog" onclick="goTo('auditlog')"><span class="icon">📋</span><span class="label">操作ログ</span></div>
   <div class="nav-item" data-page="bulk" onclick="goTo('bulk')"><span class="icon">📥</span><span class="label">データ一括管理</span></div>
 </nav>
 <main class="content" id="content"></main>
@@ -381,7 +382,7 @@ function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSide
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -413,6 +414,7 @@ function renderPage(){
   else if(v.type==='cost')el.innerHTML=renderCostManagement();
   else if(v.type==='billing')el.innerHTML=renderBilling();
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
+  else if(v.type==='auditlog'){el.innerHTML=renderAuditLogPage();loadAuditLogs();}
   else if(v.type==='bulk')el.innerHTML=renderBulkPage();
   else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
@@ -1851,6 +1853,9 @@ const BULK_TEMPLATES={
 
 const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ'};
 let _bulkDbType=null;let _bulkDbItems=null;let _bulkDbErrors=[];
+
+function renderAuditLogPage(){return '<div class="page-title">操作ログ</div><div class="page-subtitle">準備中...</div>';}
+function loadAuditLogs(){}
 
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
