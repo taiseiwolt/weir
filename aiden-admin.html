@@ -105,6 +105,7 @@
 let CORPS=[];
 const PII_ACCESS_DEFAULTS={member_name:true,member_email:true,member_phone:true,member_address:true,order_history:true,guest_info:false};
 let BRANDS=[];
+let BRAND_PERMISSIONS=[];
 let STORES=[];
 let ACCOUNTS=[];
 const BANS=[
@@ -120,7 +121,8 @@ const ADMIN_ORDERS=[{id:'ORD-1001',storeId:'STR-dF5tY7n',storeName:'炭火亭 �
 const REFUND_LOG=[{id:'RFD-demo001',orderId:'ORD-1004',amount:8640,reason:'商品品質問題',refundedBy:'Taisei',createdAt:'2026-03-08'}];
 const MEMBERS=[{id:'MBR-dE4jP6d',name:'高橋 翔太',email:'takahashi@gmail.com',phone:'090-1234-5678',rank:'ゴールド',points:2450,orders:18,lastOrder:'2026-03-10',joined:'2025-08-15'},{id:'MBR-fG5kQ7e',name:'中村 あゆみ',email:'nakamura@gmail.com',phone:'080-2345-6789',rank:'シルバー',points:890,orders:8,lastOrder:'2026-03-08',joined:'2025-11-20'},{id:'MBR-hJ6mR8f',name:'小林 健太',email:'kobayashi@yahoo.co.jp',phone:'070-3456-7890',rank:'レギュラー',points:320,orders:3,lastOrder:'2026-02-25',joined:'2026-01-10'},{id:'MBR-jK7nS9g',name:'渡辺 さくら',email:'watanabe@icloud.com',phone:'090-4567-8901',rank:'ゴールド',points:3100,orders:24,lastOrder:'2026-03-11',joined:'2025-06-01'},{id:'MBR-kL8pT2h',name:'伊藤 大地',email:'ito.d@gmail.com',phone:'080-5678-9012',rank:'レギュラー',points:150,orders:2,lastOrder:'2026-03-05',joined:'2026-02-20'}];
 const GUESTS=[{id:'GST-mN9qU3j',orderCount:3,lastOrder:'2026-03-10',channel:'takeout'},{id:'GST-pQ2rV4k',orderCount:1,lastOrder:'2026-03-08',channel:'delivery'},{id:'GST-rS3sW5m',orderCount:5,lastOrder:'2026-03-11',channel:'dinein'}];
-const MENU=[{id:1,name:'特選カルビ',price:1280,cat:'焼肉',emoji:'🥩',desc:'厳選A5ランク黒毛和牛'},{id:2,name:'ハラミ',price:980,cat:'焼肉',emoji:'🥩',desc:'ジューシーな赤身肉'},{id:3,name:'牛タン塩',price:1180,cat:'焼肉',emoji:'🥩',desc:'厚切りタン'},{id:4,name:'ホルモン盛合せ',price:880,cat:'焼肉',emoji:'🥩',desc:'5種盛り'},{id:5,name:'上ロース',price:1480,cat:'焼肉',emoji:'🥩',desc:'さっぱり上質'},{id:6,name:'石焼ビビンバ',price:780,cat:'ご飯もの',emoji:'🍚',desc:'アツアツ石鍋'},{id:7,name:'カルビクッパ',price:880,cat:'ご飯もの',emoji:'🍚',desc:'旨辛スープご飯'},{id:8,name:'わかめスープ',price:350,cat:'スープ',emoji:'🥣',desc:'定番'},{id:9,name:'冷麺',price:880,cat:'麺',emoji:'🍜',desc:'盛岡冷麺'},{id:10,name:'チョレギサラダ',price:580,cat:'サラダ',emoji:'🥗',desc:'ごま油ドレッシング'},{id:11,name:'生ビール',price:550,cat:'ドリンク',emoji:'🍺',desc:'プレミアムモルツ'}];
+let MENU=[];
+let currentMenuPatternId=null;
 
 // SERVICES MASTER
 const SERVICES=[
@@ -218,6 +220,9 @@ async function loadAllData(){
       lastLogin:r.last_login?(new Date(r.last_login).toISOString().split('T')[0]):'—'
     };
   });
+  // Load brand_permissions
+  const {data:bpRaw}=await sb.from('brand_permissions').select('*');
+  BRAND_PERMISSIONS=bpRaw||[];
   // Load service subscriptions into svcState
   svcState={};
   const uuidToDisplayId={};
@@ -1422,15 +1427,198 @@ function renderBrandPage(b){
   '<div class="tab-content" id="brand-news"><div class="card"><div class="card-title">ニュース管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddNewsModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandNewsList-'+b.id+'">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">記事本文はMarkdown記法で入力できます。</div></div></div>'+
   '<div class="tab-content" id="brand-campaign"><div class="card"><div class="card-title">キャンペーン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCampaignModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCampaignList-'+b.id+'">読み込み中...</div></div></div>'+
   '<div class="tab-content" id="brand-coupon"><div class="card"><div class="card-title">クーポン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCouponModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCouponList-'+b.id+'">読み込み中...</div></div></div>'+
-  '<div class="tab-content" id="brand-member"><div class="card"><div class="card-title">会員プログラム <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>プログラム名</label><input type="text" value="'+b.name+' メンバーズ"></div><div class="form-group"><label>ポイント付与率</label><input type="text" value="1%"></div></div></div><div class="card"><div class="card-title">CRM配信</div><div class="toggle-row"><label style="font-size:12px;font-weight:600">メール配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">LINE配信</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
-  '<div class="tab-content" id="brand-menu"><div class="card"><div class="card-title">メニュー管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'＋ 新規追加\')">＋ 新規追加</button></span></div><div class="menu-toolbar"><input class="menu-search" placeholder="🔍 商品名で検索..." id="brandMenuSearch" oninput="renderBrandMenu()"><div id="brandMenuCats"></div></div><div class="menu-grid" id="brandMenuGrid"></div></div></div>'+
-  '<div class="tab-content" id="brand-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" value="100"></div><div class="form-group"><label>当日（%）</label><input type="number" value="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" value="50"></div></div></div></div>'+
+  '<div class="tab-content" id="brand-member"><div class="card" style="position:relative;opacity:0.5;pointer-events:none"><span style="position:absolute;top:10px;right:10px;font-size:9px;background:#dfe6e9;color:#636e72;padding:2px 8px;border-radius:4px;font-weight:700">Coming Soon</span><div class="card-title">会員プログラム</div><div class="form-grid"><div class="form-group"><label>プログラム名</label><input type="text" value="'+escHtml(b.name)+' メンバーズ" disabled></div><div class="form-group"><label>ポイント付与率</label><input type="text" value="1%" disabled></div></div></div><div class="card" style="position:relative;opacity:0.5;pointer-events:none"><span style="position:absolute;top:10px;right:10px;font-size:9px;background:#dfe6e9;color:#636e72;padding:2px 8px;border-radius:4px;font-weight:700">Coming Soon</span><div class="card-title">CRM配信</div><div class="toggle-row"><label style="font-size:12px;font-weight:600">メール配信</label><label class="toggle-sw"><input type="checkbox" checked disabled><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">LINE配信</label><label class="toggle-sw"><input type="checkbox" checked disabled><span class="slider"></span></label></div></div></div>'+
+  '<div class="tab-content" id="brand-menu"><div class="card"><div class="card-title">メニュー管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddMenuPatternModal(\''+b._uuid+'\',\''+b.id+'\')">＋ パターン追加</button></span></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><select id="brandMenuPatternSelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:200px" onchange="onMenuPatternChange(\''+b._uuid+'\',\''+b.id+'\')"></select><button class="btn btn-secondary btn-sm" onclick="openEditMenuPatternModal(\''+b._uuid+'\',\''+b.id+'\')">パターン編集</button><button class="btn btn-danger btn-sm" onclick="deleteMenuPattern(\''+b._uuid+'\',\''+b.id+'\')">パターン削除</button></div></div><div class="card"><div class="card-title">商品一覧 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddProductModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 商品追加</button></span></div><div class="menu-toolbar"><input class="menu-search" placeholder="🔍 商品名で検索..." id="brandMenuSearch" oninput="renderBrandMenu()"><div id="brandMenuCats" style="margin-top:8px"></div></div><div class="menu-grid" id="brandMenuGrid"></div></div></div>'+
+  '<div class="tab-content" id="brand-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandCancelPolicy(\''+b.id+'\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド共通のキャンセルポリシーです。店舗ごとに上書き可能です。</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" id="cancelNoShow" value="'+((b.cancelPolicy&&b.cancelPolicy.no_show!=null)?b.cancelPolicy.no_show:100)+'"></div><div class="form-group"><label>当日（%）</label><input type="number" id="cancelSameDay" value="'+((b.cancelPolicy&&b.cancelPolicy.same_day!=null)?b.cancelPolicy.same_day:100)+'"></div><div class="form-group"><label>3日前（%）</label><input type="number" id="cancel3Days" value="'+((b.cancelPolicy&&b.cancelPolicy['3_days_before']!=null)?b.cancelPolicy['3_days_before']:50)+'"></div></div></div></div>'+
   '<div class="tab-content" id="brand-pii"><div class="card"><div class="card-title">🔒 個人情報アクセス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePiiAccessSettings(\''+b.id+'\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">加盟店スタッフがエンドユーザーの個人情報にアクセスできる範囲を制御します。設定はこのブランド配下の全店舗に適用されます。</p><div id="piiAccessToggles">'+renderPiiAccessToggles(b)+'</div></div></div>'+
-  '<div class="tab-content" id="brand-related"><div class="card"><div class="card-title">所属法人</div><div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div></div><div class="card"><div class="card-title">店舗一覧（'+ss.length+'）</div><div class="link-grid">'+ss.map(s=>'<div class="link-card" onclick="goToStore(\''+s.id+'\')"><div class="lc-icon store">🏪</div><div class="lc-info"><div class="lc-name">'+s.name+'</div><div class="lc-sub">'+s.addr+'</div></div><div class="lc-arrow">›</div></div>').join('')+'</div></div></div>';
+  '<div class="tab-content" id="brand-related"><div class="card"><div class="card-title">所属法人</div><div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+escHtml(cp.name)+'</div><div class="lc-sub">'+escHtml(cp.id)+'</div></div><div class="lc-arrow">›</div></div></div><div class="card"><div class="card-title">店舗一覧（'+ss.length+'）</div>'+(ss.length?'<table class="data-table"><thead><tr><th>店舗コード</th><th>店舗名</th><th>住所</th><th>ステータス</th><th></th></tr></thead><tbody>'+ss.map(s=>'<tr><td style="font-family:monospace;font-size:11px">'+escHtml(s.id)+'</td><td>'+escHtml(s.name)+'</td><td>'+escHtml(s.addr||'—')+'</td><td><span class="status '+(s.status==='active'?'status-active':s.status==='trial'?'status-trial':'status-suspended')+'">'+escHtml(s.status)+'</span></td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>').join('')+'</tbody></table>':'<div class="empty-state">店舗がありません</div>')+'</div></div>';
 }
 let brandMenuCat='all';
-function renderBrandMenu(){const q=((document.getElementById('brandMenuSearch')||{}).value||'').toLowerCase();const cats=['all',...new Set(MENU.map(m=>m.cat))];const ce=document.getElementById('brandMenuCats');if(ce)ce.innerHTML=cats.map(c=>'<span class="cat-chip'+(brandMenuCat===c?' active':'')+'" onclick="brandMenuCat=\''+c+'\';renderBrandMenu()">'+(c==='all'?'すべて':c)+'</span>').join(' ');let items=MENU;if(brandMenuCat!=='all')items=items.filter(m=>m.cat===brandMenuCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));const ge=document.getElementById('brandMenuGrid');if(ge)ge.innerHTML=items.map(m=>'<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+m.name+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+m.cat+'</div><div class="mcard-desc">'+m.desc+'</div><div class="mcard-footer"><button onclick="showToast(\'📝 編集\')">編集</button></div></div></div>').join('')||'<div class="empty-state">該当なし</div>';}
-function initBrandTabs(){brandMenuCat='all';renderBrandMenu();var b=BRANDS.find(x=>x.id===currentView.id);if(b){loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}}
+function menuCardHtml(m){return '<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+escHtml(m.name)+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+escHtml(m.cat)+'</div><div class="mcard-desc">'+escHtml(m.desc||'')+'</div><div class="mcard-footer"><button onclick="openEditProductModal(\''+m._uuid+'\')">編集</button><button onclick="deleteProduct(\''+m._uuid+'\')">削除</button></div></div></div>';}
+function renderBrandMenu(){const q=((document.getElementById('brandMenuSearch')||{}).value||'').toLowerCase();const cats=['all',...new Set(MENU.map(m=>m.cat))];const ce=document.getElementById('brandMenuCats');if(ce)ce.innerHTML=cats.map(c=>'<span class="cat-chip'+(brandMenuCat===c?' active':'')+'" onclick="brandMenuCat=\''+c+'\';renderBrandMenu()">'+(c==='all'?'すべて':escHtml(c))+'</span>').join(' ');let items=MENU;if(brandMenuCat!=='all')items=items.filter(m=>m.cat===brandMenuCat);if(q)items=items.filter(m=>m.name.toLowerCase().includes(q));const ge=document.getElementById('brandMenuGrid');if(!ge)return;if(!items.length){ge.innerHTML='<div class="empty-state">該当なし</div>';return;}if(brandMenuCat==='all'){const groups={};items.forEach(m=>{const c=m.cat||'その他';if(!groups[c])groups[c]=[];groups[c].push(m);});let html='';Object.keys(groups).forEach(cat=>{html+='<div style="grid-column:1/-1;font-size:14px;font-weight:700;margin-top:8px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--border)">'+escHtml(cat)+'</div>';groups[cat].forEach(m=>{html+=menuCardHtml(m);});});ge.innerHTML=html;}else{ge.innerHTML=items.map(m=>menuCardHtml(m)).join('');}}
+function initBrandTabs(){brandMenuCat='all';var b=BRANDS.find(x=>x.id===currentView.id);if(b){loadMenuPatterns(b._uuid,b.id);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}}
+
+// ===== MENU PATTERN FUNCTIONS =====
+async function loadMenuPatterns(brandUuid,brandDisplayId){
+  try{
+    const {data,error}=await sb.from('menu_patterns').select('*').eq('brand_id',brandUuid).order('code');
+    if(error)throw error;
+    const sel=document.getElementById('brandMenuPatternSelect');
+    if(!sel)return;
+    if(!data||!data.length){
+      sel.innerHTML='<option value="">パターンなし</option>';
+      currentMenuPatternId=null;MENU=[];renderBrandMenu();return;
+    }
+    sel.innerHTML=data.map(p=>'<option value="'+p.id+'">'+escHtml(p.code+' — '+p.name)+(p.is_active?'':' (無効)')+'</option>').join('');
+    currentMenuPatternId=data[0].id;
+    await loadMenuProducts(currentMenuPatternId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+function onMenuPatternChange(brandUuid,brandDisplayId){
+  const sel=document.getElementById('brandMenuPatternSelect');
+  if(!sel)return;
+  const val=sel.value;
+  if(val){currentMenuPatternId=val;loadMenuProducts(val);}
+  else{currentMenuPatternId=null;MENU=[];renderBrandMenu();}
+}
+async function loadMenuProducts(patternId){
+  try{
+    const {data,error}=await sb.from('products').select('*').eq('menu_pattern_id',patternId).order('category').order('name');
+    if(error)throw error;
+    MENU=(data||[]).map(r=>({_uuid:r.id,id:r.id,name:r.name||'',price:r.price||0,cat:r.category||'',emoji:r.emoji||'🍽',desc:r.description||''}));
+    brandMenuCat='all';renderBrandMenu();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function openAddMenuPatternModal(brandUuid,brandDisplayId){
+  let nextCode='MP-001';
+  try{
+    const {data}=await sb.from('menu_patterns').select('code').eq('brand_id',brandUuid).order('code',{ascending:false}).limit(1);
+    if(data&&data.length){const num=parseInt(data[0].code.replace('MP-',''))||0;nextCode='MP-'+String(num+1).padStart(3,'0');}
+  }catch(e){}
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>メニューパターン追加</h3>'+
+  '<div class="form-grid">'+
+  '<div class="form-group"><label>コード</label><input type="text" id="mpCode" value="'+nextCode+'" readonly style="background:#f5f6fa"></div>'+
+  '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="mpName" placeholder="例: ランチメニュー"></div>'+
+  '</div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="saveMenuPattern(\''+brandUuid+'\',\''+brandDisplayId+'\')">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+async function saveMenuPattern(brandUuid,brandDisplayId){
+  const code=(document.getElementById('mpCode')||{}).value||'';
+  const name=(document.getElementById('mpName')||{}).value||'';
+  if(!name.trim()){showToast('⚠️ パターン名は必須です');return;}
+  try{
+    const {error}=await sb.from('menu_patterns').insert({brand_id:brandUuid,code:code,name:name.trim()});
+    if(error)throw error;
+    logAudit('create_menu_pattern','menu_patterns',brandUuid,{code,name:name.trim()});
+    closeModal();showToast('✅ メニューパターンを追加しました');
+    await loadMenuPatterns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function openEditMenuPatternModal(brandUuid,brandDisplayId){
+  if(!currentMenuPatternId){showToast('⚠️ パターンを選択してください');return;}
+  try{
+    const {data,error}=await sb.from('menu_patterns').select('*').eq('id',currentMenuPatternId).single();
+    if(error)throw error;
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>メニューパターン編集</h3>'+
+    '<div class="form-grid">'+
+    '<div class="form-group"><label>コード</label><input type="text" value="'+escHtml(data.code)+'" readonly style="background:#f5f6fa"></div>'+
+    '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="mpEditName" value="'+escHtml(data.name)+'"></div>'+
+    '<div class="form-group"><label>有効</label><label class="toggle-sw"><input type="checkbox" id="mpEditActive" '+(data.is_active!==false?'checked':'')+'><span class="slider"></span></label></div>'+
+    '</div>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="updateMenuPattern(\''+currentMenuPatternId+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function updateMenuPattern(patternId,brandUuid,brandDisplayId){
+  const name=(document.getElementById('mpEditName')||{}).value||'';
+  if(!name.trim()){showToast('⚠️ パターン名は必須です');return;}
+  const isActive=document.getElementById('mpEditActive')?.checked!==false;
+  try{
+    const {error}=await sb.from('menu_patterns').update({name:name.trim(),is_active:isActive}).eq('id',patternId);
+    if(error)throw error;
+    logAudit('update_menu_pattern','menu_patterns',patternId,{name:name.trim(),is_active:isActive});
+    closeModal();showToast('✅ メニューパターンを更新しました');
+    await loadMenuPatterns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function deleteMenuPattern(brandUuid,brandDisplayId){
+  if(!currentMenuPatternId){showToast('⚠️ パターンを選択してください');return;}
+  if(!confirm('このメニューパターンと紐づく商品をすべて削除します。よろしいですか？'))return;
+  try{
+    const {error}=await sb.from('menu_patterns').delete().eq('id',currentMenuPatternId);
+    if(error)throw error;
+    logAudit('delete_menu_pattern','menu_patterns',currentMenuPatternId,{});
+    currentMenuPatternId=null;
+    showToast('✅ メニューパターンを削除しました');
+    await loadMenuPatterns(brandUuid,brandDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== PRODUCT CRUD =====
+function openAddProductModal(brandUuid,brandDisplayId){
+  if(!currentMenuPatternId){showToast('⚠️ 先にメニューパターンを作成してください');return;}
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>商品追加</h3>'+
+  '<div class="form-grid">'+
+  '<div class="form-group"><label>商品名 <span style="color:var(--danger)">*</span></label><input type="text" id="prodName" placeholder="例: 特選カルビ"></div>'+
+  '<div class="form-group"><label>価格 <span style="color:var(--danger)">*</span></label><input type="number" id="prodPrice" placeholder="1280"></div>'+
+  '<div class="form-group"><label>カテゴリ</label><input type="text" id="prodCategory" placeholder="例: 焼肉"></div>'+
+  '<div class="form-group"><label>絵文字</label><input type="text" id="prodEmoji" value="🍽" style="width:60px"></div>'+
+  '<div class="form-group full"><label>説明</label><textarea id="prodDesc" rows="2" placeholder="商品の説明..."></textarea></div>'+
+  '</div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="saveProduct(\''+brandUuid+'\',\''+brandDisplayId+'\')">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+async function saveProduct(brandUuid,brandDisplayId){
+  const name=(document.getElementById('prodName')||{}).value||'';
+  const price=parseInt((document.getElementById('prodPrice')||{}).value)||0;
+  if(!name.trim()||!price){showToast('⚠️ 商品名と価格は必須です');return;}
+  const category=(document.getElementById('prodCategory')||{}).value||'';
+  const emoji=(document.getElementById('prodEmoji')||{}).value||'🍽';
+  const desc=(document.getElementById('prodDesc')||{}).value||'';
+  try{
+    const {error}=await sb.from('products').insert({name:name.trim(),price:price,category:category.trim(),emoji:emoji,description:desc.trim(),menu_pattern_id:currentMenuPatternId,brand_id:brandUuid});
+    if(error)throw error;
+    logAudit('create_product','products',brandUuid,{name:name.trim(),price});
+    closeModal();showToast('✅ 商品を追加しました');
+    await loadMenuProducts(currentMenuPatternId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function openEditProductModal(productUuid){
+  try{
+    const {data,error}=await sb.from('products').select('*').eq('id',productUuid).single();
+    if(error)throw error;
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>商品編集</h3>'+
+    '<div class="form-grid">'+
+    '<div class="form-group"><label>商品名 <span style="color:var(--danger)">*</span></label><input type="text" id="prodEditName" value="'+escHtml(data.name)+'"></div>'+
+    '<div class="form-group"><label>価格 <span style="color:var(--danger)">*</span></label><input type="number" id="prodEditPrice" value="'+(data.price||0)+'"></div>'+
+    '<div class="form-group"><label>カテゴリ</label><input type="text" id="prodEditCategory" value="'+escHtml(data.category||'')+'"></div>'+
+    '<div class="form-group"><label>絵文字</label><input type="text" id="prodEditEmoji" value="'+escHtml(data.emoji||'🍽')+'" style="width:60px"></div>'+
+    '<div class="form-group full"><label>説明</label><textarea id="prodEditDesc" rows="2">'+escHtml(data.description||'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="updateProduct(\''+productUuid+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function updateProduct(productId){
+  const name=(document.getElementById('prodEditName')||{}).value||'';
+  const price=parseInt((document.getElementById('prodEditPrice')||{}).value)||0;
+  if(!name.trim()||!price){showToast('⚠️ 商品名と価格は必須です');return;}
+  const category=(document.getElementById('prodEditCategory')||{}).value||'';
+  const emoji=(document.getElementById('prodEditEmoji')||{}).value||'🍽';
+  const desc=(document.getElementById('prodEditDesc')||{}).value||'';
+  try{
+    const {error}=await sb.from('products').update({name:name.trim(),price:price,category:category.trim(),emoji:emoji,description:desc.trim()}).eq('id',productId);
+    if(error)throw error;
+    logAudit('update_product','products',productId,{name:name.trim(),price});
+    closeModal();showToast('✅ 商品を更新しました');
+    if(currentMenuPatternId)await loadMenuProducts(currentMenuPatternId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function deleteProduct(productId){
+  if(!confirm('この商品を削除しますか？'))return;
+  try{
+    const {error}=await sb.from('products').delete().eq('id',productId);
+    if(error)throw error;
+    logAudit('delete_product','products',productId,{});
+    showToast('✅ 商品を削除しました');
+    if(currentMenuPatternId)await loadMenuProducts(currentMenuPatternId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+// ===== CANCEL POLICY =====
+async function saveBrandCancelPolicy(brandDisplayId){
+  const b=BRANDS.find(x=>x.id===brandDisplayId);
+  if(!b)return;
+  const policy={
+    no_show:parseInt(document.getElementById('cancelNoShow')?.value)||0,
+    same_day:parseInt(document.getElementById('cancelSameDay')?.value)||0,
+    '3_days_before':parseInt(document.getElementById('cancel3Days')?.value)||0
+  };
+  try{
+    const {error}=await sb.from('brands').update({cancel_policy:policy}).eq('id',b._uuid);
+    if(error)throw error;
+    b.cancelPolicy=policy;
+    logAudit('update_cancel_policy','brands',b._uuid,{policy});
+    showToast('✅ キャンセルポリシーを保存しました');
+  }catch(e){showToast('⚠️ '+e.message);}
+}
 
 // ===== PII ACCESS SETTINGS =====
 const PII_FIELDS=[
@@ -1780,6 +1968,7 @@ function openAddBrandModal(){
   '<div class="form-group"><label>スラッグ <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandSlug" placeholder="例: sumibite"></div>'+
   '<div class="form-group"><label>所属法人 <span style="color:var(--danger)">*</span></label><select id="addBrandCorp">'+CORPS.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')+'</select></div>'+
   '<div class="form-group"><label>メインカラー</label><input type="color" id="addBrandColor" value="#6c5ce7" style="width:60px;height:36px;border:none;cursor:pointer"></div>'+
+  '<div class="form-group"><label>ブランド種別</label><select id="addBrandType"><option value="own">自社ブランド（owner権限）</option><option value="fc">FC加盟（viewer権限）</option></select></div>'+
   '<div class="form-group"><label>ステータス</label><select id="addBrandStatus"><option value="active" selected>稼働中</option><option value="trial">トライアル</option></select></div>'+
   '</div>'+
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveBrand()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
@@ -1795,8 +1984,14 @@ async function saveBrand(){
   try{
     const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,corp_id:corp._uuid,primary_color:mainColor})});
     const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
-    BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'active',mainColor:mainColor,pii_access_settings:{...PII_ACCESS_DEFAULTS}});
-    closeModal();showToast('✅ ブランドを追加しました');renderPage();
+    const brandType=(document.getElementById('addBrandType')||{}).value||'own';
+    const permRole=brandType==='fc'?'viewer':'owner';
+    const corpAccounts=ACCOUNTS.filter(a=>a.corpId===corpDisplayId);
+    for(const acc of corpAccounts){
+      try{await sb.from('brand_permissions').insert({account_id:acc._uuid,brand_id:d.data.id,role:permRole});}catch(e){}
+    }
+    BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'active',mainColor:mainColor,secondaryColor:'#a29bfe',fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
+    closeModal();showToast('✅ ブランドを追加しました（権限: '+permRole+'）');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
