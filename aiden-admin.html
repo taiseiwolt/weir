@@ -399,6 +399,11 @@ function switchTab(prefix,el,tabId){
   const container=document.getElementById('content');
   container.querySelectorAll('.tab-content').forEach(tc=>{if(tc.id&&tc.id.startsWith(prefix+'-'))tc.classList.remove('active');});
   const tgt=document.getElementById(prefix+'-'+tabId);if(tgt)tgt.classList.add('active');
+  // Fee schedule lazy load
+  if(prefix==='corp'&&tabId==='fees'){
+    var c=CORPS.find(function(x){return x.id===currentView.id;});
+    if(c)loadFeeSchedules(c._uuid,c.id);
+  }
 }
 
 // PAGE RENDERING
@@ -1362,12 +1367,15 @@ function renderCorpPage(c){
   '<div class="page-header"><div class="page-title">'+c.name+'</div><span class="page-type-badge corp">法人</span></div>'+
   '<div class="page-subtitle">'+c.id+' / '+c.rep+' / '+statusBadge(c.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)"><div class="stat-card purple"><div class="sc-label">ブランド数</div><div class="sc-val">'+brands.length+'</div></div><div class="stat-card blue"><div class="sc-label">店舗数</div><div class="sc-val">'+stores.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card orange"><div class="sc-label">アカウント数</div><div class="sc-val">'+accounts.length+'</div></div></div>'+
-  '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント一覧</div></div>'+
+  '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'fees\')">手数料設定</div></div>'+
   '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveCorpBasic(\''+c.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
   '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント一覧 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(a.lastLogin||'—')+'</td><td><button class="btn btn-secondary btn-sm" style="margin-right:4px" onclick="openEditAccountModal(\''+a.id+'\')">編集</button><button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
-  '<div class="tab-content" id="corp-stores"><div class="card"><div class="card-title">店舗一覧（'+stores.length+'）</div><table class="data-table"><thead><tr><th>ブランド</th><th>店舗名</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+stores.map(s=>{const br=getBrandForStore(s);return '<tr><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+'</tbody></table></div></div>';
+  '<div class="tab-content" id="corp-stores"><div class="card"><div class="card-title">店舗一覧（'+stores.length+'）</div><table class="data-table"><thead><tr><th>ブランド</th><th>店舗名</th><th class="r">月間売上</th><th></th></tr></thead><tbody>'+stores.map(s=>{const br=getBrandForStore(s);return '<tr><td>'+(br?br.name:'')+'</td><td style="font-weight:600">'+s.name+'</td><td class="r fw-800">'+Y(s.revenue)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';}).join('')+'</tbody></table></div></div>'+
+  '<div class="tab-content" id="corp-fees"><div class="card"><div class="card-title">💰 手数料スケジュール <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddFeeModal(\''+c._uuid+'\',\''+c.id+'\')">＋ 期間限定料率追加</button></span></div>'+
+    '<div id="feeScheduleList-'+c.id+'" style="color:#888;text-align:center;padding:20px">読み込み中...</div>'+
+  '</div></div>';
 }
 
 // ===== BRAND DETAIL =====
@@ -1435,6 +1443,111 @@ async function savePiiAccessSettings(brandId){
     console.error('PII save error:',e);
     showToast('⚠️ 保存に失敗しました（ローカル反映済み）');
   }
+}
+
+// ===== FEE SCHEDULES =====
+async function loadFeeSchedules(corpUuid,corpDisplayId){
+  var el=document.getElementById('feeScheduleList-'+corpDisplayId);
+  if(!el)return;
+  try{
+    var {data:fees,error}=await sb.from('fee_schedules').select('*').eq('corporation_id',corpUuid).order('fee_type').order('effective_from',{ascending:true});
+    if(error)throw error;
+    if(!fees||!fees.length){el.innerHTML='<div class="empty-state">手数料スケジュールが設定されていません</div>';return;}
+    var typeLabels={dinein:'店内注文',takeout:'テイクアウト',delivery:'デリバリー'};
+    var today=new Date().toISOString().slice(0,10);
+    var h='<table class="data-table"><thead><tr><th>チャネル</th><th class="r">料率</th><th>種別</th><th>開始日</th><th>終了日</th><th>ステータス</th><th></th></tr></thead><tbody>';
+    for(var i=0;i<fees.length;i++){
+      var f=fees[i];
+      var label=typeLabels[f.fee_type]||f.fee_type;
+      var rate=(f.rate*100).toFixed(2)+'%';
+      var kind=f.is_base?'<span style="font-size:10px;background:#e6f9f0;color:#00b894;padding:2px 6px;border-radius:4px;font-weight:700">ベース</span>':'<span style="font-size:10px;background:#fff3e0;color:#e17055;padding:2px 6px;border-radius:4px;font-weight:700">期間限定</span>';
+      var from=f.effective_from||'—';
+      var to=f.effective_to||'永久';
+      var status,statusStyle;
+      if(f.effective_to&&f.effective_to<today){status='過去';statusStyle='background:#dfe6e9;color:#636e72';}
+      else if(f.effective_from<=today&&(!f.effective_to||f.effective_to>=today)){status='現在';statusStyle='background:#0984e315;color:#0984e3';}
+      else{status='未来';statusStyle='background:#6c5ce715;color:#6c5ce7';}
+      var actions=f.is_base?
+        '<button class="btn btn-secondary btn-sm" onclick="openEditFeeModal(\''+f.id+'\',\''+corpUuid+'\',\''+corpDisplayId+'\')">編集</button>':
+        '<button class="btn btn-secondary btn-sm" style="margin-right:4px" onclick="openEditFeeModal(\''+f.id+'\',\''+corpUuid+'\',\''+corpDisplayId+'\')">編集</button><button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="deleteFeeSchedule(\''+f.id+'\',\''+corpUuid+'\',\''+corpDisplayId+'\')">削除</button>';
+      h+='<tr><td>'+escHtml(label)+'</td><td class="r" style="font-weight:800">'+rate+'</td><td>'+kind+'</td><td>'+from+'</td><td>'+to+'</td><td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;'+statusStyle+'">'+status+'</span></td><td>'+actions+'</td></tr>';
+    }
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="color:var(--danger)">読み込みエラー: '+escHtml(e.message)+'</div>';}
+}
+
+function openAddFeeModal(corpUuid,corpDisplayId){
+  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>💰 期間限定料率追加</h3>'+
+  '<div class="form-grid">'+
+    '<div class="form-group"><label>チャネル <span style="color:var(--danger)">*</span></label><select id="feeType"><option value="dinein">店内注文</option><option value="takeout">テイクアウト</option><option value="delivery">デリバリー</option></select></div>'+
+    '<div class="form-group"><label>料率（%）<span style="color:var(--danger)">*</span></label><input type="number" id="feeRate" step="0.01" min="0" max="100" placeholder="例: 3.80"></div>'+
+    '<div class="form-group"><label>開始日 <span style="color:var(--danger)">*</span></label><input type="date" id="feeFrom"></div>'+
+    '<div class="form-group"><label>終了日 <span style="color:var(--danger)">*</span></label><input type="date" id="feeTo"></div>'+
+  '</div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="saveFeeSchedule(\''+corpUuid+'\',\''+corpDisplayId+'\')">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+}
+
+function openEditFeeModal(feeId,corpUuid,corpDisplayId){
+  sb.from('fee_schedules').select('*').eq('id',feeId).single().then(function(res){
+    var f=res.data;
+    if(res.error||!f){showToast('⚠️ データ取得エラー');return;}
+    var typeLabel=f.fee_type==='dinein'?'店内注文':f.fee_type==='takeout'?'テイクアウト':'デリバリー';
+    openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>💰 料率編集</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>チャネル</label><input type="text" value="'+typeLabel+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+      '<div class="form-group"><label>料率（%）<span style="color:var(--danger)">*</span></label><input type="number" id="editFeeRate" step="0.01" min="0" max="100" value="'+(f.rate*100).toFixed(2)+'"></div>'+
+      '<div class="form-group"><label>開始日</label><input type="date" id="editFeeFrom" value="'+(f.effective_from||'')+'"'+(f.is_base?' readonly style="background:#f5f6fa"':'')+'></div>'+
+      '<div class="form-group"><label>終了日</label><input type="date" id="editFeeTo" value="'+(f.effective_to||'')+'"'+(f.is_base?' readonly style="background:#f5f6fa"':'')+'></div>'+
+    '</div>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="updateFeeSchedule(\''+feeId+'\',\''+corpUuid+'\',\''+corpDisplayId+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+  });
+}
+
+async function saveFeeSchedule(corpUuid,corpDisplayId){
+  var feeType=document.getElementById('feeType').value;
+  var rate=parseFloat(document.getElementById('feeRate').value);
+  var from=document.getElementById('feeFrom').value;
+  var to=document.getElementById('feeTo').value;
+  if(!feeType||isNaN(rate)||!from||!to){showToast('⚠️ 全項目を入力してください');return;}
+  try{
+    var {error}=await sb.from('fee_schedules').insert({
+      corporation_id:corpUuid, fee_type:feeType, rate:rate/100,
+      is_base:false, effective_from:from, effective_to:to
+    });
+    if(error)throw error;
+    logAudit('add_fee_schedule','fee_schedules',null,{corpId:corpDisplayId,feeType:feeType,rate:rate});
+    closeModal();showToast('✅ 期間限定料率を追加しました');
+    loadFeeSchedules(corpUuid,corpDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function updateFeeSchedule(feeId,corpUuid,corpDisplayId){
+  var rate=parseFloat(document.getElementById('editFeeRate').value);
+  var from=document.getElementById('editFeeFrom')?.value;
+  var to=document.getElementById('editFeeTo')?.value;
+  if(isNaN(rate)){showToast('⚠️ 料率を入力してください');return;}
+  try{
+    var update={rate:rate/100};
+    if(from)update.effective_from=from;
+    if(to)update.effective_to=to;
+    var {error}=await sb.from('fee_schedules').update(update).eq('id',feeId);
+    if(error)throw error;
+    logAudit('update_fee_schedule','fee_schedules',feeId,{rate:rate});
+    closeModal();showToast('✅ 料率を更新しました');
+    loadFeeSchedules(corpUuid,corpDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
+async function deleteFeeSchedule(feeId,corpUuid,corpDisplayId){
+  if(!confirm('この期間限定料率を削除しますか？'))return;
+  try{
+    var {error}=await sb.from('fee_schedules').delete().eq('id',feeId);
+    if(error)throw error;
+    logAudit('delete_fee_schedule','fee_schedules',feeId,{});
+    showToast('✅ 期間限定料率を削除しました');
+    loadFeeSchedules(corpUuid,corpDisplayId);
+  }catch(e){showToast('⚠️ '+e.message);}
 }
 
 // ===== STORE DETAIL =====
