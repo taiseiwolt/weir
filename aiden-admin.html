@@ -578,7 +578,24 @@ async function loadDashActivity(){
   }
 }
 
-function renderDashGMV(){var el=document.getElementById('dashGMV');if(!el)return;var d=CORPS.map(c=>({n:c.name.replace(/株式会社|有限会社/g,''),v:getStoresForCorp(c).reduce((s,x)=>s+x.revenue,0)}));var mx=Math.max(...d.map(x=>x.v));if(mx===0)mx=1;el.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n.substring(0,8)+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+Y(x.v)+'</span></div></div></div>').join('');}
+async function renderDashGMV(){
+  var el=document.getElementById('dashGMV');if(!el)return;
+  try{
+    var res=await sb.from('orders').select('store_id,total_amount').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
+    var orders=res.data||[];
+    // Build store_uuid→corp mapping
+    var storeCorpMap={};
+    STORES.forEach(function(s){var br=getBrandForStore(s);var cp=br?getCorpForBrand(br):null;if(cp)storeCorpMap[s._uuid]=cp.id;});
+    // Aggregate GMV by corp
+    var corpGMV={};
+    CORPS.forEach(function(c){corpGMV[c.id]=0;});
+    orders.forEach(function(o){var cid=storeCorpMap[o.store_id];if(cid)corpGMV[cid]+=(o.total_amount||0);});
+    var d=CORPS.map(function(c){return{n:c.name.replace(/株式会社|有限会社/g,''),v:corpGMV[c.id]||0};});
+    d.sort(function(a,b){return b.v-a.v;});
+    var mx=Math.max.apply(null,d.map(function(x){return x.v;}));if(mx===0)mx=1;
+    el.innerHTML=d.map(function(x){return '<div class="chart-bar-row"><div class="chart-bar-label">'+x.n.substring(0,8)+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+Y(x.v)+'</span></div></div></div>';}).join('')||'<div class="empty-state">データなし</div>';
+  }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
+}
 
 // ===== CORPS LIST =====
 function renderCorpsList(){
