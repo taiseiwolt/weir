@@ -2041,7 +2041,7 @@ async function loadBrandNews(brandUuid,brandDisplayId){
       var catLabel=NEWS_CAT_LABELS[n.category]||n.category||'-';
       var bodyLabel=n.body_html?'入力済み':'未入力';
       var statusLabel=n.status==='published'?'<span class="status-badge active" style="font-size:10px;padding:2px 8px">公開</span>':'<span class="status-badge" style="font-size:10px;padding:2px 8px;background:#f5f6fa;color:var(--text-light)">下書き</span>';
-      return '<tr><td>'+(n.published_at||'-')+'</td><td>'+escHtml(catLabel)+'</td><td>'+escHtml(n.title)+'</td><td><span style="font-size:11px;color:var(--text-light)">'+bodyLabel+'</span></td><td>'+statusLabel+'</td><td><button class="btn btn-secondary btn-sm" onclick="openEditNewsModal(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e74c3c" onclick="deleteBrandNews(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">削除</button></td></tr>';
+      return '<tr><td>'+escHtml(n.published_at||'-')+'</td><td>'+escHtml(catLabel)+'</td><td>'+escHtml(n.title)+'</td><td><span style="font-size:11px;color:var(--text-light)">'+bodyLabel+'</span></td><td>'+statusLabel+'</td><td><button class="btn btn-secondary btn-sm" onclick="openEditNewsModal(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">編集</button> <button class="btn btn-secondary btn-sm" style="color:#e74c3c" onclick="deleteBrandNews(\''+n.id+'\',\''+brandUuid+'\',\''+brandDisplayId+'\')">削除</button></td></tr>';
     }).join('')+'</tbody></table>';
   }catch(e){el.innerHTML='<div class="empty-state">読み込みエラー</div>';}
 }
