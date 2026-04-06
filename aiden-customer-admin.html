@@ -1606,7 +1606,7 @@ content.innerHTML = `
       <input type="date" id="sdCustomEnd" value="2026-02-28" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
       <button class="btn btn-primary btn-sm" onclick="sdUpdateDashboard()">適用</button>
     </div>
-    <select id="sdStatus" style="margin-left:auto;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <select id="sdStatus" onchange="sdUpdateDashboard()" style="margin-left:auto;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
       <option>受渡済＋キャンセル</option>
       <option>受渡済のみ</option>
       <option>キャンセルのみ</option>
@@ -7899,15 +7899,23 @@ async function sdUpdateDashboard() {
       }
     }
 
-    // Determine store & channel filters
+    // Determine store, channel, status filters
     const storeFilter = document.getElementById('sdStore')?.value;
     const channelFilter = document.getElementById('sdChannel')?.value || 'total';
     const channelMap = {dineIn: 'dinein', takeout: 'pickup', delivery: 'delivery'};
+    const statusSel = document.getElementById('sdStatus')?.value || '受渡済＋キャンセル';
+    const brandStoreIds = STORES.map(s => s.id);
 
     function buildOrderQuery(tMin, tMax) {
       let q = sb.from('orders').select('total_amount, delivery_fee, service_fee, status, created_at, order_type').gte('created_at', tMin).lte('created_at', tMax);
-      if (storeFilter && storeFilter !== 'all') q = q.eq('store_id', storeFilter);
+      if (storeFilter && storeFilter !== 'all') {
+        q = q.eq('store_id', storeFilter);
+      } else if (brandStoreIds.length > 0) {
+        q = q.in('store_id', brandStoreIds);
+      }
       if (channelFilter !== 'total' && channelMap[channelFilter]) q = q.eq('order_type', channelMap[channelFilter]);
+      if (statusSel === '受渡済のみ') q = q.in('status', ['completed', 'done', 'delivered', 'picked_up']);
+      else if (statusSel === 'キャンセルのみ') q = q.eq('status', 'cancelled');
       return q;
     }
 
@@ -7941,49 +7949,40 @@ async function sdUpdateDashboard() {
       return {text: sign + ' ' + Math.abs(pct) + '%' + (suffix || ' 前期比'), cls};
     }
 
-    if (orders && orders.length === 0 && (!prevOrders || prevOrders.length === 0)) {
-      document.getElementById('sdKpiSales').textContent = 'データがありません';
-      document.getElementById('sdKpiOrders').textContent = '-';
-      document.getElementById('sdKpiAvg').textContent = '-';
-      document.getElementById('sdKpiCancel').textContent = '-';
-      document.getElementById('sdKpiSalesDelta').textContent = periodLabel;
-      document.getElementById('sdKpiOrdersDelta').textContent = '';
-      document.getElementById('sdKpiAvgDelta').textContent = '';
-      document.getElementById('sdKpiCancelDelta').textContent = '';
-    } else {
-      document.getElementById('sdKpiSales').textContent = '¥' + cur.sales.toLocaleString();
-      document.getElementById('sdKpiOrders').textContent = cur.count.toLocaleString();
-      document.getElementById('sdKpiAvg').textContent = '¥' + cur.avg.toLocaleString();
-      document.getElementById('sdKpiCancel').textContent = cur.cancelRate.toFixed(1) + '%';
+    document.getElementById('sdKpiSales').textContent = '¥' + cur.sales.toLocaleString();
+    document.getElementById('sdKpiOrders').textContent = cur.count.toLocaleString();
+    document.getElementById('sdKpiAvg').textContent = '¥' + cur.avg.toLocaleString();
+    document.getElementById('sdKpiCancel').textContent = cur.cancelRate.toFixed(1) + '%';
 
-      const salesD = deltaText(cur.sales, prev.sales, ' 前期比');
-      const ordersD = deltaText(cur.count, prev.count, ' 前期比');
-      const avgD = deltaText(cur.avg, prev.avg, ' 前期比');
-      const cancelD = deltaText(cur.cancelRate, prev.cancelRate, 'pt', true);
+    const salesD = deltaText(cur.sales, prev.sales, ' 前期比');
+    const ordersD = deltaText(cur.count, prev.count, ' 前期比');
+    const avgD = deltaText(cur.avg, prev.avg, ' 前期比');
+    const cancelD = deltaText(cur.cancelRate, prev.cancelRate, 'pt', true);
 
-      function setDelta(id, d) {
-        const el = document.getElementById(id);
-        if (d && d.text) { el.textContent = d.text; el.className = 'stat-change ' + d.cls; }
-        else { el.textContent = periodLabel; el.className = 'stat-change'; }
-      }
-      setDelta('sdKpiSalesDelta', salesD);
-      setDelta('sdKpiOrdersDelta', ordersD);
-      setDelta('sdKpiAvgDelta', avgD);
-      setDelta('sdKpiCancelDelta', cancelD);
+    function setDelta(id, dv) {
+      var el = document.getElementById(id);
+      if (dv && dv.text) { el.textContent = dv.text; el.className = 'stat-change ' + dv.cls; }
+      else { el.textContent = periodLabel; el.className = 'stat-change'; }
     }
-    document.getElementById('sdDailyTitle').textContent = d.title;
+    setDelta('sdKpiSalesDelta', salesD);
+    setDelta('sdKpiOrdersDelta', ordersD);
+    setDelta('sdKpiAvgDelta', avgD);
+    setDelta('sdKpiCancelDelta', cancelD);
+
+    // Dynamic chart title
+    var titlePeriodMap = {today:'時間帯別売上推移（今日）', yesterday:'時間帯別売上推移（昨日）', week:'日別売上推移（今週）', month:'週別売上推移（今月）', custom:'日別売上推移（カスタム期間）'};
+    document.getElementById('sdDailyTitle').textContent = titlePeriodMap[p] || d.title;
   } catch(e) {
-    console.warn('sdUpdateDashboard live data fallback:', e);
-    // Fallback to demo data
-    document.getElementById('sdKpiSales').textContent = d.sales;
-    document.getElementById('sdKpiOrders').textContent = d.orders;
-    document.getElementById('sdKpiAvg').textContent = d.avg;
-    document.getElementById('sdKpiCancel').textContent = d.cancel;
-    document.getElementById('sdKpiSalesDelta').textContent = d.salesD;
-    document.getElementById('sdKpiOrdersDelta').textContent = d.ordersD;
-    document.getElementById('sdKpiAvgDelta').textContent = d.avgD;
-    document.getElementById('sdKpiCancelDelta').textContent = d.cancelD;
-    document.getElementById('sdDailyTitle').textContent = d.title;
+    // Error fallback: show ¥0 instead of demo data
+    document.getElementById('sdKpiSales').textContent = '¥0';
+    document.getElementById('sdKpiOrders').textContent = '0';
+    document.getElementById('sdKpiAvg').textContent = '¥0';
+    document.getElementById('sdKpiCancel').textContent = '0.0%';
+    document.getElementById('sdKpiSalesDelta').textContent = 'データ取得エラー';
+    document.getElementById('sdKpiSalesDelta').className = 'stat-change';
+    document.getElementById('sdKpiOrdersDelta').textContent = '';
+    document.getElementById('sdKpiAvgDelta').textContent = '';
+    document.getElementById('sdKpiCancelDelta').textContent = '';
   }
 
   // Year note
