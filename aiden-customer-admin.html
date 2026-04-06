@@ -7736,6 +7736,7 @@ let _sdPeriod = 'week';
 // Live order data stored by sdUpdateDashboard() for use by charts/heatmap
 let _sdLiveOrders = [];
 let _sdLivePrevOrders = [];
+let _sdLiveOrderItems = [];
 let _sdLiveKpi = {sales:0, count:0, avg:0, cancelRate:0};
 
 function sdSetPeriod(p) {
@@ -7904,7 +7905,7 @@ async function sdUpdateDashboard() {
     const brandStoreIds = STORES.map(s => s.id);
 
     function buildOrderQuery(tMin, tMax) {
-      let q = sb.from('orders').select('total_amount, delivery_fee, service_fee, status, created_at, order_type').gte('created_at', tMin).lte('created_at', tMax);
+      let q = sb.from('orders').select('id, total_amount, delivery_fee, service_fee, status, created_at, order_type').gte('created_at', tMin).lte('created_at', tMax);
       if (storeFilter && storeFilter !== 'all') {
         q = q.eq('store_id', storeFilter);
       } else if (brandStoreIds.length > 0) {
@@ -8015,6 +8016,19 @@ async function sdUpdateDashboard() {
       forecastKpi.textContent = '-';
     }
   }
+
+  // Fetch order_items for product analysis charts
+  try {
+    var oiQuery = sb.from('order_items').select('product_id, product_name, quantity, subtotal, order_id');
+    var {data: orderItemsData} = await oiQuery;
+    _sdLiveOrderItems = orderItemsData || [];
+  } catch(e) { _sdLiveOrderItems = []; }
+
+  // Check if access_list has data
+  try {
+    var {data: accessData} = await sb.from('access_list').select('id').limit(1);
+    window._accessDataLoaded = accessData && accessData.length > 0;
+  } catch(e) { window._accessDataLoaded = false; }
 
   renderSalesCharts();
   if(typeof updateAccessChart === 'function') updateAccessChart();
@@ -8839,24 +8853,13 @@ function drawProductHeatmap(canvasId) {
   const h = 420; canvas.height = h*dpr; canvas.style.height=h+'px';
   ctx.scale(dpr,dpr);
   const w = rect.width;
-  const prods = ['サーモン','まぐろ','にぎり10貫セット','えびアボカド','茶碗蒸し','玉子','味噌汁','えび天ぷら','いくら','炙りサーモン'];
-  const hours = ['11','12','13','14','15','17','18','19','20','21'];
-  const data = [
-    [15,48,32,8,5,12,35,52,28,18],
-    [12,42,28,6,4,10,30,45,24,15],
-    [8,25,18,4,2,6,22,35,18,10],
-    [6,18,12,3,2,5,15,22,12,8],
-    [4,12,8,2,1,3,8,14,8,5],
-    [5,15,10,3,2,4,10,18,10,6],
-    [6,18,14,5,3,5,12,20,12,7],
-    [3,10,8,2,1,3,8,12,8,4],
-    [4,14,10,3,2,4,10,16,10,5],
-    [5,12,8,2,1,3,8,14,8,4],
-  ];
+  const prods = (window._paHeatmapProds && window._paHeatmapProds.length > 0) ? window._paHeatmapProds : ['データなし'];
+  const hours = (window._paHeatmapHours && window._paHeatmapHours.length > 0) ? window._paHeatmapHours : ['11','12','13','14','15','17','18','19','20','21'];
+  const data = (window._paHeatmapData && window._paHeatmapData.length > 0) ? window._paHeatmapData : [new Array(hours.length).fill(0)];
   const padL=100,padT=25,padR=10,padB=25;
   const cellW=(w-padL-padR)/hours.length;
   const cellH=(h-padT-padB)/prods.length;
-  const maxV=52;
+  const maxV=Math.max(1, Math.max.apply(null, data.map(function(row){return Math.max.apply(null,row);})));
   ctx.clearRect(0,0,w,h);
   data.forEach((row,pi)=>{
     row.forEach((v,hi)=>{
@@ -8889,10 +8892,11 @@ function drawParetoChart(canvasId) {
   const w = rect.width;
   const pad={t:30,r:40,b:50,l:80};
   const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
-  const items=['サーモン','まぐろ','にぎりセット','えびアボカド','茶碗蒸し','玉子','味噌汁','えび天ぷら','その他'];
-  const vals=[194040,50520,57840,26400,43120,18200,15600,12800,32000];
+  const items = (window._paAbcItems && window._paAbcItems.length > 0) ? window._paAbcItems : ['データなし'];
+  const vals = (window._paAbcVals && window._paAbcVals.length > 0) ? window._paAbcVals : [0];
   const total=vals.reduce((s,v)=>s+v,0);
-  const maxVal=Math.ceil(Math.max(...vals)*1.05/50000)*50000;
+  var rawMax = Math.max(...vals);
+  const maxVal = rawMax > 0 ? Math.ceil(rawMax*1.05/50000)*50000 : 50000;
   ctx.clearRect(0,0,w,h);
   // grid + Y-axis (¥50,000 steps)
   ctx.strokeStyle='#eee';ctx.lineWidth=1;
@@ -8916,7 +8920,7 @@ function drawParetoChart(canvasId) {
     const rank=i<3?'#e94560':i<6?'#f39c12':'#95a5a6';
     ctx.fillStyle=rank;
     ctx.fillRect(x,pad.t+ch-barH,barW,barH);
-    cum+=v;cumPcts.push(cum/total);
+    cum+=v;cumPcts.push(total > 0 ? cum/total : 0);
   });
   // cumulative line
   ctx.beginPath();ctx.strokeStyle='#6c5ce7';ctx.lineWidth=2;
@@ -9062,14 +9066,46 @@ function renderSalesCharts() {
   }
   drawHeatmap('sdHeatmapCanvas', isUtil ? 'util' : 'sales', hmChannel);
 
-  // User analysis charts
-  drawLineChart('uaTrendChart',['第1週','第2週','第3週','第4週','第5週','第6週','第7週','第8週','第9週','第10週','第11週','第12週'],[
-    {label:'新規',color:'#0984e3',data:[38,42,35,40,44,48,36,42,45,50,38,42]},
-    {label:'リピーター',color:'#e94560',data:[52,55,58,54,60,62,58,65,62,68,60,65]},
-  ],{height:360,hideLegend:true,yUnit:'件'});
-  drawBarChart('uaFreqChart',['1回','2-3回','4-9回','10回+'],[
-    {label:'ユーザー数',color:'#6c5ce7',data:[245,198,98,41]},
-  ],{height:360,showValues:true,yPrefix:'',ySuffix:'人'});
+  // User analysis charts — dynamic from MEMBERS
+  (function(){
+    var now = new Date();
+    var weekMs = 7 * 24 * 60 * 60 * 1000;
+    var uaNewData = []; var uaRepData = [];
+    var uaLabels = [];
+    for (var wi = 11; wi >= 0; wi--) {
+      var weekEnd = new Date(now.getTime() - wi * weekMs);
+      var weekStart = new Date(weekEnd.getTime() - weekMs);
+      uaLabels.push('第' + (12 - wi) + '週');
+      var newCount = 0; var repCount = 0;
+      (MEMBERS || []).forEach(function(m) {
+        if (!m.regDate || m.regDate === '-') return;
+        var parts = m.regDate.split('/');
+        if (parts.length < 3) return;
+        var rd = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        if (rd >= weekStart && rd < weekEnd) newCount++;
+        if (rd < weekStart && (m.count || 0) >= 2) repCount++;
+      });
+      uaNewData.push(newCount);
+      uaRepData.push(repCount);
+    }
+    drawLineChart('uaTrendChart', uaLabels, [
+      {label:'新規',color:'#0984e3',data:uaNewData},
+      {label:'リピーター',color:'#e94560',data:uaRepData},
+    ],{height:360,hideLegend:true,yUnit:'件'});
+  })();
+  (function(){
+    var f1 = 0, f23 = 0, f49 = 0, f10 = 0;
+    (MEMBERS || []).forEach(function(m) {
+      var c = m.count || 0;
+      if (c === 1) f1++;
+      else if (c >= 2 && c <= 3) f23++;
+      else if (c >= 4 && c <= 9) f49++;
+      else if (c >= 10) f10++;
+    });
+    drawBarChart('uaFreqChart',['1回','2-3回','4-9回','10回+'],[
+      {label:'ユーザー数',color:'#6c5ce7',data:[f1,f23,f49,f10]},
+    ],{height:360,showValues:true,yPrefix:'',ySuffix:'人'});
+  })();
 
   // 100% stacked bar: 新規 vs リピーター構成比（12週）
   (function(){
@@ -9083,9 +9119,25 @@ function renderSalesCharts() {
     cvs.style.width = w2+'px'; cvs.style.height = h2+'px';
     ctx2.scale(dpr,dpr);
 
-    const labels = ['第5週','第6週','第7週','第8週','第9週','第10週','第11週','第12週'];
-    const newData =  [44,48,36,42,45,50,38,42];
-    const repData = [60,62,58,65,62,68,60,65];
+    var now2 = new Date();
+    var weekMs2 = 7 * 24 * 60 * 60 * 1000;
+    var labels = []; var newData = []; var repData = [];
+    for (var wi2 = 7; wi2 >= 0; wi2--) {
+      var wEnd2 = new Date(now2.getTime() - wi2 * weekMs2);
+      var wStart2 = new Date(wEnd2.getTime() - weekMs2);
+      labels.push('第' + (8 - wi2) + '週');
+      var nc2 = 0; var rc2 = 0;
+      (MEMBERS || []).forEach(function(m) {
+        if (!m.regDate || m.regDate === '-') return;
+        var pts = m.regDate.split('/');
+        if (pts.length < 3) return;
+        var rd2 = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
+        if (rd2 >= wStart2 && rd2 < wEnd2) nc2++;
+        if (rd2 < wStart2 && (m.count || 0) >= 2) rc2++;
+      });
+      newData.push(nc2);
+      repData.push(rc2);
+    }
     const pad = {t:14,r:10,b:42,l:36};
     const cw = w2-pad.l-pad.r, ch = h2-pad.t-pad.b;
 
@@ -9103,6 +9155,7 @@ function renderSalesCharts() {
     const barW = Math.min(cw/labels.length*0.55, 32);
     labels.forEach((l,i) => {
       const total = newData[i]+repData[i];
+      if (total === 0) return;
       const newPct = newData[i]/total;
       const repPct = repData[i]/total;
       const x = pad.l + cw/labels.length*i + cw/labels.length/2 - barW/2;
@@ -9130,31 +9183,144 @@ function renderSalesCharts() {
     });
   })();
 
-  // Product analysis charts
-  drawLineChart('paTrendChart',['第1週','第2週','第3週','第4週','第5週','第6週','第7週','第8週'],[
-    {label:'サーモン',color:'#e94560',data:[58,62,55,65,68,72,64,70]},
-    {label:'まぐろ',color:'#0984e3',data:[48,52,45,55,58,60,52,58]},
-    {label:'特選にぎり10貫セット',color:'#00b894',data:[22,25,28,24,30,32,28,30]},
-    {label:'えびアボカド',color:'#f39c12',data:[20,22,21,20,19,18,18,17]},
-    {label:'茶碗蒸し',color:'#9b59b6',data:[25,24,22,20,18,16,15,14]},
-    {label:'玉子',color:'#1abc9c',data:[16,17,18,17,18,19,18,19]},
-    {label:'味噌汁',color:'#3498db',data:[15,16,17,17,18,18,19,18]},
-    {label:'えび天ぷら',color:'#e67e22',data:[14,15,14,15,16,16,15,16]},
-    {label:'いくら',color:'#2ecc71',data:[12,13,14,14,15,16,15,16]},
-    {label:'炙りサーモン',color:'#e74c3c',data:[10,11,12,13,14,15,15,16]},
-  ],{height:480,hideLegend:true,yUnit:'件'});
-  drawParetoChart('paAbcChart');
-  drawProductHeatmap('paProdHeatmap');
-  drawStackedBarChart('paChannelProdChart',['サーモン','まぐろ','にぎりセット','えびアボカド','茶碗蒸し','玉子','味噌汁','えび天','いくら','炙りサーモン'],[
-    {label:'店内注文',color:'#e94560',data:[280,250,120,105,92,88,85,76,70,65]},
-    {label:'持ち帰り',color:'#0984e3',data:[120,100,48,42,38,35,34,30,28,27]},
-    {label:'デリバリー',color:'#00b894',data:[82,71,30,29,24,25,23,22,20,20]},
-  ],{height:420});
-  drawLineChart('paNewProdChart',['1日目','5日目','10日目','15日目','20日目','25日目','30日目'],[
-    {label:'桜えびの天ぷら',color:'#e94560',data:[45,38,42,35,32,28,25]},
-    {label:'ドリンクセット',color:'#0984e3',data:[32,28,30,26,24,22,20]},
-    {label:'既存商品平均',color:'#bbb',data:[30,30,30,30,30,30,30]},
-  ],{height:280,yUnit:'件',hideLegend:true});
+  // Product analysis charts — dynamic from _sdLiveOrderItems + _sdLiveOrders
+  (function(){
+    var orderMap = {};
+    (_sdLiveOrders || []).forEach(function(o) { orderMap[o.id] = o; });
+    // Enrich order_items with order info
+    var enriched = (_sdLiveOrderItems || []).map(function(item) {
+      var ord = orderMap[item.order_id];
+      return {product_name: item.product_name || '', product_id: item.product_id, quantity: item.quantity || 0, subtotal: item.subtotal || 0, order_id: item.order_id, created_at: ord ? ord.created_at : null, order_type: ord ? ord.order_type : null, status: ord ? ord.status : null};
+    }).filter(function(item) { return item.created_at && item.status !== 'cancelled'; });
+
+    // --- paTrendChart: top 10 products by qty, last 8 weeks ---
+    var trendColors = ['#e94560','#0984e3','#00b894','#f39c12','#9b59b6','#1abc9c','#3498db','#e67e22','#2ecc71','#e74c3c'];
+    var prodQtyMap = {};
+    enriched.forEach(function(item) { prodQtyMap[item.product_name] = (prodQtyMap[item.product_name] || 0) + item.quantity; });
+    var topProds = Object.keys(prodQtyMap).sort(function(a,b) { return prodQtyMap[b] - prodQtyMap[a]; }).slice(0, 10);
+    var nowPa = new Date();
+    var weekMsPa = 7 * 24 * 60 * 60 * 1000;
+    var paLabels = [];
+    for (var pwi = 7; pwi >= 0; pwi--) paLabels.push('第' + (8 - pwi) + '週');
+    var paDatasets = topProds.map(function(pName, pi) {
+      var weekData = [];
+      for (var pwi2 = 7; pwi2 >= 0; pwi2--) {
+        var wEnd = new Date(nowPa.getTime() - pwi2 * weekMsPa);
+        var wStart = new Date(wEnd.getTime() - weekMsPa);
+        var cnt = 0;
+        enriched.forEach(function(item) {
+          if (item.product_name === pName) {
+            var d = new Date(item.created_at);
+            if (d >= wStart && d < wEnd) cnt += item.quantity;
+          }
+        });
+        weekData.push(cnt);
+      }
+      return {label: pName, color: trendColors[pi % trendColors.length], data: weekData};
+    });
+    if (paDatasets.length === 0) paDatasets = [{label:'データなし',color:'#ccc',data:[0,0,0,0,0,0,0,0]}];
+    drawLineChart('paTrendChart', paLabels, paDatasets, {height:480,hideLegend:true,yUnit:'件'});
+
+    // --- paAbcChart (Pareto): aggregate subtotal by product, top 8 + その他 ---
+    var prodSubMap = {};
+    enriched.forEach(function(item) { prodSubMap[item.product_name] = (prodSubMap[item.product_name] || 0) + item.subtotal; });
+    var sortedProds = Object.keys(prodSubMap).sort(function(a,b) { return prodSubMap[b] - prodSubMap[a]; });
+    var abcItems = []; var abcVals = []; var othersSum = 0;
+    sortedProds.forEach(function(pName, i) {
+      if (i < 8) { abcItems.push(pName); abcVals.push(prodSubMap[pName]); }
+      else { othersSum += prodSubMap[pName]; }
+    });
+    if (othersSum > 0 || sortedProds.length > 8) { abcItems.push('その他'); abcVals.push(othersSum); }
+    if (abcItems.length === 0) { abcItems = ['データなし']; abcVals = [0]; }
+    window._paAbcItems = abcItems;
+    window._paAbcVals = abcVals;
+    drawParetoChart('paAbcChart');
+
+    // --- paProdHeatmap: top 10 by qty × hours 11-21 ---
+    var hmProds = topProds.length > 0 ? topProds : ['データなし'];
+    var hmHours = ['11','12','13','14','15','17','18','19','20','21'];
+    var hmData = hmProds.map(function(pName) {
+      return hmHours.map(function(hr) {
+        var cnt = 0;
+        enriched.forEach(function(item) {
+          if (item.product_name === pName) {
+            var h = new Date(item.created_at).getHours();
+            if (String(h) === hr) cnt += item.quantity;
+          }
+        });
+        return cnt;
+      });
+    });
+    window._paHeatmapProds = hmProds;
+    window._paHeatmapHours = hmHours;
+    window._paHeatmapData = hmData;
+    drawProductHeatmap('paProdHeatmap');
+
+    // --- paChannelProdChart: product × order_type ---
+    var channelTypes = [{key:'dinein',label:'店内注文',color:'#e94560'},{key:'pickup',label:'持ち帰り',color:'#0984e3'},{key:'delivery',label:'デリバリー',color:'#00b894'}];
+    var chProdNames = topProds.length > 0 ? topProds : ['データなし'];
+    var chDatasets = channelTypes.map(function(ct) {
+      var dArr = chProdNames.map(function(pName) {
+        var cnt = 0;
+        enriched.forEach(function(item) {
+          if (item.product_name === pName && item.order_type === ct.key) cnt += item.quantity;
+        });
+        return cnt;
+      });
+      return {label: ct.label, color: ct.color, data: dArr};
+    });
+    var chLabels = chProdNames.map(function(n) { return n.length > 6 ? n.substring(0, 6) + '…' : n; });
+    drawStackedBarChart('paChannelProdChart', chLabels, chDatasets, {height:420});
+
+    // --- paNewProdChart: products created within last 30 days ---
+    var thirtyDaysAgo = new Date(nowPa.getTime() - 30 * 24 * 60 * 60 * 1000);
+    var newProds = (PRODUCTS || []).filter(function(p) {
+      if (!p.displayStart) return false;
+      var d = new Date(p.displayStart);
+      return !isNaN(d.getTime()) && d >= thirtyDaysAgo;
+    });
+    if (newProds.length === 0) {
+      // No new products — show placeholder
+      drawLineChart('paNewProdChart',['データなし'],[{label:'新商品なし',color:'#ccc',data:[0]}],{height:280,yUnit:'件',hideLegend:true});
+      var npCanvas = document.getElementById('paNewProdChart');
+      if (npCanvas) {
+        var npCtx = npCanvas.getContext('2d');
+        npCtx.fillStyle = '#999'; npCtx.font = '13px sans-serif'; npCtx.textAlign = 'center';
+        npCtx.fillText('直近30日間に登録された新商品はありません', npCanvas.width / (window.devicePixelRatio||1) / 2, 140);
+      }
+    } else {
+      var npLabels = ['1日目','5日目','10日目','15日目','20日目','25日目','30日目'];
+      var npDayBins = [1,5,10,15,20,25,30];
+      var npColors = ['#e94560','#0984e3','#00b894','#f39c12','#9b59b6'];
+      var npDatasets = newProds.slice(0, 5).map(function(prod, pi) {
+        var launchDate = new Date(prod.displayStart);
+        var dArr = npDayBins.map(function(dayNum) {
+          var dayStart = new Date(launchDate.getTime() + (dayNum - 1) * 24 * 60 * 60 * 1000);
+          var dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+          var cnt = 0;
+          enriched.forEach(function(item) {
+            if (item.product_id === prod.itemId) {
+              var d = new Date(item.created_at);
+              if (d >= launchDate && d < dayEnd) cnt += item.quantity;
+            }
+          });
+          return cnt;
+        });
+        return {label: prod.name, color: npColors[pi % npColors.length], data: dArr};
+      });
+      // Existing product average
+      var existingProds = (PRODUCTS || []).filter(function(p) { return !p.displayStart || new Date(p.displayStart) < thirtyDaysAgo; });
+      if (existingProds.length > 0) {
+        var existAvg = npDayBins.map(function() {
+          var totalQty = 0;
+          enriched.forEach(function(item) { totalQty += item.quantity; });
+          return existingProds.length > 0 ? Math.round(totalQty / existingProds.length / 8) : 0;
+        });
+        npDatasets.push({label:'既存商品平均',color:'#bbb',data:existAvg});
+      }
+      drawLineChart('paNewProdChart', npLabels, npDatasets, {height:280,yUnit:'件',hideLegend:true});
+    }
+  })();
 
   // Benchmark charts
   bmRenderRanking();
@@ -13671,6 +13837,18 @@ var ACCESS_SERVICES = {
 };
 
 function updateAccessChart() {
+  // Check if access data exists in DB
+  if (!window._accessDataLoaded) {
+    var apv = document.getElementById('accessPv'); if(apv) apv.textContent = '-';
+    var auu = document.getElementById('accessUu'); if(auu) auu.textContent = '-';
+    var acv = document.getElementById('accessCv'); if(acv) acv.textContent = '-';
+    var acvr = document.getElementById('accessCvr'); if(acvr) acvr.textContent = '-';
+    var fc = document.getElementById('funnelContainer');
+    if(fc) fc.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:13px">データ蓄積中 — アクセスログが蓄積されると表示されます</div>';
+    var trendCanvas = document.getElementById('accessTrendCanvas');
+    if(trendCanvas) trendCanvas.style.display = 'none';
+    return;
+  }
   var service = document.getElementById('accessService').value;
   var svc = ACCESS_SERVICES[service];
   if(!svc) return;
