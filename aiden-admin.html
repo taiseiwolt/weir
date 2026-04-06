@@ -340,7 +340,7 @@ async function createStripeAccount(corpId){
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'Authorization':'Bearer '+SUPABASE_KEY
+        'Authorization':'Bearer '+(await getToken())
       },
       body:JSON.stringify({
         corp_id:corpId,
@@ -1445,7 +1445,7 @@ async function aiGenerateSnsPost(){
   try{
     var res=await fetch(SUPABASE_URL+'/functions/v1/generate-sns-post',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
       body:JSON.stringify({store_id:storeId,platform:platform,topic:topic||null})
     });
     var data=await res.json();
@@ -1494,7 +1494,7 @@ async function aiGeneratePopImage(){
   try{
     var res=await fetch(SUPABASE_URL+'/functions/v1/generate-pop-image',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
       body:JSON.stringify({store_id:storeId,prompt_text:prompt,style:style})
     });
     var data=await res.json();
@@ -1533,7 +1533,7 @@ async function aiGenerateMonthlyComment(){
   try{
     var res=await fetch(SUPABASE_URL+'/functions/v1/generate-monthly-comment',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
       body:JSON.stringify({store_id:storeId,month:month})
     });
     var data=await res.json();
@@ -1692,7 +1692,7 @@ async function fetchStripePiStatus(o){
   try{
     const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-get-payment-intent',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
       body:JSON.stringify({payment_intent_id:o.paymentIntentId})
     });
     if(res.ok){
@@ -1880,7 +1880,7 @@ async function confirmAndExecuteCompensation(){
       try{
         await fetch(SUPABASE_URL+'/functions/v1/compensation-point-grant',{
           method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
           body:JSON.stringify({member_id:o.memberId||null,brand_id:null,amount:amount,reason:reason.trim(),granted_by:executor,order_id:o.id})
         });
       }catch(e){}
@@ -1896,7 +1896,7 @@ async function confirmAndExecuteCompensation(){
       try{
         await fetch(SUPABASE_URL+'/functions/v1/stripe-create-refund',{
           method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
           body:JSON.stringify({payment_intent_id:o.paymentIntentId,amount:amount,reason:reason.trim(),order_id:o.id,refunded_by:executor})
         });
       }catch(e){}
@@ -1912,7 +1912,7 @@ async function confirmAndExecuteCompensation(){
       try{
         await fetch(SUPABASE_URL+'/functions/v1/stripe-cancel-payment-intent',{
           method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
           body:JSON.stringify({payment_intent_id:o.paymentIntentId,reason:reason.trim(),order_id:o.id,canceled_by:executor})
         });
       }catch(e){}
@@ -4633,7 +4633,7 @@ async function loadStripeBillingData(){
   try{
     const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-list-invoices',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getToken())},
       body:JSON.stringify({})
     });
     if(!res.ok)throw new Error('stripe-list-invoices '+res.status);
