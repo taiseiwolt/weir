@@ -10,6 +10,17 @@ const STD_LIMITS: Record<string, number> = {
   monthly_comment: 1,
 }
 
+/** display_id (STR-xxx) と UUID の両方で店舗を引けるヘルパー */
+async function resolveStoreId(sbAdmin: SupabaseClient, storeId: string): Promise<string | null> {
+  const col = storeId.startsWith('STR-') ? 'display_id' : 'id'
+  const { data } = await sbAdmin
+    .from('stores')
+    .select('id')
+    .eq(col, storeId)
+    .single()
+  return data?.id || null
+}
+
 export interface QuotaResult {
   allowed: boolean
   plan: string
@@ -27,11 +38,17 @@ export async function checkAiQuota(
   storeId: string,
   interactionType: string
 ): Promise<QuotaResult> {
+  // display_id / UUID 両対応で store UUID を解決
+  const resolvedId = await resolveStoreId(sbAdmin, storeId)
+  if (!resolvedId) {
+    return { allowed: false, plan: 'UNKNOWN', remaining: 0, message: '店舗が見つかりません' }
+  }
+
   // store → brand 取得
   const { data: store } = await sbAdmin
     .from('stores')
     .select('brand_id')
-    .eq('id', storeId)
+    .eq('id', resolvedId)
     .single()
 
   if (!store) {
@@ -65,7 +82,7 @@ export async function checkAiQuota(
   const { count } = await sbAdmin
     .from('ai_interactions')
     .select('id', { count: 'exact', head: true })
-    .eq('store_id', storeId)
+    .eq('store_id', resolvedId)
     .eq('interaction_type', interactionType)
     .eq('status', 'completed')
     .gte('created_at', monthStart.toISOString())
@@ -102,8 +119,10 @@ export async function logAiInteraction(
     status?: string
   }
 ) {
+  // display_id が渡された場合は UUID に解決
+  const storeUuid = await resolveStoreId(sbAdmin, params.store_id)
   const { error } = await sbAdmin.from('ai_interactions').insert({
-    store_id: params.store_id,
+    store_id: storeUuid || params.store_id,
     brand_id: params.brand_id || null,
     interaction_type: params.interaction_type,
     input_data: params.input_data || {},
@@ -120,10 +139,14 @@ export async function logAiInteraction(
  * 店舗情報を取得（AI機能で共通利用）
  */
 export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) {
+  // display_id / UUID 両対応
+  const resolvedId = await resolveStoreId(sbAdmin, storeId)
+  if (!resolvedId) return null
+
   const { data: store } = await sbAdmin
     .from('stores')
     .select('id, name, brand_id, description, google_place_id, brands(id, name)')
-    .eq('id', storeId)
+    .eq('id', resolvedId)
     .single()
 
   if (!store) return null
@@ -132,7 +155,7 @@ export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) 
   const { data: products } = await sbAdmin
     .from('products')
     .select('name, category')
-    .eq('store_id', storeId)
+    .eq('store_id', resolvedId)
     .eq('is_available', true)
     .limit(10)
 
