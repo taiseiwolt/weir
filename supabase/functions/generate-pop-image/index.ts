@@ -12,7 +12,7 @@ import {
 import { checkAiQuota, logAiInteraction, getStoreContext } from '../_shared/ai-quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 
 const STYLE_PROMPTS: Record<string, string> = {
@@ -40,7 +40,7 @@ serve(async (req) => {
     }
 
     const selectedStyle = style && STYLE_PROMPTS[style] ? style : 'modern'
-    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const sbAdmin = createClient(SUPABASE_URL, SERVICE_KEY)
 
     const quota = await checkAiQuota(sbAdmin, store_id, 'pop_image')
     if (!quota.allowed) {

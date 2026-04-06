@@ -145,7 +145,7 @@ export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) 
 
   const { data: store } = await sbAdmin
     .from('stores')
-    .select('id, name, brand_id, description, google_place_id, brands(id, name)')
+    .select('id, name, brand_id, genre, google_place_id, brands(id, name)')
     .eq('id', resolvedId)
     .single()
 
@@ -162,7 +162,7 @@ export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) 
   return {
     storeName: store.name,
     brandName: (store as any).brands?.name || '',
-    description: store.description || '',
+    description: (store as any).genre || '',
     brandId: store.brand_id,
     products: (products || []).map((p: any) => p.name),
   }

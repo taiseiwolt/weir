@@ -12,7 +12,7 @@ import {
 import { checkAiQuota, logAiInteraction, getStoreContext } from '../_shared/ai-quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 
 serve(async (req) => {
@@ -33,7 +33,7 @@ serve(async (req) => {
       )
     }
 
-    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const sbAdmin = createClient(SUPABASE_URL, SERVICE_KEY)
 
     // 無料枠チェック
     const quota = await checkAiQuota(sbAdmin, store_id, 'review_reply')
