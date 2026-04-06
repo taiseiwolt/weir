@@ -74,8 +74,8 @@ serve(async (req) => {
       .from('reservations')
       .select(`
         id,
-        reservation_date,
-        reservation_time,
+        date,
+        time,
         member_id,
         store_id,
         stores ( name ),
@@ -101,7 +101,7 @@ serve(async (req) => {
       )
     }
 
-    // 4時間経過チェック（reservation_date + reservation_time でフィルタ）
+    // 4時間経過チェック（date + time でフィルタ）
     const now = new Date()
     const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000)
 
@@ -109,7 +109,7 @@ serve(async (req) => {
     const errors: string[] = []
 
     for (const rsv of reservations) {
-      const rsvDatetime = new Date(`${rsv.reservation_date}T${rsv.reservation_time}+09:00`)
+      const rsvDatetime = new Date(`${rsv.date}T${rsv.time}+09:00`)
       if (rsvDatetime > fourHoursAgo) continue
 
       const member = rsv.members as { first_name: string; last_name: string; email: string } | null

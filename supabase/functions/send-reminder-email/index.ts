@@ -130,10 +130,10 @@ serve(async (req) => {
       .from('reservations')
       .select(`
         id,
-        reservation_date,
-        reservation_time,
-        party_size,
-        guest_name,
+        date,
+        time,
+        guest_count,
+        name,
         guest_email,
         member_id,
         store_id,
@@ -168,7 +168,7 @@ serve(async (req) => {
     const errors: string[] = []
 
     for (const rsv of reservations) {
-      const rsvDatetime = new Date(`${rsv.reservation_date}T${rsv.reservation_time}+09:00`)
+      const rsvDatetime = new Date(`${rsv.date}T${rsv.time}+09:00`)
       if (rsvDatetime < windowStart || rsvDatetime > windowEnd) continue
 
       const member = rsv.members as { first_name: string; last_name: string; email: string } | null
@@ -181,7 +181,7 @@ serve(async (req) => {
       // 名前決定
       const name = member
         ? `${member.last_name} ${member.first_name}`.trim()
-        : rsv.guest_name || ''
+        : rsv.name || ''
 
       if (!name || !store?.name) continue
 
@@ -189,7 +189,7 @@ serve(async (req) => {
       const address = store.address || ''
 
       // Resend API でメール送信
-      const timeStr = formatTimeJST(rsv.reservation_time)
+      const timeStr = formatTimeJST(rsv.time)
       const resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -203,9 +203,9 @@ serve(async (req) => {
           html: buildReminderHtml(
             name,
             storeName,
-            rsv.reservation_date,
-            rsv.reservation_time,
-            rsv.party_size,
+            rsv.date,
+            rsv.time,
+            rsv.guest_count,
             address,
           ),
         }),
