@@ -5483,7 +5483,7 @@ async function loadAdminFromSupabase() {
     }
 
     // 4. Products + Sizes (RLS: filtered by brand)
-    const {data: products, error: prodErr} = await sb.from('products').select('id, brand_id, category_id, name, description, price, image_url, is_available, dine_in, takeout, delivery, is_alcohol, sort_order');
+    const {data: products, error: prodErr} = await sb.from('products').select('id, brand_id, category_id, name, description, image_url, dine_in, takeout, delivery, is_alcohol, sale_status');
     if (prodErr) errors.push('商品: ' + prodErr.message);
     const {data: sizes, error: sizeErr} = await sb.from('product_sizes').select('id, product_id, name, price, sort_order');
     if (sizeErr) errors.push('商品サイズ: ' + sizeErr.message);
@@ -5538,26 +5538,25 @@ async function loadAdminFromSupabase() {
     }
 
     // 7. Reviews (RLS: filtered by store→brand)
-    const {data: reviews, error: revErr} = await sb.from('reviews').select('id, store_id, product_id, type, rating, comment, user_name, tags, reply, reply_status, created_at').order('created_at', {ascending: false});
+    const {data: reviews, error: revErr} = await sb.from('reviews').select('id, store_id, order_id, member_id, rating, comment, status, reply, replied_at, created_at, display_id').order('created_at', {ascending: false});
     if (revErr) errors.push('口コミ: ' + revErr.message);
     if (reviews && reviews.length > 0) {
       REVIEWS = reviews.map(r => {
         const store = STORES.find(s => s.id === r.store_id);
-        const prod = r.product_id ? PRODUCTS.find(p => p.itemId === r.product_id) : null;
         return {
-          id: r.id, type: r.type || 'store', storeName: store ? store.name : '', productName: prod ? prod.name : '',
-          rating: r.rating, comment: r.comment || '', userName: r.user_name || '匿名', date: r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP').replace(/\//g, '/') : '',
-          tags: r.tags || [], reply: r.reply || '', replyStatus: r.reply_status || ''
+          id: r.id, type: 'store', storeName: store ? store.name : '', productName: '',
+          rating: r.rating, comment: r.comment || '', userName: '匿名', date: r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP').replace(/\//g, '/') : '',
+          tags: [], reply: r.reply || '', replyStatus: r.status || ''
         };
       });
     }
 
     // 8. Invoices (RLS: filtered by brand)
-    const {data: invoices, error: invErr} = await sb.from('invoices').select('id, month, type, amount, status, due_date, billing_period, billing_period_start, created_at').order('due_date', {ascending: false});
+    const {data: invoices, error: invErr} = await sb.from('invoices').select('id, billing_period, billing_period_start, billing_period_end, subtotal, tax, total, status, due_date, pdf_url, created_at').order('due_date', {ascending: false});
     if (invErr) errors.push('請求書: ' + invErr.message);
     if (invoices && invoices.length > 0) {
       INVOICES = invoices.map(inv => ({
-        id: inv.id, month: inv.month, type: inv.type, amount: inv.amount, status: inv.status, dueDate: inv.due_date, pdfUrl: '#'
+        id: inv.id, month: inv.billing_period || '', type: 'プラットフォーム利用料', amount: inv.total || 0, status: inv.status, dueDate: inv.due_date, pdfUrl: inv.pdf_url || '#'
       }));
     }
 
