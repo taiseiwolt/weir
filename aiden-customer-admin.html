@@ -1615,10 +1615,10 @@ content.innerHTML = `
 
   <!-- KPIカード -->
   <div class="stats-row" id="sdKpiRow">
-    <div class="stat-card"><div class="stat-label">売上合計</div><div class="stat-value" id="sdKpiSales">¥1,841,000</div><div class="stat-change up" id="sdKpiSalesDelta">＋ 12.3% 前週比</div></div>
-    <div class="stat-card"><div class="stat-label">注文件数</div><div class="stat-value" id="sdKpiOrders">490</div><div class="stat-change up" id="sdKpiOrdersDelta">＋ 8.1%</div></div>
-    <div class="stat-card"><div class="stat-label">平均注文額</div><div class="stat-value" id="sdKpiAvg">¥3,757</div><div class="stat-change up" id="sdKpiAvgDelta">＋ 3.8%</div></div>
-    <div class="stat-card"><div class="stat-label">キャンセル率</div><div class="stat-value" id="sdKpiCancel">2.3%</div><div class="stat-change down" id="sdKpiCancelDelta">− 0.5pt</div></div>
+    <div class="stat-card"><div class="stat-label">売上合計</div><div class="stat-value" id="sdKpiSales">読込中...</div><div class="stat-change" id="sdKpiSalesDelta"></div></div>
+    <div class="stat-card"><div class="stat-label">注文件数</div><div class="stat-value" id="sdKpiOrders">-</div><div class="stat-change" id="sdKpiOrdersDelta"></div></div>
+    <div class="stat-card"><div class="stat-label">平均注文額</div><div class="stat-value" id="sdKpiAvg">-</div><div class="stat-change" id="sdKpiAvgDelta"></div></div>
+    <div class="stat-card"><div class="stat-label">キャンセル率</div><div class="stat-value" id="sdKpiCancel">-</div><div class="stat-change" id="sdKpiCancelDelta"></div></div>
   </div>
 
   <!-- 日別売上推移 -->
@@ -7899,32 +7899,79 @@ async function sdUpdateDashboard() {
       }
     }
 
-    // Determine store filter
-    const storeFilter = document.getElementById('sdStoreFilter')?.value;
-    let query = sb.from('orders').select('total_amount, delivery_fee, service_fee, status, created_at').gte('created_at', timeMin).lte('created_at', timeMax);
-    if (storeFilter && storeFilter !== 'all') {
-      query = query.eq('store_id', storeFilter);
+    // Determine store & channel filters
+    const storeFilter = document.getElementById('sdStore')?.value;
+    const channelFilter = document.getElementById('sdChannel')?.value || 'total';
+    const channelMap = {dineIn: 'dinein', takeout: 'pickup', delivery: 'delivery'};
+
+    function buildOrderQuery(tMin, tMax) {
+      let q = sb.from('orders').select('total_amount, delivery_fee, service_fee, status, created_at, order_type').gte('created_at', tMin).lte('created_at', tMax);
+      if (storeFilter && storeFilter !== 'all') q = q.eq('store_id', storeFilter);
+      if (channelFilter !== 'total' && channelMap[channelFilter]) q = q.eq('order_type', channelMap[channelFilter]);
+      return q;
     }
-    const { data: orders, error } = await query;
-    if (!error && orders) {
-      const nonCancelled = orders.filter(o => o.status !== 'cancelled');
-      const cancelled = orders.filter(o => o.status === 'cancelled');
-      const totalSales = nonCancelled.reduce((s, o) => s + (o.total_amount || 0), 0);
-      const orderCount = nonCancelled.length;
-      const avgOrder = orderCount > 0 ? Math.round(totalSales / orderCount) : 0;
-      const cancelRate = orders.length > 0 ? ((cancelled.length / orders.length) * 100).toFixed(1) : '0.0';
-      document.getElementById('sdKpiSales').textContent = '¥' + totalSales.toLocaleString();
-      document.getElementById('sdKpiOrders').textContent = orderCount.toLocaleString();
-      document.getElementById('sdKpiAvg').textContent = '¥' + avgOrder.toLocaleString();
-      document.getElementById('sdKpiCancel').textContent = cancelRate + '%';
-      document.getElementById('sdKpiSalesDelta').textContent = periodLabel + '・実データ';
+
+    // Fetch current period
+    const { data: orders, error } = await buildOrderQuery(timeMin, timeMax);
+    if (error) throw error;
+
+    // Compute previous period range (same duration, shifted back)
+    const curMs = new Date(timeMax).getTime() - new Date(timeMin).getTime();
+    const prevMax = new Date(new Date(timeMin).getTime() - 1).toISOString();
+    const prevMin = new Date(new Date(timeMin).getTime() - curMs - 1).toISOString();
+    const { data: prevOrders } = await buildOrderQuery(prevMin, prevMax);
+
+    function calcKpi(arr) {
+      if (!arr || arr.length === 0) return {sales: 0, count: 0, avg: 0, cancelRate: 0, total: 0};
+      const nc = arr.filter(o => o.status !== 'cancelled');
+      const cn = arr.filter(o => o.status === 'cancelled');
+      const sales = nc.reduce((s, o) => s + (o.total_amount || 0), 0);
+      const count = nc.length;
+      return {sales, count, avg: count > 0 ? Math.round(sales / count) : 0, cancelRate: arr.length > 0 ? (cn.length / arr.length) * 100 : 0, total: arr.length};
+    }
+
+    const cur = calcKpi(orders);
+    const prev = calcKpi(prevOrders);
+
+    function deltaText(curVal, prevVal, suffix, isReverse) {
+      if (prevVal === 0) return '';
+      const pct = ((curVal - prevVal) / prevVal * 100).toFixed(1);
+      const sign = pct >= 0 ? '＋' : '－';
+      const cls = isReverse ? (pct <= 0 ? 'up' : 'down') : (pct >= 0 ? 'up' : 'down');
+      return {text: sign + ' ' + Math.abs(pct) + '%' + (suffix || ' 前期比'), cls};
+    }
+
+    if (orders && orders.length === 0 && (!prevOrders || prevOrders.length === 0)) {
+      document.getElementById('sdKpiSales').textContent = 'データがありません';
+      document.getElementById('sdKpiOrders').textContent = '-';
+      document.getElementById('sdKpiAvg').textContent = '-';
+      document.getElementById('sdKpiCancel').textContent = '-';
+      document.getElementById('sdKpiSalesDelta').textContent = periodLabel;
       document.getElementById('sdKpiOrdersDelta').textContent = '';
       document.getElementById('sdKpiAvgDelta').textContent = '';
       document.getElementById('sdKpiCancelDelta').textContent = '';
-      document.getElementById('sdDailyTitle').textContent = d.title;
     } else {
-      throw error || new Error('No data');
+      document.getElementById('sdKpiSales').textContent = '¥' + cur.sales.toLocaleString();
+      document.getElementById('sdKpiOrders').textContent = cur.count.toLocaleString();
+      document.getElementById('sdKpiAvg').textContent = '¥' + cur.avg.toLocaleString();
+      document.getElementById('sdKpiCancel').textContent = cur.cancelRate.toFixed(1) + '%';
+
+      const salesD = deltaText(cur.sales, prev.sales, ' 前期比');
+      const ordersD = deltaText(cur.count, prev.count, ' 前期比');
+      const avgD = deltaText(cur.avg, prev.avg, ' 前期比');
+      const cancelD = deltaText(cur.cancelRate, prev.cancelRate, 'pt', true);
+
+      function setDelta(id, d) {
+        const el = document.getElementById(id);
+        if (d && d.text) { el.textContent = d.text; el.className = 'stat-change ' + d.cls; }
+        else { el.textContent = periodLabel; el.className = 'stat-change'; }
+      }
+      setDelta('sdKpiSalesDelta', salesD);
+      setDelta('sdKpiOrdersDelta', ordersD);
+      setDelta('sdKpiAvgDelta', avgD);
+      setDelta('sdKpiCancelDelta', cancelD);
     }
+    document.getElementById('sdDailyTitle').textContent = d.title;
   } catch(e) {
     console.warn('sdUpdateDashboard live data fallback:', e);
     // Fallback to demo data
