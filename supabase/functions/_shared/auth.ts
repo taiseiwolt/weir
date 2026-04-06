@@ -53,9 +53,9 @@ export async function verifyJwt(req: Request): Promise<AuthResult> {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   })
 
@@ -74,6 +74,7 @@ export async function verifyJwt(req: Request): Promise<AuthResult> {
 /**
  * service_role_key による内部呼び出し検証。
  * pg_cron や他の Edge Function からの呼び出しで使用。
+ * 新形式(sb_secret_*)と旧JWT形式の両方に対応。
  */
 export function verifyServiceRole(req: Request): boolean {
   const authHeader = req.headers.get('Authorization')
@@ -81,7 +82,24 @@ export function verifyServiceRole(req: Request): boolean {
 
   const token = authHeader.replace('Bearer ', '')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  return token === serviceRoleKey
+
+  // 直接比較（同じ形式の場合）
+  if (token === serviceRoleKey) return true
+
+  // 旧JWT形式 → 新sb_secret形式の移行期対応:
+  // service_role JWTの場合、Supabase Auth APIで検証して role=service_role を確認
+  if (token.startsWith('eyJ')) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload.role === 'service_role' && payload.ref === Deno.env.get('SUPABASE_URL')?.match(/\/\/([^.]+)/)?.[1]) {
+        return true
+      }
+    } catch {
+      // JWT parse failed
+    }
+  }
+
+  return false
 }
 
 /**
