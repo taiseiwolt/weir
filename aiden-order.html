@@ -616,9 +616,9 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
         <span class="addr-btn-text" id="addr-btn-text" data-i18n="addr_placeholder">住所を入力・変更する</span>
       </button>
       <div class="panel-title main" id="lbl-store-title" data-i18n="store_title">店舗を選択してください</div>
-      <!-- 左=お持ち帰り / 右=デリバリー -->
+      <!-- 左=テイクアウト / 右=デリバリー -->
       <div class="mode-tabs">
-        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')" data-i18n="mode_t">🚶 お持ち帰り</button>
+        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')" data-i18n="mode_t">🚶 テイクアウト</button>
         <button class="mode-tab"        id="tab-delivery" onclick="setMode('delivery')" data-i18n="mode_d">🚲 デリバリー</button>
       </div>
     </div>
@@ -966,7 +966,7 @@ AidenCommon.addTranslations({
     addr_title:'住所を入力してください',
     addr_placeholder:'住所を入力・変更する',
     store_title:'店舗を選択してください',
-    mode_t:'🚶 お持ち帰り', mode_d:'🚲 デリバリー',
+    mode_t:'🚶 テイクアウト', mode_d:'🚲 デリバリー',
     s1_title:'住所を入力', s1_big:'郵便番号を入力',
     s1_sub:'7桁の郵便番号で住所を自動補完します',
     s1_note:'ハイフンなしで入力してください',
@@ -1100,7 +1100,7 @@ AidenCommon.addTranslations({
 /* ============================================================
    STATE
    ============================================================ */
-var orderMode      = 'takeout';  /* デフォルト: お持ち帰り */
+var orderMode      = 'takeout';  /* デフォルト: テイクアウト */
 var selectedStore  = null;
 var cart           = [];
 var currentItem    = null;

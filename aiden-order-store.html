@@ -1030,7 +1030,7 @@ let isStoreClosed = false; // true if outside business hours
 
 let CATEGORIES = [
   { id:'popular', name:'人気の商品', emoji:'🔥', desc:'' },
-  { id:'takeout', name:'お持ち帰り限定商品', emoji:'', desc:'【期間限定】お持ち帰り特価。※配達でのご注文は出来ません。' },
+  { id:'takeout', name:'テイクアウト限定商品', emoji:'', desc:'【期間限定】テイクアウト特価。※配達でのご注文は出来ません。' },
   { id:'limited', name:'期間限定商品', emoji:'✨', desc:'' },
   { id:'lunch', name:'ランチメニュー', emoji:'🍱', desc:'11時から14時までの時間限定メニュー' },
   { id:'single', name:'1人前', emoji:'🍣', desc:'' },
@@ -1473,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const requiredKey = modeMap[orderMode];
     if (requiredKey && !STORE_DATA._enabledServices.includes(requiredKey)) {
       document.title = STORE_DATA.storeName + ' | AIden モバイルオーダー';
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + STORE_DATA.storeName + ' では現在「' + (orderMode === 'delivery' ? 'デリバリー' : orderMode === 'takeout' ? 'お持ち帰り' : '店内注文') + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + STORE_DATA.storeName + ' では現在「' + (orderMode === 'delivery' ? 'デリバリー' : orderMode === 'takeout' ? 'テイクアウト' : '店内注文') + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
       return;
     }
   }
@@ -2503,7 +2503,7 @@ function checkDeliveryZone() {
   const noticeEl = document.getElementById('infoBarNotice');
   if(isOutOfDeliveryArea) {
     alertEl.classList.add('show');
-    noticeEl.textContent = 'こちらのレストランはあなたのエリアに対応しておりませんが、お持ち帰り注文で直接のお受け取りが可能です。';
+    noticeEl.textContent = 'こちらのレストランはあなたのエリアに対応しておりませんが、テイクアウト注文で直接のお受け取りが可能です。';
     noticeEl.style.display = '';
   } else {
     alertEl.classList.remove('show');
@@ -2558,7 +2558,7 @@ function goToCheckout() {
   }
   // Block checkout if out of delivery area and in delivery mode
   if(orderMode === 'delivery' && isOutOfDeliveryArea) {
-    alert('配達サービスエリア外のため、デリバリー注文はできません。お持ち帰りに切り替えてください。');
+    alert('配達サービスエリア外のため、デリバリー注文はできません。テイクアウトに切り替えてください。');
     return;
   }
 

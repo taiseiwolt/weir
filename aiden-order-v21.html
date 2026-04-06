@@ -653,9 +653,9 @@ input,select,textarea{font-family:var(--font)}
         <span class="addr-btn-text" id="addr-btn-text">住所を入力・変更する</span>
       </button>
       <div class="panel-title main" id="lbl-store-title">店舗を選択してください</div>
-      <!-- 左=お持ち帰り / 右=デリバリー -->
+      <!-- 左=テイクアウト / 右=デリバリー -->
       <div class="mode-tabs">
-        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')">🚶 お持ち帰り</button>
+        <button class="mode-tab active" id="tab-takeout"  onclick="setMode('takeout')">🚶 テイクアウト</button>
         <button class="mode-tab"        id="tab-delivery" onclick="setMode('delivery')">🚲 デリバリー</button>
       </div>
     </div>
@@ -1018,7 +1018,7 @@ var LNG = {
     addr_title:'住所を入力してください',
     addr_placeholder:'住所を入力・変更する',
     store_title:'店舗を選択してください',
-    mode_t:'🚶 お持ち帰り', mode_d:'🚲 デリバリー',
+    mode_t:'🚶 テイクアウト', mode_d:'🚲 デリバリー',
     signin:'サインイン', cart:'カート',
     s1_title:'住所を入力', s1_big:'郵便番号を入力',
     s1_sub:'7桁の郵便番号で住所を自動補完します',
@@ -1160,7 +1160,7 @@ var LNG = {
    STATE
    ============================================================ */
 var currentLang    = 'ja';
-var orderMode      = 'takeout';  /* デフォルト: お持ち帰り */
+var orderMode      = 'takeout';  /* デフォルト: テイクアウト */
 var selectedStore  = null;
 var cart           = [];
 var currentItem    = null;

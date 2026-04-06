@@ -282,7 +282,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
       <a href="./aiden-brand-menu.html" class="header-nav-link" data-i18n="nav_menu">メニュー</a>
       <a href="./aiden-brand-stores.html" class="header-nav-link" data-i18n="nav_stores">お店を探す</a>
       <a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="openResModal()">📅 来店予約</a>
-      <a href="./aiden-order.html" class="header-nav-link cta" data-i18n="nav_order">🥡 お持ち帰り・デリバリー</a>
+      <a href="./aiden-order.html" class="header-nav-link cta" data-i18n="nav_order">🥡 テイクアウト・デリバリー</a>
     </nav>
     <!-- 言語切替プルダウン -->
     <div class="lang-select-wrap">
@@ -306,7 +306,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 <div class="mobile-nav" id="mobile-nav">
   <div class="mobile-nav-cta">
     <a href="javascript:void(0)" data-i18n="nav_reserve" onclick="openResModal()">📅 来店予約</a>
-    <a href="./aiden-order.html" data-i18n="nav_order_short">🥡 お持ち帰り</a>
+    <a href="./aiden-order.html" data-i18n="nav_order_short">🥡 テイクアウト</a>
     <a href="./aiden-order.html">🛵 デリバリー</a>
   </div>
   <a href="./aiden-brand-menu.html" data-i18n="nav_menu">📖 メニュー</a>
@@ -355,7 +355,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
       </a>
       <a href="./aiden-order.html?mode=takeout" class="main-cta-card">
         <div class="main-cta-card-img">🥡</div>
-        <div><div class="main-cta-card-title" data-i18n="cta_takeout">お持ち帰り</div><div class="main-cta-card-sub" data-i18n="cta_takeout_sub">テイクアウト注文</div></div>
+        <div><div class="main-cta-card-title" data-i18n="cta_takeout">テイクアウト</div><div class="main-cta-card-sub" data-i18n="cta_takeout_sub">テイクアウト注文</div></div>
       </a>
       <a href="./aiden-order.html?mode=delivery" class="main-cta-card">
         <div class="main-cta-card-img">🛵</div>
@@ -427,7 +427,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
     <!-- メニュー -->
     <div><div class="footer-nav-title" data-i18n="footer_menu">メニュー</div><div class="footer-nav-list"><a href="./aiden-brand-menu.html" data-i18n="f_grand_menu">グランドメニュー</a><a href="./aiden-brand-menu.html" data-i18n="f_yakiniku">焼肉・特選肉</a><a href="./aiden-brand-menu.html" data-i18n="f_rice">ご飯・麺</a><a href="./aiden-brand-menu.html" data-i18n="f_drink">ドリンク</a><a href="./aiden-brand-menu.html" data-i18n="f_course">コース・プラン</a></div></div>
     <!-- サービス -->
-    <div><div class="footer-nav-title" data-i18n="footer_service">サービス</div><div class="footer-nav-list"><a href="javascript:void(0)" data-i18n="cta_reserve" onclick="openResModal()">来店予約</a><a href="./aiden-order.html?mode=takeout" data-i18n="cta_takeout">お持ち帰り</a><a href="./aiden-order.html?mode=delivery" data-i18n="cta_delivery">デリバリー</a></div></div>
+    <div><div class="footer-nav-title" data-i18n="footer_service">サービス</div><div class="footer-nav-list"><a href="javascript:void(0)" data-i18n="cta_reserve" onclick="openResModal()">来店予約</a><a href="./aiden-order.html?mode=takeout" data-i18n="cta_takeout">テイクアウト</a><a href="./aiden-order.html?mode=delivery" data-i18n="cta_delivery">デリバリー</a></div></div>
     <!-- 会社情報 -->
     <div>
       <div class="footer-nav-title" data-i18n="footer_company">会社情報</div>
@@ -445,7 +445,7 @@ footer{background:#222;color:rgba(255,255,255,.7)}
 </footer>
 
 <div class="float-order">
-  <a href="./aiden-order.html" class="float-order-btn"><span>🥡</span><span data-i18n="nav_order">お持ち帰り・デリバリー</span></a>
+  <a href="./aiden-order.html" class="float-order-btn"><span>🥡</span><span data-i18n="nav_order">テイクアウト・デリバリー</span></a>
   <div class="float-order-pulse"></div>
 </div>
 
@@ -557,12 +557,12 @@ var BRAND_CONFIG = {
 var I18N = {
   ja: {
     nav_menu:'メニュー', nav_stores:'お店を探す', nav_reserve:'📅 来店予約',
-    nav_order:'🥡 お持ち帰り・デリバリー', nav_order_short:'🥡 お持ち帰り', nav_campaign:'🎉 おすすめ',
+    nav_order:'🥡 テイクアウト・デリバリー', nav_order_short:'🥡 テイクアウト', nav_campaign:'🎉 おすすめ',
     hero_catch:'うまい肉を、炭火で。\nうまい肉で、心も一杯。', hero_btn:'🔥 炭火亭のこだわり',
     sec_recommend:'おすすめ', sec_recommend_more:'おすすめ一覧',
     season_title:'🌸 春の定番商品', season_sub:'季節限定の絶品メニューが登場', season_more:'季節の定番商品を見る',
     cta_reserve:'来店予約', cta_reserve_sub:'空席確認・来店予約',
-    cta_takeout:'お持ち帰り', cta_takeout_sub:'テイクアウト注文',
+    cta_takeout:'テイクアウト', cta_takeout_sub:'テイクアウト注文',
     cta_delivery:'デリバリー', cta_delivery_sub:'自宅に届けます',
     store_search_title:'店舗を探す', store_search_placeholder:'エリア・駅名・店舗名で検索', search_btn:'検索',
     guide_title:'からのご案内',

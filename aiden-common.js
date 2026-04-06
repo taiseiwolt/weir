@@ -140,12 +140,12 @@
   var I18N = {
     ja: {
       nav_menu:'メニュー', nav_stores:'お店を探す', nav_membership:'会員特典',
-      nav_reserve:'📅 来店予約', nav_order:'🥡 お持ち帰り・デリバリー', nav_order_short:'🥡 お持ち帰り',
+      nav_reserve:'📅 来店予約', nav_order:'🥡 テイクアウト・デリバリー', nav_order_short:'🥡 テイクアウト',
       footer_desc:'', footer_menu:'メニュー', footer_service:'サービス',
       footer_company:'企業情報', footer_news:'ニュース・キャンペーン', footer_recruit:'採用情報',
       f_grand_menu:'グランドメニュー', f_yakiniku:'焼肉・特選肉', f_rice:'ご飯・麺',
       f_drink:'ドリンク', f_course:'コース・プラン',
-      cta_reserve:'来店予約', cta_takeout:'お持ち帰り', cta_delivery:'デリバリー',
+      cta_reserve:'来店予約', cta_takeout:'テイクアウト', cta_delivery:'デリバリー',
       f_faq:'よくあるご質問', f_contact:'お問い合わせ', f_recruit:'採用情報',
       f_privacy:'プライバシーポリシー', f_terms:'利用規約', f_sitemap:'サイトマップ',
       news_more_link:'ニュース一覧', lang_label:'言語/Language',

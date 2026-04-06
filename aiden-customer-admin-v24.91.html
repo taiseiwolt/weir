@@ -449,7 +449,7 @@ const NAV = [
     {id:'store-basic', label:'基本情報'},
     {id:'store-hours', label:'営業時間'},
     {id:'store-facility', label:'施設設備'},
-    {id:'store-delivery', label:'配達・お持ち帰り設定'},
+    {id:'store-delivery', label:'配達・テイクアウト設定'},
     {id:'store-cancel', label:'キャンセルポリシー'},
     {id:'store-media', label:'メディア'},
   ]},
@@ -961,12 +961,12 @@ content.innerHTML = `
 </div>
 
 <!-- ============================== -->
-<!-- 🏪 店舗管理 - 配達・お持ち帰り設定 -->
+<!-- 🏪 店舗管理 - 配達・テイクアウト設定 -->
 <!-- ============================== -->
 <div class="page" id="page-store-delivery">
-  <div class="breadcrumb"><a href="#" onclick="return false">店舗管理</a> ＞ 配達・お持ち帰り設定</div>
-  <div class="page-title">配達・お持ち帰り設定</div>
-  <div class="page-subtitle">対象店舗を選択して配達・お持ち帰り設定を編集します</div>
+  <div class="breadcrumb"><a href="#" onclick="return false">店舗管理</a> ＞ 配達・テイクアウト設定</div>
+  <div class="page-title">配達・テイクアウト設定</div>
+  <div class="page-subtitle">対象店舗を選択して配達・テイクアウト設定を編集します</div>
 
   <div class="store-selector" id="storeDeliverySelector">
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
@@ -1070,7 +1070,7 @@ content.innerHTML = `
       <div class="card-title">⏱ 時間見積</div>
 
       <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">【お持ち帰り・デリバリー共通】調理時間（分）</label>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">【テイクアウト・デリバリー共通】調理時間（分）</label>
         <input type="number" value="15" min="0" id="cookTimeInput" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:120px">
       </div>
 
@@ -5305,7 +5305,7 @@ function previewTimeEstimate() {
           </div>
         </div>
         <div style="background:#e3f2fd;color:#1565c0;padding:10px;border-radius:8px;font-size:12px;margin-bottom:8px;font-weight:600">
-          🛒 お持ち帰り目安：<span style="font-size:16px">${Math.max(0,cook-10)}〜${cook+10}分</span>
+          🛒 テイクアウト目安：<span style="font-size:16px">${Math.max(0,cook-10)}〜${cook+10}分</span>
         </div>
         <div style="background:#fff3e0;color:#e65100;padding:10px;border-radius:8px;font-size:11px;line-height:1.6">
           🛵 デリバリーの配達時間はデリバリー事業者から都度配分されます
@@ -5328,7 +5328,7 @@ function confirmTimeEstimate() {
 }
 
 function saveDelivery() {
-  showToast('✅ 配達・お持ち帰り設定を保存しました');
+  showToast('✅ 配達・テイクアウト設定を保存しました');
   closeStoreEdit('storeDeliverySelector','storeDeliveryEdit');
 }
 
@@ -8543,7 +8543,7 @@ function closeStoreLinkModal() {
       <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block">対象チャネル <span class="req">*</span></label>
       <div style="display:flex;gap:8px">
         <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> 店内注文</label>
-        <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> お持ち帰り</label>
+        <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> テイクアウト</label>
         <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> デリバリー</label>
       </div>
     </div>
@@ -8606,7 +8606,7 @@ function closeStoreLinkModal() {
       <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block">対象チャネル</label>
       <div style="display:flex;gap:8px">
         <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> 店内注文</label>
-        <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> お持ち帰り</label>
+        <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> テイクアウト</label>
         <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px"><input type="checkbox" checked> デリバリー</label>
       </div>
     </div>
