@@ -135,10 +135,10 @@ serve(async (req) => {
         party_size,
         guest_name,
         guest_email,
-        customer_id,
+        member_id,
         store_id,
         stores ( name, address ),
-        members:customer_id ( first_name, last_name, email )
+        members:member_id ( first_name, last_name, email )
       `)
       .in('status', ['confirmed', 'pending'])
       .eq('reminder_sent', false)

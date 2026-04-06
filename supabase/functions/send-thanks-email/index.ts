@@ -2,7 +2,7 @@
 // pg_cronから5分毎に呼び出し
 //
 // 来店完了（completed）から4時間後にサンクスメールを自動送信
-// 対象: 会員のみ（customer_idがNOT NULL）
+// 対象: 会員のみ（member_idがNOT NULL）
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -76,14 +76,14 @@ serve(async (req) => {
         id,
         reservation_date,
         reservation_time,
-        customer_id,
+        member_id,
         store_id,
         stores ( name ),
-        members:customer_id ( first_name, last_name, email )
+        members:member_id ( first_name, last_name, email )
       `)
       .eq('status', 'completed')
       .eq('thanks_mail_sent', false)
-      .not('customer_id', 'is', null)
+      .not('member_id', 'is', null)
       .limit(50)
 
     if (fetchErr) {
