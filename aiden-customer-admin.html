@@ -292,6 +292,7 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 .nav-subitem { padding:9px 16px 9px 50px; color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer; transition:all .15s; }
 .nav-subitem:hover { color:rgba(255,255,255,0.8); background:rgba(255,255,255,0.03); }
 .nav-subitem.active { color:var(--accent); background:rgba(233,69,96,0.1); }
+.coming-soon-badge { display:inline-block;background:#ff9f43;color:#fff;font-size:8px;padding:1px 5px;border-radius:6px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:0.3px; }
 
 /* === CONTENT === */
 .content { margin-left:var(--sidebar-w); margin-top:var(--header-h); padding:24px; min-height:calc(100vh - var(--header-h)); }
@@ -561,15 +562,18 @@ const NAV = [
     {id:'store-cancel', label:'キャンセルポリシー'},
     {id:'store-media', label:'メディア'},
   ]},
-  { id:'menu', icon:'📋', label:'メニュー管理', subs:[]},
+  { id:'menu', icon:'📋', label:'メニュー管理', subs:[
+    {id:'menu-list', label:'メニュー一覧'},
+    {id:'menu-price-channel', label:'価格・チャネル管理'},
+  ]},
   { id:'sales', icon:'📊', label:'売上・分析', subs:[
     {id:'sales-dashboard', label:'売上ダッシュボード'},
     {id:'sales-csv', label:'注文CSVダウンロード'},
     {id:'sales-user', label:'ユーザー分析'},
     {id:'sales-product', label:'商品分析'},
     {id:'sales-benchmark', label:'比較分析'},
-    {id:'sales-campaign', label:'キャンペーン管理'},
-    {id:'sales-effect', label:'効果検証'},
+    {id:'sales-campaign', label:'キャンペーン管理', comingSoon:true},
+    {id:'sales-effect', label:'効果検証', comingSoon:true},
     {id:'sales-google-reviews', label:'Google口コミ分析'},
   ]},
   { id:'brand', icon:'🎨', label:'ブランドHP', subs:[
@@ -583,9 +587,9 @@ const NAV = [
     {id:'member-incentive', label:'初回特典設定'},
     {id:'member-crm', label:'CRM配信'},
     {id:'guest-analysis', label:'ゲスト注文分析'},
-    {id:'guest-conversion', label:'ゲスト→会員転換設定'},
+    {id:'guest-conversion', label:'ゲスト→会員転換設定', comingSoon:true},
     {id:'ai-sns', label:'SNS管理'},
-    {id:'subscription', label:'サブスクリプション'},
+    {id:'subscription', label:'サブスクリプション', comingSoon:true},
   ]},
   { id:'content-create', icon:'🖨️', label:'コンテンツ制作', subs:[
     {id:'content-pop', label:'POP作成'},
@@ -597,8 +601,8 @@ const NAV = [
   ]},
   { id:'billing', icon:'💰', label:'請求・支払', subs:[
     {id:'billing-stripe', label:'Stripe連携'},
-    {id:'billing-invoices', label:'請求書・支払通知書'},
-    {id:'billing-schedule', label:'スケジュール'},
+    {id:'billing-invoices', label:'取引履歴'},
+    {id:'billing-schedule', label:'スケジュール', comingSoon:true},
     {id:'billing-csv', label:'CSVダウンロード'},
   ]},
   { id:'support', icon:'💬', label:'サポート', subs:[
@@ -617,6 +621,7 @@ const NAV = [
     {id:'ban-list', label:'BANリスト'},
   ]},
   { id:'bulk-import', icon:'📥', label:'一括登録', subs:[]},
+  { id:'audit-log', icon:'📝', label:'操作ログ', subs:[]},
 ];
 
 // ===== BUILD SIDEBAR =====
@@ -633,7 +638,8 @@ NAV.forEach(cat => {
   if(hasSubs){
     sidebarHTML += `<div class="nav-subitems" data-cat="${cat.id}">`;
     cat.subs.forEach(sub => {
-      sidebarHTML += `<div class="nav-subitem" data-page="${sub.id}" onclick="showPage('${sub.id}','${cat.id}')">${sub.label}</div>`;
+      var csBadge = sub.comingSoon ? '<span class="coming-soon-badge">Coming Soon</span>' : '';
+      sidebarHTML += `<div class="nav-subitem" data-page="${sub.id}" onclick="showPage('${sub.id}','${cat.id}')">${sub.label}${csBadge}</div>`;
     });
     sidebarHTML += `</div>`;
   }
@@ -691,6 +697,8 @@ function showPage(pageId, catId){
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
+  if(pageId === 'audit-log' && typeof renderAuditLogs === 'function') renderAuditLogs();
+  if(pageId === 'menu-price-channel' && typeof renderPriceChannel === 'function') renderPriceChannel();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
 }
 
@@ -1430,7 +1438,8 @@ content.innerHTML = `
 <!-- ============================== -->
 <!-- 📋 メニュー管理 -->
 <!-- ============================== -->
-<div class="page" id="page-menu">
+<div class="page" id="page-menu-list">
+  <div class="breadcrumb"><a href="#" onclick="return false">メニュー管理</a> ＞ メニュー一覧</div>
   <div class="page-title">メニュー管理</div>
   <div class="page-subtitle">メニューパターンの管理・商品の登録・編集を行います</div>
 
@@ -1507,6 +1516,61 @@ content.innerHTML = `
         <tbody id="productPoolBody"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- 📋 メニュー管理 - 価格・チャネル管理 (D-29) -->
+<!-- ============================== -->
+<div class="page" id="page-menu-price-channel">
+  <div class="breadcrumb"><a href="#" onclick="return false">メニュー管理</a> ＞ 価格・チャネル管理</div>
+  <div class="page-title">価格・チャネル管理</div>
+  <div class="page-subtitle">商品ごとの販売チャネル・価格を一括で管理します（スプレッドシート型）</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <select id="pcPatternFilter" onchange="renderPriceChannel()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+      <option value="">全パターン</option>
+    </select>
+    <select id="pcCategoryFilter" onchange="renderPriceChannel()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+      <option value="">全カテゴリ</option>
+      <option>握り</option><option>軍艦</option><option>サイドメニュー</option><option>ドリンク</option><option>デザート</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="savePriceChannel()">💾 保存</button>
+      <button class="btn btn-secondary" style="opacity:0.5;pointer-events:none;position:relative" title="Coming Soon">
+        🔄 外部同期 <span style="background:#ff9f43;color:#fff;font-size:8px;padding:1px 6px;border-radius:8px;margin-left:4px;vertical-align:middle">Coming Soon</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="background:#f0f7ff;padding:10px 14px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.6;margin-bottom:16px">
+    💡 「保存」はAIden内部のデータ保存のみです。「外部同期」は各デリバリーサービスへのメニュー・価格のAPI同期です（Coming Soon）。
+  </div>
+
+  <div class="card" style="padding:0;overflow-x:auto">
+    <table class="data-table" style="font-size:12px;white-space:nowrap" id="priceChannelTable">
+      <thead>
+        <tr>
+          <th style="width:160px">商品名</th>
+          <th style="width:90px">基本価格</th>
+          <th style="width:60px;text-align:center">🍽 店内</th>
+          <th style="width:60px;text-align:center">🥡 持帰</th>
+          <th style="width:60px;text-align:center">🚚 配達</th>
+          <th style="width:90px;text-align:center"><span style="color:#06C167">●</span> UE価格</th>
+          <th style="width:90px;text-align:center"><span style="color:#E24B4A">●</span> 出前館</th>
+          <th style="width:90px;text-align:center"><span style="color:#333">●</span> menu</th>
+          <th style="width:90px;text-align:center"><span style="color:#F5A623">●</span> 楽天DN</th>
+        </tr>
+      </thead>
+      <tbody id="priceChannelBody"></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:12px;font-size:10px;color:#999">
+    <span><span style="color:#06C167;font-weight:700">●</span> Uber Eats</span>
+    <span><span style="color:#E24B4A;font-weight:700">●</span> 出前館</span>
+    <span><span style="color:#333;font-weight:700">●</span> menu</span>
+    <span><span style="color:#F5A623;font-weight:700">●</span> 楽天デリバリー</span>
   </div>
 </div>
 
@@ -1726,6 +1790,29 @@ content.innerHTML = `
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- 月次AIコメント（D-40） -->
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fff4 0%,#e6ffe8 100%);border:1px solid #b2dfdb">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0;color:#00796b">📋 月次AIコメント</div>
+      <select id="sdMonthlyAiMonth" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
+        <option value="2026-03">2026年3月</option>
+        <option value="2026-02">2026年2月</option>
+        <option value="2026-01">2026年1月</option>
+      </select>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:14px;font-size:12px;line-height:1.9;color:#333">
+      <div style="font-weight:700;color:#00796b;margin-bottom:8px">🎯 2026年3月の総括</div>
+      <p>売上は前月比+12.3%と好調。「春の大感謝祭」キャンペーンが集客に大きく寄与し、特に新規利用者が+53.5%と大幅に増加しました。</p>
+      <div style="font-weight:700;color:#00796b;margin-bottom:8px;margin-top:12px">💡 改善ポイント</div>
+      <ul style="margin:4px 0 4px 18px">
+        <li>平日14〜16時帯の売上が低迷（前月比-5.2%）。アフタヌーンセットの導入を推奨</li>
+        <li>デリバリーチャネルの客単価が店内比-18%。アップセル施策の検討を推奨</li>
+        <li>キャンセル率は2.3%と低水準を維持。現行の与信→確定フローが有効に機能</li>
+      </ul>
+      <div style="font-size:10px;color:#999;margin-top:8px;border-top:1px solid #e0f2f1;padding-top:8px">※ このコメントはAIが売上・注文データを分析して自動生成しています（STDプラン: 月1回 / PROプラン: 月4回）</div>
     </div>
   </div>
 
@@ -2257,7 +2344,7 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">現在の期間限定メニュー</div>
-      <button class="btn btn-secondary btn-sm" onclick="showPage('menu','menu')">→ メニュー管理</button>
+      <button class="btn btn-secondary btn-sm" onclick="showPage('menu-list','menu')">→ メニュー管理</button>
     </div>
     <table class="data-table" style="font-size:11px">
       <thead><tr><th>商品名</th><th>カテゴリ</th><th>価格</th><th>販売期間</th><th>注文数</th><th>紐づきキャンペーン</th></tr></thead>
@@ -4108,6 +4195,17 @@ content.innerHTML = `
     <div id="stripeDetailContent"></div>
   </div>
 
+  <div class="card" id="stripeBillingStatusCard">
+    <div class="card-title">💳 Stripe Billing 課金ステータス</div>
+    <div style="font-size:11px;color:#888;margin-bottom:12px">Subscription Item方式: 法人ごとに1 Subscription、店舗ごとにSubscription Item</div>
+    <table class="data-table" style="font-size:12px">
+      <thead><tr><th>店舗</th><th>プラン</th><th>月額</th><th>ステータス</th><th>次回課金日</th></tr></thead>
+      <tbody id="stripeBillingBody">
+        <tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-light)">Stripe Billing連携後に表示されます</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="card">
     <div class="card-title">❓ Stripe Connectとは</div>
     <div style="font-size:13px;color:var(--text-light);line-height:1.8">
@@ -4122,32 +4220,62 @@ content.innerHTML = `
   </div>
 </div>
 
-<!-- 💰 請求・支払 - 請求書・支払通知書 -->
+<!-- 💰 請求・支払 - 取引履歴 -->
 <div class="page" id="page-billing-invoices">
-  <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ 請求書・支払通知書</div>
-  <div class="page-title">請求書・支払通知書</div>
-  <div class="page-subtitle">月次の請求書・支払通知書を確認・ダウンロードします</div>
-  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-    <select id="billingMonthFilter" onchange="renderInvoices()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全期間</option><option value="2026/02">2026年2月</option><option value="2026/01">2026年1月</option></select>
-    <select id="billingTypeFilter" onchange="renderInvoices()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全種類</option><option value="請求書">請求書</option><option value="支払通知書">支払通知書</option></select>
+  <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ 取引履歴</div>
+  <div class="page-title">取引履歴</div>
+  <div class="page-subtitle">Stripe Billing自動課金の月額請求履歴・取引手数料の自動差引履歴を確認します</div>
+
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <div class="sub-tab active" onclick="switchBillingHistoryTab('subscription',this)">月額プラン課金</div>
+    <div class="sub-tab" onclick="switchBillingHistoryTab('commission',this)">取引手数料</div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="data-table"><thead><tr><th>対象月</th><th>種類</th><th>金額</th><th>ステータス</th><th>支払期日</th><th>操作</th></tr></thead>
-      <tbody id="invoiceBody"></tbody></table>
+
+  <!-- 月額プラン課金タブ -->
+  <div id="billingHistorySubscription">
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <select id="billingMonthFilter" onchange="renderInvoices()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全期間</option><option value="2026/03">2026年3月</option><option value="2026/02">2026年2月</option><option value="2026/01">2026年1月</option></select>
+    </div>
+    <div style="background:#f0f7ff;padding:12px 16px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.8;margin-bottom:16px">
+      💡 月額プラン料金はStripe Billingにより自動課金されます。法人ごとに1つのSubscription、店舗ごとにSubscription Itemとして管理されています。
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table"><thead><tr><th>対象月</th><th>種類</th><th>金額</th><th>ステータス</th><th>課金日</th><th>操作</th></tr></thead>
+        <tbody id="invoiceBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- 取引手数料タブ -->
+  <div id="billingHistoryCommission" style="display:none">
+    <div style="background:#f0f7ff;padding:12px 16px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.8;margin-bottom:16px">
+      💡 取引手数料はStripe Connect経由で注文ごとに自動差引されます。請求書の発行はありません。<br>
+      手数料率: 店内注文 3.8% / テイクアウト・デリバリー 4.0%（Stripe手数料3.6%はAIden負担）
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table" style="font-size:12px"><thead><tr><th>日時</th><th>注文ID</th><th>チャネル</th><th>注文金額</th><th>手数料率</th><th>手数料額</th></tr></thead>
+        <tbody id="commissionHistoryBody">
+          <tr><td>2026/03/28 12:34</td><td style="font-family:monospace">ORD-a8f2k3m</td><td>店内</td><td>¥3,200</td><td>3.8%</td><td>¥122</td></tr>
+          <tr><td>2026/03/28 13:15</td><td style="font-family:monospace">ORD-b9g4n5p</td><td>テイクアウト</td><td>¥2,800</td><td>4.0%</td><td>¥112</td></tr>
+          <tr><td>2026/03/27 18:42</td><td style="font-family:monospace">ORD-c1h6q7r</td><td>デリバリー</td><td>¥4,500</td><td>4.0%</td><td>¥180</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <div class="page" id="page-billing-schedule">
   <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ スケジュール</div>
-  <div class="page-title">請求・支払スケジュール</div>
-  <div class="page-subtitle">締め日・支払日のスケジュールを確認します</div>
-  <div class="card"><div class="card-title">2026年のスケジュール</div>
-    <table class="data-table" style="font-size:12px"><thead><tr><th>対象期間</th><th>締め日</th><th>請求書発行</th><th>支払期日（→加盟店）</th><th>支払期日（→出前館）</th></tr></thead>
-      <tbody>
-        <tr><td>2026年1月分</td><td>1/31</td><td>2/3〜5</td><td>2/7</td><td>2/28</td></tr>
-        <tr><td>2026年2月分</td><td>2/28</td><td>3/3〜5</td><td>3/6</td><td>3/31</td></tr>
-        <tr><td>2026年3月分</td><td>3/31</td><td>4/2〜4</td><td>4/7</td><td>4/30</td></tr>
-      </tbody></table>
+  <div class="page-title">請求・支払スケジュール <span class="badge" style="background:#ff9f43;color:#fff;font-size:10px;vertical-align:middle;padding:2px 8px;border-radius:10px">Coming Soon</span></div>
+  <div class="page-subtitle">Stripe Billing自動課金のため、手動スケジュール管理は不要になりました</div>
+  <div style="opacity:0.4;pointer-events:none">
+    <div class="card"><div class="card-title">2026年のスケジュール</div>
+      <table class="data-table" style="font-size:12px"><thead><tr><th>対象期間</th><th>締め日</th><th>請求書発行</th><th>支払期日（→加盟店）</th><th>支払期日（→出前館）</th></tr></thead>
+        <tbody>
+          <tr><td>2026年1月分</td><td>1/31</td><td>2/3〜5</td><td>2/7</td><td>2/28</td></tr>
+          <tr><td>2026年2月分</td><td>2/28</td><td>3/3〜5</td><td>3/6</td><td>3/31</td></tr>
+          <tr><td>2026年3月分</td><td>3/31</td><td>4/2〜4</td><td>4/7</td><td>4/30</td></tr>
+        </tbody></table>
+    </div>
   </div>
 </div>
 
@@ -4684,6 +4812,33 @@ content.innerHTML = `
       </table>
     </div>
   </div>
+</div>
+
+<!-- ============================== -->
+<!-- 📝 操作ログ -->
+<!-- ============================== -->
+<div class="page" id="page-audit-log">
+  <div class="breadcrumb"><a href="#" onclick="return false">操作ログ</a></div>
+  <div class="page-title">📝 操作ログ</div>
+  <div class="page-subtitle">店舗管理画面での操作履歴を確認します（保持期間: 3年）</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <input type="date" id="auditDateFrom" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <span style="font-size:12px;color:#999">〜</span>
+    <input type="date" id="auditDateTo" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button class="btn btn-primary btn-sm" onclick="renderAuditLogs()">検索</button>
+    <button class="btn btn-secondary btn-sm" onclick="resetAuditFilter()">リセット</button>
+    <span style="margin-left:auto;font-size:11px;color:#999" id="auditLogCount"></span>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="data-table" style="font-size:12px">
+      <thead><tr><th style="width:140px">日時</th><th style="width:120px">操作者</th><th style="width:120px">操作内容</th><th style="width:100px">対象</th><th>詳細</th></tr></thead>
+      <tbody id="auditLogBody"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;justify-content:center;gap:8px;margin-top:16px" id="auditLogPagination"></div>
 </div>
 
 <!-- Generic Modal -->
@@ -9149,7 +9304,7 @@ function applyRoleBasedSidebar() {
   // Define which NAV categories each role can access
   var roleAccess = {
     owner: null, // null = all access
-    manager: ['store','menu','sales','review','support'],
+    manager: ['store','menu','sales','review','support','audit-log'],
     staff: ['menu']
   };
   var allowed = roleAccess[role];
@@ -16505,6 +16660,123 @@ async function custDeleteStoreTable(tableId, storeId) {
     custLoadStoreTables(storeId);
   } catch (e) {
     showToast('❌ 削除エラー: ' + e.message);
+  }
+}
+
+// ===== PRICE & CHANNEL MANAGEMENT (D-29) =====
+function renderPriceChannel() {
+  var body = document.getElementById('priceChannelBody');
+  if (!body) return;
+  // Use demo data based on existing products
+  var products = [
+    {name:'サーモン', cat:'握り', price:120, store:true, takeout:true, delivery:true},
+    {name:'まぐろ', cat:'握り', price:150, store:true, takeout:true, delivery:true},
+    {name:'えびアボカド', cat:'軍艦', price:180, store:true, takeout:true, delivery:false},
+    {name:'玉子', cat:'握り', price:100, store:true, takeout:true, delivery:false},
+    {name:'えび天', cat:'サイドメニュー', price:150, store:true, takeout:false, delivery:false},
+    {name:'味噌汁', cat:'サイドメニュー', price:120, store:true, takeout:true, delivery:true},
+    {name:'茶碗蒸し', cat:'サイドメニュー', price:200, store:true, takeout:false, delivery:false},
+    {name:'にぎりセット（8貫）', cat:'握り', price:980, store:true, takeout:true, delivery:true},
+    {name:'春の特選セット', cat:'握り', price:1280, store:true, takeout:true, delivery:true},
+    {name:'桜えびの天ぷら', cat:'サイドメニュー', price:150, store:true, takeout:true, delivery:true},
+  ];
+  var catFilter = document.getElementById('pcCategoryFilter').value;
+  if (catFilter) products = products.filter(function(p){ return p.cat === catFilter; });
+  body.innerHTML = products.map(function(p, i) {
+    var chk = function(on){ return '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="pcMarkDirty()" style="width:16px;height:16px;cursor:pointer">'; };
+    var deliveryPrice = function(base) {
+      if (!p.delivery) return '<td style="text-align:center;color:#ccc">—</td><td style="text-align:center;color:#ccc">—</td><td style="text-align:center;color:#ccc">—</td><td style="text-align:center;color:#ccc">—</td>';
+      var ue = Math.round(base * 1.15);
+      var de = Math.round(base * 1.12);
+      var mn = Math.round(base * 1.10);
+      var rn = Math.round(base * 1.13);
+      return '<td style="text-align:center"><input type="number" value="' + ue + '" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;text-align:right" onchange="pcMarkDirty()"></td>' +
+        '<td style="text-align:center"><input type="number" value="' + de + '" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;text-align:right" onchange="pcMarkDirty()"></td>' +
+        '<td style="text-align:center"><input type="number" value="' + mn + '" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;text-align:right" onchange="pcMarkDirty()"></td>' +
+        '<td style="text-align:center"><input type="number" value="' + rn + '" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;text-align:right" onchange="pcMarkDirty()"></td>';
+    };
+    return '<tr>' +
+      '<td style="font-weight:600">' + escH(p.name) + '<div style="font-size:9px;color:#999">' + escH(p.cat) + '</div></td>' +
+      '<td><input type="number" value="' + p.price + '" style="width:80px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:11px;text-align:right" onchange="pcMarkDirty()"></td>' +
+      '<td style="text-align:center">' + chk(p.store) + '</td>' +
+      '<td style="text-align:center">' + chk(p.takeout) + '</td>' +
+      '<td style="text-align:center">' + chk(p.delivery) + '</td>' +
+      deliveryPrice(p.price) +
+    '</tr>';
+  }).join('');
+}
+function pcMarkDirty() { if(typeof markDirty==='function') markDirty(); }
+function savePriceChannel() {
+  if(typeof clearDirty==='function') clearDirty();
+  showToast('価格・チャネル設定を保存しました');
+}
+
+// ===== BILLING HISTORY TAB SWITCH =====
+function switchBillingHistoryTab(tab, el) {
+  document.getElementById('billingHistorySubscription').style.display = tab === 'subscription' ? '' : 'none';
+  document.getElementById('billingHistoryCommission').style.display = tab === 'commission' ? '' : 'none';
+  el.parentElement.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+// ===== AUDIT LOG VIEWER =====
+var _auditPage = 1;
+var _auditPerPage = 50;
+function resetAuditFilter() {
+  var d = new Date();
+  var to = d.toISOString().slice(0,10);
+  d.setDate(d.getDate() - 7);
+  var from = d.toISOString().slice(0,10);
+  document.getElementById('auditDateFrom').value = from;
+  document.getElementById('auditDateTo').value = to;
+  _auditPage = 1;
+  renderAuditLogs();
+}
+async function renderAuditLogs() {
+  var fromEl = document.getElementById('auditDateFrom');
+  var toEl = document.getElementById('auditDateTo');
+  if (!fromEl.value) { resetAuditFilter(); return; }
+  var from = fromEl.value + 'T00:00:00';
+  var to = toEl.value + 'T23:59:59';
+  var offset = (_auditPage - 1) * _auditPerPage;
+  try {
+    var q = sb.from('audit_logs').select('*', {count: 'exact'})
+      .gte('created_at', from).lte('created_at', to)
+      .order('created_at', {ascending: false})
+      .range(offset, offset + _auditPerPage - 1);
+    var { data, count, error } = await q;
+    if (error) throw error;
+    var body = document.getElementById('auditLogBody');
+    if (!data || data.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#999">該当する操作ログがありません</td></tr>';
+      document.getElementById('auditLogCount').textContent = '0件';
+      document.getElementById('auditLogPagination').innerHTML = '';
+      return;
+    }
+    document.getElementById('auditLogCount').textContent = (count || data.length) + '件';
+    body.innerHTML = data.map(function(r) {
+      var dt = new Date(r.created_at);
+      var ts = dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+      var actor = escH(r.actor_email || r.user_email || '—');
+      var action = escH(r.action || '—');
+      var target = escH(r.entity_type || r.target_table || '—');
+      var detail = '';
+      if (r.details) {
+        try { detail = typeof r.details === 'string' ? r.details : JSON.stringify(r.details).slice(0, 120); } catch(e) { detail = '—'; }
+      }
+      return '<tr><td style="white-space:nowrap">' + ts + '</td><td>' + actor + '</td><td>' + action + '</td><td>' + target + '</td><td style="font-size:11px;color:#666;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escH(detail) + '</td></tr>';
+    }).join('');
+    // Pagination
+    var totalPages = Math.ceil((count || data.length) / _auditPerPage);
+    var pagHtml = '';
+    if (totalPages > 1) {
+      if (_auditPage > 1) pagHtml += '<button class="btn btn-secondary btn-sm" onclick="_auditPage--;renderAuditLogs()">← 前へ</button>';
+      pagHtml += '<span style="font-size:12px;color:#666;line-height:28px">' + _auditPage + ' / ' + totalPages + '</span>';
+      if (_auditPage < totalPages) pagHtml += '<button class="btn btn-secondary btn-sm" onclick="_auditPage++;renderAuditLogs()">次へ →</button>';
+    }
+    document.getElementById('auditLogPagination').innerHTML = pagHtml;
+  } catch(e) {
+    document.getElementById('auditLogBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#d63031">読み込みエラー: ' + escH(e.message) + '</td></tr>';
   }
 }
 
