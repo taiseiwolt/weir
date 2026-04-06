@@ -9361,10 +9361,12 @@ function renderSalesCharts() {
 
 // Init dashboard on page load
 function initSalesDashboard() {
-  // Populate store selectors
+  // Populate store selectors (clear existing dynamic options first)
   ['sdStore','uaStore','paStore'].forEach(id => {
     const sel = document.getElementById(id);
     if(sel) {
+      // Keep the first "全店舗" option, remove dynamically added ones
+      while(sel.options.length > 1) sel.remove(1);
       STORES.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id; opt.textContent = s.name;
@@ -9374,7 +9376,6 @@ function initSalesDashboard() {
   });
   sdBuildCompareOptions();
 }
-setTimeout(initSalesDashboard, 100);
 
 // Placeholder hook
 const _origShowPageSales = showPage;
@@ -9597,6 +9598,10 @@ async function initAdminAfterAuth() {
   await loadAdminFromSupabase();
   await loadStaffAccounts();
   document.getElementById('content').style.opacity = '1';
+  // Re-render store tables after STORES data is loaded
+  Object.keys(TABLE_CONFIGS).forEach(renderStoreTable);
+  // Re-init sales dashboard store filters after STORES data is loaded
+  initSalesDashboard();
   applyRoleBasedSidebar();
   document.querySelector('.nav-cat-header[data-cat="store"]').click();
   updatePolicyPreview();
