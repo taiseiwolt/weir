@@ -21,10 +21,10 @@ BEGIN
     body := jsonb_build_object(
       'store_id', NEW.store_id,
       'title', '新規予約',
-      'body', NEW.guest_name || '様 '
-              || to_char(NEW.reservation_date, 'YYYY/MM/DD') || ' '
-              || to_char(NEW.reservation_time, 'HH24:MI') || ' '
-              || NEW.party_size || '名',
+      'body', COALESCE(NEW.name, '顧客') || '様 '
+              || to_char(NEW.date, 'YYYY/MM/DD') || ' '
+              || to_char(NEW.time, 'HH24:MI') || ' '
+              || NEW.guest_count || '名',
       'data', jsonb_build_object(
         'type', 'reservation',
         'reservation_id', NEW.id

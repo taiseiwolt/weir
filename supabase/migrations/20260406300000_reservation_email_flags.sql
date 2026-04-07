@@ -7,9 +7,9 @@ ALTER TABLE reservations
 
 -- インデックス: pg_cronバッチ検索用
 CREATE INDEX IF NOT EXISTS idx_reservations_thanks_unsent
-  ON reservations (reservation_date)
-  WHERE thanks_mail_sent = FALSE AND status = 'completed' AND customer_id IS NOT NULL;
+  ON reservations (date)
+  WHERE thanks_mail_sent = FALSE AND status = 'completed' AND member_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_reservations_reminder_unsent
-  ON reservations (reservation_date, reservation_time)
+  ON reservations (date, time)
   WHERE reminder_sent = FALSE AND status IN ('confirmed', 'pending');

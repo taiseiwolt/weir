@@ -8,21 +8,21 @@
 CREATE TABLE reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL REFERENCES stores(id),
-  customer_id UUID REFERENCES members(id) ON DELETE SET NULL,
+  member_id UUID REFERENCES members(id) ON DELETE SET NULL,
   display_id TEXT NOT NULL UNIQUE,
 
   -- 予約情報
-  reservation_date DATE NOT NULL,
-  reservation_time TIME NOT NULL,
-  party_size INTEGER NOT NULL CHECK (party_size > 0),
+  date DATE NOT NULL,
+  time TIME NOT NULL,
+  guest_count INTEGER NOT NULL CHECK (guest_count > 0),
   seat_type TEXT,
   course_id UUID REFERENCES menu_items(id),
 
   -- ゲスト情報
-  guest_name TEXT NOT NULL,
-  guest_phone TEXT NOT NULL,
-  guest_email TEXT,
-  special_requests TEXT,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT,
+  notes TEXT,
 
   -- ステータス
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN (
@@ -50,9 +50,9 @@ CREATE TABLE reservations (
 );
 
 -- インデックス
-CREATE INDEX idx_reservations_store_date ON reservations(store_id, reservation_date);
+CREATE INDEX idx_reservations_store_date ON reservations(store_id, date);
 CREATE INDEX idx_reservations_status ON reservations(status);
-CREATE INDEX idx_reservations_customer ON reservations(customer_id);
+CREATE INDEX idx_reservations_customer ON reservations(member_id);
 CREATE INDEX idx_reservations_display_id ON reservations(display_id);
 
 -- updated_at 自動更新トリガー
@@ -82,7 +82,7 @@ CREATE POLICY "anon_insert" ON reservations
 
 CREATE POLICY "authenticated_select_own" ON reservations
   FOR SELECT TO authenticated
-  USING (customer_id = auth.uid());
+  USING (member_id = auth.uid());
 
 -- -----------------------------------------------------------
 -- 3. stores テーブルに予約設定カラム追加
