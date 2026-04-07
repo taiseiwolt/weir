@@ -1019,7 +1019,7 @@ content.innerHTML = `
       </table>
       <div id="spotEmpty" style="text-align:center;padding:16px;font-size:12px;color:var(--text-light)">登録されたスポット休業はありません</div>
     </div>
-    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
+    <div class="btn-group"><button class="btn btn-primary" onclick="saveBusinessHours()">💾 保存</button></div>
     </div><!-- /bulk-step2 -->
   </div>
 </div>
@@ -5097,7 +5097,7 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
 }
 
 // ===== SAVE BASIC INFO =====
-function saveBasicInfo() {
+async function saveBasicInfo() {
   const store = STORES.find(s => s.id === basicEditStoreId);
   if(!store) { alert('対象店舗が見つかりません'); return; }
 
@@ -5118,9 +5118,27 @@ function saveBasicInfo() {
   store.lat = parseFloat(document.getElementById('latVal').textContent) || 0;
   store.lng = parseFloat(document.getElementById('lngVal').textContent) || 0;
 
-  renderStoreTable('storeBasicTable');
-  showToast('✅ ' + store.name + ' の基本情報を保存しました');
-  logAudit('update_store_settings', 'stores', store.id, {name: store.name, address: store.address, phone: store.phone});
+  try {
+    const { error } = await sb.from('stores').update({
+      name: store.name,
+      address: store.address,
+      phone: store.phone,
+      email: store.email || null,
+      genre: store.genre || null,
+      lat: store.lat,
+      lng: store.lng,
+      has_takeout: store.takeout,
+      has_delivery: store.delivery,
+      reservation_enabled: store.reservation,
+      status: store.status === '営業中' ? 'open' : store.status === '閉店' ? 'closed' : 'paused'
+    }).eq('id', store.id);
+    if (error) throw error;
+    renderStoreTable('storeBasicTable');
+    showToast('✅ ' + store.name + ' の基本情報を保存しました');
+    logAudit('update_store_settings', 'stores', store.id, {name: store.name, address: store.address, phone: store.phone});
+  } catch (e) {
+    showToast('❌ 保存に失敗しました: ' + (e.message || e));
+  }
   closeStoreEdit('storeBasicSelector', 'storeBasicSingleEdit');
 }
 
@@ -5156,8 +5174,8 @@ function openSingleStoreEdit(storeName) {
     document.getElementById('basicStoreZip').value = store.zip || '';
     document.getElementById('addressInput').value = store.address;
     document.getElementById('basicStoreAccess').value = store.access || '';
-    document.getElementById('basicStoreGenre').value = store.genre || '寿司';
-    document.getElementById('basicStoreSubGenre').value = store.subGenre || '回転寿司';
+    document.getElementById('basicStoreGenre').value = isAddressLike(store.genre) ? '' : (store.genre || '');
+    document.getElementById('basicStoreSubGenre').value = store.subGenre || '';
     document.getElementById('basicStorePrice').value = store.price || '¥1,000〜¥2,000';
     document.getElementById('basicStoreDesc').value = store.desc || '';
     document.getElementById('basicChReservation').checked = store.reservation;
@@ -5223,7 +5241,7 @@ function loadFacilityForm(s) {
   }
 }
 
-function saveFacility() {
+async function saveFacility() {
   const targets = STORES.filter(s => currentEditStoreIds.includes(s.id));
   if(targets.length === 0) { alert('対象店舗が見つかりません'); return; }
 
@@ -5238,6 +5256,12 @@ function saveFacility() {
   });
   const payStr = pays.join('/');
 
+  // Map UI smoking value to DB smoking_policy
+  const smokingMap = {'完全禁煙':'no_smoking','喫煙可':'allowed','分煙':'separated','加熱式専用':'heat_only'};
+  const smokingPolicy = smokingMap[smoking] || 'no_smoking';
+  // Map UI kids value to DB children_policy
+  const childrenPolicy = kids ? 'allowed' : 'not_allowed';
+
   targets.forEach(store => {
     store.seats = seats;
     store.parking = parking;
@@ -5247,11 +5271,23 @@ function saveFacility() {
     store.payment = payStr;
   });
 
-  renderStoreTable('storeFacilityTable');
-
-  const names = targets.map(s => s.name);
-  const label = names.length <= 2 ? names.join('、') : names.length + '店舗';
-  showToast('✅ ' + label + ' の施設設備を保存しました');
+  try {
+    for (const store of targets) {
+      const { error } = await sb.from('stores').update({
+        seats: seats,
+        smoking_policy: smokingPolicy,
+        children_policy: childrenPolicy
+      }).eq('id', store.id);
+      if(error) throw error;
+    }
+    renderStoreTable('storeFacilityTable');
+    const names = targets.map(s => s.name);
+    const label = names.length <= 2 ? names.join('、') : names.length + '店舗';
+    showToast('✅ ' + label + ' の施設設備を保存しました');
+    targets.forEach(store => { logAudit('update_store_settings', 'stores', store.id, {seats, smokingPolicy, childrenPolicy}); });
+  } catch(e) {
+    showToast('❌ 保存に失敗しました: ' + (e.message || e));
+  }
   closeStoreEdit('storeFacilitySelector','storeFacilityEdit');
 }
 
@@ -5454,15 +5490,15 @@ async function loadAdminFromSupabase() {
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
     // 2. Stores (RLS: filtered by brand)
-    const {data: stores, error: storeErr} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, created_at, updated_at').order('name');
+    const {data: stores, error: storeErr} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
     if (storeErr) errors.push('店舗: ' + storeErr.message);
     if (stores && stores.length > 0) {
       STORES = stores.map(s => ({
         id: s.id, storeId: s.slug || s.id.substring(0,6), name: s.name, kana: '', address: s.address || '', zip: '', phone: s.phone || '', email: s.email || '',
-        access: '', genre: s.genre || '焼肉', subGenre: '', price: '', desc: '', lat: s.lat || 0, lng: s.lng || 0,
+        access: '', genre: s.genre || '', subGenre: '', price: '', desc: '', lat: s.lat || 0, lng: s.lng || 0,
         hoursOpen: '11:00', hoursClose: '22:00', delOpen: '11:30', delClose: '21:00',
-        seats: 80, smoking: '完全禁煙', parking: true, kids: true, pets: false,
-        payment: 'Card/QR/電子マネー/交通系IC/現金', delivery: s.has_delivery !== false, takeout: s.has_takeout !== false, reservation: true,
+        seats: s.seats || 0, smoking: ({'no_smoking':'完全禁煙','allowed':'喫煙可','separated':'分煙','heat_only':'加熱式専用'})[s.smoking_policy] || '完全禁煙', parking: false, kids: s.children_policy === 'allowed', pets: false,
+        payment: 'Card/QR/電子マネー/交通系IC/現金', delivery: s.has_delivery !== false, takeout: s.has_takeout !== false, reservation: s.reservation_enabled !== false,
         status: s.status === 'open' ? '営業中' : s.status === 'closed' ? '閉店' : '営業時間外',
         radius: (s.delivery_radius_km || 3) + 'km',
         delFee: s.delivery_fee != null ? s.delivery_fee : 300,
@@ -5729,10 +5765,15 @@ function statusBadge(s) {
   return badge(s, map[s]||'secondary');
 }
 
+function isAddressLike(val) {
+  if(!val) return false;
+  return /^(東京都|大阪府|北海道|.{2,3}県|.{2,3}市)/.test(val) || /\d+-\d+/.test(val);
+}
+
 const TABLE_CONFIGS = {
   storeBasicTable: s => `
     <td class="store-name">${escH(s.name)}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
-    <td>${escH(s.genre||'寿司')} / ${escH(s.subGenre||'回転寿司')}</td>
+    <td>${escH(isAddressLike(s.genre)?'—':(s.genre||'—'))} / ${escH(s.subGenre||'—')}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td><td>${yesNo(s.reservation)}</td>
     <td>${statusBadge(s.status)}</td>
     <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">✏️</button></td>`,
@@ -6005,17 +6046,38 @@ function filterStoreTable(input, tableId) {
   });
 }
 
-function fillHoursEditor() {
+async function fillHoursEditor() {
+  const storeId = currentEditStoreId;
   const days = ['月','火','水','木','金','土','日'];
-  const makeRows = (bodyId, openVal, closeVal) => {
+  // day_of_week: 0=Sun,1=Mon,...6=Sat in store_hours; map to UI order Mon=1..Sun=0
+  const dayOfWeekMap = [1,2,3,4,5,6,0]; // UI order Mon..Sun -> DB day_of_week
+
+  let hoursData = [];
+  if(storeId && sb) {
+    try {
+      const { data } = await sb.from('store_hours').select('*').eq('store_id', storeId);
+      if(data) hoursData = data;
+    } catch(e) { /* use defaults */ }
+  }
+
+  const getHours = (dow) => hoursData.find(h => h.day_of_week === dow);
+
+  const makeRows = (bodyId, defaultOpen, defaultClose) => {
     const el = document.getElementById(bodyId);
     if(!el) return;
-    el.innerHTML = days.map(d => `<tr>
+    el.innerHTML = days.map((d, i) => {
+      const dow = dayOfWeekMap[i];
+      const h = getHours(dow);
+      const open = h ? h.open_time.substring(0,5) : defaultOpen;
+      const close = h ? h.close_time.substring(0,5) : defaultClose;
+      const closed = h ? h.is_closed : false;
+      return `<tr data-dow="${dow}">
       <td>${d}曜日</td>
-      <td><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td>
-      <td><input type="time" value="${openVal}" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></td>
-      <td><input type="time" value="${closeVal}" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></td>
-    </tr>`).join('');
+      <td><label class="toggle"><input type="checkbox" ${!closed?'checked':''}><span class="slider"></span></label></td>
+      <td><input type="time" value="${open}" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></td>
+      <td><input type="time" value="${close}" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></td>
+    </tr>`;
+    }).join('');
   };
   makeRows('hoursNormalBody','11:00','22:00');
   makeRows('hoursDeliveryBody','11:30','21:00');
@@ -6033,14 +6095,74 @@ function fillHoursEditor() {
   makeDayBtns('holidayNormalDays');
   makeDayBtns('holidayDeliveryDays');
 
-  // Demo: add sample spot closures
+  // Load spot closures from DB
   const tbody = document.getElementById('spotClosureBody');
-  if(tbody) {
-    tbody.innerHTML = `
-      <tr><td style="font-weight:600;font-size:12px">2026-04-15</td><td><span class="badge badge-info" style="font-size:10px">通常営業・デリバリー両方</span></td><td>設備メンテナンス</td><td style="font-size:11px;color:var(--text-light)">空調設備点検</td><td><button class="btn-edit" onclick="this.closest('tr').remove();updateSpotEmpty()" style="color:#c62828">✕</button></td></tr>
-      <tr><td style="font-weight:600;font-size:12px">2026-05-20 〜 2026-05-21</td><td><span class="badge badge-info" style="font-size:10px">通常営業のみ</span></td><td>社員研修</td><td style="font-size:11px;color:var(--text-light)">—</td><td><button class="btn-edit" onclick="this.closest('tr').remove();updateSpotEmpty()" style="color:#c62828">✕</button></td></tr>`;
-    document.getElementById('spotEmpty').style.display = 'none';
+  if(tbody && storeId && sb) {
+    try {
+      const { data: closures } = await sb.from('spot_closures').select('*').eq('store_id', storeId).order('closed_from');
+      if(closures && closures.length > 0) {
+        tbody.innerHTML = closures.map(c => {
+          const from = c.closed_from ? c.closed_from.substring(0,10) : '';
+          const until = c.closed_until ? c.closed_until.substring(0,10) : '';
+          const period = until && until !== from ? from + ' 〜 ' + until : from;
+          return `<tr data-closure-id="${c.id}"><td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">通常営業・デリバリー両方</span></td><td>${escH(c.reason||'')}</td><td style="font-size:11px;color:var(--text-light)">—</td><td><button class="btn-edit" onclick="deleteSpotClosure(this,'${c.id}')" style="color:#c62828">✕</button></td></tr>`;
+        }).join('');
+        document.getElementById('spotEmpty').style.display = 'none';
+      } else {
+        tbody.innerHTML = '';
+        document.getElementById('spotEmpty').style.display = '';
+      }
+    } catch(e) {
+      tbody.innerHTML = '';
+      document.getElementById('spotEmpty').style.display = '';
+    }
   }
+}
+
+async function saveBusinessHours() {
+  const storeId = currentEditStoreId;
+  if(!storeId) { alert('対象店舗が見つかりません'); return; }
+
+  try {
+    // Collect normal hours from UI
+    const rows = document.querySelectorAll('#hoursNormalBody tr');
+    const upserts = [];
+    rows.forEach(tr => {
+      const dow = parseInt(tr.dataset.dow);
+      const isOpen = tr.querySelector('input[type=checkbox]').checked;
+      const inputs = tr.querySelectorAll('input[type=time]');
+      const openTime = inputs[0].value || '11:00';
+      const closeTime = inputs[1].value || '22:00';
+      upserts.push({
+        store_id: storeId,
+        day_of_week: dow,
+        open_time: openTime,
+        close_time: closeTime,
+        is_closed: !isOpen
+      });
+    });
+
+    // Delete existing hours for this store then insert new ones
+    await sb.from('store_hours').delete().eq('store_id', storeId);
+    const { error } = await sb.from('store_hours').insert(upserts);
+    if(error) throw error;
+
+    // Update local STORES array for display
+    const store = STORES.find(s => s.id === storeId);
+    if(store && upserts.length > 0) {
+      const mon = upserts.find(u => u.day_of_week === 1);
+      if(mon) {
+        store.hoursOpen = mon.open_time.substring(0,5);
+        store.hoursClose = mon.close_time.substring(0,5);
+      }
+    }
+    renderStoreTable('storeHoursTable');
+    showToast('✅ 営業時間を保存しました');
+    logAudit('update_store_hours', 'store_hours', storeId, {});
+  } catch(e) {
+    showToast('❌ 営業時間の保存に失敗しました: ' + (e.message || e));
+  }
+  closeStoreEdit('storeHoursSelector','storeHoursEdit');
 }
 
 function toggleHolidaySync() {
@@ -6064,23 +6186,52 @@ function addNthWeek(listId, weekId, dayId) {
   list.appendChild(tag);
 }
 
-function addSpotClosure() {
+async function addSpotClosure() {
+  const storeId = currentEditStoreId;
+  if(!storeId) { alert('対象店舗が見つかりません'); return; }
   const start = document.getElementById('spotStartDate').value;
   const end = document.getElementById('spotEndDate').value;
   const target = document.getElementById('spotTarget').value;
   const reason = document.getElementById('spotReason').value;
   const memo = document.getElementById('spotMemo').value;
   if(!start) { alert('開始日を入力してください'); return; }
-  const period = end && end !== start ? start + ' 〜 ' + end : start;
-  const tbody = document.getElementById('spotClosureBody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">${escH(target)}</span></td><td>${escH(reason)}</td><td style="font-size:11px;color:var(--text-light)">${escH(memo||'—')}</td><td><button class="btn-edit" onclick="this.closest('tr').remove();updateSpotEmpty()" style="color:#c62828">✕</button></td>`;
-  tbody.appendChild(tr);
-  document.getElementById('spotEmpty').style.display = 'none';
+
+  try {
+    const { data, error } = await sb.from('spot_closures').insert({
+      store_id: storeId,
+      closed_from: start,
+      closed_until: end || start,
+      reason: reason + (memo ? ' / ' + memo : '')
+    }).select().single();
+    if(error) throw error;
+
+    const period = end && end !== start ? start + ' 〜 ' + end : start;
+    const tbody = document.getElementById('spotClosureBody');
+    const tr = document.createElement('tr');
+    tr.dataset.closureId = data.id;
+    tr.innerHTML = `<td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">${escH(target)}</span></td><td>${escH(reason)}</td><td style="font-size:11px;color:var(--text-light)">${escH(memo||'—')}</td><td><button class="btn-edit" onclick="deleteSpotClosure(this,'${data.id}')" style="color:#c62828">✕</button></td>`;
+    tbody.appendChild(tr);
+    document.getElementById('spotEmpty').style.display = 'none';
+    showToast('✅ スポット休業を登録しました');
+  } catch(e) {
+    showToast('❌ スポット休業の登録に失敗しました: ' + (e.message || e));
+  }
   // reset
   document.getElementById('spotStartDate').value = '';
   document.getElementById('spotEndDate').value = '';
   document.getElementById('spotMemo').value = '';
+}
+
+async function deleteSpotClosure(btn, closureId) {
+  try {
+    const { error } = await sb.from('spot_closures').delete().eq('id', closureId);
+    if(error) throw error;
+    btn.closest('tr').remove();
+    updateSpotEmpty();
+    showToast('✅ スポット休業を削除しました');
+  } catch(e) {
+    showToast('❌ 削除に失敗しました: ' + (e.message || e));
+  }
 }
 
 function updateSpotEmpty() {
