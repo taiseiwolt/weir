@@ -10600,6 +10600,13 @@ async function initAdminAfterAuth() {
 (async function checkExistingSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session && session.user) {
+    // SEC: staff_accountsでロールチェック (01-P0-2)
+    const{data:staff}=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',session.user.id).single();
+    if(!staff){
+      alert('管理者権限がありません');
+      await sb.auth.signOut();
+      return;
+    }
     document.getElementById('loginOverlay').innerHTML = '<div style="color:#fff;font-size:14px">読み込み中...</div>';
     await onAuthSuccess(session.user);
   }

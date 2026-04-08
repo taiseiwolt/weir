@@ -52,7 +52,9 @@ SELECT cron.schedule(
   SELECT net.http_post(
     url := 'https://iikwusprydaogzeslgdz.supabase.co/functions/v1/collect-competitor-data',
     headers := jsonb_build_object(
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTU3NDU1NiwiZXhwIjoyMDg3MTUwNTU2fQ.ShAWlGjCfxNW10BkZOEQ13OwwJJyJScozFP8RB2Mj50',
+      -- NOTE: service_role keyはVault secretまたは環境変数から参照すること
+      -- Supabase Dashboard > Vault で 'service_role_key' を登録後、以下を使用:
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1),
       'Content-Type', 'application/json'
     ),
     body := '{}'::jsonb

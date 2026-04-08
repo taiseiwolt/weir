@@ -73,7 +73,7 @@ async function handleCreate(req, res) {
     items,
     member_id,
     brand_id,
-    stripe_account_id,
+    // SEC: stripe_account_id はクライアントから受け取らず、DBから取得する (03-P0-1)
     guest_name, guest_email, guest_phone,
     guest_address_prefecture, guest_address_city, guest_address_street, guest_address_building,
     delivery_address,
@@ -195,6 +195,24 @@ async function handleCreate(req, res) {
       paymentIntentParams.customer = stripeCustomerId;
     }
 
+    // SEC: stripe_account_idをDBから取得 (03-P0-1)
+    let stripe_account_id = null;
+    if (store_id) {
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('brands(corp_id)')
+        .eq('id', store_id)
+        .single();
+      if (storeRow?.brands?.corp_id) {
+        const { data: corpRow } = await supabase
+          .from('corps')
+          .select('stripe_account_id')
+          .eq('id', storeRow.brands.corp_id)
+          .single();
+        stripe_account_id = corpRow?.stripe_account_id || null;
+      }
+    }
+
     // Stripe Connect: 加盟店のConnectアカウントへ送金
     if (stripe_account_id) {
       paymentIntentParams.application_fee_amount = applicationFee;
@@ -266,69 +284,113 @@ async function handleCreate(req, res) {
 async function handleConfirm(req, res, id) {
   if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
 
+  // SEC: JWT認証を追加 (03-P0-2)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+
   const body = req.body || {};
   const {
-    member_id, brand_id, payment_intent_id,
-    points_used, aiden_points_used, normal_points_used,
-    subtotal, total_amount,
-    point_settings, member_rank_multi, user_points,
+    brand_id,
     customer_email, customer_name, payment_method_name,
     items,
   } = body;
 
   try {
-    // 注文の存在確認
+    // 注文の存在確認 — 金額・ポイント情報はDBから取得（クライアント値を信頼しない）
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, store_id, order_type, total_amount, payment_intent_id, member_id')
+      .select('id, store_id, order_type, total_amount, payment_intent_id, member_id, aiden_points_used, normal_points_used')
       .eq('id', id)
       .single();
 
     if (orderErr || !order) return error(res, '注文が見つかりません', 404);
 
+    // SEC: DBから値を取得（クライアント送信値を無視）(03-P0-2)
+    const piId = order.payment_intent_id;
+    const orderSubtotal = order.total_amount;
+    const memberId = order.member_id;
+    const points_used = (order.aiden_points_used || 0) + (order.normal_points_used || 0);
+
     let earnedPoints = 0;
     let reviewToken = null;
-    const memberId = member_id || order.member_id;
-    const piId = payment_intent_id || order.payment_intent_id;
-    const orderSubtotal = subtotal || order.total_amount;
 
     // ===== ポイント消費トランザクション =====
     if (memberId && points_used > 0) {
+      // SEC: ポイント残高をDBから取得 (03-P0-2)
+      const { data: ptRows } = await supabase
+        .from('point_transactions')
+        .select('amount')
+        .eq('member_id', memberId);
+      const currentBalance = (ptRows || []).reduce((s, r) => s + (r.amount || 0), 0);
+
+      if (currentBalance < points_used) {
+        return error(res, 'ポイント残高が不足しています', 400);
+      }
+
       await supabase.from('point_transactions').insert({
         member_id: memberId,
-        amount: -(points_used || 0),
-        balance_after: (user_points || 0) - (points_used || 0),
+        amount: -(points_used),
+        balance_after: currentBalance - points_used,
         source: 'normal',
         reason: '注文消費（' + piId + '）',
         order_id: order.id,
       });
     }
 
-    // ===== ポイント付与 =====
-    if (memberId && point_settings && point_settings.enabled) {
-      const ps = point_settings;
-      const baseAmount = orderSubtotal;
-      earnedPoints = Math.floor(baseAmount / ps.earn_rate_unit) * ps.earn_rate_point;
+    // ===== ポイント付与（設定をDBから取得）=====
+    // SEC: point_settings, member_rank_multi をクライアントから受け取らない (03-P0-2)
+    if (memberId) {
+      const { data: ps } = await supabase
+        .from('point_settings')
+        .select('*')
+        .eq('store_id', order.store_id)
+        .single();
 
-      if (member_rank_multi && member_rank_multi > 1) {
-        earnedPoints = Math.floor(earnedPoints * member_rank_multi);
-      }
+      if (ps && ps.enabled) {
+        const baseAmount = orderSubtotal;
+        earnedPoints = Math.floor(baseAmount / ps.earn_rate_unit) * ps.earn_rate_point;
 
-      if (earnedPoints > 0) {
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + (ps.expiry_months || 12));
-        const currentBalance = (user_points || 0) - (points_used || 0);
+        // ランク倍率をDBから取得
+        const { data: memberRow } = await supabase
+          .from('members')
+          .select('current_rank_id')
+          .eq('id', memberId)
+          .single();
 
-        await supabase.from('point_transactions').insert({
-          member_id: memberId,
-          brand_id: brand_id || null,
-          amount: earnedPoints,
-          balance_after: currentBalance + earnedPoints,
-          source: 'normal',
-          reason: '注文獲得（' + piId + '）',
-          order_id: order.id,
-          expires_at: expiresAt.toISOString(),
-        });
+        if (memberRow?.current_rank_id) {
+          const { data: rankRow } = await supabase
+            .from('rank_settings')
+            .select('benefit_point_multi')
+            .eq('id', memberRow.current_rank_id)
+            .single();
+          const rankMulti = rankRow?.benefit_point_multi || 1;
+          if (rankMulti > 1) {
+            earnedPoints = Math.floor(earnedPoints * rankMulti);
+          }
+        }
+
+        if (earnedPoints > 0) {
+          const expiresAt = new Date();
+          expiresAt.setMonth(expiresAt.getMonth() + (ps.expiry_months || 12));
+
+          // 現在残高を取得
+          const { data: ptRows2 } = await supabase
+            .from('point_transactions')
+            .select('amount')
+            .eq('member_id', memberId);
+          const balanceNow = (ptRows2 || []).reduce((s, r) => s + (r.amount || 0), 0);
+
+          await supabase.from('point_transactions').insert({
+            member_id: memberId,
+            brand_id: brand_id || null,
+            amount: earnedPoints,
+            balance_after: balanceNow + earnedPoints,
+            source: 'normal',
+            reason: '注文獲得（' + piId + '）',
+            order_id: order.id,
+            expires_at: expiresAt.toISOString(),
+          });
+        }
       }
     }
 
@@ -399,8 +461,8 @@ async function handleConfirm(req, res, id) {
         customer_email,
         items: items || [],
         subtotal: orderSubtotal,
-        total: total_amount || order.total_amount,
-        points_used: points_used || 0,
+        total: order.total_amount,
+        points_used: points_used,
       };
 
       // 注文確認メール

@@ -16,7 +16,9 @@ BEGIN
     url := 'https://iikwusprydaogzeslgdz.supabase.co/functions/v1/send-push-notification',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpa3d1c3ByeWRhb2d6ZXNsZ2R6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjk0Mjk0NSwiZXhwIjoyMDUyNTE4OTQ1fQ.y98wCPvy-t6rCtx1s-b-B7MJwd1P7hBf4XT-6LEJHSQ'
+      -- NOTE: service_role keyはVault secretまたは環境変数から参照すること
+      -- Supabase Dashboard > Vault で 'service_role_key' を登録後、以下を使用:
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1)
     ),
     body := jsonb_build_object(
       'store_id', NEW.store_id,

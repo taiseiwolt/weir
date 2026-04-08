@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ニュース</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -231,7 +232,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     var bodyEl = document.getElementById('news-body');
     if (article.body_html) {
-      bodyEl.innerHTML = article.body_html;
+      bodyEl.innerHTML = DOMPurify.sanitize(article.body_html);
     } else if (article.body) {
       bodyEl.innerHTML = '<p>' + escH(article.body).replace(/\n/g, '</p><p>') + '</p>';
     }

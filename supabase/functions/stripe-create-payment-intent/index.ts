@@ -90,12 +90,7 @@ serve(async (req) => {
       member_id,
       coupon_discount,
       coupon_id,
-      // 後方互換: 既存の呼び出し元がある場合
-      amount,
-      currency,
-      stripe_account_id: legacy_stripe_account_id,
-      application_fee_amount: legacy_application_fee_amount,
-      metadata: legacy_metadata,
+      // SEC: レガシーパラメータは無視 (03-P0-1, 03-P0-3)
     } = await req.json()
 
     // ── 新フロー（cart_items ベース）──
@@ -492,63 +487,11 @@ serve(async (req) => {
       )
     }
 
-    // ── 後方互換フロー（amount 直接指定）──
-    if (!amount || amount <= 0) {
-      return new Response(
-        JSON.stringify({ error: '有効な金額を指定してください' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const params: Record<string, string> = {
-      'amount': String(amount),
-      'currency': currency || 'jpy',
-      'automatic_payment_methods[enabled]': 'true',
-    }
-
-    if (legacy_stripe_account_id) {
-      params['transfer_data[destination]'] = legacy_stripe_account_id
-      if (legacy_application_fee_amount && legacy_application_fee_amount > 0) {
-        params['application_fee_amount'] = String(legacy_application_fee_amount)
-      }
-    }
-
-    if (legacy_metadata) {
-      for (const [key, value] of Object.entries(legacy_metadata)) {
-        if (value) params[`metadata[${key}]`] = String(value)
-      }
-    }
-
-    const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(params),
-    })
-
-    if (!stripeRes.ok) {
-      const stripeErr = await stripeRes.json()
-      console.error('Stripe PaymentIntent error:', stripeErr)
-      return new Response(
-        JSON.stringify({ error: stripeErr.error?.message || '決済の作成に失敗しました' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const pi = await stripeRes.json()
-
+    // SEC: レガシーフロー（amount直接指定）は無効化 (03-P0-3)
+    // クライアントから金額を直接指定するパスはセキュリティリスクのため廃止
     return new Response(
-      JSON.stringify({
-        payment_intent_id: pi.id,
-        client_secret: pi.client_secret,
-        status: pi.status,
-        amount: pi.amount,
-        application_fee_amount: legacy_application_fee_amount || 0,
-        transfer_destination: legacy_stripe_account_id || null,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'レガシー決済フローは無効化されました。cart_items + store_id を使用してください。' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
     console.error('Edge function error:', err)
