@@ -298,6 +298,9 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 .content { margin-left:var(--sidebar-w); margin-top:var(--header-h); padding:24px; min-height:calc(100vh - var(--header-h)); }
 .page { display:none; }
 .page.active { display:block; }
+.acw-page-spinner { position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:50;min-height:200px; }
+.acw-page-spinner-ring { width:36px;height:36px;border:3px solid #e0e0e0;border-top:3px solid #D32F2F;border-radius:50%;animation:acwSpin .8s linear infinite; }
+@keyframes acwSpin { to { transform:rotate(360deg); } }
 .page-title { font-size:20px; font-weight:700; margin-bottom:4px; }
 .page-subtitle { font-size:13px; color:var(--text-light); margin-bottom:24px; }
 .breadcrumb { font-size:11px; color:var(--text-light); margin-bottom:16px; }
@@ -665,10 +668,20 @@ function showPage(pageId, catId){
   document.querySelector(`.nav-cat-header[data-cat="${catId}"]`).classList.add('active');
   const subEl = document.querySelector(`.nav-subitem[data-page="${pageId}"]`);
   if(subEl) subEl.classList.add('active');
-  // show page
+  // show page with loading spinner
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const page = document.getElementById('page-'+pageId);
-  if(page) page.classList.add('active');
+  if(page) {
+    page.classList.add('active');
+    page.style.position = 'relative';
+    // Show spinner overlay
+    var spinner = document.createElement('div');
+    spinner.className = 'acw-page-spinner';
+    spinner.innerHTML = '<div class="acw-page-spinner-ring"></div>';
+    page.appendChild(spinner);
+    // Remove spinner after data load (300ms min for visual feedback)
+    setTimeout(function(){ if(spinner.parentNode) spinner.remove(); }, 350);
+  }
   currentCat = catId;
   // render hooks
   if(pageId === 'member-list' && typeof renderMemberTable === 'function') renderMemberTable();
@@ -2343,6 +2356,13 @@ content.innerHTML = `
   <div class="page-title">キャンペーン管理</div>
   <div class="page-subtitle">キャンペーンの企画・実施・クーポン配布を一元管理します</div>
 
+  <div style="background:#fffde7;border:1px solid #fff9c4;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center">
+    <div style="font-size:28px;margin-bottom:6px">🚧</div>
+    <div style="font-size:14px;font-weight:700">Coming Soon</div>
+    <div style="font-size:12px;color:#888;margin-top:4px">キャンペーン管理機能は準備中です。以下はプレビューです。</div>
+  </div>
+
+  <div style="opacity:0.4;pointer-events:none">
   <!-- キャンペーン一覧 -->
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -2419,6 +2439,7 @@ content.innerHTML = `
     ② 期間が重なる施策（クーポン / SNS投稿 / 期間限定メニュー）は自動検出され紐づけ候補として表示されます<br>
     ③ キャンペーン開始後、効果検証タブで前後期間比較やROIが自動算出されます
   </div>
+  </div>
 </div>
 
 
@@ -2428,6 +2449,13 @@ content.innerHTML = `
   <div class="page-title">効果検証</div>
   <div class="page-subtitle">キャンペーン・SNS告知の効果を検証し、次の施策に活かします</div>
 
+  <div style="background:#fffde7;border:1px solid #fff9c4;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center">
+    <div style="font-size:28px;margin-bottom:6px">🚧</div>
+    <div style="font-size:14px;font-weight:700">Coming Soon</div>
+    <div style="font-size:12px;color:#888;margin-top:4px">効果検証機能は準備中です。以下はプレビューです。</div>
+  </div>
+
+  <div style="opacity:0.4;pointer-events:none">
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
     <select id="efCampaign" onchange="efCampaignChanged()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
       <option value="spring" selected>春の大感謝祭</option><option value="welcome">初回限定500円引き</option><option value="line">LINE友だち追加キャンペーン</option>
@@ -2529,6 +2557,7 @@ content.innerHTML = `
       <button class="btn btn-sm" style="background:#f0e6ff;color:#6c5ce7;font-size:10px;font-weight:600" onclick="sdAiAnalysis('effect',this)">🤖 AI分析</button>
     </div>
     <canvas id="efRoiChart" height="180" style="width:100%"></canvas>
+  </div>
   </div>
 </div>
 
@@ -4594,10 +4623,10 @@ content.innerHTML = `
     <div class="card-title">🔔 エスカレーション設定</div>
     <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">AIで解決できない場合の転送先を設定します</p>
     <div class="form-grid">
-      <div class="form-group"><label>転送先メールアドレス</label><input type="email" placeholder="support@sushiro.co.jp"></div>
-      <div class="form-group"><label>Slack Webhook URL</label><input type="url" placeholder="https://hooks.slack.com/..."></div>
+      <div class="form-group"><label>転送先メールアドレス</label><input type="email" id="escalationEmail" placeholder="support@example.co.jp"></div>
+      <div class="form-group"><label>Slack Webhook URL</label><input type="url" id="escalationSlack" placeholder="https://hooks.slack.com/..."></div>
     </div>
-    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
+    <div class="btn-group"><button class="btn btn-primary" onclick="saveEscalationSettings()">💾 保存</button></div>
   </div>
 </div>
 
@@ -5410,6 +5439,26 @@ function showToast(msg) {
   toast.style.opacity = '1';
   setTimeout(() => { toast.style.opacity = '0'; }, 2500);
 }
+
+// グローバルエラーハンドリング
+window.addEventListener('unhandledrejection', function(event) {
+  var reason = event.reason;
+  var msg = reason && reason.message ? reason.message : String(reason || '');
+  // 認証エラー
+  if (msg.indexOf('JWT') !== -1 || msg.indexOf('401') !== -1 || msg.indexOf('auth') !== -1 || msg.indexOf('token') !== -1) {
+    showToast('セッションが切れました。再度ログインしてください。');
+    return;
+  }
+  // ネットワークエラー
+  if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1 || msg.indexOf('ERR_') !== -1) {
+    showToast('通信エラーが発生しました。ページを再読み込みしてください。');
+    return;
+  }
+  // テーブル不存在（静かに無視）
+  if (msg.indexOf('does not exist') !== -1 || msg.indexOf('relation') !== -1) {
+    return;
+  }
+});
 
 // Override closeStoreEdit to handle maps + step reset
 const origCloseStoreEdit = closeStoreEdit;
@@ -16536,8 +16585,12 @@ async function loadSupportTickets() {
       '</tr>';
     }).join('');
   } catch (e) {
-    console.error('loadSupportTickets error:', e);
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">読み込みエラー</td></tr>';
+    var errMsg = e && e.message ? e.message : '';
+    if (errMsg.indexOf('does not exist') !== -1 || errMsg.indexOf('relation') !== -1) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="padding:32px"><div style="font-size:28px;margin-bottom:6px">🚧</div><div style="font-size:13px;font-weight:700">Coming Soon</div><div style="font-size:11px;color:#888;margin-top:4px">サポートチケット機能は準備中です</div></td></tr>';
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">読み込みエラー</td></tr>';
+    }
   }
 }
 
@@ -16928,11 +16981,11 @@ async function loadFaqTable() {
       var preview = f.answer.length > 40 ? f.answer.substring(0,40)+'...' : f.answer;
       var actions = isCommonTab
         ? '<span style="color:var(--text-light);font-size:11px">閲覧のみ</span>'
-        : '<button class="btn btn-sm btn-secondary" onclick="editFaq(\''+f.id+'\')">編集</button> <button class="btn btn-sm" style="background:#fee;color:#c00" onclick="deleteFaq(\''+f.id+'\')">削除</button>';
-      return '<tr>' +
+        : '<button class="btn btn-sm" style="font-size:10px;padding:2px 6px" onclick="moveFaq(\''+f.id+'\',-1)" title="上へ">▲</button> <button class="btn btn-sm" style="font-size:10px;padding:2px 6px" onclick="moveFaq(\''+f.id+'\',1)" title="下へ">▼</button> <button class="btn btn-sm btn-secondary" onclick="editFaq(\''+f.id+'\')">編集</button> <button class="btn btn-sm" style="background:#fee;color:#c00" onclick="deleteFaq(\''+f.id+'\')">削除</button>';
+      return '<tr data-faq-id="'+f.id+'" data-sort="'+f.sort_order+'">' +
         '<td>'+(catLabels[f.category]||f.category)+'</td>' +
-        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+f.question+'</td>' +
-        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:12px">'+preview+'</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.question)+'</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:12px">'+escH(preview)+'</td>' +
         '<td>'+f.sort_order+'</td>' +
         '<td>'+(f.is_active?'<span class="badge badge-success">有効</span>':'<span class="badge badge-secondary">無効</span>')+'</td>' +
         '<td>'+actions+'</td>' +
@@ -17004,8 +17057,67 @@ async function deleteFaq(faqId) {
     showToast('FAQを削除しました');
     loadFaqTable();
   } catch (e) {
-    console.error('deleteFaq error:', e);
     showToast('削除に失敗しました');
+  }
+}
+
+async function moveFaq(faqId, direction) {
+  var rows = document.querySelectorAll('#faqTableBody tr[data-faq-id]');
+  var ids = [];
+  rows.forEach(function(r){ ids.push({ id: r.getAttribute('data-faq-id'), sort: parseInt(r.getAttribute('data-sort'))||0 }); });
+  var idx = ids.findIndex(function(item){ return item.id === faqId; });
+  if (idx < 0) return;
+  var swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= ids.length) return;
+  try {
+    var sortA = ids[idx].sort;
+    var sortB = ids[swapIdx].sort;
+    if (sortA === sortB) { sortB = sortA + direction; }
+    await Promise.all([
+      sb.from('faqs').update({ sort_order: sortB }).eq('id', ids[idx].id),
+      sb.from('faqs').update({ sort_order: sortA }).eq('id', ids[swapIdx].id)
+    ]);
+    loadFaqTable();
+  } catch (e) {
+    showToast('並び替えに失敗しました');
+  }
+}
+
+// ===================================================================
+// エスカレーション設定
+// ===================================================================
+async function loadEscalationSettings() {
+  try {
+    var brandId = CURRENT_STAFF ? CURRENT_STAFF.brand_id : null;
+    if (!brandId) return;
+    var { data } = await sb.from('brands').select('escalation_email, escalation_slack_webhook').eq('id', brandId).single();
+    if (data) {
+      var emailEl = document.getElementById('escalationEmail');
+      var slackEl = document.getElementById('escalationSlack');
+      if (emailEl && data.escalation_email) emailEl.value = data.escalation_email;
+      if (slackEl && data.escalation_slack_webhook) slackEl.value = data.escalation_slack_webhook;
+    }
+  } catch (e) { /* columns may not exist yet */ }
+}
+
+async function saveEscalationSettings() {
+  var email = document.getElementById('escalationEmail').value.trim();
+  var slack = document.getElementById('escalationSlack').value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('有効なメールアドレスを入力してください');
+    return;
+  }
+  try {
+    var brandId = CURRENT_STAFF ? CURRENT_STAFF.brand_id : null;
+    if (!brandId) { showToast('ブランド情報が取得できません'); return; }
+    var { error } = await sb.from('brands').update({
+      escalation_email: email || null,
+      escalation_slack_webhook: slack || null
+    }).eq('id', brandId);
+    if (error) throw error;
+    showToast('エスカレーション設定を保存しました');
+  } catch (e) {
+    showToast('保存に失敗しました。マイグレーションが必要な可能性があります。');
   }
 }
 
@@ -17017,7 +17129,7 @@ showPage = function(pageId, catId) {
   _origShowPageSupport(pageId, catId);
   if (pageId === 'support-aiden') loadSupportTickets();
   if (pageId === 'support-enduser') loadEndUserChats();
-  if (pageId === 'support-faq') loadFaqTable();
+  if (pageId === 'support-faq') { loadFaqTable(); loadEscalationSettings(); }
   if (pageId === 'brand-news' && typeof loadBrandContents === 'function') loadBrandContents();
 };
 
