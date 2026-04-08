@@ -564,7 +564,6 @@ const NAV = [
   ]},
   { id:'menu', icon:'📋', label:'メニュー管理', subs:[
     {id:'menu-list', label:'メニュー一覧'},
-    {id:'menu-price-channel', label:'価格・チャネル管理'},
   ]},
   { id:'sales', icon:'📊', label:'売上・分析', subs:[
     {id:'sales-dashboard', label:'売上ダッシュボード'},
@@ -609,19 +608,9 @@ const NAV = [
     {id:'support-aiden', label:'AIdenへの問い合わせ'},
     {id:'support-enduser', label:'エンドユーザーからの問い合わせ'},
     {id:'support-faq', label:'FAQ管理'},
-    {id:'support-setting', label:'チャット設定'},
-    {id:'support-history', label:'チャット履歴'},
   ]},
-  { id:'accounts', icon:'👤', label:'アカウント管理', subs:[
-    {id:'accounts-list', label:'スタッフ一覧'},
-    {id:'accounts-permissions', label:'権限設定'},
-  ]},
-  { id:'ban', icon:'⛔', label:'BAN管理', subs:[
-    {id:'ban-execute', label:'BAN実行'},
-    {id:'ban-list', label:'BANリスト'},
-  ]},
-  { id:'bulk-import', icon:'📥', label:'一括登録', subs:[]},
-  { id:'audit-log', icon:'📝', label:'操作ログ', subs:[]},
+  { id:'accounts-list', icon:'👤', label:'アカウント管理', subs:[]},
+  { id:'ban-management', icon:'⛔', label:'BAN管理', subs:[]},
 ];
 
 // ===== BUILD SIDEBAR =====
@@ -695,10 +684,7 @@ function showPage(pageId, catId){
   if(pageId === 'guest-analysis' && typeof loadGuestAnalysis === 'function') loadGuestAnalysis();
   if(pageId === 'guest-conversion' && typeof loadGuestConversionSettings === 'function') loadGuestConversionSettings();
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
-  if(pageId === 'accounts-permissions' && typeof renderStaffPermMatrix === 'function') renderStaffPermMatrix();
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
-  if(pageId === 'audit-log' && typeof renderAuditLogs === 'function') renderAuditLogs();
-  if(pageId === 'menu-price-channel' && typeof renderPriceChannel === 'function') renderPriceChannel();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
 }
 
@@ -4467,6 +4453,16 @@ content.innerHTML = `
       </tbody>
     </table>
   </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-title">🔔 エスカレーション設定</div>
+    <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">AIで解決できない場合の転送先を設定します</p>
+    <div class="form-grid">
+      <div class="form-group"><label>転送先メールアドレス</label><input type="email" placeholder="support@sushiro.co.jp"></div>
+      <div class="form-group"><label>Slack Webhook URL</label><input type="url" placeholder="https://hooks.slack.com/..."></div>
+    </div>
+    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
+  </div>
 </div>
 
 <!-- FAQ追加/編集モーダル (CS-3) -->
@@ -4501,68 +4497,16 @@ content.innerHTML = `
   </div>
 </div>
 
-<!-- ============================== -->
-<!-- 💬 サポート - チャット設定 -->
-<!-- ============================== -->
-<div class="page" id="page-support-setting">
-  <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ チャット設定</div>
-  <div class="page-title">チャットサポート設定</div>
-  <div class="page-subtitle">AIチャットボットの設定とナレッジを管理します</div>
 
-  <div class="card">
-    <div class="card-title">🤖 AIチャット設定</div>
-    ${[['エンドユーザー向けチャット（注文ページ等）',true],['店舗スタッフ向けチャット（ダッシュボード）',true]].map(([l,v])=>`<div class="toggle-row"><span class="label">${l}</span><label class="toggle"><input type="checkbox" ${v?'checked':''}><span class="slider"></span></label></div>`).join('')}
-  </div>
-
-  <div class="card">
-    <div class="card-title">📚 ナレッジ設定</div>
-    <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">AIチャットが参照する情報ソースを設定します。有効化した情報から自動学習します。</p>
-    ${[['店舗基本情報（営業時間・住所等）',true],['メニュー情報（価格・アレルギー等）',true],['FAQ（手動登録）',true],['キャンセルポリシー',true],['配達エリア・料金',true]].map(([l,v])=>`<div class="toggle-row"><span class="label">${l}</span><label class="toggle"><input type="checkbox" ${v?'checked':''}><span class="slider"></span></label></div>`).join('')}
-  </div>
-
-  <div class="card">
-    <div class="card-title">🔔 エスカレーション設定</div>
-    <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">AIで解決できない場合の転送先を設定します</p>
-    <div class="form-grid">
-      <div class="form-group"><label>転送先メールアドレス</label><input type="email" placeholder="support@sushiro.co.jp"></div>
-      <div class="form-group"><label>Slack Webhook URL</label><input type="url" placeholder="https://hooks.slack.com/..."></div>
-    </div>
-    <div class="btn-group"><button class="btn btn-primary">💾 保存</button></div>
-  </div>
-</div>
-
-<!-- 💬 サポート - チャット履歴 -->
-<div class="page" id="page-support-history">
-  <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ チャット履歴</div>
-  <div class="page-title">チャット履歴</div>
-  <div class="page-subtitle">AIチャットの問い合わせ履歴を確認します</div>
-
-  <div class="search-bar">
-    <input type="text" placeholder="🔍 キーワードで検索">
-    <select style="width:140px;padding:8px;border:1px solid var(--border);border-radius:6px"><option>全チャネル</option><option>エンドユーザー</option><option>店舗スタッフ</option></select>
-    <select style="width:140px;padding:8px;border:1px solid var(--border);border-radius:6px"><option>全ステータス</option><option>AI解決</option><option>エスカレーション済</option></select>
-  </div>
-
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="data-table">
-      <thead><tr><th>日時</th><th>チャネル</th><th>問い合わせ内容（抜粋）</th><th>ステータス</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr><td>2026/03/01 10:15</td><td>エンドユーザー</td><td>デリバリーの配達時間はどのくらいですか？</td><td><span class="badge badge-success">AI解決</span></td><td><button class="btn btn-secondary btn-sm">詳細</button></td></tr>
-        <tr><td>2026/03/01 09:40</td><td>店舗スタッフ</td><td>プリンターが接続できません</td><td><span class="badge badge-danger">エスカレーション</span></td><td><button class="btn btn-secondary btn-sm">詳細</button></td></tr>
-        <tr><td>2026/02/28 20:30</td><td>エンドユーザー</td><td>アレルギー表示について教えてください</td><td><span class="badge badge-success">AI解決</span></td><td><button class="btn btn-secondary btn-sm">詳細</button></td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
 
 <!-- ============================== -->
 <!-- ============================== -->
 <!-- 👤 アカウント管理 - スタッフ一覧 -->
 <!-- ============================== -->
 <div class="page" id="page-accounts-list">
-  <div class="breadcrumb"><a href="#" onclick="return false">アカウント管理</a> ＞ スタッフ一覧</div>
+  <div class="breadcrumb"><a href="#" onclick="return false">アカウント管理</a></div>
   <div class="page-title">スタッフアカウント管理</div>
-  <div class="page-subtitle">自社スタッフのアカウント追加・編集・削除</div>
+  <div class="page-subtitle">自社スタッフのアカウント追加・編集・削除 <span style="font-size:11px;color:var(--text-light);margin-left:8px">Owner: 全機能アクセス可 / Manager: 店舗・メニュー・売上・口コミ・サポート / Staff: メニュー・注文のみ</span></div>
 
   <div class="card">
     <div class="card-title">👤 スタッフ一覧
@@ -4589,35 +4533,12 @@ content.innerHTML = `
   </div>
 </div>
 
-<!-- ============================== -->
-<!-- 👤 アカウント管理 - 権限設定 -->
-<!-- ============================== -->
-<div class="page" id="page-accounts-permissions">
-  <div class="breadcrumb"><a href="#" onclick="return false">アカウント管理</a> ＞ 権限設定</div>
-  <div class="page-title">権限設定</div>
-  <div class="page-subtitle">各ロールがアクセスできる機能を確認</div>
 
-  <div class="card">
-    <div class="card-title">🔐 権限マトリクス</div>
-    <div id="staffPermMatrix"></div>
-    <p style="font-size:10px;color:var(--text-light);margin-top:8px">Owner = 全機能アクセス可能 / Manager = 店舗設定＋メニュー＋注文＋売上 / Staff = メニュー＋注文のみ</p>
-  </div>
-
-  <div class="card">
-    <div class="card-title">📋 ロール別アクセス範囲</div>
-    <div style="font-size:12px;line-height:2;color:var(--text-light)">
-      <p><strong style="color:#6c5ce7">Owner（ブランドオーナー）</strong>：全機能にアクセス可能。アカウント管理・請求管理を含む全メニューが表示されます。</p>
-      <p><strong style="color:#0984e3">Manager（マネージャー）</strong>：店舗設定・メニュー管理・注文管理・売上分析にアクセス可能。アカウント管理・請求管理は非表示。</p>
-      <p><strong style="color:#636e72">Staff（スタッフ）</strong>：メニュー管理・注文管理のみアクセス可能。店舗設定や売上データは非表示。</p>
-    </div>
-  </div>
-</div>
-
-<!-- ⛔ BAN管理 - BAN実行 -->
+<!-- ⛔ BAN管理（統合） -->
 <!-- ============================== -->
-<div class="page" id="page-ban-execute">
-  <div class="breadcrumb"><a href="#" onclick="return false">BAN管理</a> ＞ BAN実行</div>
-  <div class="page-title">BAN実行</div>
+<div class="page" id="page-ban-management">
+  <div class="breadcrumb"><a href="#" onclick="return false">BAN管理</a></div>
+  <div class="page-title">BAN管理</div>
   <div class="page-subtitle">問題のある会員・ゲストユーザーの注文をブロックします</div>
 
   <div class="card">
@@ -4642,24 +4563,19 @@ content.innerHTML = `
     </div>
     <div class="btn-group"><button class="btn btn-danger" onclick="executeBan(this)">⛔ BAN実行</button></div>
   </div>
-</div>
 
-<!-- ⛔ BAN管理 - BANリスト -->
-<div class="page" id="page-ban-list">
-  <div class="breadcrumb"><a href="#" onclick="return false">BAN管理</a> ＞ BANリスト</div>
-  <div class="page-title">BANリスト</div>
-  <div class="page-subtitle">現在BANされているユーザーの一覧</div>
-
-  <div class="search-bar"><input type="text" placeholder="🔍 メールアドレス・電話番号で検索"></div>
-
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="data-table">
-      <thead><tr><th>対象</th><th>タイプ</th><th>理由</th><th>実行日</th><th>実行者</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr><td>test@example.com</td><td>メール</td><td>カスタマーハラスメント</td><td>2026/02/15</td><td>田中太郎</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
-        <tr><td>090-9999-0000</td><td>電話番号</td><td>虚偽注文</td><td>2026/01/20</td><td>AIden運営</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
-      </tbody>
-    </table>
+  <div class="card" style="margin-top:24px">
+    <div class="card-title">📋 BANリスト</div>
+    <div class="search-bar" style="margin-bottom:12px"><input type="text" placeholder="🔍 メールアドレス・電話番号で検索"></div>
+    <div style="overflow:hidden">
+      <table class="data-table">
+        <thead><tr><th>対象</th><th>タイプ</th><th>理由</th><th>実行日</th><th>実行者</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td>test@example.com</td><td>メール</td><td>カスタマーハラスメント</td><td>2026/02/15</td><td>田中太郎</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
+          <tr><td>090-9999-0000</td><td>電話番号</td><td>虚偽注文</td><td>2026/01/20</td><td>AIden運営</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -4758,106 +4674,6 @@ content.innerHTML = `
       <button class="btn btn-secondary" onclick="document.getElementById('bulkAddModal').classList.remove('show')">キャンセル</button>
     </div>
   </div>
-</div>
-
-<!-- ============================== -->
-<!-- 📥 一括登録 -->
-<!-- ============================== -->
-<div class="page" id="page-bulk-import">
-  <div class="breadcrumb"><a href="#" onclick="return false">一括登録</a></div>
-  <div class="page-title">📥 一括登録 / 更新</div>
-  <div class="page-subtitle">CSV・XLSXファイルで法人・ブランド・店舗データを一括登録・更新できます</div>
-
-  <div class="card">
-    <div class="card-title">① データタイプを選択</div>
-    <div class="btn-group" style="margin-bottom:12px">
-      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('corporation')" id="caBulkTypeBtn-corporation">法人</button>
-      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('brand')" id="caBulkTypeBtn-brand">ブランド</button>
-      <button class="btn btn-secondary" onclick="onCaBulkTypeChange('store')" id="caBulkTypeBtn-store">店舗</button>
-    </div>
-  </div>
-
-  <div class="card" id="caBulkTemplateCard" style="display:none">
-    <div class="card-title">② テンプレートをダウンロード</div>
-    <div class="btn-group">
-      <button class="btn btn-secondary" onclick="caBulkDownloadTemplate(false)">📄 空テンプレート</button>
-      <button class="btn btn-secondary" onclick="caBulkDownloadTemplate(true)">📋 既存データ付き</button>
-    </div>
-  </div>
-
-  <div class="card" id="caBulkUploadCard" style="display:none">
-    <div class="card-title">③ ファイルをアップロード</div>
-    <div class="bulk-upload-area" id="caBulkDropZone"
-      ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fef0f3'"
-      ondragleave="this.style.borderColor='var(--border)';this.style.background='transparent'"
-      ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='transparent';caBulkHandleFile(event.dataTransfer.files[0])">
-      <div class="icon">📁</div>
-      <div>ここにファイルをドロップ、またはクリックして選択</div>
-      <div style="font-size:11px;margin-top:4px;color:#999">CSV / XLSX 対応</div>
-      <input type="file" id="caBulkFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="if(this.files[0])caBulkHandleFile(this.files[0])">
-    </div>
-  </div>
-
-  <div class="card" id="caBulkPreviewCard" style="display:none">
-    <div class="card-title">④ プレビュー</div>
-    <div id="caBulkPreviewSummary" style="margin-bottom:12px"></div>
-    <div style="overflow-x:auto">
-      <table class="data-table" id="caBulkPreviewTable">
-        <thead id="caBulkPreviewHead"></thead>
-        <tbody id="caBulkPreviewBody"></tbody>
-      </table>
-    </div>
-    <div class="btn-group" style="margin-top:16px">
-      <button class="btn btn-primary" onclick="caBulkExecute()" id="caBulkExecuteBtn">一括登録を実行</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('caBulkPreviewCard').style.display='none'">キャンセル</button>
-    </div>
-  </div>
-
-  <div class="card" id="caBulkProgressCard" style="display:none">
-    <div class="card-title">⏳ 処理中...</div>
-    <div style="background:#eee;border-radius:8px;height:20px;overflow:hidden;margin:12px 0">
-      <div id="caBulkProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width .3s"></div>
-    </div>
-    <div id="caBulkProgressText" style="font-size:12px;color:#888;text-align:center">0%</div>
-  </div>
-
-  <div class="card" id="caBulkResultCard" style="display:none">
-    <div class="card-title">✅ 結果</div>
-    <div id="caBulkResultSummary" style="margin-bottom:12px"></div>
-    <div style="overflow-x:auto">
-      <table class="data-table" id="caBulkResultTable">
-        <thead id="caBulkResultHead"></thead>
-        <tbody id="caBulkResultBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ============================== -->
-<!-- 📝 操作ログ -->
-<!-- ============================== -->
-<div class="page" id="page-audit-log">
-  <div class="breadcrumb"><a href="#" onclick="return false">操作ログ</a></div>
-  <div class="page-title">📝 操作ログ</div>
-  <div class="page-subtitle">店舗管理画面での操作履歴を確認します（保持期間: 3年）</div>
-
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-    <input type="date" id="auditDateFrom" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <span style="font-size:12px;color:#999">〜</span>
-    <input type="date" id="auditDateTo" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <button class="btn btn-primary btn-sm" onclick="renderAuditLogs()">検索</button>
-    <button class="btn btn-secondary btn-sm" onclick="resetAuditFilter()">リセット</button>
-    <span style="margin-left:auto;font-size:11px;color:#999" id="auditLogCount"></span>
-  </div>
-
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="data-table" style="font-size:12px">
-      <thead><tr><th style="width:140px">日時</th><th style="width:120px">操作者</th><th style="width:120px">操作内容</th><th style="width:100px">対象</th><th>詳細</th></tr></thead>
-      <tbody id="auditLogBody"></tbody>
-    </table>
-  </div>
-
-  <div style="display:flex;justify-content:center;gap:8px;margin-top:16px" id="auditLogPagination"></div>
 </div>
 
 <!-- Generic Modal -->
@@ -9686,40 +9502,6 @@ function executeBan(btn) {
 }
 
 // ===== STAFF PERMISSION MATRIX (READ-ONLY) =====
-function renderStaffPermMatrix() {
-  var el = document.getElementById('staffPermMatrix');
-  if (!el) return;
-  var features = [
-    {key:'store_view', label:'店舗閲覧'},
-    {key:'store_edit', label:'店舗編集'},
-    {key:'menu_manage', label:'メニュー管理'},
-    {key:'order_manage', label:'注文管理'},
-    {key:'sales_report', label:'売上・分析'},
-    {key:'brand_hp', label:'ブランドHP'},
-    {key:'member_crm', label:'会員・CRM'},
-    {key:'account_manage', label:'アカウント管理'},
-    {key:'billing', label:'請求・支払'}
-  ];
-  var roles = ['owner','manager','staff'];
-  var perms = {
-    owner:  {store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,brand_hp:true,member_crm:true,account_manage:true,billing:true},
-    manager:{store_view:true,store_edit:true,menu_manage:true,order_manage:true,sales_report:true,brand_hp:false,member_crm:false,account_manage:false,billing:false},
-    staff:  {store_view:false,store_edit:false,menu_manage:true,order_manage:true,sales_report:false,brand_hp:false,member_crm:false,account_manage:false,billing:false}
-  };
-  var roleLabels = {owner:'Owner', manager:'Manager', staff:'Staff'};
-  var h = '<div style="display:grid;grid-template-columns:200px repeat(3,80px);gap:0;font-size:12px">';
-  h += '<div style="font-weight:700;padding:8px;background:#f5f6fa;border-bottom:1px solid var(--border)">機能</div>';
-  roles.forEach(function(r){ h += '<div style="font-weight:700;padding:8px;background:#f5f6fa;border-bottom:1px solid var(--border);text-align:center">'+roleLabels[r]+'</div>'; });
-  features.forEach(function(f){
-    h += '<div style="padding:8px;border-bottom:1px solid #f0f0f0;font-weight:500">'+f.label+'</div>';
-    roles.forEach(function(r){
-      h += '<div style="padding:8px;border-bottom:1px solid #f0f0f0;text-align:center">'+(perms[r][f.key]?'✅':'❌')+'</div>';
-    });
-  });
-  h += '</div>';
-  el.innerHTML = h;
-}
-
 // ===== ROLE-BASED SIDEBAR CONTROL =====
 function applyRoleBasedSidebar() {
   if (!CURRENT_STAFF) return;
@@ -9727,7 +9509,7 @@ function applyRoleBasedSidebar() {
   // Define which NAV categories each role can access
   var roleAccess = {
     owner: null, // null = all access
-    manager: ['store','menu','sales','review','support','audit-log'],
+    manager: ['store','menu','sales','review','support'],
     staff: ['menu']
   };
   var allowed = roleAccess[role];
@@ -16567,349 +16349,6 @@ async function submitPlanChangeRequest(plan, direction) {
   }
 }
 
-// ═══════════════════════════════════════
-// 📥 一括登録 (Bulk Import)
-// ═══════════════════════════════════════
-var _caBulkCurrentType = '';
-var _caBulkParsedRows = [];
-var _caBulkPreviewResult = null;
-
-const CA_BULK_TEMPLATES = {
-  corporation: {
-    filename: 'aiden_corp_template.csv', format: 'csv',
-    headers: ['法人名*','代表者*','ステータス(active/trial)','会社HP URL','採用ページURL'],
-    keys: ['name','representative','status','website_url','recruit_url'],
-    sample: [['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
-  },
-  brand: {
-    filename: 'aiden_brand_template.csv', format: 'csv',
-    headers: ['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','ロゴ絵文字','フォント'],
-    keys: ['corp_name','name','slug','tagline','main_color','logo_emoji','font'],
-    sample: [['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','🥩','Noto Sans JP']],
-  },
-  store: {
-    filename: 'aiden_store_template.xlsx', format: 'xlsx',
-    headers: ['ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)'],
-    keys: ['brand_slug','name','slug','address','phone','email','genre','lat','lng','has_takeout','has_delivery','reservation_enabled','min_order_amount','prep_time_minutes'],
-    sample: [['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005','ON','OFF','ON','1500','30']],
-  },
-};
-
-function onCaBulkTypeChange(type) {
-  _caBulkCurrentType = type;
-  ['corporation','brand','store'].forEach(function(t) {
-    var btn = document.getElementById('caBulkTypeBtn-' + t);
-    if (btn) btn.className = t === type ? 'btn btn-primary' : 'btn btn-secondary';
-  });
-  document.getElementById('caBulkTemplateCard').style.display = '';
-  document.getElementById('caBulkUploadCard').style.display = '';
-  document.getElementById('caBulkPreviewCard').style.display = 'none';
-  document.getElementById('caBulkProgressCard').style.display = 'none';
-  document.getElementById('caBulkResultCard').style.display = 'none';
-}
-
-function caBulkDownloadTemplate(includeData) {
-  var type = _caBulkCurrentType;
-  if (!type) { showToast('⚠️ タイプを選択してください'); return; }
-  var tmpl = CA_BULK_TEMPLATES[type];
-  if (includeData) {
-    caBulkDownloadWithData(type, tmpl);
-    return;
-  }
-  var rows = [tmpl.headers].concat(tmpl.sample);
-  if (tmpl.format === 'xlsx') {
-    var ws = XLSX.utils.aoa_to_sheet(rows);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    XLSX.writeFile(wb, tmpl.filename);
-  } else {
-    var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
-    var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = tmpl.filename;
-    a.click();
-  }
-  showToast('📄 テンプレートをダウンロードしました');
-}
-
-async function caBulkDownloadWithData(type, tmpl) {
-  try {
-    showToast('📋 既存データを取得中...');
-    var session = (await sb.auth.getSession()).data.session;
-    var token = session ? session.access_token : '';
-    var res = await fetch('/api/bulk-import/export?type=' + encodeURIComponent(type), {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) {
-      var errBody = await res.json().catch(function() { return {}; });
-      throw new Error(errBody.error || 'エクスポートに失敗しました');
-    }
-    var data = await res.json();
-    var exportRows = (data.data && data.data.rows) ? data.data.rows : [];
-    var rows = [tmpl.headers];
-    exportRows.forEach(function(row) {
-      rows.push(tmpl.keys.map(function(k) { return row[k] != null ? String(row[k]) : ''; }));
-    });
-    if (tmpl.format === 'xlsx') {
-      var ws = XLSX.utils.aoa_to_sheet(rows);
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, type);
-      XLSX.writeFile(wb, tmpl.filename.replace('.xlsx', '_export.xlsx'));
-    } else {
-      var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
-      var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = tmpl.filename.replace('.csv', '_export.csv');
-      a.click();
-    }
-    showToast('📋 既存データ付きテンプレートをダウンロードしました');
-  } catch(e) {
-    showToast('⚠️ ' + (e.message || 'エクスポートに失敗しました'));
-  }
-}
-
-function caBulkHandleFile(file) {
-  if (!file) return;
-  if (!_caBulkCurrentType) { showToast('⚠️ 先にタイプを選択してください'); return; }
-  var ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'csv') {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var rows = caBulkParseCSV(e.target.result);
-      caBulkParsedToPreview(_caBulkCurrentType, CA_BULK_TEMPLATES[_caBulkCurrentType], rows);
-    };
-    reader.readAsText(file, 'UTF-8');
-  } else if (ext === 'xlsx' || ext === 'xls') {
-    var reader2 = new FileReader();
-    reader2.onload = function(e) {
-      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      caBulkParsedToPreview(_caBulkCurrentType, CA_BULK_TEMPLATES[_caBulkCurrentType], rows);
-    };
-    reader2.readAsArrayBuffer(file);
-  } else {
-    showToast('⚠️ CSV または XLSX ファイルを選択してください');
-  }
-}
-
-function caBulkParseCSV(text) {
-  var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-  var result = [];
-  lines.forEach(function(line) {
-    if (!line.trim()) return;
-    var row = [];
-    var inQuote = false;
-    var cell = '';
-    for (var i = 0; i < line.length; i++) {
-      var ch = line[i];
-      if (inQuote) {
-        if (ch === '"' && line[i+1] === '"') { cell += '"'; i++; }
-        else if (ch === '"') { inQuote = false; }
-        else { cell += ch; }
-      } else {
-        if (ch === '"') { inQuote = true; }
-        else if (ch === ',') { row.push(cell); cell = ''; }
-        else { cell += ch; }
-      }
-    }
-    row.push(cell);
-    result.push(row);
-  });
-  return result;
-}
-
-async function caBulkParsedToPreview(type, tmpl, rawRows) {
-  if (rawRows.length < 2) { showToast('⚠️ データが空です（ヘッダー行のみ）'); return; }
-  var headerRow = rawRows[0];
-  var dataRows = rawRows.slice(1).filter(function(r) { return r.some(function(c) { return String(c).trim() !== ''; }); });
-  if (dataRows.length === 0) { showToast('⚠️ データ行がありません'); return; }
-
-  var objects = dataRows.map(function(row) {
-    var obj = {};
-    tmpl.keys.forEach(function(key, idx) {
-      obj[key] = idx < row.length ? String(row[idx]).trim() : '';
-    });
-    return obj;
-  });
-
-  _caBulkParsedRows = objects;
-
-  try {
-    showToast('🔍 プレビューを生成中...');
-    var session = (await sb.auth.getSession()).data.session;
-    var token = session ? session.access_token : '';
-    var res = await fetch('/api/bulk-import/preview', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ type: type, rows: objects })
-    });
-    if (!res.ok) {
-      var errBody = await res.json().catch(function() { return {}; });
-      throw new Error(errBody.error || 'プレビューに失敗しました');
-    }
-    var result = await res.json();
-    _caBulkPreviewResult = result.data || result;
-    caBulkRenderPreview(type, tmpl, _caBulkPreviewResult, objects);
-  } catch(e) {
-    caBulkRenderPreview(type, tmpl, null, objects);
-    showToast('⚠️ ' + (e.message || 'プレビュー生成に失敗しました（ローカル表示します）'));
-  }
-}
-
-function caBulkRenderPreview(type, tmpl, result, objects) {
-  var card = document.getElementById('caBulkPreviewCard');
-  card.style.display = '';
-
-  var newCount = 0, updateCount = 0, errorCount = 0;
-  var previewRows = result && result.rows ? result.rows : null;
-
-  if (previewRows) {
-    previewRows.forEach(function(r) {
-      if (r.action === 'create') newCount++;
-      else if (r.action === 'update') updateCount++;
-      if (r.errors && r.errors.length) errorCount++;
-    });
-  } else {
-    newCount = objects.length;
-  }
-
-  var summaryHtml = '<div style="display:flex;gap:16px;flex-wrap:wrap">';
-  summaryHtml += '<span style="background:#e8f5e9;padding:4px 12px;border-radius:4px;font-size:13px">🆕 新規: ' + newCount + '件</span>';
-  summaryHtml += '<span style="background:#e3f2fd;padding:4px 12px;border-radius:4px;font-size:13px">🔄 更新: ' + updateCount + '件</span>';
-  if (errorCount > 0) {
-    summaryHtml += '<span style="background:#ffebee;padding:4px 12px;border-radius:4px;font-size:13px">⚠️ エラー: ' + errorCount + '件</span>';
-  }
-  summaryHtml += '</div>';
-  document.getElementById('caBulkPreviewSummary').innerHTML = summaryHtml;
-
-  var headHtml = '<tr><th>#</th><th>状態</th>';
-  tmpl.headers.forEach(function(h) { headHtml += '<th>' + escH(h) + '</th>'; });
-  if (previewRows) headHtml += '<th>備考</th>';
-  headHtml += '</tr>';
-  document.getElementById('caBulkPreviewHead').innerHTML = headHtml;
-
-  var bodyHtml = '';
-  objects.forEach(function(obj, idx) {
-    var pr = previewRows ? previewRows[idx] : null;
-    var badge = '🆕';
-    var rowStyle = '';
-    if (pr) {
-      badge = pr.action === 'update' ? '🔄' : '🆕';
-      if (pr.errors && pr.errors.length) { badge = '⚠️'; rowStyle = 'background:#fff3e0'; }
-    }
-    bodyHtml += '<tr style="' + rowStyle + '"><td>' + (idx + 1) + '</td><td>' + badge + '</td>';
-    tmpl.keys.forEach(function(k) { bodyHtml += '<td>' + escH(obj[k] || '') + '</td>'; });
-    if (previewRows) {
-      var notes = pr && pr.errors && pr.errors.length ? pr.errors.join(', ') : (pr && pr.action === 'update' ? '既存レコード更新' : '');
-      bodyHtml += '<td style="font-size:11px;color:#888">' + escH(notes) + '</td>';
-    }
-    bodyHtml += '</tr>';
-  });
-  document.getElementById('caBulkPreviewBody').innerHTML = bodyHtml;
-}
-
-async function caBulkExecute() {
-  var type = _caBulkCurrentType;
-  if (!type || !_caBulkParsedRows.length) { showToast('⚠️ アップロードデータがありません'); return; }
-
-  var btn = document.getElementById('caBulkExecuteBtn');
-  btn.disabled = true;
-  btn.textContent = '処理中...';
-
-  var progressCard = document.getElementById('caBulkProgressCard');
-  var progressBar = document.getElementById('caBulkProgressBar');
-  var progressText = document.getElementById('caBulkProgressText');
-  progressCard.style.display = '';
-  progressBar.style.width = '0%';
-  progressText.textContent = '0%';
-
-  try {
-    var session = (await sb.auth.getSession()).data.session;
-    var token = session ? session.access_token : '';
-    var total = _caBulkParsedRows.length;
-    var batchSize = 50;
-    var allResults = [];
-    var processed = 0;
-
-    for (var i = 0; i < total; i += batchSize) {
-      var batch = _caBulkParsedRows.slice(i, i + batchSize);
-      var res = await fetch('/api/bulk-import/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ type: type, rows: batch })
-      });
-      var body = await res.json();
-      if (body.data && body.data.results) {
-        allResults = allResults.concat(body.data.results);
-      } else if (body.results) {
-        allResults = allResults.concat(body.results);
-      } else {
-        batch.forEach(function() { allResults.push({status:'unknown'}); });
-      }
-      processed += batch.length;
-      var pct = Math.min(100, Math.round((processed / total) * 100));
-      progressBar.style.width = pct + '%';
-      progressText.textContent = pct + '% (' + processed + '/' + total + ')';
-    }
-
-    progressBar.style.width = '100%';
-    progressText.textContent = '100% — 完了';
-
-    var successCount = 0, failCount = 0;
-    allResults.forEach(function(r) {
-      if (r.status === 'success' || r.status === 'created' || r.status === 'updated') successCount++;
-      else failCount++;
-    });
-
-    var resultCard = document.getElementById('caBulkResultCard');
-    resultCard.style.display = '';
-    var tmpl = CA_BULK_TEMPLATES[type];
-
-    var resultSummary = '<div style="display:flex;gap:16px;flex-wrap:wrap">';
-    resultSummary += '<span style="background:#e8f5e9;padding:4px 12px;border-radius:4px;font-size:13px">✅ 成功: ' + successCount + '件</span>';
-    if (failCount > 0) {
-      resultSummary += '<span style="background:#ffebee;padding:4px 12px;border-radius:4px;font-size:13px">❌ 失敗: ' + failCount + '件</span>';
-    }
-    resultSummary += '</div>';
-    document.getElementById('caBulkResultSummary').innerHTML = resultSummary;
-
-    var rHeadHtml = '<tr><th>#</th><th>結果</th>';
-    tmpl.headers.forEach(function(h) { rHeadHtml += '<th>' + escH(h) + '</th>'; });
-    rHeadHtml += '<th>詳細</th></tr>';
-    document.getElementById('caBulkResultHead').innerHTML = rHeadHtml;
-
-    var rBodyHtml = '';
-    _caBulkParsedRows.forEach(function(obj, idx) {
-      var r = allResults[idx] || {};
-      var icon = (r.status === 'success' || r.status === 'created' || r.status === 'updated') ? '✅' : '❌';
-      var rowStyle = (r.status === 'success' || r.status === 'created' || r.status === 'updated') ? '' : 'background:#fff3e0';
-      rBodyHtml += '<tr style="' + rowStyle + '"><td>' + (idx + 1) + '</td><td>' + icon + '</td>';
-      tmpl.keys.forEach(function(k) { rBodyHtml += '<td>' + escH(obj[k] || '') + '</td>'; });
-      rBodyHtml += '<td style="font-size:11px;color:#888">' + escH(r.error || r.message || '') + '</td></tr>';
-    });
-    document.getElementById('caBulkResultBody').innerHTML = rBodyHtml;
-
-    showToast('✅ 一括登録が完了しました（成功: ' + successCount + '件）');
-  } catch(e) {
-    showToast('⚠️ 一括登録に失敗しました: ' + (e.message || '不明なエラー'));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '一括登録を実行';
-  }
-}
-
-// Drop zone click handler
-(function() {
-  var dz = document.getElementById('caBulkDropZone');
-  if (dz) {
-    dz.addEventListener('click', function() {
-      document.getElementById('caBulkFileInput').click();
-    });
-  }
-})();
 
 </script>
 <footer style="background:#f5f5f5;padding:16px 20px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee">
@@ -17218,67 +16657,6 @@ function renderCommissionHistory() {
       '<td>\u00a5' + c.fee.toLocaleString() + '</td>' +
       '<td>' + buildRefundButton(c.orderId, c.paymentDate) + '</td></tr>';
   }).join('');
-}
-
-// ===== AUDIT LOG VIEWER =====
-var _auditPage = 1;
-var _auditPerPage = 50;
-function resetAuditFilter() {
-  var d = new Date();
-  var to = d.toISOString().slice(0,10);
-  d.setDate(d.getDate() - 7);
-  var from = d.toISOString().slice(0,10);
-  document.getElementById('auditDateFrom').value = from;
-  document.getElementById('auditDateTo').value = to;
-  _auditPage = 1;
-  renderAuditLogs();
-}
-async function renderAuditLogs() {
-  var fromEl = document.getElementById('auditDateFrom');
-  var toEl = document.getElementById('auditDateTo');
-  if (!fromEl.value) { resetAuditFilter(); return; }
-  var from = fromEl.value + 'T00:00:00';
-  var to = toEl.value + 'T23:59:59';
-  var offset = (_auditPage - 1) * _auditPerPage;
-  try {
-    var q = sb.from('audit_logs').select('*', {count: 'exact'})
-      .gte('created_at', from).lte('created_at', to)
-      .order('created_at', {ascending: false})
-      .range(offset, offset + _auditPerPage - 1);
-    var { data, count, error } = await q;
-    if (error) throw error;
-    var body = document.getElementById('auditLogBody');
-    if (!data || data.length === 0) {
-      body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#999">該当する操作ログがありません</td></tr>';
-      document.getElementById('auditLogCount').textContent = '0件';
-      document.getElementById('auditLogPagination').innerHTML = '';
-      return;
-    }
-    document.getElementById('auditLogCount').textContent = (count || data.length) + '件';
-    body.innerHTML = data.map(function(r) {
-      var dt = new Date(r.created_at);
-      var ts = dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
-      var actor = escH(r.actor_email || r.user_email || '—');
-      var action = escH(r.action || '—');
-      var target = escH(r.entity_type || r.target_table || '—');
-      var detail = '';
-      if (r.details) {
-        try { detail = typeof r.details === 'string' ? r.details : JSON.stringify(r.details).slice(0, 120); } catch(e) { detail = '—'; }
-      }
-      return '<tr><td style="white-space:nowrap">' + ts + '</td><td>' + actor + '</td><td>' + action + '</td><td>' + target + '</td><td style="font-size:11px;color:#666;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escH(detail) + '</td></tr>';
-    }).join('');
-    // Pagination
-    var totalPages = Math.ceil((count || data.length) / _auditPerPage);
-    var pagHtml = '';
-    if (totalPages > 1) {
-      if (_auditPage > 1) pagHtml += '<button class="btn btn-secondary btn-sm" onclick="_auditPage--;renderAuditLogs()">← 前へ</button>';
-      pagHtml += '<span style="font-size:12px;color:#666;line-height:28px">' + _auditPage + ' / ' + totalPages + '</span>';
-      if (_auditPage < totalPages) pagHtml += '<button class="btn btn-secondary btn-sm" onclick="_auditPage++;renderAuditLogs()">次へ →</button>';
-    }
-    document.getElementById('auditLogPagination').innerHTML = pagHtml;
-  } catch(e) {
-    document.getElementById('auditLogBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#d63031">読み込みエラー: ' + escH(e.message) + '</td></tr>';
-  }
 }
 
 (function(){
