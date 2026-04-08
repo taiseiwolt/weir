@@ -3255,6 +3255,13 @@ content.innerHTML = `
   <div class="page-title">ゲスト→会員転換設定</div>
   <div class="page-subtitle">ゲスト注文完了後に表示する会員登録促進バナーを設定します</div>
 
+  <div style="background:#fffde7;border:1px solid #fff9c4;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center">
+    <div style="font-size:28px;margin-bottom:6px">🚧</div>
+    <div style="font-size:14px;font-weight:700">Coming Soon</div>
+    <div style="font-size:12px;color:#888;margin-top:4px">ゲスト→会員転換機能は準備中です</div>
+  </div>
+
+  <div style="opacity:0.4;pointer-events:none">
   <div class="card">
     <div class="card-title">🎯 会員登録促進バナー</div>
     <div class="toggle-row" style="border:none;padding-bottom:16px">
@@ -3295,6 +3302,7 @@ content.innerHTML = `
       <button class="btn btn-primary" onclick="saveGuestConversionSettings()">保存</button>
     </div>
   </div>
+  </div><!-- end opacity wrapper -->
 </div>
 
 <!-- 👥 会員・CRM - CRM配信 -->
@@ -3827,6 +3835,13 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM・SNS</a> ＞ サブスクリプション</div>
   <div class="page-title">💎 サブスクリプション</div>
 
+  <div style="background:#fffde7;border:1px solid #fff9c4;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center">
+    <div style="font-size:28px;margin-bottom:6px">🚧</div>
+    <div style="font-size:14px;font-weight:700">Coming Soon</div>
+    <div style="font-size:12px;color:#888;margin-top:4px">サブスクリプション機能は準備中です</div>
+  </div>
+
+  <div style="opacity:0.4;pointer-events:none">
   <div class="tab-group" style="margin-bottom:20px">
     <button class="tab active" onclick="subSwitchTab('plan',this)">プラン設計</button>
     <button class="tab" onclick="subSwitchTab('members',this)">加入者一覧</button>
@@ -4032,6 +4047,7 @@ content.innerHTML = `
   </div>
 
 </div>
+  </div><!-- end opacity wrapper -->
 </div>
 
 
@@ -12497,8 +12513,10 @@ function maskTel(tel) { if(!tel) return '***-****-****'; var parts = tel.split('
 function maskEmail(email) { if(!email) return '****@****.***'; var at = email.indexOf('@'); if(at <= 1) return '****@****.***'; return email.charAt(0) + '***@' + email.substring(at+1); }
 
 function rankBadge(rank) {
-  var cls = rank==='プラチナ'?'badge-info':rank==='ゴールド'?'badge-warning':rank==='シルバー'?'badge-success':'badge-secondary';
-  return '<span class="badge ' + cls + '">' + rank + '</span>';
+  var rankColors = { 'ブロンズ': '#CD7F32', 'シルバー': '#C0C0C0', 'ゴールド': '#FFD700', 'プラチナ': '#8BA9C4', 'ダイヤモンド': '#B9F2FF', 'レギュラー': '#888' };
+  var color = rankColors[rank] || '#888';
+  var textColor = (rank === 'ゴールド' || rank === 'シルバー' || rank === 'ダイヤモンド') ? '#333' : '#fff';
+  return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:' + color + ';color:' + textColor + '">' + rank + '</span>';
 }
 
 function renderMemberTable() {
@@ -12610,6 +12628,12 @@ function openMemberDetail(memberId) {
     html += '<div style="background:#fff3e0;padding:10px;border-radius:6px;font-size:11px;color:#e65100;margin-top:12px">🔒 個人情報はマスキング表示中です。閲覧権限は管理マスタで設定できます。</div>';
   }
 
+  // ポイント履歴
+  html += '<div style="margin-top:8px;font-size:10px;color:#999">ポイント履歴の詳細表示は準備中です</div>';
+
+  // 注文履歴セクション
+  html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div style="font-weight:600;font-size:12px;margin-bottom:8px">📋 注文履歴</div><div id="memberOrderHistory"><div style="color:#999;font-size:12px">読み込み中...</div></div></div>';
+
   // 配信停止設定
   var optoutLabel = m.optout ? '配信再開' : '配信停止';
   var optoutBtnStyle = m.optout
@@ -12628,6 +12652,31 @@ function openMemberDetail(memberId) {
 
   document.getElementById('memberDetailContent').innerHTML = html;
   document.getElementById('memberDetailModal').style.display = 'flex';
+
+  // Fetch order history from DB
+  (async function() {
+    var ordersEl = document.getElementById('memberOrderHistory');
+    if (!ordersEl) return;
+    var mid = m._uuid || memberId;
+    try {
+      var { data, error } = await sb.from('orders').select('display_id, total_amount, status, payment_status, created_at, order_type')
+        .eq('member_id', mid).order('created_at', { ascending: false }).limit(20);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        ordersEl.innerHTML = '<div style="color:#999;font-size:12px;padding:8px">注文履歴がありません</div>';
+        return;
+      }
+      var channelMap = { dine_in: '店内', takeout: 'テイクアウト', delivery: 'デリバリー' };
+      ordersEl.innerHTML = '<table class="data-table" style="font-size:11px"><thead><tr><th>日時</th><th>注文番号</th><th>チャネル</th><th>金額</th><th>ステータス</th></tr></thead><tbody>' +
+        data.map(function(o) {
+          var dt = o.created_at ? new Date(o.created_at) : null;
+          var dateStr = dt ? dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') : '—';
+          return '<tr><td>' + dateStr + '</td><td style="font-family:monospace">' + escH(o.display_id || '—') + '</td><td>' + (channelMap[o.order_type] || '—') + '</td><td>¥' + (o.total_amount || 0).toLocaleString() + '</td><td>' + escH(o.payment_status || o.status || '—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    } catch(e) {
+      ordersEl.innerHTML = '<div style="color:#999;font-size:12px;padding:8px">読み込みエラー</div>';
+    }
+  })();
 }
 
 function toggleMemberOptout(memberId) {
