@@ -1205,7 +1205,7 @@ function renderOrderItems() {
   const el = document.getElementById('orderItemsList');
   el.innerHTML = CHECKOUT_DATA.cartItems.map((item, idx) => `
     <div class="order-item">
-      <img class="order-item-img" src="${item.img}" alt="">
+      <img class="order-item-img" src="${escapeHtml(item.img || '')}" alt="">
       <div class="order-item-info">
         <div class="order-item-name">${escapeHtml(item.name)}</div>
         ${item.optText ? `<div class="order-item-opts">${escapeHtml(item.optText)}</div>` : ''}

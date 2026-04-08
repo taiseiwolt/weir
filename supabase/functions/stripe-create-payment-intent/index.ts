@@ -102,6 +102,18 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+
+      // SEC: 数量バリデーション (03-P1-1)
+      for (const item of cart_items) {
+        const qty = item.quantity || 0
+        if (!Number.isInteger(qty) || qty < 1 || qty > 100) {
+          return new Response(
+            JSON.stringify({ error: '数量は1〜100の整数で指定してください' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
       // 1. 店舗情報取得（Stripe Connect Account ID含む）

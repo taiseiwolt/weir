@@ -46,20 +46,15 @@ const ENTITY_CONFIG = {
 
 // ── Admin check ───────────────────────────────────────────
 async function isAdmin(user) {
-  // Check by staff_account with role='owner'
+  // SEC: staff_accountsのロールベースチェックのみに依存 (04-P1-3)
   const { data } = await supabase
     .from('staff_accounts')
-    .select('id')
+    .select('id, role')
     .eq('auth_user_id', user.id)
-    .eq('role', 'owner')
+    .in('role', ['owner', 'platform_admin', 'corp_admin'])
     .limit(1);
 
-  if (data && data.length > 0) return true;
-
-  // Fallback: check by known admin email
-  if (user.email === 'taiseiwolt@gmail.com') return true;
-
-  return false;
+  return !!(data && data.length > 0);
 }
 
 // ── Handler ───────────────────────────────────────────────

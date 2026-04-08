@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /aiden-admin.html
+Disallow: /aiden-customer-admin.html
+Disallow: /aiden-order-dashboard.html
+Disallow: /api/

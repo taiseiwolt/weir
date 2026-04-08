@@ -10607,6 +10607,8 @@ async function initAdminAfterAuth() {
       await sb.auth.signOut();
       return;
     }
+    // SEC: 管理者ログイン記録 (05-P1-3)
+    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'customer-admin'},user_email:session.user.email});}catch(_){}
     document.getElementById('loginOverlay').innerHTML = '<div style="color:#fff;font-size:14px">読み込み中...</div>';
     await onAuthSuccess(session.user);
   }

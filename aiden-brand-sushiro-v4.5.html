@@ -860,7 +860,7 @@ function applyBrandConfig() {
   var txt = document.getElementById('logo-text');
   var footerTxt = document.getElementById('footer-logo-text');
   if (c.logoTextType === 'image' && c.logoTextValue) {
-    txt.innerHTML = '<img src="'+c.logoTextValue+'" alt="'+c.name+'">';
+    txt.innerHTML = '<img src="'+escH(c.logoTextValue)+'" alt="'+escH(c.name)+'">';
     footerTxt.textContent = c.name;
   } else {
     txt.textContent = c.logoTextValue;

@@ -243,6 +243,8 @@ async function getToken(){return(await sb.auth.getSession()).data.session?.acces
     if(!staff||!['platform_admin','corp_admin'].includes(staff.role)){
       alert('管理者権限がありません');window.location.href='/';return;
     }
+    // SEC: 管理者ログイン記録 (05-P1-3)
+    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'aiden-admin'},user_email:session.user.email});}catch(_){}
   }catch(e){window.location.href='/';return;}
   sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')window.location.href='/';});
 })();
@@ -250,8 +252,10 @@ async function getToken(){return(await sb.auth.getSession()).data.session?.acces
 // AUDIT LOG
 async function logAudit(action,targetTable,targetId,details){
   try{
+    // SEC: ハードコードメール削除→動的取得 (05-P2-1)
+    var _auditEmail='unknown';try{var _s=await sb.auth.getSession();if(_s.data.session)_auditEmail=_s.data.session.user.email||'unknown';}catch(_){}
     await sb.from('audit_logs').insert({
-      user_email:'taisei@sumbibi.com',
+      user_email:_auditEmail,
       action:action,
       target_table:targetTable,
       target_id:targetId||null,

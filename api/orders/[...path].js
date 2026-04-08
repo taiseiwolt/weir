@@ -85,6 +85,13 @@ async function handleCreate(req, res) {
   if (!store_id || !order_type || !items || items.length === 0) {
     return error(res, 'store_id, order_type, items は必須です');
   }
+
+  // SEC: 数量バリデーション (03-P1-1)
+  for (const item of items) {
+    if (!item.quantity || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
+      return error(res, '数量は1〜100の整数で指定してください');
+    }
+  }
   if (!['dinein', 'takeout', 'delivery'].includes(order_type)) {
     return error(res, 'order_type は dinein/takeout/delivery のいずれかです');
   }
@@ -648,6 +655,17 @@ async function handleCancel(req, res, id) {
     }
 
     const updated = locked;
+
+    // SEC: audit_logsにキャンセル記録 (03-P1-4, 05-P1-4)
+    try {
+      await supabase.from('audit_logs').insert({
+        action: 'order_cancelled',
+        target_table: 'orders',
+        target_id: id,
+        details: { store_id: order.store_id, payment_intent_id: order.payment_intent_id },
+        user_email: auth.user.email || null,
+      });
+    } catch (_) { /* non-fatal */ }
 
     return ok(res, updated);
   } catch (e) {

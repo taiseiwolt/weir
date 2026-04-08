@@ -12,7 +12,7 @@ const ALLOWED_ORIGINS = [
  */
 export function setCors(req, res) {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');

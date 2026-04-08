@@ -37,6 +37,22 @@ serve(async (req) => {
       )
     }
 
+    // SEC: 返金金額が注文のtotal_amountを超えていないか検証 (03-P1-3)
+    if (order_id && amount && amount > 0) {
+      const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+      const { data: orderRow } = await sbAdmin
+        .from('orders')
+        .select('total_amount')
+        .eq('id', order_id)
+        .single()
+      if (orderRow && amount > orderRow.total_amount) {
+        return new Response(
+          JSON.stringify({ error: '返金金額が注文金額を超えています' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     // Stripe Refund パラメータ構築
     const params: Record<string, string> = {
       'payment_intent': payment_intent_id,
@@ -96,6 +112,25 @@ serve(async (req) => {
       if (dbError) {
         console.error('DB update error:', dbError)
       }
+    }
+
+    // SEC: audit_logsへ返金記録 (03-P1-4, 05-P1-4)
+    if (order_id) {
+      try {
+        await sbAdmin.from('audit_logs').insert({
+          action: 'refund_executed',
+          target_table: 'orders',
+          target_id: order_id,
+          details: {
+            refund_id: refund.id,
+            amount: refund.amount,
+            reason: reason || null,
+            refunded_by: refunded_by || null,
+            payment_intent_id,
+          },
+          user_email: refunded_by || null,
+        })
+      } catch (_) { /* non-fatal */ }
     }
 
     return new Response(

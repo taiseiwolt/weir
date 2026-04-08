@@ -445,6 +445,10 @@ async function triggerEscalationEmail(sessionId, sessionInfo) {
 async function handleFeedback(req, res) {
   if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
 
+  // SEC: 認証チェック (04-P1-5)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+
   const { message_id, feedback } = req.body || {};
 
   if (!message_id || !feedback) {
@@ -470,6 +474,10 @@ async function handleFeedback(req, res) {
 async function handleHistory(req, res) {
   if (req.method !== 'GET') return error(res, 'Method not allowed', 405);
 
+  // SEC: 認証チェック (04-P1-5)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+
   const sessionId = req.query.session_id;
   if (!sessionId) return error(res, 'session_id は必須です');
 
@@ -489,6 +497,12 @@ async function handleHistory(req, res) {
 // --- GET /api/chat/sessions (admin) ---
 async function handleSessions(req, res) {
   if (req.method !== 'GET') return error(res, 'Method not allowed', 405);
+
+  // SEC: 認証 + staffロールチェック (04-P1-4)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
+  if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   const {
     status: filterStatus,
@@ -561,6 +575,12 @@ async function handleSessions(req, res) {
 async function handleResolve(req, res) {
   if (req.method !== 'POST') return error(res, 'Method not allowed', 405);
 
+  // SEC: 認証 + staffロールチェック (04-P1-4)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
+  if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
+
   const { session_id } = req.body || {};
   if (!session_id) return error(res, 'session_id は必須です');
 
@@ -582,6 +602,12 @@ async function handleResolve(req, res) {
 // --- GET /api/chat/analytics (admin) ---
 async function handleAnalytics(req, res) {
   if (req.method !== 'GET') return error(res, 'Method not allowed', 405);
+
+  // SEC: 認証 + staffロールチェック (04-P1-4)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
+  if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   const { store_id, brand_id, period } = req.query;
   const days = period === 'month' ? 30 : period === 'week' ? 7 : 30;
@@ -640,6 +666,12 @@ async function handleAnalytics(req, res) {
 
 // --- GET/POST /api/chat/policies ---
 async function handlePolicies(req, res) {
+  // SEC: 認証 + staffロールチェック (04-P1-4)
+  const auth = await authenticateRequest(req);
+  if (!auth) return error(res, '認証が必要です', 401);
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
+  if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
+
   if (req.method === 'GET') {
     const { store_id, brand_id } = req.query;
 
