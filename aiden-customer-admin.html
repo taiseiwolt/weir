@@ -1640,7 +1640,10 @@ content.innerHTML = `
 <!-- ============================== -->
 <div class="page" id="page-sales-dashboard">
   <div class="breadcrumb"><a href="#" onclick="return false">売上・分析</a> ＞ 売上ダッシュボード</div>
-  <div class="page-title">売上ダッシュボード</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="page-title" style="margin-bottom:0">売上ダッシュボード</div>
+    <button class="btn btn-secondary btn-sm" onclick="exportSalesPdf()" style="margin-left:auto">📄 PDFレポート出力</button>
+  </div>
   <div class="page-subtitle">期間・チャネル別の売上データを確認し、AI分析を活用できます</div>
 
   <!-- フィルターバー -->
@@ -1694,6 +1697,11 @@ content.innerHTML = `
       </div>
     </div>
     <div id="sdYearNote" style="display:none;font-size:10px;color:var(--text-light);margin-bottom:8px;padding:4px 8px;background:#fff8e1;border-radius:4px">※ 前年比較は暦の都合上、日付が±数日ずれる場合があります</div>
+    <div style="display:flex;gap:4px;margin-bottom:8px">
+      <button class="btn btn-sm" onclick="sdSetPeriodGroup('day')" id="sdPeriodDay" style="background:var(--accent);color:#fff;font-size:10px;padding:3px 10px;border:none;border-radius:4px;cursor:pointer">日別</button>
+      <button class="btn btn-sm" onclick="sdSetPeriodGroup('week')" id="sdPeriodWeek" style="background:#eee;color:#666;font-size:10px;padding:3px 10px;border:none;border-radius:4px;cursor:pointer">週別</button>
+      <button class="btn btn-sm" onclick="sdSetPeriodGroup('month')" id="sdPeriodMonth" style="background:#eee;color:#666;font-size:10px;padding:3px 10px;border:none;border-radius:4px;cursor:pointer">月別</button>
+    </div>
     <canvas id="sdDailyChart" height="220" style="width:100%"></canvas>
   </div>
 
@@ -1732,6 +1740,23 @@ content.innerHTML = `
   </div>
 
 
+
+  <!-- 注文元サービス + 売上一覧 -->
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">📱 注文元サービス</div>
+      <div id="sdSourceTable" style="font-size:11px"><span class="empty-state">読み込み中...</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 売上一覧</div>
+      <div style="overflow-x:auto">
+        <table class="data-table" style="font-size:11px">
+          <thead><tr><th>日付</th><th>注文件数</th><th>売上合計</th><th>平均注文額</th><th>店内</th><th>テイクアウト</th><th>デリバリー</th></tr></thead>
+          <tbody id="sdSummaryTableBody"><tr><td colspan="7" class="empty-state">読み込み中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <!-- ページアクセス・CVRファネル -->
   <div class="card" style="margin-bottom:16px">
@@ -1855,26 +1880,23 @@ content.innerHTML = `
   </div>
 
   <!-- 月次AIコメント（D-40） -->
-  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fff4 0%,#e6ffe8 100%);border:1px solid #b2dfdb">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="card-title" style="margin:0;color:#00796b">📋 月次AIコメント</div>
-      <select id="sdMonthlyAiMonth" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
-        <option value="2026-03">2026年3月</option>
-        <option value="2026-02">2026年2月</option>
-        <option value="2026-01">2026年1月</option>
-      </select>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">🤖 月次AIコメント</div>
+    <div id="sdMonthlyAiComment">
+      <div style="text-align:center;padding:24px;color:var(--text-light)">
+        <div style="font-size:24px;margin-bottom:8px">🚧</div>
+        <div style="font-size:13px">月次AIコメント機能は準備中です</div>
+        <div style="font-size:11px;margin-top:4px">ai_monthly_commentsテーブル作成後に表示されます</div>
+      </div>
     </div>
-    <div style="background:#fff;border-radius:8px;padding:14px;font-size:12px;line-height:1.9;color:#333">
-      <div style="font-weight:700;color:#00796b;margin-bottom:8px">🎯 2026年3月の総括</div>
-      <p>売上は前月比+12.3%と好調。「春の大感謝祭」キャンペーンが集客に大きく寄与し、特に新規利用者が+53.5%と大幅に増加しました。</p>
-      <div style="font-weight:700;color:#00796b;margin-bottom:8px;margin-top:12px">💡 改善ポイント</div>
-      <ul style="margin:4px 0 4px 18px">
-        <li>平日14〜16時帯の売上が低迷（前月比-5.2%）。アフタヌーンセットの導入を推奨</li>
-        <li>デリバリーチャネルの客単価が店内比-18%。アップセル施策の検討を推奨</li>
-        <li>キャンセル率は2.3%と低水準を維持。現行の与信→確定フローが有効に機能</li>
-      </ul>
-      <div style="font-size:10px;color:#999;margin-top:8px;border-top:1px solid #e0f2f1;padding-top:8px">※ このコメントはAIが売上・注文データを分析して自動生成しています（STDプラン: 月1回 / PROプラン: 月4回）</div>
-    </div>
+    <div style="font-size:9px;color:#999;margin-top:8px;text-align:right">STDプラン: 月1回 / PROプラン: 月4回</div>
+  </div>
+
+  <!-- 客単価推移 -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="card-title">💰 客単価推移</div>
+    <canvas id="sdAvgTrendChart" height="200"></canvas>
+    <div id="sdAvgTrendMoM" style="font-size:11px;color:var(--text-light);margin-top:4px"></div>
   </div>
 
   <div class="btn-group"><button class="btn btn-secondary">📥 CSVエクスポート</button></div>
@@ -2066,38 +2088,8 @@ content.innerHTML = `
       </div>
     </div>
     <div style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
-    <table class="data-table" style="font-size:12px"><thead style="position:sticky;top:0;background:#fff;z-index:1"><tr><th>順位</th><th>商品名</th><th>注文数</th><th>増減</th><th>売上</th><th>増減</th></tr></thead>
-      <tbody id="paRankBody">
-        <tr><td>1</td><td>サーモン</td><td>482件</td><td style="color:#27ae60">＋32件 (+7.1%)</td><td>¥57,840</td><td style="color:#27ae60">＋¥3,840 (+7.1%)</td></tr>
-        <tr><td>2</td><td>まぐろ</td><td>421件</td><td style="color:#27ae60">＋18件 (+4.5%)</td><td>¥50,520</td><td style="color:#27ae60">＋¥2,160 (+4.5%)</td></tr>
-        <tr><td>3</td><td>特選にぎり10貫セット</td><td>198件</td><td style="color:#27ae60">＋12件 (+6.5%)</td><td>¥194,040</td><td style="color:#27ae60">＋¥11,760 (+6.5%)</td></tr>
-        <tr><td>4</td><td>えびアボカド</td><td>176件</td><td style="color:#e94560">−8件 (-4.3%)</td><td>¥26,400</td><td style="color:#e94560">−¥1,200 (-4.3%)</td></tr>
-        <tr><td>5</td><td>茶碗蒸し</td><td>154件</td><td style="color:#e94560">−52件 (-25.2%)</td><td>¥43,120</td><td style="color:#e94560">−¥14,560 (-25.2%)</td></tr>
-        <tr><td>6</td><td>玉子</td><td>148件</td><td style="color:#27ae60">＋5件 (+3.5%)</td><td>¥14,800</td><td style="color:#27ae60">＋¥500 (+3.5%)</td></tr>
-        <tr><td>7</td><td>味噌汁</td><td>142件</td><td style="color:#27ae60">＋8件 (+6.0%)</td><td>¥14,200</td><td style="color:#27ae60">＋¥800 (+6.0%)</td></tr>
-        <tr><td>8</td><td>えび天ぷら</td><td>128件</td><td style="color:#e94560">−3件 (-2.3%)</td><td>¥19,200</td><td style="color:#e94560">−¥450 (-2.3%)</td></tr>
-        <tr><td>9</td><td>いくら</td><td>118件</td><td style="color:#27ae60">＋15件 (+14.6%)</td><td>¥23,600</td><td style="color:#27ae60">＋¥3,000 (+14.6%)</td></tr>
-        <tr><td>10</td><td>炙りサーモン</td><td>112件</td><td style="color:#27ae60">＋22件 (+24.4%)</td><td>¥16,800</td><td style="color:#27ae60">＋¥3,300 (+24.4%)</td></tr>
-        <tr><td>11</td><td>ネギトロ</td><td>105件</td><td style="color:#27ae60">＋6件 (+6.1%)</td><td>¥12,600</td><td style="color:#27ae60">＋¥720 (+6.1%)</td></tr>
-        <tr><td>12</td><td>たまご焼き</td><td>98件</td><td style="color:#e94560">−2件 (-2.0%)</td><td>¥9,800</td><td style="color:#e94560">−¥200 (-2.0%)</td></tr>
-        <tr><td>13</td><td>ツナマヨ</td><td>95件</td><td style="color:#27ae60">＋4件 (+4.4%)</td><td>¥9,500</td><td style="color:#27ae60">＋¥400 (+4.4%)</td></tr>
-        <tr><td>14</td><td>えんがわ</td><td>88件</td><td style="color:#27ae60">＋1件 (+1.1%)</td><td>¥13,200</td><td style="color:#27ae60">＋¥150 (+1.1%)</td></tr>
-        <tr><td>15</td><td>穴子</td><td>82件</td><td style="color:#e94560">−5件 (-5.7%)</td><td>¥16,400</td><td style="color:#e94560">−¥1,000 (-5.7%)</td></tr>
-        <tr><td>16</td><td>サーモンユッケ</td><td>78件</td><td style="color:#27ae60">＋28件 (+56.0%)</td><td>¥11,700</td><td style="color:#27ae60">＋¥4,200 (+56.0%)</td></tr>
-        <tr><td>17</td><td>赤えび</td><td>75件</td><td style="color:#27ae60">＋3件 (+4.2%)</td><td>¥15,000</td><td style="color:#27ae60">＋¥600 (+4.2%)</td></tr>
-        <tr><td>18</td><td>かっぱ巻き</td><td>72件</td><td style="color:#e94560">−8件 (-10.0%)</td><td>¥5,040</td><td style="color:#e94560">−¥560 (-10.0%)</td></tr>
-        <tr><td>19</td><td>鉄火巻き</td><td>68件</td><td style="color:#27ae60">＋2件 (+3.0%)</td><td>¥6,800</td><td style="color:#27ae60">＋¥200 (+3.0%)</td></tr>
-        <tr><td>20</td><td>コーン</td><td>65件</td><td style="color:#e94560">−12件 (-15.6%)</td><td>¥4,550</td><td style="color:#e94560">−¥780 (-15.6%)</td></tr>
-        <tr><td>21</td><td>桜えびの天ぷら <span style="background:#ff6b6b;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px">NEW</span></td><td>62件</td><td style="color:#27ae60">＋62件 (+0.0%)</td><td>¥9,300</td><td style="color:#27ae60">＋¥9,300 (+0.0%)</td></tr>
-        <tr><td>22</td><td>うなぎ</td><td>58件</td><td style="color:#27ae60">＋0件 (+0.0%)</td><td>¥17,400</td><td style="color:#27ae60">＋¥0 (+0.0%)</td></tr>
-        <tr><td>23</td><td>あおさ味噌汁</td><td>55件</td><td style="color:#27ae60">＋8件 (+17.0%)</td><td>¥5,500</td><td style="color:#27ae60">＋¥800 (+17.0%)</td></tr>
-        <tr><td>24</td><td>枝豆</td><td>52件</td><td style="color:#e94560">−1件 (-1.9%)</td><td>¥3,640</td><td style="color:#e94560">−¥70 (-1.9%)</td></tr>
-        <tr><td>25</td><td>たこ</td><td>48件</td><td style="color:#27ae60">＋2件 (+4.3%)</td><td>¥7,200</td><td style="color:#27ae60">＋¥300 (+4.3%)</td></tr>
-        <tr><td>26</td><td>サラダ</td><td>45件</td><td style="color:#e94560">−6件 (-11.8%)</td><td>¥4,500</td><td style="color:#e94560">−¥600 (-11.8%)</td></tr>
-        <tr><td>27</td><td>唐揚げ</td><td>42件</td><td style="color:#27ae60">＋5件 (+13.5%)</td><td>¥6,300</td><td style="color:#27ae60">＋¥750 (+13.5%)</td></tr>
-        <tr><td>28</td><td>フライドポテト</td><td>38件</td><td style="color:#27ae60">＋1件 (+2.7%)</td><td>¥3,040</td><td style="color:#27ae60">＋¥80 (+2.7%)</td></tr>
-        <tr><td>29</td><td>デザート盛り合わせ</td><td>35件</td><td style="color:#27ae60">＋3件 (+9.4%)</td><td>¥10,500</td><td style="color:#27ae60">＋¥900 (+9.4%)</td></tr>
-        <tr><td>30</td><td>ドリンクセット</td><td>32件</td><td style="color:#27ae60">＋10件 (+45.5%)</td><td>¥6,400</td><td style="color:#27ae60">＋¥2,000 (+45.5%)</td></tr>
+    <table class="data-table" style="font-size:12px"><thead style="position:sticky;top:0;background:#fff;z-index:1"><tr><th>順位</th><th>商品名</th><th>注文数</th><th>売上</th></tr></thead>
+      <tbody id="paRankBody"><tr><td colspan="4" class="empty-state">読み込み中...</td></tr>
       </tbody></table>
     </div>
   </div>
@@ -2541,6 +2533,10 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">売上・分析</a> ＞ Google口コミ分析</div>
   <div class="page-title">Google口コミ分析</div>
   <div class="page-subtitle">Google Maps の口コミを自動収集・分析し、評判管理と競合比較を行います</div>
+
+  <div style="background:#fff3e0;padding:10px 14px;border-radius:8px;font-size:11px;color:#e65100;margin-bottom:16px">
+    📡 Google Places APIとの自動連携は近日対応予定です。現在は手動で口コミデータを同期できます。
+  </div>
 
   <!-- 接続ステータスバナー -->
   <div id="grConnectionBanner" style="display:flex;align-items:center;gap:8px;background:#e8f0fe;border:1px solid #c5d5f8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px">
@@ -3968,9 +3964,9 @@ content.innerHTML = `
 
   <!-- 統計カード -->
   <div class="stats-row">
-    <div class="stat-card"><div class="stat-label">月額サブスク収益</div><div class="stat-value">¥198,460</div><div class="stat-change up">＋ 12.5%</div><div style="font-size:9px;color:#888;margin-top:2px">前月比</div></div>
-    <div class="stat-card"><div class="stat-label">解約率</div><div class="stat-value">2.8%</div><div class="stat-change up">− 0.3pt</div><div style="font-size:9px;color:#888;margin-top:2px">前月比</div></div>
-    <div class="stat-card"><div class="stat-label">LTV（平均）</div><div class="stat-value">¥8,420</div><div style="font-size:9px;color:#888;margin-top:2px">会員あたり累計収益の平均</div></div>
+    <div class="stat-card"><div class="stat-label">月額定額収入 (MRR)</div><div class="stat-value" id="kpiMrr">—</div></div>
+    <div class="stat-card"><div class="stat-label">チャーンレート</div><div class="stat-value" id="kpiChurn">—</div></div>
+    <div class="stat-card"><div class="stat-label">LTV</div><div class="stat-value" id="kpiLtv">—</div></div>
   </div>
 
   <!-- プラン別比率 -->
@@ -4072,6 +4068,15 @@ content.innerHTML = `
       <span style="color:#555;margin-left:6px">ここで入力した返信はそのままGoogleマップのレビュー欄に自動掲載されます</span>
     </div>
   </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px" id="reviewStatsCards">
+    <div class="stat-card"><div class="stat-label">平均評価</div><div class="stat-value" id="reviewAvgRating">—</div></div>
+    <div class="stat-card"><div class="stat-label">レビュー総数</div><div class="stat-value" id="reviewTotalCount">—</div></div>
+    <div class="stat-card"><div class="stat-label">返信率</div><div class="stat-value" id="reviewReplyRate">—</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="font-size:12px">⭐ 星評価分布</div>
+    <div id="reviewRatingDist" style="font-size:12px"></div>
+  </div>
   <div class="stats-row" style="margin-bottom:16px">
     <div class="stat-card"><div class="stat-label">平均評価</div><div class="stat-value">3.8</div><div style="font-size:11px;color:#27ae60;margin-top:3px">前月比 ＋0.2</div></div>
     <div class="stat-card"><div class="stat-label">レビュー数</div><div class="stat-value" id="storeReviewCount">0</div><div id="storeReviewCountDiff" style="font-size:11px;color:#27ae60;margin-top:3px"></div></div>
@@ -4092,6 +4097,19 @@ content.innerHTML = `
       <span style="font-size:11px">〜</span>
       <input type="date" id="rvStoreCustomEnd" value="2026-02-28" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">
     </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+    <select id="reviewRatingFilter" onchange="renderStoreReviews()" style="padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      <option value="">全評価</option>
+      <option value="5">★5</option><option value="4">★4</option><option value="3">★3</option><option value="2">★2</option><option value="1">★1</option>
+    </select>
+    <select id="reviewReplyFilter" onchange="renderStoreReviews()" style="padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      <option value="">全て</option><option value="replied">返信済み</option><option value="unreplied">未返信</option>
+    </select>
+    <select id="reviewSortBy" onchange="renderStoreReviews()" style="padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      <option value="date">日付順</option><option value="rating">評価順</option>
+    </select>
+    <input type="text" id="reviewSearchText" onkeyup="renderStoreReviews()" placeholder="🔍 テキスト検索" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;flex:1;min-width:150px">
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <div style="overflow-y:auto;max-height:290px">
@@ -7016,13 +7034,49 @@ function renderStoreReviewTable() {
 function renderStoreReviews() {
   const storeFilter = document.getElementById('reviewStoreFilter')?.value || '';
   const statusFilter = document.getElementById('reviewStoreStatusFilter')?.value || '';
+  const ratingFilter = document.getElementById('reviewRatingFilter')?.value || '';
+  const replyFilter = document.getElementById('reviewReplyFilter')?.value || '';
+  const sortBy = document.getElementById('reviewSortBy')?.value || 'date';
+  const searchText = (document.getElementById('reviewSearchText')?.value || '').toLowerCase();
   const reviews = REVIEWS.filter(r => r.type === 'store');
+
+  // Fix 10: Calculate and display review statistics
+  var avgRating = reviews.length > 0 ? (reviews.reduce(function(s,r){return s+r.rating;},0) / reviews.length).toFixed(1) : '—';
+  var repliedCount = reviews.filter(function(r){return r.reply;}).length;
+  var replyRateStat = reviews.length > 0 ? Math.round(repliedCount / reviews.length * 100) + '%' : '—';
+  var el1 = document.getElementById('reviewAvgRating'); if(el1) el1.textContent = avgRating;
+  var el2 = document.getElementById('reviewTotalCount'); if(el2) el2.textContent = reviews.length + '件';
+  var el3 = document.getElementById('reviewReplyRate'); if(el3) el3.textContent = replyRateStat;
+  // Rating distribution
+  var dist = [0,0,0,0,0];
+  reviews.forEach(function(r){ if(r.rating>=1&&r.rating<=5) dist[r.rating-1]++; });
+  var maxDist = Math.max.apply(null, dist) || 1;
+  var distEl = document.getElementById('reviewRatingDist');
+  if (distEl) {
+    distEl.innerHTML = [5,4,3,2,1].map(function(star) {
+      var count = dist[star-1];
+      var pct = Math.round(count / maxDist * 100);
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:30px;text-align:right">★' + star + '</span><div style="flex:1;background:#eee;height:16px;border-radius:4px;overflow:hidden"><div style="height:100%;background:#ffc107;width:' + pct + '%"></div></div><span style="width:30px;font-size:11px;color:#888">' + count + '</span></div>';
+    }).join('');
+  }
+
   _rvStoreFiltered = reviews.filter(r => {
     if(storeFilter && r.storeName !== storeFilter) return false;
     const st = r.reply ? (r.replyStatus || '掲載済') : '未返信';
     if(statusFilter && st !== statusFilter) return false;
+    // Fix 9: Additional filters
+    if(ratingFilter && String(Math.round(r.rating)) !== ratingFilter) return false;
+    if(replyFilter === 'replied' && !r.reply) return false;
+    if(replyFilter === 'unreplied' && r.reply) return false;
+    if(searchText && (r.comment || '').toLowerCase().indexOf(searchText) === -1) return false;
     return true;
   });
+  // Fix 9: Sort
+  if (sortBy === 'rating') {
+    _rvStoreFiltered.sort(function(a, b) { return b.rating - a.rating; });
+  } else {
+    _rvStoreFiltered.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+  }
   const total = _rvStoreFiltered.length;
   document.getElementById('storeReviewCount').textContent = total + '件';
   const replied = _rvStoreFiltered.filter(r => r.reply).length;
@@ -8017,6 +8071,15 @@ function aiSumHighlight(id) {
 }
 // ===== SALES DASHBOARD LOGIC =====
 let _sdPeriod = 'week';
+var _sdPeriodGroup = 'day';
+function sdSetPeriodGroup(group) {
+  _sdPeriodGroup = group;
+  ['day','week','month'].forEach(function(g) {
+    var btn = document.getElementById('sdPeriod' + g.charAt(0).toUpperCase() + g.slice(1));
+    if (btn) { btn.style.background = g === group ? 'var(--accent)' : '#eee'; btn.style.color = g === group ? '#fff' : '#666'; }
+  });
+  if (typeof renderSalesCharts === 'function') renderSalesCharts();
+}
 // Live order data stored by sdUpdateDashboard() for use by charts/heatmap
 let _sdLiveOrders = [];
 let _sdLivePrevOrders = [];
@@ -8189,7 +8252,7 @@ async function sdUpdateDashboard() {
     const brandStoreIds = STORES.map(s => s.id);
 
     function buildOrderQuery(tMin, tMax) {
-      let q = sb.from('orders').select('id, total_amount, delivery_fee, service_fee, status, created_at, order_type').gte('created_at', tMin).lte('created_at', tMax);
+      let q = sb.from('orders').select('id, total_amount, delivery_fee, service_fee, status, created_at, order_type, order_source').gte('created_at', tMin).lte('created_at', tMax);
       if (storeFilter && storeFilter !== 'all') {
         q = q.eq('store_id', storeFilter);
       } else if (brandStoreIds.length > 0) {
@@ -8315,273 +8378,75 @@ async function sdUpdateDashboard() {
   } catch(e) { window._accessDataLoaded = false; }
 
   renderSalesCharts();
+  renderProductRanking(_sdLiveOrderItems);
   if(typeof updateAccessChart === 'function') updateAccessChart();
 }
 
 // AI分析: 業界平均値（手動更新）— テキスト内の業界ベンチマーク数値は外部データ
 // 更新時期: 2026年3月 / 出典: AIden分析データベース
 // ライブKPI値はパネル上部のバナーで表示。分析文中の個別数値は参考サンプル。
-function sdAiAnalysis(type, btnEl) {
-  // Live KPI values for injection into analysis text
-  var lk = _sdLiveKpi || {sales:0, count:0, avg:0, cancelRate:0};
-  var lkSales = '¥' + lk.sales.toLocaleString();
-  var lkAvg = '¥' + lk.avg.toLocaleString();
-  var lkCount = lk.count.toLocaleString();
-  const analyses = {
-    daily: {
-      title: '📊 日別売上分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'sdDailyChart\')">日別売上推移グラフ</span>を見ると、売上が最も高いのは土曜の¥335,000、最も低いのは月曜の¥219,000で、<b>約1.5倍の差</b>があります。全体では前週比+12.3%と好調ですが、伸びを牽引しているのは土日（+15.8%）で、月火は+6.2%にとどまっています。<span class="ai-source" onclick="showSourcePopup(\'業界平均: 曜日変動データ\',\'<b>出典:</b> AIden分析データベース（2025年度 回転寿司チェーン328店舗）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>業界平均</th><th style=padding:6px>'+getTargetLabel()+'</th></tr><tr><td style=padding:6px>曜日間変動幅</td><td style=padding:6px>±20.0%</td><td style=padding:6px;color:#e94560;font-weight:700>±28.0%</td></tr><tr><td style=padding:6px>月曜の対週平均比</td><td style=padding:6px>-15.0%</td><td style=padding:6px;color:#e94560;font-weight:700>-28.0%</td></tr><tr><td style=padding:6px>土曜の対週平均比</td><td style=padding:6px>+22.0%</td><td style=padding:6px;color:#27ae60;font-weight:700>+25.0%</td></tr></table>\',{labels:[\'月曜落込み\',\'業界平均\'],data:[28,15],colors:[\'#e94560\',\'#bbb\'],suffix:\'%\'})">📎 業界平均</span>と比べると、月曜の落ち込みは業界平均の約2倍にあたり、構造的な弱点といえます。月曜売上は3週連続で下がっており（¥232,000→¥225,000→¥219,000）、月間で約¥52,000の売上機会を逃している計算です。',
-      issue: '月火の合計売上¥432,000は、週全体¥1,841,000の<b>23.5%</b>にとどまります。7日のうち2日分としては低い水準です。<span class="ai-ref" onclick="scrollToChart(\'sdHourlyChart\')">時間帯別注文件数</span>と合わせて見ると、特に月曜のランチタイムの来店が弱い傾向がうかがえます。売上が低い日は食材の回転も悪くなるため、<span class="ai-source" onclick="showSourcePopup(\'フードロスの影響試算\',\'<b>出典:</b> AIden分析モデル（在庫回転データより推計）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>低売上日(月火)</th><th style=padding:6px>高売上日(金土)</th></tr><tr><td style=padding:6px>食材廃棄率</td><td style=padding:6px;color:#e94560>8.0〜12.0%</td><td style=padding:6px;color:#27ae60>2.0〜4.0%</td></tr></table><br>月火の売上が10%回復した場合の廃棄削減効果: 月間約¥18,000\')">📎 フードロス試算</span>によるとフードロスのコスト増加にもつながるリスクがあります。',
-      actions: [
-        {text:'月火限定「週はじめ割」（対象商品¥100引き）をクーポンとして作成。業界事例では月火限定割で+15.0%の集客効果', page:'sales-campaign', label:'キャンペーン管理'},
-        {text:'月曜ランチ限定セット（にぎり8貫+味噌汁 ¥980）をメニューに追加し、ランチ帯の来店動機を強化', page:'menu', label:'メニュー管理'},
-        {text:'日曜夜のSNS投稿で「明日は月曜限定メニュー」を告知し、月曜への来店動機を事前に生成', page:'ai-content', label:'告知コンテンツ生成'},
-      ]
-    },
-    channel: {
-      title: '📊 チャネル分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'sdChannelChart\')">チャネル別売上構成グラフ</span>を見ると、店内が¥1,194,000（65%）、持帰が¥372,000（20%）、デリバリーが¥275,000（15%）という構成です。デリバリーは前月比+18.0%と大きく伸びており、<span class="ai-source" onclick="showSourcePopup(\'業界デリバリー成長率\',\'<b>出典:</b> AIden分析データベース（2025年10月-2026年2月、回転寿司チェーン上位10社）<br><br><table style=padding:0><tr><th style=padding:6px>区分</th><th style=padding:6px>前月比成長率</th></tr><tr><td style=padding:6px>業界平均</td><td style=padding:6px>+8.0%</td></tr><tr><td style=padding:6px>上位20%</td><td style=padding:6px>+12.0%</td></tr><tr style=background:#fff8e1><td style=padding:6px;font-weight:700>⭐ '+getTargetLabel()+'</td><td style=padding:6px;font-weight:700>+18.0%</td></tr></table>\',{labels:[\'業界平均\',\'上位20%\',\''+getTargetLabel()+'\'],data:[8,12,18],colors:[\'#bbb\',\'#0984e3\',\'#e94560\'],highlight:2,suffix:\'%\'})">📎 業界平均+8.0%</span>の2倍以上のペースです。ただし、<span class="ai-source" onclick="showSourcePopup(\'チャネル別注文単価\',\'<b>出典:</b> AIden注文データ集計（直近30日）<br><br><table style=padding:0><tr><th style=padding:6px>チャネル</th><th style=padding:6px>平均品数</th><th style=padding:6px>注文単価</th><th style=padding:6px>セット利用率</th></tr><tr><td style=padding:6px>店内</td><td style=padding:6px>4.2品</td><td style=padding:6px>¥3,920</td><td style=padding:6px>28.0%</td></tr><tr><td style=padding:6px>持帰</td><td style=padding:6px>3.1品</td><td style=padding:6px>¥3,450</td><td style=padding:6px>18.0%</td></tr><tr style=background:#ffebee><td style=padding:6px>デリバリー</td><td style=padding:6px>2.8品</td><td style=padding:6px;color:#e94560;font-weight:700>¥3,056</td><td style=padding:6px;color:#e94560;font-weight:700>12.0%</td></tr></table>\',{labels:[\'店内\',\'持帰\',\'デリバリー\'],data:[3920,3450,3056],colors:[\'#e94560\',\'#0984e3\',\'#00b894\'],prefix:\'¥\'})">📎 チャネル別単価</span>を確認すると、デリバリーの注文単価¥3,056は店内の¥3,920より<b>¥864低く</b>、デリバリーの比率が上がるほど全体の平均単価が下がっていく構造です。',
-      issue: 'デリバリーの単価が低い主な原因は、セットメニューの利用率がわずか12.0%で、店内（28.0%）の半分以下にとどまっている点です。1注文あたりの品数も2.8品と店内の4.2品より少なく、単品中心の注文が多い状況です。また、<span class="ai-source" onclick="showSourcePopup(\'デリバリー時間帯分布\',\'<b>出典:</b> AIden注文ログ分析（直近30日、デリバリー注文のみ抽出）<br><br><table style=padding:0><tr><th style=padding:6px>時間帯</th><th style=padding:6px>件数</th><th style=padding:6px>構成比</th></tr><tr><td style=padding:6px>10〜12時</td><td style=padding:6px>18件</td><td style=padding:6px>8.0%</td></tr><tr><td style=padding:6px>12〜14時</td><td style=padding:6px>42件</td><td style=padding:6px>19.0%</td></tr><tr><td style=padding:6px>14〜16時</td><td style=padding:6px>12件</td><td style=padding:6px>5.0%</td></tr><tr><td style=padding:6px>16〜18時</td><td style=padding:6px>35件</td><td style=padding:6px>16.0%</td></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>18〜20時</td><td style=padding:6px;font-weight:700>115件</td><td style=padding:6px;color:#e94560;font-weight:700>52.0%</td></tr></table>\',{labels:[\'10-12\',\'12-14\',\'14-16\',\'16-18\',\'18-20\'],data:[18,42,12,35,115],highlight:4})">📎 時間帯分析</span>によるとデリバリー注文の52.0%が18〜20時に集中しており、ピーク時のキッチン負荷が高まっています。',
-      actions: [
-        {text:'デリバリー限定「おうちセット」（2人前にぎり12貫+サイド2品 ¥3,500）を新設し、デリバリー単価を引き上げ', page:'menu', label:'メニュー管理'},
-        {text:'配達エリアを3km→4kmに拡大し、人口カバー率を62.0%→78.0%に改善', page:'store-delivery', label:'配達設定'},
-        {text:'デリバリー注文時に「+¥200でサイドメニュー追加」のアップセル表示をモバイルオーダーに設定', page:'menu', label:'メニュー管理'},
-      ]
-    },
-    hourly: {
-      title: '📊 時間帯分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'sdHourlyChart\')">時間帯別注文件数グラフ</span>を見ると、12時台（58件）と19時台（62件）に2つの大きな山があることがわかります。一方で14〜16時は合計39件と少なく、特に15時台の12件は全時間帯で最も少ない値です。<span class="ai-source" onclick="showSourcePopup(\'稼働率データ\',\'<b>出典:</b> AIden分析モデル（座席数80席×注文件数から推計）<br><br><table style=padding:0><tr><th style=padding:6px>時間帯</th><th style=padding:6px>稼働率</th><th style=padding:6px>業界平均</th></tr><tr><td style=padding:6px>12時台</td><td style=padding:6px>72.0%</td><td style=padding:6px>68.0%</td></tr><tr style=background:#ffebee><td style=padding:6px>15時台</td><td style=padding:6px;color:#e94560;font-weight:700>15.0%</td><td style=padding:6px>25.0〜30.0%</td></tr><tr><td style=padding:6px>19時台</td><td style=padding:6px>78.0%</td><td style=padding:6px>72.0%</td></tr></table>\',{labels:[\'12時台\',\'15時台\',\'19時台\',\'業界平均(15時)\'],data:[72,15,78,28],colors:[\'#0984e3\',\'#e94560\',\'#0984e3\',\'#bbb\'],suffix:\'%\'})">📎 稼働率</span>で見ると、15時台の稼働率は推定15.0%で、業界平均の25.0〜30.0%を大きく下回っています。19時台は78.0%とほぼフル稼働のため、ここからさらに伸ばすのは座席の制約上難しい状況です。',
-      issue: '14〜16時の3時間は、人件費や光熱費に対して売上が見合っていない時間帯です。<span class="ai-source" onclick="showSourcePopup(\'損益分岐分析\',\'<b>出典:</b> AIden損益モデル（固定費・変動費構造から推計）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>14〜16時</th><th style=padding:6px>ピーク(19時台)</th></tr><tr><td style=padding:6px>時間あたり売上</td><td style=padding:6px;color:#e94560>約¥49,000</td><td style=padding:6px;color:#27ae60>約¥128,000</td></tr><tr><td style=padding:6px>損益分岐ライン</td><td style=padding:6px colspan=2>約¥55,000/時</td></tr></table><br>14〜16時は損益分岐をわずかに下回り、実質赤字の可能性があります。ただし閉店はブランドイメージに影響するため、集客向上が望ましい対応です。\')">📎 損益分析</span>によると、この時間帯は損益分岐ラインをわずかに下回っている可能性があります。ただし、時間帯を閉めるよりも集客を改善する方が望ましい対応です。',
-      actions: [
-        {text:'14〜16時限定「アフタヌーンセット」（にぎり5貫+ドリンク ¥880）を新設しカフェ利用層を取り込む', page:'menu', label:'メニュー管理'},
-        {text:'14〜16時限定ドリンク半額クーポンを作成し、空き時間帯の来店動機を生成', page:'sales-campaign', label:'キャンペーン管理'},
-        {text:'Googleマップの営業情報に「14〜16時は待ち時間なし」を追記し、混雑回避ニーズを取り込む', page:'store-basic', label:'店舗基本情報'},
-      ]
-    },
-    heatmap: {
-      title: '📊 ヒートマップ分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'sdHeatmapCanvas\')">ヒートマップ</span>を見ると、金曜19時（売上指数85）と土曜19時（95）が特に売上の高いゾーンで、この2コマだけで全体の約18.0%を占めています。反対に、月〜木の10〜11時は平均12程度と低調です。<span class="ai-source" onclick="showSourcePopup(\'業界集中率\',\'<b>出典:</b> AIden分析データベース（2025年度 回転寿司328店舗）<br><br><table style=padding:0><tr><th style=padding:6px>区分</th><th style=padding:6px>金土ディナー集中率</th></tr><tr><td style=padding:6px>業界平均</td><td style=padding:6px>15.0%</td></tr><tr><td style=padding:6px>上位20%(分散良好)</td><td style=padding:6px>12.0〜14.0%</td></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>'+getTargetLabel()+'</td><td style=padding:6px;color:#e94560;font-weight:700>18.0%</td></tr></table><br>集中率が高いほどピーク待ち時間が長くなり口コミ評価に影響。\',{labels:[\'業界平均\',\'上位20%\',\''+getTargetLabel()+'\'],data:[15,13,18],colors:[\'#bbb\',\'#0984e3\',\'#e94560\'],highlight:2,suffix:\'%\'})">📎 業界比較</span>によると、'+getTargetLabel()+'の金土ディナー集中率18.0%は業界平均の15.0%を上回っており、売上が特定の時間帯に偏りすぎている傾向があります。',
-      issue: '売上の過度な集中は、①ピーク時の待ち時間増加、②キッチンへの負荷集中、③平日日中のスタッフ・設備の余剰という3つの問題を引き起こします。<span class="ai-source" onclick="showSourcePopup(\'口コミ分析\',\'<b>出典:</b> '+getTargetLabel()+'口コミデータ（直近90日）<br><br><table style=padding:0><tr><th style=padding:6px>ネガティブ要因</th><th style=padding:6px>件数</th><th style=padding:6px>金土ディナー集中率</th></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>待ち時間が長い</td><td style=padding:6px;font-weight:700>25件(最多)</td><td style=padding:6px;color:#e94560>72.0%</td></tr><tr><td style=padding:6px>座席が狭い</td><td style=padding:6px>12件</td><td style=padding:6px>—</td></tr><tr><td style=padding:6px>サイドメニュー不足</td><td style=padding:6px>8件</td><td style=padding:6px>—</td></tr></table><br>金土19時台の10.0%を平日夜に分散できれば、待ち時間を10分以内に短縮し口コミ評価0.2pt改善が見込めます。\')">📎 口コミ分析</span>でも「待ち時間が長い」が最多の25件で、そのうち72.0%が金土ディナーに集中しています。ピーク集中の緩和が、顧客満足度を改善するための鍵です。',
-      actions: [
-        {text:'平日18〜20時限定「平日夜割」（会計5.0%OFF）をクーポン設定し金土からの需要分散を促進', page:'sales-campaign', label:'キャンペーン管理'},
-        {text:'金土ディナーの事前予約制を導入し、待ち時間の可視化と来店平準化を実現', page:'store-facility', label:'施設設備'},
-        {text:'平日夜の来店メリットをInstagramストーリーで毎週水曜に告知（「木金は空いてます」訴求）', page:'ai-sns', label:'SNS管理'},
-      ]
-    },
-    access: {
-      title: '📈 ページアクセス・CVRファネル分析',
-      insight: 'CVRファネルを見ると、HP閲覧12,840に対しCV（決済完了）は342件で、<b>全体CVRは2.7%</b>です。最大の離脱ポイントは<b>HP閲覧→店舗ページ（−50.0%）</b>で、約半数がブランドHPのトップページで離脱しています。次に大きいのはカート追加→決済完了（−73.3%）で、カートに入れたにもかかわらず7割以上が購入に至っていない「カゴ落ち」の状態です。<span class="ai-source" onclick="showSourcePopup(\'業界CVRデータ\',\'<b>出典:</b> AIden分析データベース（2025年度 飲食モバイルオーダー420店舗）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>業界平均</th><th style=padding:6px>\'+getTargetLabel()+\'</th></tr><tr><td style=padding:6px>HP→店舗ページ遷移率</td><td style=padding:6px>55.0%</td><td style=padding:6px;color:#e94560;font-weight:700>50.0%</td></tr><tr><td style=padding:6px>カゴ落ち率</td><td style=padding:6px>65.0%</td><td style=padding:6px;color:#e94560;font-weight:700>73.3%</td></tr><tr><td style=padding:6px>全体CVR</td><td style=padding:6px>3.2%</td><td style=padding:6px;color:#e94560;font-weight:700>2.7%</td></tr></table>\',{labels:[\'業界平均CVR\',\''+getTargetLabel()+'\'],data:[3.2,2.7],colors:[\'#bbb\',\'#e94560\'],suffix:\'%\'})">📎 業界平均</span>と比較すると、全体CVR 2.7%は業界平均3.2%をやや下回り、特にカゴ落ち率73.3%は業界平均65.0%より高い水準です。',
-      issue: 'カゴ落ち率73.3%は最大の改善余地です。カゴ落ちの主な原因として、①決済方法の選択肢不足、②送料・手数料の「隠れコスト」、③会員登録の手間が業界調査で挙げられています。仮にカゴ落ち率を業界平均の65.0%まで改善できれば、CVは342件→<b>約449件</b>に増加し、月間売上換算で<b>約¥430,000の増収</b>が見込めます。HP→店舗ページの遷移率50.0%も改善余地があり、ファーストビューの店舗導線強化が有効です。',
-      actions: [
-        {text:'決済画面に「ゲスト注文」（会員登録不要）を追加し、カゴ落ちの原因となる登録障壁を排除', page:'member-list', label:'会員管理'},
-        {text:'カート追加後にクーポン自動表示（例：「今なら10%OFFクーポン適用可能」）を設定し、決済完了率を向上', page:'member-point', label:'ポイント・クーポン設定'},
-        {text:'ブランドHPのファーストビューに「近くの店舗で注文する」CTAボタンを目立つ位置に配置し、HP→店舗遷移率を改善', page:'brand-design', label:'ホームページ管理'},
-      ]
-    },
-    userTrend: {
-      title: '📊 ユーザートレンド分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'uaTrendChart\')">推移グラフ</span>を見ると、リピーター（赤線）は第1週の52件から第12週の65件へと<b>+25.0%の安定した成長</b>を続けています。一方、新規（青線）は第8週の42件をピークに第11週で38件まで下がっています。リピート率60.2%は<span class="ai-source" onclick="showSourcePopup(\'業界リピート率\',\'<b>出典:</b> AIden分析データベース（2025年度）<br><br><table style=padding:0><tr><th style=padding:6px>区分</th><th style=padding:6px>リピート率</th></tr><tr><td style=padding:6px>業界平均</td><td style=padding:6px>55.0%</td></tr><tr><td style=padding:6px>上位20%</td><td style=padding:6px>65.0〜70.0%</td></tr><tr style=background:#fff8e1><td style=padding:6px;font-weight:700>⭐ '+getTargetLabel()+'</td><td style=padding:6px;font-weight:700>60.2%</td></tr></table>\',{labels:[\'業界平均\',\'上位20%\',\''+getTargetLabel()+'\'],data:[55,67,60],colors:[\'#bbb\',\'#0984e3\',\'#e94560\'],suffix:\'%\'})">📎 業界平均55.0%</span>を上回る良好な水準ですが、新規獲得の勢いが鈍化している兆候が見られます。',
-      issue: '新規の減少傾向について、<span class="ai-source" onclick="showSourcePopup(\'新規獲得チャネル分析\',\'<b>出典:</b> AIden会員登録データ＋SNS分析（直近60日）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>1月</th><th style=padding:6px>2月</th><th style=padding:6px>変化</th></tr><tr><td style=padding:6px>SNS投稿頻度</td><td style=padding:6px>週2回</td><td style=padding:6px;color:#e94560>週1回</td><td style=padding:6px;color:#e94560>-50.0%</td></tr><tr><td style=padding:6px>WELCOME500利用数</td><td style=padding:6px>89件</td><td style=padding:6px;color:#e94560>65件(推定)</td><td style=padding:6px;color:#e94560>-27.0%</td></tr><tr><td style=padding:6px>SNS経由流入比率</td><td style=padding:6px colspan=2>全体の38.0%</td><td style=padding:6px>—</td></tr></table><br>クーポン有効期限は6月末のため、認知不足が主因と推定。\')">📎 チャネル分析</span>を見ると、2月にSNS投稿頻度が週2回→週1回に半減しており、初回クーポンの利用数も-27.0%落ち込んでいます。クーポン自体の有効期限はまだ先なので、投稿頻度の低下による認知不足が主な原因と考えられます。このまま放置すると、新規が減り「リピーターだけに頼る構造」になるリスクがあります。',
-      actions: [
-        {text:'SNS投稿頻度を週1→週3に引き上げ、特にInstagram（CVR最高）を重点化', page:'ai-sns', label:'SNS管理'},
-        {text:'「WELCOME500」クーポンのリマインド告知を全SNSチャネルで一斉配信し認知を回復', page:'ai-content', label:'告知コンテンツ生成'},
-        {text:'新規顧客の初回来店後24時間以内に「次回¥200OFF」クーポンを自動配信するCRMフローを設定', page:'member-crm', label:'CRM配信'},
-      ]
-    },
-    freqDist: {
-      title: '📊 注文頻度分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'uaFreqChart\')">注文頻度分布グラフ</span>を見ると、1回だけの利用者が245人（42.0%）で最も多い層です。注目すべきは、<b>上位7.0%にあたる10回以上のヘビーユーザー41人が売上¥378,000（22.0%）を生み出している</b>点で、1回のみの245人の売上¥312,000（18.0%）を上回っています。<span class="ai-source" onclick="showSourcePopup(\'頻度別単価詳細\',\'<b>出典:</b> AIden会員注文データ（直近90日）<br><br><table style=padding:0><tr><th style=padding:6px>頻度</th><th style=padding:6px>人数</th><th style=padding:6px>売上</th><th style=padding:6px>平均単価</th></tr><tr><td style=padding:6px>1回のみ</td><td style=padding:6px>245人</td><td style=padding:6px>¥312,000</td><td style=padding:6px>¥1,273</td></tr><tr><td style=padding:6px>2〜3回</td><td style=padding:6px>198人</td><td style=padding:6px>¥567,000</td><td style=padding:6px>¥1,145</td></tr><tr><td style=padding:6px>4〜9回</td><td style=padding:6px>98人</td><td style=padding:6px>¥489,000</td><td style=padding:6px>¥810</td></tr><tr><td style=padding:6px>10回+</td><td style=padding:6px>41人</td><td style=padding:6px>¥378,000</td><td style=padding:6px>¥922</td></tr></table><br>初回単価¥1,273が最高 → 「試し」で多めに注文する傾向。業界の1回のみ率は35.0〜40.0%で、'+getTargetLabel()+'42.0%はやや高め。\')">📎 詳細データ</span>によると、初回の平均単価¥1,273は常連の¥922より高く、「まずは色々試してみよう」と多めに注文する傾向がうかがえます。業界の1回のみ率35.0〜40.0%に対し、'+getTargetLabel()+'は42.0%とやや高めです。',
-      issue: '最大のボトルネックは「1回目→2回目」の壁です。<span class="ai-source" onclick="showSourcePopup(\'離脱分析\',\'<b>出典:</b> AIden会員行動データ（直近180日）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>数値</th></tr><tr><td style=padding:6px>初回から30日以上経過（1回のみ）</td><td style=padding:6px;color:#e94560;font-weight:700>推定147人（60.0%）</td></tr><tr><td style=padding:6px>14日以内に2回目利用 → 12ヶ月定着率</td><td style=padding:6px;color:#27ae60>45.0%</td></tr><tr><td style=padding:6px>30日超で2回目利用 → 12ヶ月定着率</td><td style=padding:6px;color:#e94560>12.0%</td></tr></table><br>未回収の潜在LTV: ¥8,420/人 × 147人 = <b>約¥1,240,000</b><br>現在、初回来店後のフォロー施策は未設定。\')">📎 離脱分析</span>によると、1回のみの245人のうち約60.0%（147人）が初回から30日以上経過しており、再来店の可能性が大きく下がっています。初回から14日以内に2回目を利用した場合の定着率は45.0%ですが、30日を超えると12.0%まで落ちます。現在、初回来店後のフォロー施策が未設定のため、潜在的なLTV約¥1,240,000を回収できていない状況です。',
-      actions: [
-        {text:'初回来店後72時間以内に「次回¥200OFF」クーポンをプッシュ通知で自動配信するフローを構築', page:'member-crm', label:'CRM配信'},
-        {text:'2回目来店時に50ポイント追加付与する「2回目ボーナス」をポイント設定に追加し転換率+15.0%を目指す', page:'member-point', label:'ポイント設定'},
-        {text:'月1回のメール配信で「前回ご注文の○○が人気です」とパーソナライズドリマインドを送信', page:'member-crm', label:'CRM配信'},
-      ]
-    },
-    productRank: {
-      title: '📊 商品ランキング分析',
-      insight: 'ランキングテーブルを見ると、1位のサーモン（482件、+7.1%）と2位のまぐろ（421件、+4.5%）が安定して伸びており、<b>この2商品だけで全注文の53.0%</b>を占めています。3位のにぎりセット（198件）は売上額¥194,040で<b>売上ベースでは実質1位</b>です。気になるのは5位の茶碗蒸しで、154件と<b>前月比-25.2%（-52件）の急落</b>が起きています。<span class="ai-source" onclick="showSourcePopup(\'茶碗蒸し急落の要因\',\'<b>出典:</b> AIden注文データ＋口コミデータ分析<br><br><table style=padding:0><tr><th style=padding:6px>要因</th><th style=padding:6px>影響度</th><th style=padding:6px>詳細</th></tr><tr><td style=padding:6px>季節性（冬→春）</td><td style=padding:6px>中</td><td style=padding:6px>業界平均で2〜3月は-15.0%が通常。'+getTargetLabel()+'-25.0%は季節性だけでは説明不可</td></tr><tr><td style=padding:6px>品質への指摘</td><td style=padding:6px>高</td><td style=padding:6px>口コミで「味が薄い」3件（直近60日）</td></tr><tr><td style=padding:6px>セットへの影響</td><td style=padding:6px>高</td><td style=padding:6px>セット同時注文率38.0%と高く、セット全体の満足度に波及リスク</td></tr></table>\')">📎 要因分析</span>によると、冬→春の季節要因に加え、口コミでの品質指摘が重なったことが原因と考えられます。',
-      issue: '茶碗蒸しはセットとの同時注文率が38.0%と高いため、この商品の評価低下はセット全体の満足度にも波及するリスクがあります。また<span class="ai-ref" onclick="scrollToChart(\'paTrendChart\')">商品トレンドグラフ</span>を見ると、えびアボカドも-4.3%と3ヶ月連続で微減しており、放置すると下落が加速する恐れがあります。',
-      actions: [
-        {text:'茶碗蒸しを春仕様にリニューアル（桜えびのあんかけ茶碗蒸し等）し季節需要を取り込む', page:'menu', label:'メニュー管理'},
-        {text:'にぎりセットに春限定サイドを組み込んだ「春の特選セット」を新設し、セット満足度を維持', page:'menu', label:'メニュー管理'},
-        {text:'えびアボカドの減少原因を口コミから調査。商品レビューで「イマイチ」タグの内容を確認', page:'review-product', label:'商品レビュー'},
-      ]
-    },
-    prodTrend: {
-      title: '📊 商品トレンド分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'paTrendChart\')">トレンドグラフ</span>を見ると、サーモン（赤線）は第1週の58件→第8週の70件と<b>+20.7%の安定した伸び</b>を見せています。まぐろ（青線）もほぼ同じペースです。にぎりセット（緑線）は第5週まで伸びたものの、<b>第6〜8週で横ばい</b>になっています。上位2商品が全体の成長を牽引しており、依存度が高い状態です。<span class="ai-source" onclick="showSourcePopup(\'仕入価格リスク\',\'<b>出典:</b> AIden仕入データベース（市場相場連動）<br><br><table style=padding:0><tr><th style=padding:6px>食材</th><th style=padding:6px>過去12ヶ月の相場変動</th></tr><tr style=background:#ffebee><td style=padding:6px>サーモン</td><td style=padding:6px;color:#e94560;font-weight:700>+12.0%上昇</td></tr><tr><td style=padding:6px>まぐろ</td><td style=padding:6px>+5.0%上昇</td></tr></table><br>上位2商品への依存が高いほど仕入価格変動の利益インパクトが大きくなります。\',{labels:[\'サーモン\',\'まぐろ\'],data:[12,5],colors:[\'#e94560\',\'#0984e3\'],suffix:\'%\'})">📎 仕入価格リスク</span>の面でも、特定商品への依存を分散する必要があります。',
-      issue: 'にぎりセットが伸び悩んでいる原因として、①10貫固定の構成への飽き、②<span class="ai-source" onclick="showSourcePopup(\'競合セット価格\',\'<b>出典:</b> AIden競合調査（半径3km内同ジャンル店舗）<br><br><table style=padding:0><tr><th style=padding:6px>店舗</th><th style=padding:6px>セット内容</th><th style=padding:6px>価格</th></tr><tr><td style=padding:6px>店舗A</td><td style=padding:6px>にぎり8貫</td><td style=padding:6px>¥880</td></tr><tr><td style=padding:6px>店舗B</td><td style=padding:6px>にぎり10貫</td><td style=padding:6px>¥950</td></tr><tr style=background:#fff8e1><td style=padding:6px;font-weight:700>'+getTargetLabel()+'</td><td style=padding:6px>にぎり10貫</td><td style=padding:6px>¥980</td></tr></table><br>品数は同等だが価格がやや高め。ただし評価4.9と品質は最高水準。\')">📎 競合比較</span>でエリア内の価格帯がやや高めであることが考えられます。にぎりセットは利益率が高い商品のため、鈍化の影響は売上以上に利益に響きます。',
-      actions: [
-        {text:'「選べるセット」（8貫自由選択+味噌汁 ¥980）のバリエーションを追加し飽き防止', page:'menu', label:'メニュー管理'},
-        {text:'サーモン人気を活用した派生商品（炙りサーモン、サーモンユッケ等）を企画し依存分散', page:'menu', label:'メニュー管理'},
-        {text:'セット注文者に追加ポイント「セットボーナス」を設定しリピート促進', page:'member-point', label:'ポイント設定'},
-      ]
-    },
-    abc: {
-      title: '📊 ABC分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'paAbcChart\')">パレート図</span>を見ると、赤色のA群（上位3商品：サーモン・にぎりセット・まぐろ）だけで売上全体の<b>67.0%</b>を占めていることがわかります。黄色のB群が続き、灰色のC群（下位3商品）は合計で8.0%にとどまります。紫の折れ線（累積構成比）がA群3品の時点で80%ラインに到達しています。',
-      issue: 'C群の商品は売上への貢献が小さい一方で、食材の管理コストは相対的に高くなります。<span class="ai-source" onclick="showSourcePopup(\'C群コスト分析\',\'<b>出典:</b> AIden原価管理データ（推計）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>A群</th><th style=padding:6px>C群</th></tr><tr><td style=padding:6px>食材ロス率</td><td style=padding:6px;color:#27ae60>3.0〜5.0%</td><td style=padding:6px;color:#e94560;font-weight:700>8.0〜12.0%</td></tr><tr><td style=padding:6px>実質利益率</td><td style=padding:6px;color:#27ae60>高</td><td style=padding:6px;color:#e94560>A群の約半分</td></tr></table><br>ただし味噌汁はセット同時注文率45.0%のため単純終売は避けるべき。えび天は揚げ物オペレーション負荷（油管理・温度管理）が高い。中期的にはB群育成がカギ。\')">📎 コスト分析</span>によると、C群の食材ロス率はA群の2〜3倍です。ただし味噌汁はセットとの同時注文率が45.0%と高いため、単純に終売するのは避けるべきです。中期的には、B群の商品をA群に育てていくことがカギになります。',
-      actions: [
-        {text:'C群えび天を期間限定メニューに変更し通年のオペレーション負荷を軽減。代わりに季節商品枠を設置', page:'menu', label:'メニュー管理'},
-        {text:'B群のえびアボカド・玉子を「本日のおすすめ」枠でモバイルオーダー上位表示に設定し露出強化', page:'menu', label:'メニュー管理'},
-        {text:'A群サーモンの派生バリエーション（3種盛り等）をB群として育成し依存分散を図る', page:'menu', label:'メニュー管理'},
-      ]
-    },
-    prodHeatmap: {
-      title: '📊 商品×時間帯分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'paProdHeatmap\')">ヒートマップ</span>を見ると、サーモンはどの時間帯でも濃い色が並び、安定した需要があることがわかります。にぎりセットは<b>19時台のセルが突出して濃く</b>、ディナー帯に偏った売れ方をしています。ランチ（11〜13時）のセット注文はディナー（18〜21時）の約57.0%にとどまります。茶碗蒸しは14〜15時がほぼ白で、この時間帯の需要はゼロに近い状態です。',
-      issue: 'にぎりセットのディナー偏重が、ランチ帯の客単価を下げている主な要因です。<span class="ai-source" onclick="showSourcePopup(\'時間帯別単価分析\',\'<b>出典:</b> AIden注文データ集計<br><br><table style=padding:0><tr><th style=padding:6px>時間帯</th><th style=padding:6px>客単価</th><th style=padding:6px>セット注文率</th></tr><tr><td style=padding:6px>ランチ(11〜14時)</td><td style=padding:6px>¥2,800</td><td style=padding:6px;color:#e94560>18.0%</td></tr><tr><td style=padding:6px>ディナー(18〜21時)</td><td style=padding:6px>¥4,200</td><td style=padding:6px;color:#27ae60>32.0%</td></tr></table><br>セット注文率の差1.8倍が客単価差¥1,400に直結。メニュー表示でセットが下部に位置し視認性が低いことが主因と推定。\',{labels:[\'ランチ\',\'ディナー\'],data:[18,32],colors:[\'#e94560\',\'#27ae60\'],suffix:\'%\'})">📎 単価詳細</span>によると、ランチのセット注文率18.0%はディナーの32.0%の約半分で、客単価の¥1,400差に直結しています。メニュー画面でセットが下部に配置されており、ランチタイムの利用者に気づかれにくいことが主因と考えられます。',
-      actions: [
-        {text:'ランチタイムのモバイルオーダーでにぎりセットを最上部に固定表示する設定に変更', page:'menu', label:'メニュー管理'},
-        {text:'ランチ限定「クイックセット」（にぎり6貫+味噌汁 ¥780、提供5分以内保証）を新設し時短ニーズに対応', page:'menu', label:'メニュー管理'},
-        {text:'14〜15時需要喚起のため「アフタヌーンティーセット（茶碗蒸し+デザート+ドリンク ¥680）」を企画', page:'menu', label:'メニュー管理'},
-      ]
-    },
-    channelProd: {
-      title: '📊 チャネル別商品構成分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'paChannelProdChart\')">積上棒グラフ</span>を見ると、店内では「その他」（灰色部分）が大きく、幅広い商品が注文されています。しかし持帰→デリバリーになるほど<b>サーモンとまぐろの占有率が上がり</b>、デリバリーでは上位2商品だけで棒の約2/3を占めています。<span class="ai-source" onclick="showSourcePopup(\'デリバリーUI行動分析\',\'<b>出典:</b> AIdenモバイルオーダーログ分析<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>デリバリー</th><th style=padding:6px>店内</th></tr><tr><td style=padding:6px>平均閲覧商品数</td><td style=padding:6px;color:#e94560>4.2品</td><td style=padding:6px>8.7品</td></tr><tr><td style=padding:6px>2スクロール到達離脱率</td><td style=padding:6px;color:#e94560>65.0%</td><td style=padding:6px>—</td></tr><tr><td style=padding:6px>セット表示位置</td><td style=padding:6px;color:#e94560>カテゴリ6番目(最下部)</td><td style=padding:6px>—</td></tr></table><br>デリバリー客はメニューを深く探索せず上位表示商品を選ぶ傾向が非常に強い。\')">📎 行動分析</span>によると、デリバリー利用者は平均4.2品しかメニューを閲覧しておらず（店内は8.7品）、画面上部に表示される商品に注文が集中しやすい傾向があります。',
-      issue: 'デリバリーのセット注文率12.0%は店内の28.0%の半分以下です。これが単価差の最大の要因です。セットメニューの表示位置が画面の下部付近にあるため、多くの利用者がスクロール前に注文を確定している状況です。サイドメニューも同様に、メインを補完する役割を果たせていません。',
-      actions: [
-        {text:'デリバリー専用「おまかせセット」を新設しサーモン・まぐろ偏重を緩和', page:'menu', label:'メニュー管理'},
-        {text:'デリバリーメニューの表示順を「カテゴリ別」に変更しセット・サイドの視認性を向上', page:'menu', label:'メニュー管理'},
-        {text:'デリバリー注文確認画面で「一緒にいかがですか？」としてサイドメニューをレコメンド表示', page:'menu', label:'メニュー管理'},
-      ]
-    },
-    newProd: {
-      title: '📊 新商品パフォーマンス分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'paNewProdChart\')">グラフ</span>を見ると、「桜えびの天ぷら」は初日に既存商品平均の約1.5倍の注文数でスタートし、15日目まではやや上を推移しています。しかし<b>15日目以降、「桜えびの天ぷら」が既存商品平均に急速に近づき</b>、30日目でほぼ同じ水準になっています。<span class="ai-source" onclick="showSourcePopup(\'新商品減衰パターン\',\'<b>出典:</b> AIden分析データベース（飲食チェーン新商品120品の平均）<br><br><table style=padding:0><tr><th style=padding:6px>施策</th><th style=padding:6px>30日後の維持率</th></tr><tr><td style=padding:6px>リマインド施策あり（7日目/14日目/21日目の3回）</td><td style=padding:6px;color:#27ae60;font-weight:700>初日比60.0〜70.0%</td></tr><tr><td style=padding:6px>リマインド施策なし</td><td style=padding:6px;color:#e94560>初日比40.0〜55.0%</td></tr><tr style=background:#fff8e1><td style=padding:6px;font-weight:700>'+getTargetLabel()+'「桜えび」</td><td style=padding:6px;font-weight:700>55.0%（リマインドなし）</td></tr></table><br>リマインドなしとしては健闘だが施策があれば+6〜7件/日を維持できた計算。\',{labels:[\'施策あり\',\'施策なし\',\''+getTargetLabel()+'\'],data:[65,47,55],colors:[\'#27ae60\',\'#bbb\',\'#e94560\'],suffix:\'%\'})">📎 業界パターン</span>と比較すると、リマインド施策なしとしては健闘していますが、施策を打っていれば60.0〜70.0%の維持が可能だった計算です。',
-      issue: '15日目〜30日目の急落は、新商品の告知が1日目のInstagram投稿1回だけだったことが最大の要因です。<span class="ai-source" onclick="showSourcePopup(\'SNS投稿ログ\',\'<b>出典:</b> AIden SNS投稿管理データ<br><br><table style=padding:0><tr><th style=padding:6px>日</th><th style=padding:6px>投稿</th><th style=padding:6px>リーチ</th><th style=padding:6px>エンゲージメント</th></tr><tr><td style=padding:6px>1日目(発売日)</td><td style=padding:6px>Instagram 1件</td><td style=padding:6px>4,200</td><td style=padding:6px>5.8%</td></tr><tr style=background:#ffebee><td style=padding:6px>2日目〜30日目</td><td style=padding:6px;color:#e94560;font-weight:700>関連投稿ゼロ</td><td style=padding:6px>—</td><td style=padding:6px>—</td></tr></table><br>7日目/14日目/21日目のリマインドがあれば推定+6〜7件/日の維持が可能でした。\')">📎 投稿履歴</span>を見ると、2日目以降は関連投稿がゼロで、定期的なリマインドがあれば維持できたはずの注文数を逃しています。',
-      actions: [
-        {text:'桜えびの天ぷらのリマインドSNS投稿を今週中にInstagram・Xで配信', page:'ai-sns', label:'SNS管理'},
-        {text:'次回新商品では7日目/14日目/21日目のリマインド投稿をスケジュール予約で事前設定', page:'ai-sns', label:'SNS管理'},
-        {text:'桜えび+既存人気商品のコラボセット「春の味覚セット」を企画し再認知を促進', page:'menu', label:'メニュー管理'},
-      ]
-    },
-    bmRank: {
-      title: '📊 ランキング分析',
-      insight: 'テーブルを見ると、'+getTargetLabel()+'はエリア内で<b>2位</b>です。1位の店舗Aとの日次売上差は¥13,300。注文単価は'+getTargetLabel()+'の¥1,304が1位の¥1,273を<b>¥31上回っており</b>、商品の品質や価格設定では優位に立っています。差がついているのは注文件数（156件 vs 142件で14件差）です。<span class="ai-source" onclick="showSourcePopup(\'ランキング推移\',\'<b>出典:</b> AIden比較分析（直近4週）<br><br><table style=padding:0><tr><th style=padding:6px>週</th><th style=padding:6px>1位との差</th></tr><tr><td style=padding:6px>4週前</td><td style=padding:6px>¥15,200/日</td></tr><tr><td style=padding:6px>3週前</td><td style=padding:6px>¥14,800/日</td></tr><tr><td style=padding:6px>2週前</td><td style=padding:6px>¥13,900/日</td></tr><tr style=background:#e8f5e9><td style=padding:6px;font-weight:700>今週</td><td style=padding:6px;color:#27ae60;font-weight:700>¥13,300/日(縮小中)</td></tr></table><br>現在のペース維持で8〜10週後に逆転の可能性。\',{labels:[\'4週前\',\'3週前\',\'2週前\',\'今週\'],data:[15200,14800,13900,13300],colors:[\'#bbb\',\'#bbb\',\'#bbb\',\'#27ae60\'],prefix:\'¥\'})">📎 推移</span>を見ると差は4週連続で縮まっており、このペースが続けば8〜10週後に逆転できる見込みです。',
-      issue: '1日14件の差を分析すると、<span class="ai-source" onclick="showSourcePopup(\'時間帯別ギャップ\',\'<b>出典:</b> AIden比較分析データ<br><br><table style=padding:0><tr><th style=padding:6px>時間帯</th><th style=padding:6px>件数差</th><th style=padding:6px>全体に占める割合</th></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>ランチ(11〜14時)</td><td style=padding:6px;color:#e94560;font-weight:700>-8件</td><td style=padding:6px;font-weight:700>57.0%</td></tr><tr><td style=padding:6px>ディナー(18〜21時)</td><td style=padding:6px>-4件</td><td style=padding:6px>29.0%</td></tr><tr><td style=padding:6px>その他</td><td style=padding:6px>-2件</td><td style=padding:6px>14.0%</td></tr></table><br>1位店舗Aは「ランチ限定メニュー(¥780〜980)」を提供。'+getTargetLabel()+'にはランチ専用メニューなし。Google口コミ件数も1位の約55.0%。\',{labels:[\'ランチ\',\'ディナー\',\'その他\'],data:[8,4,2],colors:[\'#e94560\',\'#f39c12\',\'#bbb\']})">📎 詳細</span>によるとランチ帯の-8件が全体差の57.0%を占めています。1位の店舗はランチ限定メニューを提供しており、'+getTargetLabel()+'にはそれがないことが差の一因です。',
-      actions: [
-        {text:'ランチ限定セット（にぎり8貫+味噌汁 ¥880）を新設しランチの-8件/日を回復', page:'menu', label:'メニュー管理'},
-        {text:'口コミ投稿促進のためレビュー投稿ポイント付与の告知を店内・アプリで強化', page:'review-setting', label:'口コミポイント設定'},
-        {text:'Googleビジネスプロフィールの写真・情報を更新し検索結果でのクリック率を改善', page:'store-media', label:'メディア管理'},
-      ]
-    },
-    gap: {
-      title: '📊 ギャップ分析',
-      insight: 'テーブルを見ると、<b>注文単価の差はわずか-0.6%（¥9差）でほぼ互角</b>です。つまり、商品力や価格設定は適切に機能しています。最も大きなギャップは<b>リピート率の-5.6pt</b>で、改善インパクト（比較対象の水準に追いついた場合に期待できる増加量）は+192件/月と最大です。注文件数-14.1%のうち、リピート率の改善だけで192件を回収できるため、残りが新規集客で埋めるべきギャップです。',
-      issue: '<span class="ai-source" onclick="showSourcePopup(\'リピート率内訳\',\'<b>出典:</b> AIden会員行動データ×比較対象推定値<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>'+getTargetLabel()+'</th><th style=padding:6px>比較対象</th><th style=padding:6px>差</th></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>2回目来店率</td><td style=padding:6px;color:#e94560>38.0%</td><td style=padding:6px>45.0%</td><td style=padding:6px;color:#e94560>-7pt</td></tr><tr><td style=padding:6px>3回目以降継続率</td><td style=padding:6px>82.0%</td><td style=padding:6px>84.0%</td><td style=padding:6px>-2pt(微差)</td></tr><tr><td style=padding:6px>初回14日以内の2回目率</td><td style=padding:6px;color:#e94560>22.0%</td><td style=padding:6px>30.0〜35.0%</td><td style=padding:6px;color:#e94560>-8〜13pt</td></tr></table><br>→「1回目→2回目の壁」がリピート率全体5.6ptの差の主因。\',{labels:[\'2回目来店率\',\'3回目継続率\'],data:[38,82],colors:[\'#e94560\',\'#27ae60\'],suffix:\'%\'})">📎 リピート詳細</span>を掘り下げると、3回目以降の継続率はほぼ同水準（82.0% vs 84.0%）で、<b>「1回目→2回目の壁」がリピート率全体の差の主因</b>とわかります。'+getTargetLabel()+'の2回目来店率38.0%は比較対象の45.0%を7pt下回っており、初回14日以内の再来店率も22.0%と低い状況です。',
-      actions: [
-        {text:'初回来店後3日・7日・14日の3段階で自動クーポン配信フロー（¥200→¥150→¥100OFF）をCRMに設定', page:'member-crm', label:'CRM配信'},
-        {text:'会員ランク「シルバー」到達条件を見直し来店頻度インセンティブを強化', page:'member-rank', label:'ランク設定'},
-        {text:'サブスクプラン（月額¥480スタンダード）のランチ利用者向け訴求を強化し定期来店を仕組み化', page:'subscription', label:'サブスクプラン'},
-      ]
-    },
-    radar: {
-      title: '📊 総合スコア分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'bmRadarChart\')">レーダーチャート</span>を見ると、青（自店舗）は「注文単価」「評価」の方向に広がり、赤（比較対象）は「注文件数」「リピート率」の方向に広がる<b>対照的な形</b>になっています。'+getTargetLabel()+'は「品質は高いが、集客に課題がある」タイプといえます。<span class="ai-source" onclick="showSourcePopup(\'品質型店舗の成長性\',\'<b>出典:</b> AIden分析DB（飲食チェーン3年追跡調査）<br><br><table style=padding:0><tr><th style=padding:6px>店舗タイプ</th><th style=padding:6px>3年後売上成長率</th></tr><tr><td style=padding:6px>評価上位20%（品質型）</td><td style=padding:6px;color:#27ae60;font-weight:700>+28.0%</td></tr><tr><td style=padding:6px>集客上位20%（集客型）</td><td style=padding:6px>+15.0%</td></tr></table><br>品質が高い店舗は口コミ効果で中長期的に成長しやすく、'+getTargetLabel()+'のポテンシャルは高い。\',{labels:[\'品質型\',\'集客型\'],data:[28,15],colors:[\'#27ae60\',\'#0984e3\'],suffix:\'%\'})">📎 成長性データ</span>によると、品質型の店舗は中長期的に成長しやすい傾向があり、'+getTargetLabel()+'のポテンシャルは高いと評価できます。',
-      issue: '「品質が高いのに集客が弱い」というパターンは、<b>お店の存在が十分に知られていない</b>ことを示唆しています。<span class="ai-source" onclick="showSourcePopup(\'認知度ギャップ\',\'<b>出典:</b> AIden競合調査データ<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>'+getTargetLabel()+'</th><th style=padding:6px>比較対象平均</th></tr><tr><td style=padding:6px>Google検索順位</td><td style=padding:6px;color:#e94560>推定5〜8位</td><td style=padding:6px>3〜5位</td></tr><tr><td style=padding:6px>Instagramフォロワー</td><td style=padding:6px;color:#e94560>12,400人</td><td style=padding:6px>18,000人</td></tr><tr><td style=padding:6px>口コミ件数(対比較対象比)</td><td style=padding:6px;color:#e94560>約55.0%</td><td style=padding:6px>100.0%</td></tr></table><br>→「来店した人の満足度は高いが、来店する機会自体が少ない」という構造的課題。\')">📎 認知度データ</span>を見ると、SNSフォロワーや口コミ件数が比較対象を下回っており、「一度来れば満足してもらえるが、そもそも知ってもらう機会が少ない」という構造的な課題があります。',
-      actions: [
-        {text:'Instagram投稿を週5回に増やしフォロワー12,400→18,000人を6ヶ月で目指す', page:'ai-sns', label:'SNS管理'},
-        {text:'口コミ投稿促進のためレビュー投稿ポイント告知を複数チャネルで実施', page:'review-setting', label:'口コミポイント設定'},
-        {text:'Googleビジネスプロフィールへの投稿を週1回実施し検索露出を強化', page:'ai-content', label:'告知コンテンツ生成'},
-      ]
-    },
-    bmHourly: {
-      title: '📊 時間帯別比較分析',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'bmHourlyChart\')">比較グラフ</span>を見ると、自店舗（青線）と比較対象（赤線）の差が<b>12時台と19時台のピーク時に最も大きく開いており</b>、14〜16時はほぼ同じ水準です。つまり、<b>ピーク時間帯での取りこぼしが全体の差の主因</b>です。<span class="ai-source" onclick="showSourcePopup(\'待ち時間比較\',\'<b>出典:</b> AIden分析モデル（注文件数×提供時間から推計）<br><br><table style=padding:0><tr><th style=padding:6px>時間帯</th><th style=padding:6px>'+getTargetLabel()+'</th><th style=padding:6px>比較対象</th><th style=padding:6px>差</th></tr><tr><td style=padding:6px>12時台</td><td style=padding:6px>12分</td><td style=padding:6px>8分</td><td style=padding:6px;color:#e94560>+4分</td></tr><tr><td style=padding:6px>19時台</td><td style=padding:6px>18分</td><td style=padding:6px>12分</td><td style=padding:6px;color:#e94560>+6分</td></tr></table><br>待ち時間差は座席回転率の差が原因。'+getTargetLabel()+'0.65回/時 vs 比較対象0.69回/時。80席で1時間あたり3.2席分の差。\')">📎 待ち時間</span>によると、ピーク時の待ち時間が比較対象より4〜6分長く、回転率の改善で注文件数を増やす余地があります。',
-      issue: 'ピーク時の待ち時間差は座席回転率の違いによるものです。<span class="ai-source" onclick="showSourcePopup(\'オペレーション比較\',\'<b>出典:</b> AIden分析モデル（推計）<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>'+getTargetLabel()+'</th><th style=padding:6px>効率的な店舗</th></tr><tr><td style=padding:6px>注文→提供時間</td><td style=padding:6px>推定8.5分</td><td style=padding:6px>6〜7分</td></tr><tr><td style=padding:6px>会計プロセス</td><td style=padding:6px>平均2.5分</td><td style=padding:6px>1.2分(セルフレジ)</td></tr></table><br>改善で回転率+0.04〜0.06回/時向上→ピーク時+3〜5件/時の処理能力増。\')">📎 効率比較</span>を見ると、提供時間と会計時間の両方に短縮の余地があり、回転率を改善することでピーク帯の処理件数を増やせます。',
-      actions: [
-        {text:'ピーク時のキッチン人員+1名体制と事前仕込み量増加を検討', page:'store-facility', label:'施設設備'},
-        {text:'セルフオーダー端末の操作フロー見直しで注文確定時間を短縮', page:'store-facility', label:'施設設備'},
-        {text:'ピーク待ち時間をアプリに表示し分散来店を促進（「14時なら待ち時間0分」訴求）', page:'store-basic', label:'店舗基本情報'},
-      ]
-    },
-    bmChannel: {
-      title: '📊 チャネルミックス比較',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'bmChannelChart\')">ドーナツ比較</span>を見ると、自店舗（左）は店内（赤）の割合が大きく、比較対象（右）は持帰（青）・配達（緑）がやや多い構成です。'+getTargetLabel()+'は<b>店内が+7.0pt高く、持帰・配達が合計-7.0pt低い</b>構成です。<span class="ai-source" onclick="showSourcePopup(\'チャネルギャップ試算\',\'<b>出典:</b> AIden分析モデル<br><br><table style=padding:0><tr><th style=padding:6px>チャネル</th><th style=padding:6px>週次ギャップ</th><th style=padding:6px>月次ギャップ</th></tr><tr><td style=padding:6px>持帰</td><td style=padding:6px;color:#e94560>-¥108,000</td><td style=padding:6px;color:#e94560;font-weight:700>-¥432,000</td></tr><tr><td style=padding:6px>配達</td><td style=padding:6px;color:#e94560>-¥85,000</td><td style=padding:6px;color:#e94560;font-weight:700>-¥340,000</td></tr><tr style=background:#ffebee><td style=padding:6px;font-weight:700>合計</td><td style=padding:6px;font-weight:700>-¥193,000</td><td style=padding:6px;color:#e94560;font-weight:700>-¥772,000</td></tr></table><br>全体売上ギャップ¥828,000の93.0%が非店内チャネルに起因。\')">📎 ギャップ試算</span>によると、持帰・配達チャネルのギャップが月間¥772,000で、全体差の93.0%を占めています。つまり<b>店内の実力はほぼ互角で、持帰・配達の弱さがほぼ全ての差の原因</b>です。',
-      issue: '持帰が弱い原因は、受取動線が店内客と分かれておらず待ち時間が発生している点と、持帰用メニューの最適化が不十分な点です。配達は平均配達時間が比較対象より+6分長い点も影響しています。<span class="ai-source" onclick="showSourcePopup(\'持帰課題詳細\',\'<b>出典:</b> AIden店舗調査＋注文データ<br><br>・受取動線: 店内客と未分離 → 待ち時間発生<br>・持帰メニュー: 店内と同一、鮮度維持パッケージ未対応<br>・比較対象はテイクアウト専用受取カウンターを設置<br>・配達時間: '+getTargetLabel()+'38分 / 比較対象32分（+6分）\')">📎 課題詳細</span>',
-      actions: [
-        {text:'テイクアウト専用受取動線を整備し持帰の待ち時間を短縮', page:'store-delivery', label:'配達設定'},
-        {text:'持帰専用メニュー（鮮度維持パッケージ対応セット3種）を新設', page:'menu', label:'メニュー管理'},
-        {text:'配達時間短縮のため調理時間設定を見直し、配達員マッチングのリードタイムを改善', page:'store-delivery', label:'配達設定'},
-      ]
-    },
-    bmTrend: {
-      title: '📊 トレンド推移比較',
-      insight: '<span class="ai-ref" onclick="scrollToChart(\'bmTrendChart\')">12週推移グラフ</span>を見ると、自店舗（青線）も比較対象（赤線）も右肩上がりですが、2本の線の間隔はほぼ一定です。成長率は'+getTargetLabel()+'が+18.4%、比較対象が+17.9%と'+getTargetLabel()+'がわずかに上回っており、<b>少しずつ差が縮まっています</b>。<span class="ai-source" onclick="showSourcePopup(\'成長ドライバー分析\',\'<b>出典:</b> AIden施策効果データ<br><br><table style=padding:0><tr><th style=padding:6px>要因</th><th style=padding:6px>効果</th><th style=padding:6px>持続性</th></tr><tr><td style=padding:6px>サブスク会員増(第7週で+15名)</td><td style=padding:6px;color:#27ae60>高</td><td style=padding:6px;color:#f39c12>3〜4ヶ月で頭打ち</td></tr><tr><td style=padding:6px>SNS投稿頻度増(第6週から週2に)</td><td style=padding:6px;color:#27ae60>中</td><td style=padding:6px;color:#f39c12>継続投資必要</td></tr><tr><td style=padding:6px>季節メニュー(第7週桜えび)</td><td style=padding:6px>中</td><td style=padding:6px;color:#e94560>2〜3週で減衰</td></tr></table><br>第15〜16週頃に新たな成長ドライバーが必要。\')">📎 成長要因</span>によると、第7週以降の伸びはサブスク会員の増加とSNS投稿の強化が支えていますが、3〜4ヶ月で効果が頭打ちになる見込みのため、次の成長ドライバーの準備が必要です。',
-      issue: '比較対象も第10週以降で成長ペースを上げてきており、'+getTargetLabel()+'の現在の施策だけでは差が再び広がるリスクがあります。新たな施策の投入タイミングは第15〜16週（3〜4週後）が目安です。',
-      actions: [
-        {text:'「春の感謝祭第2弾」を3月下旬に投入し成長鈍化を防止', page:'sales-campaign', label:'キャンペーン管理'},
-        {text:'サブスク会員の「友だち紹介で両者500ポイント」施策を展開し会員基盤拡大', page:'subscription', label:'サブスクプラン'},
-        {text:'効果検証ページで過去施策のROIを確認し最も効率の高い施策を特定', page:'sales-effect', label:'効果検証'},
-      ]
-    },
-    effect: {
-      title: '📊 効果検証AI分析',
-      insight: 'テーブルを見ると、<b>Instagram投稿のROI 520.0%が全施策中で最も高い</b>効率です。<span class="ai-ref" onclick="scrollToChart(\'efSnsChart\')">CVRグラフ</span>でもInstagramが最も高い棒になっています。一方、LINE配信のCVR 0.8%は他チャネルの1/4以下と低調です。<span class="ai-source" onclick="showSourcePopup(\'LINE配信改善余地\',\'<b>出典:</b> AIden配信ログ＋AI CRM分析<br><br><table style=padding:0><tr><th style=padding:6px>指標</th><th style=padding:6px>'+getTargetLabel()+'(2/25配信)</th><th style=padding:6px>業界平均</th></tr><tr><td style=padding:6px>配信内容</td><td style=padding:6px;color:#e94560>テキスト中心、画像なし</td><td style=padding:6px>画像付きリッチメッセージ</td></tr><tr><td style=padding:6px>配信タイミング</td><td style=padding:6px;color:#e94560>火曜15時</td><td style=padding:6px>金曜18時(推奨)</td></tr><tr><td style=padding:6px>開封率</td><td style=padding:6px;color:#e94560>22.0%</td><td style=padding:6px>35.0%</td></tr><tr><td style=padding:6px>クリック率</td><td style=padding:6px;color:#e94560>3.5%</td><td style=padding:6px>8.0%</td></tr></table><br>最適タイミング(金曜18時)なら開封率+10pt、CVR+0.5〜1.0pt改善見込み。\')">📎 LINE詳細</span>を見ると、LINE配信は内容（テキスト中心で画像なし）とタイミング（火曜15時）がいずれも最適ではなく、改善の余地が大きいことがわかります。<span class="ai-ref" onclick="scrollToChart(\'efCampaignChart\')">キャンペーン推移</span>では「春の大感謝祭」の後半で効果が薄れている傾向が見られ、次回は期間中のリマインドが必要です。',
-      issue: 'LINE友だち28,300人のリーチ力を活かしきれていません。AI CRM分析が推奨する「金曜18時」と異なるタイミングで配信しているため、配信タイミングを最適化するだけでCVRの大幅な改善が見込めます。また<span class="ai-ref" onclick="scrollToChart(\'efRoiChart\')">ROI比較</span>を見ると施策タイプごとの効率差が大きいため、ROIの高い施策にリソースを集中させることが有効です。',
-      actions: [
-        {text:'次回LINE配信を金曜18時に変更し画像付きリッチメッセージで配信（AI CRM推奨適用）', page:'ai-crm', label:'AI CRM分析'},
-        {text:'Instagram投稿（ROI最高520.0%）を週3→5回に増やし最高効率チャネルへリソース集中', page:'ai-sns', label:'SNS管理'},
-        {text:'次回キャンペーンで値引き額のA/Bテストを実施しROI維持の最低ラインを検証', page:'sales-campaign', label:'キャンペーン管理'},
-      ]
-    },
+async function sdAiAnalysis(type, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '分析中...'; }
+
+  var lkSales = document.getElementById('sdKpiSales') ? document.getElementById('sdKpiSales').textContent : '—';
+  var lkOrders = document.getElementById('sdKpiOrders') ? document.getElementById('sdKpiOrders').textContent : '—';
+  var lkAvg = document.getElementById('sdKpiAvg') ? document.getElementById('sdKpiAvg').textContent : '—';
+
+  var typeLabels = {
+    daily:'日別売上トレンド', channel:'チャネル別売上', hourly:'時間帯別注文',
+    heatmap:'曜日×時間帯ヒートマップ', access:'アクセス・CVR',
+    userTrend:'ユーザー推移', freqDist:'注文頻度分布',
+    productRank:'人気商品ランキング', prodTrend:'商品トレンド',
+    abc:'ABC分析', prodHeatmap:'商品×時間帯', channelProd:'チャネル×商品',
+    newProd:'新商品パフォーマンス',
+    bmRank:'業界ランキング', gap:'ギャップ分析', radar:'レーダー比較',
+    bmHourly:'時間帯比較', bmChannel:'チャネル比較', bmTrend:'トレンド比較',
+    effect:'効果検証'
   };
 
-  const data = analyses[type];
-  if(!data) return;
+  var title = typeLabels[type] || type;
 
-  // Find the parent card of the clicked button
-  const card = btnEl.closest('.card');
-  if(!card) return;
-
-  // Remove any existing inline AI panel near this card
-  const parentGrid = card.parentElement;
-  const isInGrid = parentGrid && parentGrid.style.display === 'grid';
-  const checkAfter = isInGrid ? parentGrid.nextElementSibling : card.nextElementSibling;
-  if(checkAfter && checkAfter.classList.contains('ai-inline-panel')) {
-    checkAfter.remove();
-    return; // Toggle off
+  // Try calling Edge Function
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch(SUPABASE_URL + '/functions/v1/analyze-store-performance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ type: type, brand_id: BRAND_ID, kpi: { sales: lkSales, orders: lkOrders, avg: lkAvg } })
+    });
+    if (res.ok) {
+      var result = await res.json();
+      openModal(
+        '<button class="modal-close" onclick="closeModal()">✕</button>' +
+        '<h3>\u{1F916} AI分析: ' + escH(title) + '</h3>' +
+        '<div style="margin-top:12px;font-size:13px;line-height:1.8">' + (result.analysis || result.data || 'No data') + '</div>'
+      );
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u{1F916} AI分析'; }
+      return;
+    }
+  } catch(e) {
+    // EF not deployed, show Coming Soon
   }
 
-  // Close all other inline panels
-  document.querySelectorAll('.ai-inline-panel').forEach(p => p.remove());
-
-  // Build actions HTML
-  const actionsHtml = data.actions.map(a =>
-    `<li style="margin-bottom:8px">
-      ${a.text} <button class="btn btn-sm" style="background:#e3f2fd;color:#1565c0;font-size:10px;white-space:nowrap;margin-left:6px;vertical-align:middle" onclick="showPage('${a.page}','${a.page.split('-')[0]}')">→ ${a.label}</button>
-    </li>`
-  ).join('');
-
-  // Create inline panel
-  const panel = document.createElement('div');
-  panel.className = 'ai-inline-panel';
-  panel.style.cssText = 'margin-bottom:16px;padding:16px;border-radius:8px;border-left:4px solid #6c5ce7;background:#faf8ff;font-size:12px;line-height:1.8;animation:fadeIn .3s';
-  panel.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-weight:700;color:#6c5ce7">${data.title}</div>
-      <button class="btn btn-sm" style="background:#f5f5f5;font-size:10px;padding:2px 8px" onclick="this.closest('.ai-inline-panel').remove()">✕</button>
-    </div>
-    <div style="margin-bottom:8px;padding:8px 12px;background:#e8eaf6;border-radius:6px;font-size:11px"><b>📊 現在のKPI（実データ）:</b> 売上 ${lkSales} / ${lkCount}件 / 平均 ${lkAvg}</div>
-    <div style="margin-bottom:4px;font-size:10px;color:#888">※ 以下の分析テキスト内の数値は参考サンプルです。上記KPIが最新の実績値です。</div>
-    <div style="margin-bottom:10px"><b>💡 分析結果：</b>${data.insight}</div>
-    <div style="margin-bottom:10px"><b>⚠️ 想定課題：</b>${data.issue}</div>
-    <div><b>🎯 改善提案：</b></div>
-    <ul style="list-style:none;padding:0;margin:6px 0 0 0">${actionsHtml}</ul>
-  `;
-
-  // Insert after the grid container (if card is inside a grid), otherwise after the card
-  if(isInGrid) {
-    parentGrid.after(panel);
-  } else {
-    card.after(panel);
-  }
-  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3>\u{1F916} AI分析: ' + escH(title) + '</h3>' +
+    '<div style="margin-top:12px;padding:24px;text-align:center">' +
+      '<div style="font-size:32px;margin-bottom:12px">\u{1F6A7}</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#333">AI分析機能は準備中です</div>' +
+      '<div style="font-size:12px;color:#888;margin-top:8px">Edge Function（analyze-store-performance）のデプロイ後に利用可能になります</div>' +
+      '<div style="margin-top:16px;padding:12px;background:#f5f6fa;border-radius:8px;font-size:12px;text-align:left">' +
+        '<div style="font-weight:600;margin-bottom:4px">現在のKPI:</div>' +
+        '売上合計: ' + escH(lkSales) + '<br>注文件数: ' + escH(lkOrders) + '<br>平均注文額: ' + escH(lkAvg) +
+      '</div>' +
+    '</div>'
+  );
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u{1F916} AI分析'; }
 }
 
+// Legacy analyses object removed — AI analysis now served by Edge Function
+var _sdAiAnalysis_legacy = true;
 
 // CSV scope selector
 function csvScopeChanged() {
@@ -9263,6 +9128,29 @@ function drawDoubleDonut(canvasId, leftData, rightData, leftLabel, rightLabel) {
 
 }
 
+function renderProductRanking(orderItems) {
+  var tbody = document.getElementById('paRankBody');
+  if (!tbody) return;
+  var products = {};
+  (orderItems || []).forEach(function(item) {
+    var name = item.product_name || '不明';
+    if (!products[name]) products[name] = { name: name, qty: 0, total: 0 };
+    products[name].qty += (item.quantity || 0);
+    products[name].total += (item.subtotal || 0);
+  });
+  var ranked = Object.values(products).sort(function(a, b) { return b.total - a.total; }).slice(0, 10);
+  if (ranked.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">データがありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = ranked.map(function(p, i) {
+    return '<tr><td style="font-weight:700;color:' + (i < 3 ? 'var(--accent)' : '#333') + '">' + (i + 1) + '</td>' +
+      '<td>' + escH(p.name) + '</td>' +
+      '<td style="text-align:right">' + p.qty + '個</td>' +
+      '<td style="text-align:right;font-weight:600">¥' + p.total.toLocaleString() + '</td></tr>';
+  }).join('');
+}
+
 function renderSalesCharts() {
   var p = _sdPeriod;
   var orders = _sdLiveOrders || [];
@@ -9281,31 +9169,77 @@ function renderSalesCharts() {
     return result;
   }
 
+  // --- Period group toggle: day / week / month ---
+  var pg = _sdPeriodGroup || 'day';
+
+  function groupByDay(arr) {
+    var map = {};
+    (arr || []).forEach(function(o) {
+      if (o.status === 'cancelled') return;
+      var d = new Date(o.created_at);
+      var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (!map[key]) map[key] = 0;
+      map[key] += (o.total_amount || 0);
+    });
+    return map;
+  }
+  function groupByWeek(arr) {
+    var map = {};
+    (arr || []).forEach(function(o) {
+      if (o.status === 'cancelled') return;
+      var d = new Date(o.created_at);
+      var jan1 = new Date(d.getFullYear(), 0, 1);
+      var wk = Math.ceil(((d - jan1) / 864e5 + jan1.getDay() + 1) / 7);
+      var key = d.getFullYear() + '-W' + String(wk).padStart(2,'0');
+      if (!map[key]) map[key] = 0;
+      map[key] += (o.total_amount || 0);
+    });
+    return map;
+  }
+  function groupByMonth(arr) {
+    var map = {};
+    (arr || []).forEach(function(o) {
+      if (o.status === 'cancelled') return;
+      var d = new Date(o.created_at);
+      var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      if (!map[key]) map[key] = 0;
+      map[key] += (o.total_amount || 0);
+    });
+    return map;
+  }
+
+  function buildFromMap(curMap, prevMap) {
+    var allKeys = Object.keys(curMap).concat(Object.keys(prevMap));
+    allKeys = allKeys.filter(function(v, i, a) { return a.indexOf(v) === i; }).sort();
+    var lb = [], cd = [], pd = [];
+    allKeys.forEach(function(k) {
+      lb.push(pg === 'day' ? k.replace(/^\d{4}-/, '') : k);
+      cd.push(curMap[k] || 0);
+      pd.push(prevMap[k] || 0);
+    });
+    if (lb.length === 0) { lb = ['-']; cd = [0]; pd = [0]; }
+    return { labels: lb, curData: cd, prevData: pd };
+  }
+
   var labels, curData, prevData;
-  if (p === 'today' || p === 'yesterday') {
-    labels = [];
-    for (var h = 0; h < 24; h++) labels.push(h + '時');
-    curData = aggregateByGroup(orders, function(o) { return new Date(o.created_at).getHours(); }, 24);
-    prevData = aggregateByGroup(prevOrders, function(o) { return new Date(o.created_at).getHours(); }, 24);
-  } else if (p === 'week') {
-    labels = dayLabels;
-    curData = aggregateByGroup(orders, function(o) { var d = new Date(o.created_at).getDay(); return d === 0 ? 6 : d - 1; }, 7);
-    prevData = aggregateByGroup(prevOrders, function(o) { var d = new Date(o.created_at).getDay(); return d === 0 ? 6 : d - 1; }, 7);
-  } else if (p === 'month') {
-    labels = ['第1週','第2週','第3週','第4週','第5週'];
-    curData = aggregateByGroup(orders, function(o) { return Math.min(4, Math.floor((new Date(o.created_at).getDate() - 1) / 7)); }, 5);
-    prevData = aggregateByGroup(prevOrders, function(o) { return Math.min(4, Math.floor((new Date(o.created_at).getDate() - 1) / 7)); }, 5);
-    // Trim trailing zero weeks
-    while (labels.length > 1 && curData[labels.length-1] === 0 && prevData[labels.length-1] === 0) { labels.pop(); curData.pop(); prevData.pop(); }
+
+  if (pg === 'week') {
+    var r = buildFromMap(groupByWeek(orders), groupByWeek(prevOrders));
+    labels = r.labels; curData = r.curData; prevData = r.prevData;
+  } else if (pg === 'month') {
+    var r = buildFromMap(groupByMonth(orders), groupByMonth(prevOrders));
+    labels = r.labels; curData = r.curData; prevData = r.prevData;
   } else {
-    // Custom: group by date
-    labels = []; var dateMap = {};
-    orders.forEach(function(o) { var d = new Date(o.created_at).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}); if (!dateMap[d]) { dateMap[d] = labels.length; labels.push(d); } });
-    curData = aggregateByGroup(orders, function(o) { var d = new Date(o.created_at).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}); return dateMap[d] !== undefined ? dateMap[d] : -1; }, labels.length);
-    prevData = new Array(labels.length).fill(0);
-    // Map prev orders to same index positions
-    prevOrders.forEach(function(o) { if (o.status === 'cancelled') return; var idx = Math.min(labels.length - 1, Math.max(0, Math.floor((new Date(o.created_at).getTime() - new Date(_sdLivePrevOrders[0]?.created_at || o.created_at).getTime()) / 864e5))); if (idx >= 0 && idx < labels.length) prevData[idx] += (o.total_amount || 0); });
-    if (labels.length === 0) { labels = ['-']; curData = [0]; prevData = [0]; }
+    // Default: day grouping (original logic preserved for today/yesterday special cases)
+    if (p === 'today' || p === 'yesterday') {
+      labels = [];
+      for (var h = 0; h < 24; h++) labels.push(h + '時');
+      curData = aggregateByGroup(orders, function(o) { return new Date(o.created_at).getHours(); }, 24);
+      prevData = aggregateByGroup(prevOrders, function(o) { return new Date(o.created_at).getHours(); }, 24);
+    } else {
+      var r = buildFromMap(groupByDay(orders), groupByDay(prevOrders));
+      labels = r.labels; curData = r.curData; prevData = r.prevData;
+    }
   }
 
   var dailyDS = [{label:'当期',color:'#e94560',data:curData}];
@@ -9314,16 +9248,23 @@ function renderSalesCharts() {
   }
   drawBarChart('sdDailyChart', labels, dailyDS, {height:220});
 
-  // Channel donut（実データ: registration_channel 集計）
-  var chWeb=AICRM_TOTALS.web||0,chLine=AICRM_TOTALS.line||0,chApp=AICRM_TOTALS.app||0,chStore=AICRM_TOTALS.store||0,chRef=AICRM_TOTALS.referral||0;
-  var chTotal=chWeb+chLine+chApp+chStore+chRef;
-  if(chTotal===0){chWeb=1;chTotal=1;} // ゼロ除算防止
+  // Channel donut（実データ: order_type 集計）
+  var chDineIn=0, chTakeout=0, chDelivery=0, chOther=0;
+  orders.forEach(function(o) {
+    if (o.status === 'cancelled') return;
+    var amt = o.total_amount || 0;
+    if (o.order_type === 'dinein') chDineIn += amt;
+    else if (o.order_type === 'pickup' || o.order_type === 'takeout') chTakeout += amt;
+    else if (o.order_type === 'delivery') chDelivery += amt;
+    else chOther += amt;
+  });
+  var chTotal = chDineIn + chTakeout + chDelivery + chOther;
+  if (chTotal === 0) { chOther = 1; chTotal = 1; }
   drawDonutChart('sdChannelChart',[
-    {label:'Web登録',value:chWeb,color:'#e94560'},
-    {label:'LINE登録',value:chLine,color:'#0984e3'},
-    {label:'アプリ登録',value:chApp,color:'#00b894'},
-    {label:'店頭登録',value:chStore,color:'#fdcb6e'},
-    {label:'紹介',value:chRef,color:'#a29bfe'},
+    {label:'店内',value:chDineIn,color:'#e94560'},
+    {label:'テイクアウト',value:chTakeout,color:'#0984e3'},
+    {label:'デリバリー',value:chDelivery,color:'#00b894'},
+    {label:'その他',value:chOther,color:'#fdcb6e'},
   ].filter(function(v){return v.value>0;}),{height:200});
 
   // Hourly bar from live data
@@ -9332,6 +9273,98 @@ function renderSalesCharts() {
   var hourLabels = []; for (var hi = 0; hi < 24; hi++) hourLabels.push(String(hi));
   var maxHourly = Math.max.apply(null, hourlyData) || 1;
   drawBarChart('sdHourlyChart', hourLabels, [{label:'注文件数',color:'#6c5ce7',data:hourlyData}], {height:200,maxVal:Math.ceil(maxHourly*1.2),showValues:true});
+
+  // Average order value trend chart
+  (function(){
+    var dailyAvg = {};
+    var dailyCount = {};
+    (orders || []).forEach(function(o) {
+      if (o.status === 'cancelled') return;
+      var d = new Date(o.created_at).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});
+      if (!dailyAvg[d]) { dailyAvg[d] = 0; dailyCount[d] = 0; }
+      dailyAvg[d] += (o.total_amount || 0);
+      dailyCount[d]++;
+    });
+    var avgLabels = Object.keys(dailyAvg).sort(function(a,b) { return new Date('2026/' + a) - new Date('2026/' + b); });
+    var avgData = avgLabels.map(function(d) { return dailyCount[d] > 0 ? Math.round(dailyAvg[d] / dailyCount[d]) : 0; });
+    if (avgLabels.length === 0) { avgLabels = ['-']; avgData = [0]; }
+    drawLineChart('sdAvgTrendChart', avgLabels, [{label:'客単価',color:'#6c5ce7',data:avgData}], {height:200,yUnit:'円',hideLegend:true});
+    // Month-over-month
+    var momEl = document.getElementById('sdAvgTrendMoM');
+    if (momEl && avgData.length > 1) {
+      var curAvg = avgData.reduce(function(s,v){return s+v;},0) / avgData.length;
+      var prevAvgArr = [];
+      (prevOrders || []).forEach(function(o) {
+        if (o.status === 'cancelled') return;
+        prevAvgArr.push(o.total_amount || 0);
+      });
+      if (prevAvgArr.length > 0) {
+        var prevAvg = prevAvgArr.reduce(function(s,v){return s+v;},0) / prevAvgArr.length;
+        var diff = curAvg - prevAvg;
+        var pct = prevAvg > 0 ? ((diff / prevAvg) * 100).toFixed(1) : '0.0';
+        momEl.innerHTML = '前期比 <span style="color:' + (diff >= 0 ? '#27ae60' : '#e94560') + '">' + (diff >= 0 ? '＋' : '') + '¥' + Math.round(Math.abs(diff)).toLocaleString() + ' (' + (diff >= 0 ? '+' : '') + pct + '%)</span>';
+      } else {
+        momEl.textContent = '';
+      }
+    }
+  })();
+
+  // --- Order source breakdown ---
+  (function() {
+    var el = document.getElementById('sdSourceTable');
+    if (!el) return;
+    var srcMap = {};
+    orders.forEach(function(o) {
+      if (o.status === 'cancelled') return;
+      var src = o.order_source || '不明';
+      if (!srcMap[src]) srcMap[src] = {count: 0, sales: 0};
+      srcMap[src].count++;
+      srcMap[src].sales += (o.total_amount || 0);
+    });
+    var srcLabels = {'aiden_mo':'AIden MO','aiden_pos':'AIden POS','ubereats':'Uber Eats','demaecan':'出前館','menunet':'menu','other':'その他'};
+    var keys = Object.keys(srcMap).sort(function(a,b){ return srcMap[b].sales - srcMap[a].sales; });
+    if (keys.length === 0) {
+      el.innerHTML = '<span class="empty-state">データなし</span>';
+      return;
+    }
+    var html = '<table class="data-table" style="font-size:11px;width:100%"><thead><tr><th>サービス</th><th>件数</th><th>売上</th></tr></thead><tbody>';
+    keys.forEach(function(k) {
+      var label = srcLabels[k] || escH(k);
+      html += '<tr><td>' + label + '</td><td>' + srcMap[k].count + '</td><td>¥' + srcMap[k].sales.toLocaleString() + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  })();
+
+  // --- Sales summary table ---
+  (function() {
+    var tbody = document.getElementById('sdSummaryTableBody');
+    if (!tbody) return;
+    var dateMap = {};
+    orders.forEach(function(o) {
+      var d = new Date(o.created_at);
+      var key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (!dateMap[key]) dateMap[key] = {count:0, sales:0, dinein:0, pickup:0, delivery:0, cancelled:0};
+      if (o.status === 'cancelled') { dateMap[key].cancelled++; return; }
+      dateMap[key].count++;
+      dateMap[key].sales += (o.total_amount || 0);
+      if (o.order_type === 'dinein') dateMap[key].dinein += (o.total_amount || 0);
+      else if (o.order_type === 'pickup' || o.order_type === 'takeout') dateMap[key].pickup += (o.total_amount || 0);
+      else if (o.order_type === 'delivery') dateMap[key].delivery += (o.total_amount || 0);
+    });
+    var keys = Object.keys(dateMap).sort().reverse();
+    if (keys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">データなし</td></tr>';
+      return;
+    }
+    var html = '';
+    keys.forEach(function(k) {
+      var r = dateMap[k];
+      var avg = r.count > 0 ? Math.round(r.sales / r.count) : 0;
+      html += '<tr><td>' + escH(k) + '</td><td>' + r.count + '</td><td>¥' + r.sales.toLocaleString() + '</td><td>¥' + avg.toLocaleString() + '</td><td>¥' + r.dinein.toLocaleString() + '</td><td>¥' + r.pickup.toLocaleString() + '</td><td>¥' + r.delivery.toLocaleString() + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  })();
 
   // Heatmap with metric + channel selection
   const hmMetric = document.getElementById('sdHeatmapMetric');
@@ -9641,6 +9674,58 @@ function renderSalesCharts() {
   drawBarChart('efRoiChart',['キャンペーン','クーポン','Instagram','LINE','TikTok'],[
     {label:'ROI (%)',color:'#00b894',data:[450,280,520,180,340]},
   ],{height:180,maxVal:600});
+
+  // Load monthly AI comment from DB
+  loadMonthlyAiComment();
+}
+
+async function loadMonthlyAiComment() {
+  var el = document.getElementById('sdMonthlyAiComment');
+  if (!el) return;
+  try {
+    var { data, error } = await sb.from('ai_monthly_comments').select('*').eq('brand_id', BRAND_ID).order('created_at', { ascending: false }).limit(1);
+    if (error) throw error;
+    if (data && data.length > 0) {
+      var c = data[0];
+      el.innerHTML = '<div style="font-size:13px;line-height:1.8">' + escH(c.comment || c.content || '') + '</div>' +
+        '<div style="font-size:10px;color:#888;margin-top:8px">' + (c.created_at ? c.created_at.slice(0,10) : '') + '</div>';
+    }
+  } catch(e) {
+    // Table doesn't exist yet - show Coming Soon (already default HTML)
+  }
+}
+
+function exportSalesPdf() {
+  var dashboard = document.getElementById('page-sales-dashboard');
+  if (!dashboard) return;
+
+  var printWin = window.open('', '_blank');
+  var kpiSales = document.getElementById('sdKpiSales') ? document.getElementById('sdKpiSales').textContent : '\u2014';
+  var kpiOrders = document.getElementById('sdKpiOrders') ? document.getElementById('sdKpiOrders').textContent : '\u2014';
+  var kpiAvg = document.getElementById('sdKpiAvg') ? document.getElementById('sdKpiAvg').textContent : '\u2014';
+  var kpiCancel = document.getElementById('sdKpiCancel') ? document.getElementById('sdKpiCancel').textContent : '\u2014';
+  var now = new Date();
+  var dateStr = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0');
+
+  printWin.document.write(
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>売上レポート</title>' +
+    '<style>body{font-family:"Noto Sans JP",sans-serif;padding:40px;color:#333}h1{font-size:20px;margin-bottom:8px}' +
+    '.meta{font-size:12px;color:#888;margin-bottom:24px}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}' +
+    '.kpi-card{border:1px solid #ddd;border-radius:8px;padding:16px;text-align:center}.kpi-label{font-size:11px;color:#888}.kpi-value{font-size:24px;font-weight:700;margin-top:4px}' +
+    '</style></head><body>' +
+    '<h1>売上レポート</h1>' +
+    '<div class="meta">出力日: ' + dateStr + '</div>' +
+    '<div class="kpi">' +
+      '<div class="kpi-card"><div class="kpi-label">売上合計</div><div class="kpi-value">' + escH(kpiSales) + '</div></div>' +
+      '<div class="kpi-card"><div class="kpi-label">注文件数</div><div class="kpi-value">' + escH(kpiOrders) + '</div></div>' +
+      '<div class="kpi-card"><div class="kpi-label">平均注文額</div><div class="kpi-value">' + escH(kpiAvg) + '</div></div>' +
+      '<div class="kpi-card"><div class="kpi-label">キャンセル率</div><div class="kpi-value">' + escH(kpiCancel) + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#888;margin-top:24px;text-align:center">Powered by AIden</div>' +
+    '</body></html>'
+  );
+  printWin.document.close();
+  setTimeout(function() { printWin.print(); }, 500);
 }
 
 // Init dashboard on page load
@@ -14828,7 +14913,24 @@ function subPlanDelete(id) {
   subPlanRender();
 }
 
-document.addEventListener('DOMContentLoaded', function(){ subPlanRender(); });
+document.addEventListener('DOMContentLoaded', function(){ subPlanRender(); renderSubscriptionKpis(); });
+
+function renderSubscriptionKpis() {
+  // MRR: count active stores x plan price
+  var storeCount = (typeof STORES !== 'undefined' && STORES) ? STORES.length : 0;
+  var mrr = storeCount * 4980; // PRO plan default
+  var mrrEl = document.getElementById('kpiMrr');
+  if (mrrEl) mrrEl.textContent = '\u00a5' + mrr.toLocaleString();
+
+  // Churn: requires historical data, placeholder for now
+  var churnEl = document.getElementById('kpiChurn');
+  if (churnEl) churnEl.textContent = '\u2014';
+
+  // LTV: requires historical revenue per member data
+  var ltvEl = document.getElementById('kpiLtv');
+  if (ltvEl) ltvEl.textContent = '\u2014';
+}
+
 // ─── サブスクリプション 加入者一覧 ────────────────
 var _subMemberPrivacy = true;
 
