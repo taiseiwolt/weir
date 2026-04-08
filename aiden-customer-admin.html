@@ -686,6 +686,9 @@ function showPage(pageId, catId){
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
   if(pageId === 'ban-management' && typeof renderBanList === 'function') renderBanList();
+  if (pageId === 'content-pop' || pageId === 'review-store' || pageId === 'ai-sns') {
+    if (typeof loadAiUsageCounters === 'function') loadAiUsageCounters();
+  }
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
   if (!window._isPopState) history.pushState({ pageId: pageId, catId: catId }, '', '#' + pageId);
   window._isPopState = false;
@@ -3593,6 +3596,7 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM・SNS</a> ＞ SNS管理</div>
   <div class="page-title">SNS管理</div>
   <div class="page-subtitle">AIを活用したSNSアカウント作成・投稿管理</div>
+  <div id="snsUsageCounter" style="font-size:11px;color:var(--text-light);margin-bottom:12px"></div>
   <div style="display:flex;gap:0;border-bottom:2px solid #eee;margin-bottom:20px">
     <div id="snsTabSns" onclick="switchSnsTab('sns')" style="padding:10px 20px;font-size:13px;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;cursor:pointer">📱 SNS管理</div>
 
@@ -3739,6 +3743,7 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">コンテンツ制作</a> ＞ POP作成</div>
   <div class="page-title">🖨️ POP作成</div>
   <div class="page-subtitle">AIが初稿を生成→修正依頼を繰り返して仕上げ→完成ボタンで保存</div>
+  <div id="popUsageCounter" style="font-size:11px;color:var(--text-light);margin-bottom:12px"></div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;margin-bottom:16px">
     <!-- 左：入力カード -->
@@ -3746,6 +3751,16 @@ content.innerHTML = `
       <div class="card-title">📝 基本設定</div>
       <div class="form-grid">
         <div class="form-group full">
+          <div style="margin-bottom:12px">
+            <label style="font-weight:600;font-size:12px;display:block;margin-bottom:6px">📋 テンプレート</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('seasonal')">🌸 季節メニュー</button>
+              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('lunch')">🍱 ランチ</button>
+              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('drink')">🍺 ドリンク</button>
+              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('today')">⭐ 本日のおすすめ</button>
+              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('event')">🎉 イベント</button>
+            </div>
+          </div>
           <label>テーマ・内容<span class="req">*</span></label>
           <textarea id="popTheme" rows="3" placeholder="例：春の桜えびフェア　期間：3月中旬。セット￥980。辺りの食欲をそそる雰囲気で。"></textarea>
         </div>
@@ -3841,6 +3856,14 @@ content.innerHTML = `
     <div class="card-title">📁 保存済みPOP</div>
     <div id="popSavedList">
       <div style="color:#bbb;font-size:12px;text-align:center;padding:20px">まだ保存されたPOPはありません</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">📜 AI生成履歴</div>
+    <div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">
+      <div style="font-size:20px;margin-bottom:4px">🚧</div>
+      AI生成コンテンツの履歴表示は準備中です
     </div>
   </div>
 </div>
@@ -4095,6 +4118,7 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">口コミ</a> ＞ 店舗レビュー</div>
   <div class="page-title">店舗レビュー</div>
   <div class="page-subtitle">店舗に対するレビューの閲覧・返信を行います</div>
+  <div id="reviewUsageCounter" style="font-size:11px;color:var(--text-light);margin-bottom:12px"></div>
   <div style="display:flex;align-items:center;gap:8px;background:#e8f0fe;border:1px solid #c5d5f8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px">
     <span style="font-size:16px">🔗</span>
     <div>
@@ -7303,25 +7327,48 @@ function openReviewReply(reviewId) {
   document.getElementById('reviewReplyModal').style.display = 'flex';
 }
 
-function reviewReplyAiDraft() {
-  const reviewId = document.getElementById('reviewReplyModalId').value;
-  const review = REVIEWS.find(r => r.id === reviewId);
-  if(!review) return;
-  const btn = document.querySelector('#reviewReplyStep1 .ai-draft-btn');
-  if(btn) { btn.disabled = true; btn.textContent = '生成中...'; }
-  // デモ用AI下書き
-  const drafts = {
-    5: 'この度はご来店いただき、またご高評をいただき誠にありがとうございます。スタッフ一同、大変励みになっております。またのご来店を心よりお待ちしております。',
-    4: 'ご来店いただき、温かいご評価をありがとうございます。またお越しいただける機会があれば、さらにご満足いただけるようスタッフ一同努めてまいります。',
-    3: 'この度はご来店いただき、貴重なご意見をありがとうございます。ご不便をおかけした点を真摯に受け止め、より良いサービスに活かしてまいります。',
-    2: 'この度はご不便をおかけしてしまい、誠に申し訳ございません。いただいたご指摘を真摯に受け止め、改善に取り組んでまいります。またの機会にぜひお試しいただければ幸いです。',
-    1: 'この度はご不快な思いをさせてしまい、誠に申し訳ございません。いただいたご意見を店舗運営の改善に活かし、お客様により良い体験を提供できるよう努めてまいります。',
+async function reviewReplyAiDraft() {
+  var reviewId = document.getElementById('reviewReplyModalId') ? document.getElementById('reviewReplyModalId').value : '';
+  var review = REVIEWS.find(function(r) { return r.id === reviewId; });
+  if (!review) return;
+
+  var textarea = document.getElementById('reviewReplyText');
+  if (!textarea) return;
+  textarea.value = '生成中...';
+  textarea.disabled = true;
+  var btn = document.querySelector('#reviewReplyStep1 .ai-draft-btn');
+  if(btn) { btn.disabled = true; }
+
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch(SUPABASE_URL + '/functions/v1/generate-review-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ brand_id: BRAND_ID, review_text: review.comment || '', rating: review.rating || 0, reviewer_name: review.userName || '' })
+    });
+    if (res.ok) {
+      var result = await res.json();
+      textarea.value = result.reply || result.data || '';
+      textarea.disabled = false;
+      if(btn) { btn.disabled = false; btn.textContent = '🤖 AI下書き生成'; }
+      showToast('✅ AI返信を生成しました');
+      return;
+    }
+  } catch(e) { /* EF not deployed */ }
+
+  // Fallback - Coming Soon with simple template
+  var templates = {
+    5: 'ご来店ありがとうございます。高い評価をいただき、スタッフ一同大変嬉しく思います。またのお越しをお待ちしております。',
+    4: 'ご来店ありがとうございます。ご満足いただけて何よりです。さらにご満足いただけるよう努力してまいります。',
+    3: 'ご来店ありがとうございます。貴重なご意見をありがとうございます。改善に努めてまいります。',
+    2: 'ご来店ありがとうございます。ご期待に沿えず申し訳ございません。いただいたご意見を真摯に受け止め、改善いたします。',
+    1: 'ご来店ありがとうございます。ご不快な思いをさせてしまい、深くお詫び申し上げます。早急に改善に取り組みます。'
   };
-  const rating = Math.round(review.rating);
-  setTimeout(function() {
-    document.getElementById('reviewReplyText').value = drafts[rating] || drafts[3];
-    if(btn) { btn.disabled = false; btn.textContent = '🤖 AI下書き生成'; }
-  }, 800);
+  textarea.value = templates[review.rating] || templates[3];
+  textarea.disabled = false;
+  if(btn) { btn.disabled = false; btn.textContent = '🤖 AI下書き生成'; }
+  showToast('📝 テンプレート返信を生成しました（AI生成はEdge Functionデプロイ後に利用可能）');
 }
 
 function reviewReplyPreview() {
@@ -16080,11 +16127,66 @@ function popRenderRevisionImageRow() {
   }).join('');
 }
 
-function popGenerate() {
+function popApplyTemplate(type) {
+  var templates = {
+    seasonal: '【季節限定メニュー】\n春の特選コース\n桜海老と筍の天ぷら、春キャベツのサラダなど\n¥3,980（税込）\n期間: 3月1日〜4月30日',
+    lunch: '【ランチタイム限定】\n日替わりランチセット\nメイン+サラダ+ドリンク付き\n¥980（税込）\n平日 11:00-14:00',
+    drink: '【ドリンクフェア】\nクラフトビール全品半額！\n国内外の厳選ビール10種以上\n¥490〜\n毎週金曜 17:00-20:00',
+    today: '【本日のおすすめ】\nシェフ厳選の一品\n本日入荷の新鮮食材を使用\n数量限定・なくなり次第終了',
+    event: '【イベント開催】\nワイン×チーズの夕べ\nソムリエ厳選ワイン5種+チーズ盛合せ\n¥4,500（税込）\n要予約・限定20名'
+  };
+  var textarea = document.getElementById('popTheme');
+  if (textarea && templates[type]) {
+    textarea.value = templates[type];
+    markDirty();
+  }
+}
+
+async function popGenerate() {
   var theme = document.getElementById('popTheme').value.trim();
-  if(!theme) { alert('\u30c6\u30fc\u30de\u30fb\u5185\u5bb9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044'); return; }
+  if (!theme) { alert('テーマを入力してください'); return; }
+
+  // Show loading
+  var previewArea = document.getElementById('popPreviewArea');
+  if (previewArea) previewArea.innerHTML = '<div style="padding:40px;text-align:center;color:#888"><div style="font-size:24px;margin-bottom:8px">⏳</div>AI生成中...</div>';
+
   _popFinished = false;
   _popVersion = 1;
+
+  // Try Edge Function
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch(SUPABASE_URL + '/functions/v1/generate-pop-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ brand_id: BRAND_ID, theme: theme, size: _popSize, layout: _popLayout })
+    });
+    if (res.ok) {
+      var result = await res.json();
+      if (result.image_url) {
+        _popCurrentData = _popParseTheme(theme, null);
+        _popCurrentData.theme = theme;
+        _popCurrentData.images = [{ dataUrl: result.image_url }];
+        _popApplyPreview();
+        var ra = document.getElementById('popRevisionArea');
+        if(ra) ra.style.display = '';
+        _popSetStatus('\uD83E\uDD16 v1 のAI画像を生成しました。修正したい点を入力してください。');
+        var cr = document.getElementById('popCompleteRow');
+        if(cr) cr.style.display = '';
+        var fr = document.getElementById('popFinishedRow');
+        if(fr) fr.style.display = 'none';
+        var ri = document.getElementById('popRevisionInput');
+        if(ri) ri.disabled = false;
+        var rb = document.getElementById('popReviseBtn');
+        if(rb) rb.disabled = false;
+        showToast('✅ AI画像を生成しました');
+        return;
+      }
+    }
+  } catch(e) { /* EF not deployed */ }
+
+  // Fallback to local generation
   _popCurrentData = _popParseTheme(theme, null);
   _popCurrentData.theme = theme;
   _popCurrentData.images = _popImages.slice();
@@ -16101,6 +16203,7 @@ function popGenerate() {
   if(ri) ri.disabled = false;
   var rb = document.getElementById('popReviseBtn');
   if(rb) rb.disabled = false;
+  showToast('📝 ローカルプレビューを生成しました（AI画像生成はEdge Functionデプロイ後に利用可能）');
 }
 
 function popRevise() {
@@ -18152,6 +18255,39 @@ async function saveSnsAccountSetting(platform) {
     showToast('保存に失敗しました: ' + (e.message || e));
   }
   closeSnsModal();
+}
+
+// ===== AI Usage Counter =====
+async function loadAiUsageCounters() {
+  if (!BRAND_ID) return;
+  try {
+    var now = new Date();
+    var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01T00:00:00';
+    var { data, error } = await sb.from('ai_usage_logs').select('feature_type').eq('brand_id', BRAND_ID).gte('created_at', monthStart);
+    if (error) throw error;
+
+    var counts = { review_reply: 0, sns_post: 0, pop_image: 0 };
+    (data || []).forEach(function(r) {
+      var ft = r.feature_type || '';
+      if (ft.includes('review')) counts.review_reply++;
+      else if (ft.includes('sns')) counts.sns_post++;
+      else if (ft.includes('pop')) counts.pop_image++;
+    });
+
+    // STD plan limits
+    var limits = { review_reply: 10, sns_post: 10, pop_image: 1 };
+
+    var popEl = document.getElementById('popUsageCounter');
+    if (popEl) popEl.innerHTML = '🤖 今月のAI使用量: POP画像 <strong>' + counts.pop_image + '/' + limits.pop_image + '件</strong>';
+
+    var reviewEl = document.getElementById('reviewUsageCounter');
+    if (reviewEl) reviewEl.innerHTML = '🤖 今月のAI使用量: レビュー返信 <strong>' + counts.review_reply + '/' + limits.review_reply + '件</strong>';
+
+    var snsEl = document.getElementById('snsUsageCounter');
+    if (snsEl) snsEl.innerHTML = '🤖 今月のAI使用量: SNS投稿 <strong>' + counts.sns_post + '/' + limits.sns_post + '件</strong>';
+  } catch(e) {
+    // Table may not be accessible or empty - silent fail
+  }
 }
 
 (function(){
