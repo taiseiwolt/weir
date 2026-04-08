@@ -366,10 +366,10 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
 .badge-info { background:#e3f2fd; color:#1565c0; }
 
 /* === TABS === */
-.sub-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
-.sub-tab { padding:10px 18px; font-size:13px; font-weight:500; color:var(--text-light); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s; }
-.sub-tab:hover { color:var(--text); }
-.sub-tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+.tab-group { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.tab { padding:10px 18px; font-size:13px; font-weight:500; color:var(--text-light); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s; background:none; border-top:none; border-left:none; border-right:none; font-family:inherit; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
 .sub-panel { display:none; }
 .sub-panel.active { display:block; }
 
@@ -687,7 +687,20 @@ function showPage(pageId, catId){
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
   if(pageId === 'ban-management' && typeof renderBanList === 'function') renderBanList();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
+  if (!window._isPopState) history.pushState({ pageId: pageId, catId: catId }, '', '#' + pageId);
+  window._isPopState = false;
 }
+window.addEventListener('popstate', function(e) {
+  if (e.state && e.state.pageId) {
+    window._isPopState = true;
+    showPage(e.state.pageId, e.state.catId);
+  } else if (location.hash && location.hash.length > 1) {
+    window._isPopState = true;
+    var hashPage = location.hash.slice(1);
+    var cat = NAV.find(function(c){ return c.id === hashPage || c.subs.some(function(s){ return s.id === hashPage; }); });
+    showPage(hashPage, cat ? cat.id : hashPage);
+  }
+});
 
 // ===== BUILD CONTENT PAGES =====
 const content = document.getElementById('content');
@@ -716,7 +729,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeBasicBulkBtn" style="display:none" onclick="openStoreEdit('storeBasicSelector','storeBasicEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeBasicTable">
-      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeBasicTable')"></th><th>店舗名</th><th>住所</th><th>電話番号</th><th>ジャンル</th><th>テイクアウト</th><th>デリバリー</th><th>席予約</th><th>ステータス</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:3%"><input type="checkbox" onchange="toggleAllStores(this,'storeBasicTable')"></th><th style="width:25%">店舗名</th><th style="width:20%">住所</th><th style="width:12%">電話番号</th><th style="width:8%">ジャンル</th><th style="width:8%">テイクアウト</th><th style="width:8%">デリバリー</th><th style="width:8%">席予約</th><th style="width:8%">ステータス</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -832,7 +845,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeHoursBulkBtn" style="display:none" onclick="openStoreEdit('storeHoursSelector','storeHoursEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeHoursTable">
-      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeHoursTable')"></th><th>店舗名</th><th>通常営業</th><th>デリバリー営業</th><th>定休日</th><th>ステータス</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeHoursTable')"></th><th style="width:25%">店舗名</th><th style="width:20%">店舗営業時間</th><th style="width:20%">デリバリー営業時間</th><th style="width:15%">定休日</th><th style="width:10%">ステータス</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -844,8 +857,8 @@ content.innerHTML = `
     </div>
     <div class="bulk-step1" id="bulkStep1-storeHoursEdit"></div>
     <div class="bulk-step2" style="display:none">
-    <div class="card" data-bulk-section="normalHours" data-bulk-label="通常営業時間">
-      <div class="card-title">🕐 通常営業時間</div>
+    <div class="card" data-bulk-section="normalHours" data-bulk-label="店舗営業時間">
+      <div class="card-title">🕐 店舗営業時間</div>
       <table class="data-table">
         <thead><tr><th>曜日</th><th>営業</th><th>開店</th><th>閉店</th></tr></thead>
         <tbody id="hoursNormalBody"></tbody>
@@ -862,12 +875,12 @@ content.innerHTML = `
       <div class="card-title">📅 定休日設定</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;background:#f8f9fa;border-radius:6px">
         <label class="toggle"><input type="checkbox" id="holidaySyncToggle" checked onchange="toggleHolidaySync()"><span class="slider"></span></label>
-        <span style="font-size:12px;font-weight:600">通常営業とデリバリーの定休日を同じにする</span>
+        <span style="font-size:12px;font-weight:600">店舗営業とデリバリーの定休日を同じにする</span>
       </div>
 
       <!-- 一括設定 -->
       <div id="holidaySynced">
-        <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text-light)">🔗 共通の定休日（通常営業・デリバリー両方に適用）</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text-light)">🔗 共通の定休日（店舗営業・デリバリー両方に適用）</div>
         <!-- 曜日定休 -->
         <div style="margin-bottom:14px">
           <label style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">毎週の曜日定休</label>
@@ -919,7 +932,7 @@ content.innerHTML = `
       <!-- 個別設定 -->
       <div id="holidaySeparate" style="display:none">
         <div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
-          <div style="font-size:12px;font-weight:600;margin-bottom:10px">🕐 通常営業の定休日</div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:10px">🕐 店舗営業の定休日</div>
           <div style="margin-bottom:12px">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">毎週の曜日定休</label>
             <div style="display:flex;gap:6px;flex-wrap:wrap" id="holidayNormalDays"></div>
@@ -985,7 +998,7 @@ content.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:3px">
           <label style="font-size:11px;font-weight:600">対象</label>
           <select id="spotTarget" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-            <option>通常営業・デリバリー両方</option><option>通常営業のみ</option><option>デリバリーのみ</option>
+            <option>店舗営業・デリバリー両方</option><option>店舗営業のみ</option><option>デリバリーのみ</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
@@ -1025,7 +1038,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeFacilityBulkBtn" style="display:none" onclick="openStoreEdit('storeFacilitySelector','storeFacilityEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeFacilityTable">
-      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeFacilityTable')"></th><th>店舗名</th><th>座席数</th><th>喫煙</th><th>駐車場</th><th>子連れ</th><th>ペット</th><th>決済</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeFacilityTable')"></th><th style="width:20%">店舗名</th><th style="width:10%">座席数</th><th style="width:10%">喫煙</th><th style="width:10%">駐車場</th><th style="width:10%">子連れ</th><th style="width:10%">ペット</th><th style="width:10%">店頭での決済手段</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1058,8 +1071,8 @@ content.innerHTML = `
       <div class="card-title">🚬 喫煙設定</div>
       <div class="form-group"><select id="facilitySmoking"><option>完全禁煙</option><option>分煙</option><option>喫煙可</option></select></div>
     </div>
-    <div class="card" data-bulk-section="payment" data-bulk-label="決済対応">
-      <div class="card-title">💳 決済対応</div>
+    <div class="card" data-bulk-section="payment" data-bulk-label="店頭での決済手段">
+      <div class="card-title">💳 店頭での決済手段</div>
       <div class="toggle-row"><span class="label">クレジットカード</span><label class="toggle"><input type="checkbox" checked data-pay="Card"><span class="slider"></span></label></div>
       <div class="toggle-row"><span class="label">QRコード決済</span><label class="toggle"><input type="checkbox" checked data-pay="QR"><span class="slider"></span></label></div>
       <div class="toggle-row"><span class="label">電子マネー</span><label class="toggle"><input type="checkbox" checked data-pay="電子マネー"><span class="slider"></span></label></div>
@@ -1119,7 +1132,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeDeliveryBulkBtn" style="display:none" onclick="openStoreEdit('storeDeliverySelector','storeDeliveryEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeDeliveryTable">
-      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeDeliveryTable')"></th><th>店舗名</th><th>配達エリア</th><th>調理時間</th><th>配達時間</th><th>テイクアウト</th><th>デリバリー</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeDeliveryTable')"></th><th style="width:22%">店舗名</th><th style="width:15%">配達エリア</th><th style="width:12%">調理時間</th><th style="width:12%">配達時間</th><th style="width:12%">テイクアウト</th><th style="width:12%">デリバリー</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1354,7 +1367,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeMediaBulkBtn" style="display:none" onclick="openStoreEdit('storeMediaSelector','storeMediaEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeMediaTable">
-      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeMediaTable')"></th><th>店舗名</th><th>ヘッダー</th><th>サムネイル</th><th>ギャラリー</th><th>ヒーロー</th><th>スタッフ紹介</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:36px"><input type="checkbox" onchange="toggleAllStores(this,'storeMediaTable')"></th><th style="width:22%">店舗名</th><th style="width:13%">ヘッダー</th><th style="width:13%">サムネイル</th><th style="width:13%">ギャラリー</th><th style="width:13%">ヒーロー</th><th style="width:13%">スタッフ紹介</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1442,7 +1455,7 @@ content.innerHTML = `
     <div id="menuPatternList">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:12px;color:var(--text-light)" id="menuPatternCount"></div>
-        <button class="btn btn-primary" onclick="createMenuPattern()">＋ 新規パターン作成</button>
+        <button class="btn btn-primary" onclick="createMenuPattern()">＋ パターン追加</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <table class="data-table" id="menuPatternTable">
@@ -1473,7 +1486,7 @@ content.innerHTML = `
       <div class="card" style="padding:0;overflow:hidden">
         <table class="data-table" id="menuItemTable">
           <thead><tr>
-            <th>商品ID</th><th style="width:50px">画像</th><th>商品名</th><th>カテゴリ</th><th>価格</th><th>タグ</th><th>店内注文</th><th>持ち帰り</th><th>デリバリー</th><th>販売期間</th><th>操作</th>
+            <th style="width:8%">商品ID</th><th style="width:50px">画像</th><th style="width:18%">商品名</th><th style="width:10%">カテゴリ</th><th style="width:8%">価格</th><th style="width:10%">タグ</th><th style="width:7%">店内注文</th><th style="width:7%">持ち帰り</th><th style="width:7%">デリバリー</th><th style="width:10%">販売期間</th><th style="width:6%">操作</th>
           </tr></thead>
           <tbody id="menuItemBody"></tbody>
         </table>
@@ -2815,7 +2828,7 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">📰 ニュース</div>
-      <button class="btn btn-primary btn-sm" data-ce-type="news" data-ce-label="ニュース 新規作成" onclick="openContentEdit('news',-1)">＋ 新規作成</button>
+      <button class="btn btn-primary btn-sm" data-ce-type="news" data-ce-label="ニュース 追加" onclick="openContentEdit('news',-1)">＋ 追加</button>
     </div>
     <div style="font-size:10px;color:#888;margin-bottom:8px">ホームページの「ニュース」セクションに表示されるお知らせ記事を管理します。</div>
     <table class="data-table" id="ceNewsTable">
@@ -2844,7 +2857,7 @@ content.innerHTML = `
   <div class="stats-row">
     <div class="stat-card"><div class="stat-label">総会員数</div><div class="stat-value">2,847</div></div>
     <div class="stat-card"><div class="stat-label">今月新規</div><div class="stat-value">134</div><div class="stat-change up">＋ 18%</div><div style="font-size:9px;color:#888;margin-top:2px">当月中の新規会員登録数</div></div>
-    <div class="stat-card"><div class="stat-label">アクティブ率</div><div class="stat-value">67.2%</div><div style="font-size:9px;color:#888;margin-top:2px">過去30日以内に決済した会員比率</div></div>
+    <div class="stat-card"><div class="stat-label">アクティブ会員率</div><div class="stat-value">67.2%</div><div style="font-size:9px;color:#888;margin-top:2px">過去30日以内に決済した会員比率</div></div>
     <div class="stat-card"><div class="stat-label">平均ポイント残高</div><div class="stat-value">342pt</div></div>
   </div>
 
@@ -2958,7 +2971,7 @@ content.innerHTML = `
     <div class="form-grid">
       <div class="form-group"><label>ポイント付与率</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="ptEarnUnit" value="100" style="width:80px"> 円につき <input type="number" id="ptEarnPoint" value="1" style="width:60px"> ポイント</div></div>
       <div class="form-group"><label>ポイント利用レート</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="ptUsePoint" value="1" style="width:60px"> ポイント ＝ <input type="number" id="ptUseYen" value="1" style="width:60px"> 円</div></div>
-      <div class="form-group"><label>ポイント有効期限（月）</label><input type="number" id="ptExpiry" value="12" min="1"></div>
+      <div class="form-group"><label>ポイント有効期限（最終付与日から）</label><input type="number" id="ptExpiry" value="12" min="1"></div>
     </div>
     <div class="btn-group"><button class="btn btn-primary" onclick="savePointSettings()">💾 保存</button></div>
   </div>
@@ -3120,7 +3133,7 @@ content.innerHTML = `
           </select>
         </div>
         <div style="margin-top:8px">
-          <button class="btn btn-secondary btn-sm" onclick="openCouponModal()">＋ 新規クーポン作成</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCouponModal()">＋ クーポン追加</button>
         </div>
       </div>
     </div>
@@ -3263,7 +3276,7 @@ content.innerHTML = `
     </div>
 
     <div class="card">
-      <div class="card-title">配信対象（セグメント）</div>
+      <div class="card-title">配信対象</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
         <div class="form-group"><label>ランク</label><select id="crmSegRank" onchange="updateCrmSegCount()"><option value="">全ランク</option><option>プラチナ</option><option>ゴールド</option><option>シルバー</option><option>レギュラー</option></select></div>
         <div class="form-group"><label>利用頻度</label><select id="crmSegFreq" onchange="updateCrmSegCount()"><option value="">指定なし</option><option value="active">月3回以上（アクティブ）</option><option value="normal">月1〜2回</option><option value="inactive">30日以上未利用</option><option value="dormant">90日以上未利用</option></select></div>
@@ -3345,7 +3358,7 @@ content.innerHTML = `
   <div id="crmPanelTemplate" style="display:none">
     <div class="card">
       <div class="card-title">📄 テンプレート管理</div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNewTemplateModal()">＋ 新規作成</button></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNewTemplateModal()">＋ 追加</button></div>
       <table class="data-table" id="crmTemplateTable">
         <thead><tr><th>テンプレート名</th><th>タイプ</th><th>作成日</th><th>操作</th></tr></thead>
         <tbody id="crmTemplateBody"></tbody>
@@ -3526,11 +3539,11 @@ content.innerHTML = `
       <div class="form-group full">
         <label>投稿先<span class="req">*</span> <span style="font-size:10px;color:#aaa;font-weight:400">（1媒体を選択）</span></label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="snsPlatformRadioGroup">
-          <div id="snsRadioLabelIg" class="sns-radio-label" onclick="snsSelectPlatform('Instagram')">📸 Instagram</div>
-          <div id="snsRadioLabelX" class="sns-radio-label" onclick="snsSelectPlatform('X')">🐦 X</div>
-          <div id="snsRadioLabelFb" class="sns-radio-label" onclick="snsSelectPlatform('Facebook')">👤 Facebook</div>
-          <div id="snsRadioLabelLine" class="sns-radio-label" onclick="snsSelectPlatform('LINE')">💬 LINE</div>
-          <div id="snsRadioLabelTt" class="sns-radio-label" onclick="snsSelectPlatform('TikTok')">🎵 TikTok</div>
+          <div id="snsRadioLabelIg" class="sns-radio-label" onclick="snsSelectPlatform('Instagram')">Instagram</div>
+          <div id="snsRadioLabelX" class="sns-radio-label" onclick="snsSelectPlatform('X')">X</div>
+          <div id="snsRadioLabelFb" class="sns-radio-label" onclick="snsSelectPlatform('Facebook')">Facebook</div>
+          <div id="snsRadioLabelLine" class="sns-radio-label" onclick="snsSelectPlatform('LINE')">LINE</div>
+          <div id="snsRadioLabelTt" class="sns-radio-label" onclick="snsSelectPlatform('TikTok')">TikTok</div>
         </div>
       </div>
       <div class="form-group"><label>投稿日時</label><input type="datetime-local" id="snsPostDatetime"></div>
@@ -3572,11 +3585,11 @@ content.innerHTML = `
     <div style="margin-bottom:14px">
       <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:6px">📱 投稿先媒体 <span style="font-size:10px;font-weight:400;color:#aaa">（選択するとサイズをレコメンド）</span></label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label id="snsImgPlatformIg" class="sns-radio-label" onclick="snsImgSelectPlatform('Instagram',this)">📸 Instagram</label>
-        <label id="snsImgPlatformX" class="sns-radio-label" onclick="snsImgSelectPlatform('X',this)">🐦 X</label>
-        <label id="snsImgPlatformFb" class="sns-radio-label" onclick="snsImgSelectPlatform('Facebook',this)">👤 Facebook</label>
-        <label id="snsImgPlatformLine" class="sns-radio-label" onclick="snsImgSelectPlatform('LINE',this)">💬 LINE</label>
-        <label id="snsImgPlatformTt" class="sns-radio-label" onclick="snsImgSelectPlatform('TikTok',this)">🎵 TikTok</label>
+        <label id="snsImgPlatformIg" class="sns-radio-label" onclick="snsImgSelectPlatform('Instagram',this)">Instagram</label>
+        <label id="snsImgPlatformX" class="sns-radio-label" onclick="snsImgSelectPlatform('X',this)">X</label>
+        <label id="snsImgPlatformFb" class="sns-radio-label" onclick="snsImgSelectPlatform('Facebook',this)">Facebook</label>
+        <label id="snsImgPlatformLine" class="sns-radio-label" onclick="snsImgSelectPlatform('LINE',this)">LINE</label>
+        <label id="snsImgPlatformTt" class="sns-radio-label" onclick="snsImgSelectPlatform('TikTok',this)">TikTok</label>
       </div>
       <div id="snsImgPlatformNote" style="display:none;margin-top:8px;background:#f0edff;border-radius:6px;padding:8px 10px;font-size:11px;color:#6c5ce7;line-height:1.7"></div>
     </div>
@@ -3757,10 +3770,10 @@ content.innerHTML = `
   <div class="breadcrumb"><a href="#" onclick="return false">会員・CRM・SNS</a> ＞ サブスクリプション</div>
   <div class="page-title">💎 サブスクリプション</div>
 
-  <div class="sub-tabs" style="margin-bottom:20px">
-    <div class="sub-tab active" onclick="subSwitchTab('plan',this)">プラン設計</div>
-    <div class="sub-tab" onclick="subSwitchTab('members',this)">加入者一覧</div>
-    <div class="sub-tab" onclick="subSwitchTab('report',this)">売上レポート</div>
+  <div class="tab-group" style="margin-bottom:20px">
+    <button class="tab active" onclick="subSwitchTab('plan',this)">プラン設計</button>
+    <button class="tab" onclick="subSwitchTab('members',this)">加入者一覧</button>
+    <button class="tab" onclick="subSwitchTab('report',this)">売上レポート</button>
   </div>
 
   <!-- タブ：プラン設計 -->
@@ -4188,12 +4201,12 @@ content.innerHTML = `
   </div>
 
   <div class="card" id="stripeBillingStatusCard">
-    <div class="card-title">💳 Stripe Billing 課金ステータス</div>
-    <div style="font-size:11px;color:#888;margin-bottom:12px">Subscription Item方式: 法人ごとに1 Subscription、店舗ごとにSubscription Item</div>
+    <div class="card-title">💳 AIden PRO / EXPERT プラン ご利用状況</div>
+    <div style="font-size:11px;color:#888;margin-bottom:12px">法人ごとに1サブスクリプション、店舗ごとにサブスクリプション項目として管理</div>
     <table class="data-table" style="font-size:12px">
       <thead><tr><th>店舗</th><th>プラン</th><th>月額</th><th>ステータス</th><th>次回課金日</th></tr></thead>
       <tbody id="stripeBillingBody">
-        <tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-light)">Stripe Billing連携後に表示されます</td></tr>
+        <tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-light)">プラン契約後に表示されます</td></tr>
       </tbody>
     </table>
   </div>
@@ -4216,11 +4229,11 @@ content.innerHTML = `
 <div class="page" id="page-billing-invoices">
   <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ 取引履歴</div>
   <div class="page-title">取引履歴</div>
-  <div class="page-subtitle">Stripe Billing自動課金の月額請求履歴・取引手数料の自動差引履歴を確認します</div>
+  <div class="page-subtitle">月額プランの請求履歴・注文毎の取引手数料の自動差引履歴を確認します</div>
 
-  <div class="sub-tabs" style="margin-bottom:16px">
-    <div class="sub-tab active" onclick="switchBillingHistoryTab('subscription',this)">月額プラン課金</div>
-    <div class="sub-tab" onclick="switchBillingHistoryTab('commission',this)">取引手数料</div>
+  <div class="tab-group" style="margin-bottom:16px">
+    <button class="tab active" onclick="switchBillingHistoryTab('subscription',this)">月額プラン課金</button>
+    <button class="tab" onclick="switchBillingHistoryTab('commission',this)">注文毎の取引手数料</button>
   </div>
 
   <!-- 月額プラン課金タブ -->
@@ -4229,7 +4242,7 @@ content.innerHTML = `
       <select id="billingMonthFilter" onchange="renderInvoices()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="">全期間</option><option value="2026/03">2026年3月</option><option value="2026/02">2026年2月</option><option value="2026/01">2026年1月</option></select>
     </div>
     <div style="background:#f0f7ff;padding:12px 16px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.8;margin-bottom:16px">
-      💡 月額プラン料金はStripe Billingにより自動課金されます。法人ごとに1つのSubscription、店舗ごとにSubscription Itemとして管理されています。
+      💡 月額プラン料金は自動課金されます。法人ごとに1つのサブスクリプション、店舗ごとにサブスクリプション項目として管理されています。
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <table class="data-table"><thead><tr><th>対象月</th><th>種類</th><th>金額</th><th>ステータス</th><th>課金日</th><th>操作</th></tr></thead>
@@ -4237,12 +4250,8 @@ content.innerHTML = `
     </div>
   </div>
 
-  <!-- 取引手数料タブ -->
+  <!-- 注文毎の取引手数料タブ -->
   <div id="billingHistoryCommission" style="display:none">
-    <div style="background:#f0f7ff;padding:12px 16px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.8;margin-bottom:16px">
-      💡 取引手数料はStripe Connect経由で注文ごとに自動差引されます。請求書の発行はありません。<br>
-      手数料率: 店内注文 3.8% / テイクアウト・デリバリー 4.0%（Stripe手数料3.6%はAIden負担）
-    </div>
     <div class="card" style="padding:0;overflow:hidden">
       <table class="data-table" style="font-size:12px"><thead><tr><th>日時</th><th>注文ID</th><th>チャネル</th><th>注文金額</th><th>手数料率</th><th>手数料額</th><th>操作</th></tr></thead>
         <tbody id="commissionHistoryBody">
@@ -4255,7 +4264,7 @@ content.innerHTML = `
 <div class="page" id="page-billing-schedule">
   <div class="breadcrumb"><a href="#" onclick="return false">請求・支払</a> ＞ スケジュール</div>
   <div class="page-title">請求・支払スケジュール <span class="badge" style="background:#ff9f43;color:#fff;font-size:10px;vertical-align:middle;padding:2px 8px;border-radius:10px">Coming Soon</span></div>
-  <div class="page-subtitle">Stripe Billing自動課金のため、手動スケジュール管理は不要になりました</div>
+  <div class="page-subtitle">自動課金のため、手動スケジュール管理は不要になりました</div>
   <div style="opacity:0.4;pointer-events:none">
     <div class="card"><div class="card-title">2026年のスケジュール</div>
       <table class="data-table" style="font-size:12px"><thead><tr><th>対象期間</th><th>締め日</th><th>請求書発行</th><th>支払期日（→加盟店）</th><th>支払期日（→出前館）</th></tr></thead>
@@ -4277,7 +4286,7 @@ content.innerHTML = `
     <div class="form-group"><label>終了日</label><input type="date"></div>
     <div class="form-group"><label>データ種類</label><select><option>請求データ</option><option>注文履歴</option><option>支払履歴</option></select></div>
     <div class="form-group"><label>対象店舗</label><select><option>全店舗</option></select></div>
-  </div><div class="btn-group"><button class="btn btn-primary" onclick="generateBillingCsv()">CSV生成</button></div></div>
+  </div><div style="font-size:11px;color:var(--text-light);margin-top:8px">※ 抽出期間は決済完了タイミングに基づきます</div><div class="btn-group"><button class="btn btn-primary" onclick="generateBillingCsv()">CSV生成</button></div></div>
 </div>
 
 <!-- ============================== -->
@@ -4293,7 +4302,7 @@ content.innerHTML = `
       <button class="tab active" onclick="switchSupportAidenTab('open')">対応中</button>
       <button class="tab" onclick="switchSupportAidenTab('resolved')">解決済み</button>
     </div>
-    <button class="btn btn-primary" onclick="openNewTicketModal()">＋ 新規問い合わせ</button>
+    <button class="btn btn-primary" onclick="openNewTicketModal()">＋ 問い合わせ追加</button>
   </div>
 
   <div class="card" style="padding:0;overflow:hidden">
@@ -4677,7 +4686,7 @@ document.getElementById('genericModalOverlay').addEventListener('click', functio
 
 // ===== UTILITY FUNCTIONS =====
 function switchSubTab(el, group){
-  el.parentNode.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  el.parentNode.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
 }
 
@@ -5567,32 +5576,37 @@ function isAddressLike(val) {
   return /^(東京都|大阪府|北海道|.{2,3}県|.{2,3}市)/.test(val) || /\d+-\d+/.test(val);
 }
 
+function storeBrandName(storeName) {
+  var bs = document.getElementById('brandSelector');
+  var bn = bs ? bs.options[bs.selectedIndex].text.replace(/^[^\s]+\s/,'') : '';
+  return (bn && !storeName.includes(bn)) ? bn + ' ' + storeName : storeName;
+}
 const TABLE_CONFIGS = {
   storeBasicTable: s => `
-    <td class="store-name">${escH(s.name)}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
+    <td class="store-name">${escH(storeBrandName(s.name))}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
     <td>${escH(isAddressLike(s.genre)?'—':(s.genre||'—'))} / ${escH(s.subGenre||'—')}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td><td>${yesNo(s.reservation)}</td>
     <td>${statusBadge(s.status)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">✏️</button></td>`,
+    <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">編集</button></td>`,
   storeHoursTable: s => `
-    <td class="store-name">${escH(s.name)}</td>
+    <td class="store-name">${escH(storeBrandName(s.name))}</td>
     <td>${escH(s.hoursOpen)}〜${escH(s.hoursClose)}</td><td>${escH(s.delOpen)}〜${escH(s.delClose)}</td>
     <td>なし</td><td>${statusBadge(s.status)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeHoursSelector','storeHoursEdit','storeHoursTarget','${escH(s.name)}')">✏️</button></td>`,
+    <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeHoursSelector','storeHoursEdit','storeHoursTarget','${escH(s.name)}')">編集</button></td>`,
   storeFacilityTable: s => `
-    <td class="store-name">${escH(s.name)}</td><td>${s.seats}席</td><td>${escH(s.smoking)}</td>
+    <td class="store-name">${escH(storeBrandName(s.name))}</td><td>${s.seats}席</td><td>${escH(s.smoking)}</td>
     <td>${yesNo(s.parking)}</td><td>${yesNo(s.kids)}</td><td>${yesNo(s.pets)}</td>
     <td style="font-size:11px">${escH(s.payment)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeFacilitySelector','storeFacilityEdit','storeFacilityTarget','${escH(s.name)}')">✏️</button></td>`,
+    <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeFacilitySelector','storeFacilityEdit','storeFacilityTarget','${escH(s.name)}')">編集</button></td>`,
   storeDeliveryTable: s => `
-    <td class="store-name">${escH(s.name)}</td><td>${escH(s.radius)}</td>
+    <td class="store-name">${escH(storeBrandName(s.name))}</td><td>${escH(s.radius)}</td>
     <td>${escH(s.cookTime)}</td><td>${escH(s.delTime)}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeDeliverySelector','storeDeliveryEdit','storeDeliveryTarget','${escH(s.name)}')">✏️</button></td>`,
+    <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeDeliverySelector','storeDeliveryEdit','storeDeliveryTarget','${escH(s.name)}')">編集</button></td>`,
   storeMediaTable: s => `
-    <td class="store-name">${escH(s.name)}</td><td>${s.headerImg}/10枚</td><td>${s.thumbImg}/1枚</td>
+    <td class="store-name">${escH(storeBrandName(s.name))}</td><td>${s.headerImg}/10枚</td><td>${s.thumbImg}/1枚</td>
     <td>${s.galleryImg}/30枚</td><td>${s.heroImg}/1枚</td><td>${s.staffImg}/20名</td>
-    <td><button class="btn-edit" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeMediaSelector','storeMediaEdit','storeMediaTarget','${escH(s.name)}')">✏️</button></td>`,
+    <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditGeneric('storeMediaSelector','storeMediaEdit','storeMediaTarget','${escH(s.name)}')">編集</button></td>`,
 };
 
 function renderStoreTable(tableId) {
@@ -5902,7 +5916,7 @@ async function fillHoursEditor() {
           const from = c.closed_from ? c.closed_from.substring(0,10) : '';
           const until = c.closed_until ? c.closed_until.substring(0,10) : '';
           const period = until && until !== from ? from + ' 〜 ' + until : from;
-          return `<tr data-closure-id="${c.id}"><td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">通常営業・デリバリー両方</span></td><td>${escH(c.reason||'')}</td><td style="font-size:11px;color:var(--text-light)">—</td><td><button class="btn-edit" onclick="deleteSpotClosure(this,'${c.id}')" style="color:#c62828">✕</button></td></tr>`;
+          return `<tr data-closure-id="${c.id}"><td style="font-weight:600;font-size:12px">${escH(period)}</td><td><span class="badge badge-info" style="font-size:10px">店舗営業・デリバリー両方</span></td><td>${escH(c.reason||'')}</td><td style="font-size:11px;color:var(--text-light)">—</td><td><button class="btn-edit" onclick="deleteSpotClosure(this,'${c.id}')" style="color:#c62828">✕</button></td></tr>`;
         }).join('');
         document.getElementById('spotEmpty').style.display = 'none';
       } else {
@@ -7255,7 +7269,7 @@ async function saveAllChanges() {
 (function(){
   const btn = document.createElement('div');
   btn.id = 'floatingSaveBtn';
-  btn.style.cssText = 'display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--accent);color:#fff;padding:12px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(233,69,96,.4);align-items:center;gap:8px;transition:transform .15s';
+  btn.style.cssText = 'display:none;position:fixed;bottom:24px;right:80px;z-index:9999;background:var(--accent);color:#fff;padding:12px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(233,69,96,.4);align-items:center;gap:8px;transition:transform .15s';
   btn.innerHTML = '保存';
   btn.onclick = saveAllChanges;
   document.body.appendChild(btn);
@@ -9912,7 +9926,7 @@ function openMenuItemView(mpId) {
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-sm" onclick="renameMenuPattern('${mpId}')">✏️ パターン名変更</button>
+      <button class="btn btn-secondary btn-sm" onclick="renameMenuPattern('${mpId}')">パターン名変更</button>
       <button class="btn btn-secondary btn-sm" onclick="setPatternDisplayPeriod('${mpId}')">📅 表示期間</button>
       <button class="btn btn-secondary btn-sm" onclick="managePatternStores('${mpId}')">🏪 店舗紐づけ</button>
     </div>`;
@@ -14163,7 +14177,7 @@ function subSwitchTab(tab, el) {
     if(panel) panel.style.display = t === tab ? '' : 'none';
   });
   if(el) {
-    el.parentNode.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
+    el.parentNode.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
     el.classList.add('active');
   }
   if(tab === 'report') setTimeout(function(){ if(typeof renderSubReportCharts==='function') renderSubReportCharts(); }, 50);
@@ -14898,7 +14912,7 @@ function _popBuildPreview(data) {
       + (data.period ? '<div style="font-size:10px;color:#888;text-align:center;background:#f8f8f8;border-radius:4px;padding:3px 8px">\uD83D\uDCC5 ' + data.period + '</div>' : '')
       + imgPlaceholder
     + '</div>'
-    + '<div style="background:#f5f5f5;padding:6px 12px;text-align:center;font-size:9px;color:#bbb;flex-shrink:0">' + (sizeMap[data.size] || data.size) + ' \u2014 AIden</div>'
+    + '<div style="background:#f5f5f5;padding:6px 12px;text-align:center;font-size:9px;color:#bbb;flex-shrink:0">' + (sizeMap[data.size] || data.size) + '</div>'
   + '</div>';
 }
 
@@ -16825,7 +16839,7 @@ function savePriceChannel() {
 function switchBillingHistoryTab(tab, el) {
   document.getElementById('billingHistorySubscription').style.display = tab === 'subscription' ? '' : 'none';
   document.getElementById('billingHistoryCommission').style.display = tab === 'commission' ? '' : 'none';
-  el.parentElement.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.parentElement.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
   if (tab === 'commission') renderCommissionHistory();
 }

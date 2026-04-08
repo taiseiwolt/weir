@@ -79,9 +79,9 @@ class AidenChatWidget {
         cursor: pointer;
         box-shadow: 0 4px 16px rgba(211,47,47,0.35);
         z-index: 9998;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         transition: transform 0.2s, box-shadow 0.2s;
         font-size: 24px;
         line-height: 1;
