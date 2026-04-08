@@ -4619,34 +4619,91 @@ content.innerHTML = `
   <div class="page-subtitle">問題のある会員・ゲストユーザーの注文をブロックします</div>
 
   <div class="card">
-    <div class="card-title">🚫 BAN対象を指定</div>
-    <div class="form-grid">
-      <div class="form-group"><label>対象タイプ</label>
-        <select id="banType" onchange="document.getElementById('banMemberId').parentNode.style.display=this.value==='member'?'flex':'none'">
-          <option value="email">メールアドレスで指定</option>
-          <option value="phone">電話番号で指定</option>
-          <option value="member">会員IDで指定</option>
+    <div class="card-title">🚫 BAN実行</div>
+
+    <!-- 対象ユーザー（会員/ゲスト切替） -->
+    <div style="margin-bottom:16px">
+      <label style="font-weight:600;font-size:12px;display:block;margin-bottom:6px">対象ユーザー</label>
+      <div style="display:flex;gap:0;margin-bottom:10px">
+        <button class="tab active" onclick="switchBanTargetTab('member',this)" style="flex:1;font-size:12px">会員</button>
+        <button class="tab" onclick="switchBanTargetTab('guest',this)" style="flex:1;font-size:12px">ゲスト</button>
+      </div>
+      <div id="banTargetMember">
+        <div class="form-grid">
+          <div class="form-group"><label>検索方法</label>
+            <select id="banMemberSearchType"><option value="email">メールアドレス</option><option value="phone">電話番号</option></select>
+          </div>
+          <div class="form-group"><label>検索値<span class="req">*</span></label><input type="text" id="banMemberSearchVal" placeholder="会員のメールアドレスまたは電話番号"></div>
+        </div>
+      </div>
+      <div id="banTargetGuest" style="display:none">
+        <div class="form-grid">
+          <div class="form-group"><label>識別方法</label>
+            <select id="banGuestSearchType"><option value="email">メールアドレス</option><option value="phone">電話番号</option></select>
+          </div>
+          <div class="form-group"><label>対象値<span class="req">*</span></label><input type="text" id="banGuestSearchVal" placeholder="ゲストのメールアドレスまたは電話番号"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BAN範囲（4段階） -->
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><label>BAN範囲<span class="req">*</span></label>
+        <select id="banScope" onchange="document.getElementById('banScopeStore').style.display=this.value==='store'?'':'none'">
+          <option value="brand">ブランド（このブランドの全店舗）</option>
+          <option value="store">店舗（特定店舗のみ）</option>
+          <option value="corporation">法人（全ブランド・全店舗）</option>
+          <option value="global">グローバル（AIden全体）</option>
         </select>
       </div>
-      <div class="form-group"><label>対象値<span class="req">*</span></label><input type="text" placeholder="メールアドレスまたは電話番号を入力"></div>
-      <div class="form-group" id="banMemberId" style="display:none"><label>会員ID</label><input type="text" placeholder="M001"></div>
-      <div class="form-group full"><label>BAN理由<span class="req">*</span></label>
-        <select><option>カスタマーハラスメント</option><option>不正利用</option><option>虚偽注文</option><option>支払い拒否</option><option>その他</option></select>
+      <div class="form-group" id="banScopeStore" style="display:none"><label>対象店舗</label>
+        <select id="banScopeStoreId"></select>
       </div>
-      <div class="form-group full"><label>詳細メモ</label><textarea rows="3" placeholder="具体的な状況を記録してください"></textarea></div>
     </div>
+
+    <!-- BAN効果（2種） -->
+    <div style="margin-bottom:12px">
+      <label style="font-weight:600;font-size:12px;display:block;margin-bottom:6px">BAN効果</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px">
+          <input type="radio" name="banEffect" value="all_except_dinein" checked style="margin-top:2px">
+          <div><div style="font-weight:600">全店の店内注文を除く全サービス</div><div style="font-size:10px;color:#888;margin-top:2px">テイクアウト・デリバリー・来店予約をBAN（店内注文は許可）</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px">
+          <input type="radio" name="banEffect" value="specific_services" style="margin-top:2px">
+          <div><div style="font-weight:600">サービス指定</div><div style="font-size:10px;color:#888;margin-top:2px">BAN対象のサービスを個別に選択</div></div>
+        </label>
+      </div>
+      <div id="banServiceCheckboxes" style="display:none;margin-top:8px;padding:10px;background:#f5f6fa;border-radius:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" value="takeout" checked> テイクアウト</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" value="delivery" checked> デリバリー</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" value="reservation" checked> 来店予約</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" value="dinein"> 店内注文</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- BAN理由 -->
+    <div class="form-grid">
+      <div class="form-group"><label>BAN理由<span class="req">*</span></label>
+        <select id="banReason"><option>カスタマーハラスメント</option><option>不正利用</option><option>虚偽注文</option><option>支払い拒否</option><option>その他</option></select>
+      </div>
+      <div class="form-group full"><label>詳細メモ</label><textarea rows="3" id="banMemo" placeholder="具体的な状況を記録してください"></textarea></div>
+    </div>
+
     <div style="background:#fff3e0;padding:12px;border-radius:8px;margin-top:12px;font-size:12px">
-      ⚠️ BANを実行すると、指定したメールアドレス/電話番号での注文（会員・ゲスト共）がブロックされます。
+      ⚠️ BANを実行すると、指定したユーザーの該当サービスでの注文がブロックされます。
     </div>
     <div class="btn-group"><button class="btn btn-danger" onclick="executeBan(this)">⛔ BAN実行</button></div>
   </div>
 
   <div class="card" style="margin-top:24px">
     <div class="card-title">📋 BANリスト</div>
-    <div class="search-bar" style="margin-bottom:12px"><input type="text" placeholder="🔍 メールアドレス・電話番号で検索"></div>
-    <div style="overflow:hidden">
-      <table class="data-table">
-        <thead><tr><th>対象</th><th>タイプ</th><th>理由</th><th>実行日</th><th>実行者</th><th>操作</th></tr></thead>
+    <div class="search-bar" style="margin-bottom:12px"><input type="text" id="banListSearch" placeholder="🔍 メールアドレス・電話番号で検索" onkeyup="renderBanList()"></div>
+    <div style="overflow-x:auto">
+      <table class="data-table" style="font-size:11px">
+        <thead><tr><th>対象ユーザー</th><th>BAN範囲</th><th>BAN効果</th><th>理由</th><th>実行日時</th><th>操作</th></tr></thead>
         <tbody id="banListBody"><tr><td colspan="6" class="empty-state">読み込み中...</td></tr></tbody>
       </table>
     </div>
@@ -9906,41 +9963,97 @@ async function deleteStaffAccount(staffId) {
   }
 }
 
-// ===== BAN EXECUTE =====
+// ===== BAN MANAGEMENT (D-35) =====
+var _banTargetTab = 'member';
+function switchBanTargetTab(tab, btnEl) {
+  _banTargetTab = tab;
+  btnEl.parentNode.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  btnEl.classList.add('active');
+  document.getElementById('banTargetMember').style.display = tab === 'member' ? '' : 'none';
+  document.getElementById('banTargetGuest').style.display = tab === 'guest' ? '' : 'none';
+}
+
+// Toggle service checkboxes visibility
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'banEffect') {
+    var el = document.getElementById('banServiceCheckboxes');
+    if (el) el.style.display = e.target.value === 'specific_services' ? '' : 'none';
+  }
+});
+
+// Populate store dropdown for ban scope
+function populateBanStoreDropdown() {
+  var sel = document.getElementById('banScopeStoreId');
+  if (!sel || !STORES) return;
+  sel.innerHTML = STORES.map(function(s) { return '<option value="' + s.id + '">' + escH(s.name) + '</option>'; }).join('');
+}
+
 async function executeBan(btn) {
   if (!confirm('BANを実行します。よろしいですか？')) return;
   btn.disabled = true;
   try {
-    var banPage = document.getElementById('page-ban-management');
-    var typeSelect = document.getElementById('banType');
-    var targetType = typeSelect ? typeSelect.value : 'email';
-    var targetInput = banPage.querySelectorAll('.form-grid input[type=text]')[0];
-    var targetValue = targetInput ? targetInput.value.trim() : '';
-    if (!targetValue) { showToast('⚠️ 対象値を入力してください'); btn.disabled = false; return; }
-    var reasonSelect = banPage.querySelectorAll('.form-grid select')[1];
-    var reason = reasonSelect ? reasonSelect.value : '';
-    var memoArea = banPage.querySelector('textarea');
-    var memo = memoArea ? memoArea.value.trim() : '';
+    // Determine target
+    var targetType, targetEmail = null, targetPhone = null;
+    if (_banTargetTab === 'member') {
+      targetType = 'member';
+      var searchType = document.getElementById('banMemberSearchType').value;
+      var searchVal = document.getElementById('banMemberSearchVal').value.trim();
+      if (!searchVal) { showToast('⚠️ 検索値を入力してください'); btn.disabled = false; return; }
+      if (searchType === 'email') targetEmail = searchVal;
+      else targetPhone = searchVal;
+    } else {
+      targetType = 'guest';
+      var guestType = document.getElementById('banGuestSearchType').value;
+      var guestVal = document.getElementById('banGuestSearchVal').value.trim();
+      if (!guestVal) { showToast('⚠️ 対象値を入力してください'); btn.disabled = false; return; }
+      if (guestType === 'email') targetEmail = guestVal;
+      else targetPhone = guestVal;
+    }
+
+    // Scope
+    var scopeType = document.getElementById('banScope').value;
+    var scopeId = null;
+    if (scopeType === 'brand') scopeId = BRAND_ID;
+    else if (scopeType === 'corporation') scopeId = CORP_ID || (CORP ? CORP.id : null);
+    else if (scopeType === 'store') scopeId = document.getElementById('banScopeStoreId').value;
+    // global: scopeId stays null
+
+    // Effect
+    var effectEl = document.querySelector('input[name="banEffect"]:checked');
+    var banType = effectEl ? effectEl.value : 'all_except_dinein';
+    var bannedServices = null;
+    if (banType === 'specific_services') {
+      var checked = document.querySelectorAll('#banServiceCheckboxes input[type=checkbox]:checked');
+      bannedServices = [];
+      checked.forEach(function(cb) { bannedServices.push(cb.value); });
+      if (bannedServices.length === 0) { showToast('⚠️ BAN対象のサービスを1つ以上選択してください'); btn.disabled = false; return; }
+    }
+
+    // Reason
+    var reason = document.getElementById('banReason').value;
+    var memo = document.getElementById('banMemo').value.trim();
 
     var insertData = {
       target_type: targetType,
-      scope_type: 'brand',
-      scope_id: BRAND_ID,
-      ban_type: 'all_except_dinein',
+      target_email: targetEmail,
+      target_phone: targetPhone,
+      scope_type: scopeType,
+      scope_id: scopeId,
+      ban_type: banType,
+      banned_services: bannedServices ? JSON.stringify(bannedServices) : null,
       reason: reason + (memo ? ' - ' + memo : ''),
       banned_by: CURRENT_AUTH_USER ? CURRENT_AUTH_USER.id : null,
       is_active: true
     };
-    if (targetType === 'email') insertData.target_email = targetValue;
-    else if (targetType === 'phone') insertData.target_phone = targetValue;
 
     var { error } = await sb.from('user_bans').insert(insertData);
     if (error) throw error;
     showToast('⛔ BANを実行しました');
-    if (typeof renderBanList === 'function') renderBanList();
+    renderBanList();
     // Clear form
-    if (targetInput) targetInput.value = '';
-    if (memoArea) memoArea.value = '';
+    document.getElementById('banMemberSearchVal').value = '';
+    document.getElementById('banGuestSearchVal').value = '';
+    document.getElementById('banMemo').value = '';
   } catch(e) {
     showToast('⚠️ BAN実行に失敗しました: ' + (e.message || e));
   } finally {
@@ -9951,19 +10064,33 @@ async function executeBan(btn) {
 async function renderBanList() {
   var tbody = document.getElementById('banListBody');
   if (!tbody) return;
+  populateBanStoreDropdown();
   try {
-    var { data, error } = await sb.from('user_bans').select('*').eq('scope_id', BRAND_ID).eq('is_active', true).order('created_at', { ascending: false });
+    var { data, error } = await sb.from('user_bans').select('*').eq('is_active', true).order('created_at', { ascending: false });
     if (error) throw error;
+    // Filter by search
+    var searchVal = document.getElementById('banListSearch') ? document.getElementById('banListSearch').value.trim().toLowerCase() : '';
+    if (searchVal) {
+      data = data.filter(function(b) {
+        return (b.target_email && b.target_email.toLowerCase().includes(searchVal)) ||
+               (b.target_phone && b.target_phone.includes(searchVal));
+      });
+    }
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-state">BANリストは空です</td></tr>';
       return;
     }
+    var scopeLabels = { global: 'グローバル', corporation: '法人', brand: 'ブランド', store: '店舗' };
     tbody.innerHTML = data.map(function(b) {
-      var target = escH(b.target_email || b.target_phone || '\u2014');
-      var type = b.target_email ? 'メール' : (b.target_phone ? '電話番号' : '\u2014');
+      var target = escH(b.target_email || b.target_phone || '—');
+      var targetLabel = (b.target_type === 'member' ? '👤 ' : '🧑 ') + target;
+      var scopeLabel = scopeLabels[b.scope_type] || b.scope_type || '—';
+      var effectLabel = b.ban_type === 'all_except_dinein' ? '店内注文以外全て'
+        : b.ban_type === 'specific_services' && b.banned_services ? (Array.isArray(b.banned_services) ? b.banned_services : JSON.parse(b.banned_services || '[]')).join(', ')
+        : b.ban_type || '—';
       var dt = b.created_at ? new Date(b.created_at) : null;
-      var dateStr = dt ? dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') : '\u2014';
-      return '<tr><td>' + target + '</td><td>' + type + '</td><td>' + escH(b.reason || '\u2014') + '</td><td>' + dateStr + '</td><td>\u2014</td><td><button class="btn btn-secondary btn-sm" onclick="releaseBan(\'' + b.id + '\')">解除</button></td></tr>';
+      var dateStr = dt ? dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0') : '—';
+      return '<tr><td>' + targetLabel + '</td><td><span style="background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:10px">' + scopeLabel + '</span></td><td style="font-size:11px">' + escH(effectLabel) + '</td><td style="font-size:11px">' + escH(b.reason || '—') + '</td><td style="font-size:10px;white-space:nowrap">' + dateStr + '</td><td><button class="btn btn-secondary btn-sm" onclick="releaseBan(\'' + b.id + '\')">解除</button></td></tr>';
     }).join('');
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">読み込みエラー</td></tr>';
