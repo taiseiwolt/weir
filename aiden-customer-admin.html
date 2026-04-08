@@ -688,6 +688,7 @@ function showPage(pageId, catId){
   if(pageId === 'ban-management' && typeof renderBanList === 'function') renderBanList();
   if (pageId === 'content-pop' || pageId === 'review-store' || pageId === 'ai-sns') {
     if (typeof loadAiUsageCounters === 'function') loadAiUsageCounters();
+    if (pageId === 'content-pop' && typeof loadAiHistory === 'function') loadAiHistory();
   }
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
   if (!window._isPopState) history.pushState({ pageId: pageId, catId: catId }, '', '#' + pageId);
@@ -3753,16 +3754,20 @@ content.innerHTML = `
         <div class="form-group full">
           <div style="margin-bottom:12px">
             <label style="font-weight:600;font-size:12px;display:block;margin-bottom:6px">📋 テンプレート</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('seasonal')">🌸 季節メニュー</button>
-              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('lunch')">🍱 ランチ</button>
-              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('drink')">🍺 ドリンク</button>
-              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('today')">⭐ 本日のおすすめ</button>
-              <button class="btn btn-secondary btn-sm" onclick="popApplyTemplate('event')">🎉 イベント</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;overflow-x:auto;padding-bottom:4px">
+              <button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="popApplyTemplate('seasonal')">🌸 季節メニュー</button>
+              <button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="popApplyTemplate('lunch')">🍱 ランチ</button>
+              <button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="popApplyTemplate('drink')">🍺 ドリンク</button>
+              <button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="popApplyTemplate('today')">⭐ 本日のおすすめ</button>
+              <button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="popApplyTemplate('event')">🎉 忘年会・新年会</button>
             </div>
           </div>
           <label>テーマ・内容<span class="req">*</span></label>
           <textarea id="popTheme" rows="3" placeholder="例：春の桜えびフェア　期間：3月中旬。セット￥980。辺りの食欲をそそる雰囲気で。"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>AI画像プロンプト <span style="font-size:10px;color:#aaa;font-weight:400">（DALL-E用・任意）</span></label>
+          <textarea id="popDallePrompt" rows="2" placeholder="例：季節の食材を使った限定メニューのPOP。温かみのある色使いで食欲を刺激するデザイン" style="font-size:12px"></textarea>
         </div>
         <div class="form-group full">
           <label>POPの種類<span class="req">*</span></label>
@@ -3777,9 +3782,11 @@ content.innerHTML = `
         <div class="form-group full">
           <label>用紙サイズ</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <div id="popSizeA3" class="sns-radio-label" onclick="popSelectSize('A3',this)">A3</div>
             <div id="popSizeA4" class="sns-radio-label selected" onclick="popSelectSize('A4',this)">A4</div>
             <div id="popSizeA5" class="sns-radio-label" onclick="popSelectSize('A5',this)">A5</div>
             <div id="popSizeB5" class="sns-radio-label" onclick="popSelectSize('B5',this)">B5</div>
+            <div id="popSizeHagaki" class="sns-radio-label" onclick="popSelectSize('hagaki',this)">はがき</div>
             <div id="popSizeCard" class="sns-radio-label" onclick="popSelectSize('card',this)">卓上カード（A6）</div>
           </div>
         </div>
@@ -3861,9 +3868,8 @@ content.innerHTML = `
 
   <div class="card" style="margin-top:16px">
     <div class="card-title">📜 AI生成履歴</div>
-    <div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">
-      <div style="font-size:20px;margin-bottom:4px">🚧</div>
-      AI生成コンテンツの履歴表示は準備中です
+    <div id="aiHistoryContainer">
+      <div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">読み込み中...</div>
     </div>
   </div>
 </div>
@@ -7332,6 +7338,13 @@ async function reviewReplyAiDraft() {
   var review = REVIEWS.find(function(r) { return r.id === reviewId; });
   if (!review) return;
 
+  // Check usage limit
+  var limitCheck = await checkAiUsageLimit('review_reply');
+  if (limitCheck.exceeded) {
+    showToast('⚠️ 今月の無料枠を使い切りました。PROプランにアップグレードすると無制限でご利用いただけます。');
+    return;
+  }
+
   var textarea = document.getElementById('reviewReplyText');
   if (!textarea) return;
   textarea.value = '生成中...';
@@ -7352,12 +7365,16 @@ async function reviewReplyAiDraft() {
       textarea.value = result.reply || result.data || '';
       textarea.disabled = false;
       if(btn) { btn.disabled = false; btn.textContent = '🤖 AI下書き生成'; }
+      await recordAiUsage('review_reply', { review_id: reviewId, rating: review.rating });
       showToast('✅ AI返信を生成しました');
       return;
     }
-  } catch(e) { /* EF not deployed */ }
+  } catch(e) {
+    // EF not deployed - show Coming Soon toast
+    showToast('🚧 AI返信生成はComing Soon（Edge Functionデプロイ後に利用可能）');
+  }
 
-  // Fallback - Coming Soon with simple template
+  // Fallback - simple template
   var templates = {
     5: 'ご来店ありがとうございます。高い評価をいただき、スタッフ一同大変嬉しく思います。またのお越しをお待ちしております。',
     4: 'ご来店ありがとうございます。ご満足いただけて何よりです。さらにご満足いただけるよう努力してまいります。',
@@ -7368,7 +7385,6 @@ async function reviewReplyAiDraft() {
   textarea.value = templates[review.rating] || templates[3];
   textarea.disabled = false;
   if(btn) { btn.disabled = false; btn.textContent = '🤖 AI下書き生成'; }
-  showToast('📝 テンプレート返信を生成しました（AI生成はEdge Functionデプロイ後に利用可能）');
 }
 
 function reviewReplyPreview() {
@@ -16133,18 +16149,36 @@ function popApplyTemplate(type) {
     lunch: '【ランチタイム限定】\n日替わりランチセット\nメイン+サラダ+ドリンク付き\n¥980（税込）\n平日 11:00-14:00',
     drink: '【ドリンクフェア】\nクラフトビール全品半額！\n国内外の厳選ビール10種以上\n¥490〜\n毎週金曜 17:00-20:00',
     today: '【本日のおすすめ】\nシェフ厳選の一品\n本日入荷の新鮮食材を使用\n数量限定・なくなり次第終了',
-    event: '【イベント開催】\nワイン×チーズの夕べ\nソムリエ厳選ワイン5種+チーズ盛合せ\n¥4,500（税込）\n要予約・限定20名'
+    event: '【忘年会・新年会プラン】\n宴会コース\n飲み放題2時間付き\n¥5,000（税込）\n要予約・10名様以上'
+  };
+  var dallePrompts = {
+    seasonal: '季節の食材を使った限定メニューのPOP。温かみのある色使いで食欲を刺激するデザイン',
+    lunch: 'お得なランチセットのPOP。明るく爽やかなデザインで価格の魅力を伝える',
+    drink: 'こだわりドリンクのPOP。おしゃれで清涼感のあるデザイン',
+    today: '本日の特選おすすめ料理のPOP。高級感と食欲を両立したデザイン',
+    event: '忘年会・新年会プランのPOP。華やかで賑やかなパーティー感のあるデザイン'
   };
   var textarea = document.getElementById('popTheme');
   if (textarea && templates[type]) {
     textarea.value = templates[type];
     markDirty();
   }
+  var dalleTextarea = document.getElementById('popDallePrompt');
+  if (dalleTextarea && dallePrompts[type]) {
+    dalleTextarea.value = dallePrompts[type];
+  }
 }
 
 async function popGenerate() {
   var theme = document.getElementById('popTheme').value.trim();
   if (!theme) { alert('テーマを入力してください'); return; }
+
+  // Check usage limit
+  var limitCheck = await checkAiUsageLimit('pop_image');
+  if (limitCheck.exceeded) {
+    showToast('⚠️ 今月の無料枠を使い切りました。PROプランにアップグレードすると無制限でご利用いただけます。');
+    return;
+  }
 
   // Show loading
   var previewArea = document.getElementById('popPreviewArea');
@@ -16153,6 +16187,8 @@ async function popGenerate() {
   _popFinished = false;
   _popVersion = 1;
 
+  var dallePrompt = (document.getElementById('popDallePrompt') ? document.getElementById('popDallePrompt').value.trim() : '') || '';
+
   // Try Edge Function
   try {
     var session = (await sb.auth.getSession()).data.session;
@@ -16160,7 +16196,7 @@ async function popGenerate() {
     var res = await fetch(SUPABASE_URL + '/functions/v1/generate-pop-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ brand_id: BRAND_ID, theme: theme, size: _popSize, layout: _popLayout })
+      body: JSON.stringify({ brand_id: BRAND_ID, theme: theme, prompt: dallePrompt, size: _popSize, layout: _popLayout })
     });
     if (res.ok) {
       var result = await res.json();
@@ -16180,11 +16216,19 @@ async function popGenerate() {
         if(ri) ri.disabled = false;
         var rb = document.getElementById('popReviseBtn');
         if(rb) rb.disabled = false;
+        await recordAiUsage('pop_image', { theme: theme, prompt: dallePrompt });
         showToast('✅ AI画像を生成しました');
         return;
       }
     }
-  } catch(e) { /* EF not deployed */ }
+  } catch(e) {
+    // EF not deployed - show Coming Soon badge then fallback
+    if (previewArea) {
+      previewArea.innerHTML = '<div style="padding:40px;text-align:center;color:#888">'
+        + '<div style="display:inline-block;background:#fffde7;border:1px solid #fff9c4;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:#f39c12;margin-bottom:12px">Coming Soon</div>'
+        + '<div style="font-size:12px;color:#aaa">DALL-E画像生成はEdge Functionデプロイ後に利用可能です</div></div>';
+    }
+  }
 
   // Fallback to local generation
   _popCurrentData = _popParseTheme(theme, null);
@@ -18257,36 +18301,171 @@ async function saveSnsAccountSetting(platform) {
   closeSnsModal();
 }
 
-// ===== AI Usage Counter =====
+// ===== AI Usage Counter (usage_limits + usage_logs tables) =====
+var _aiUsageLimitsCache = null;
+
 async function loadAiUsageCounters() {
   if (!BRAND_ID) return;
   try {
+    // Read from usage_limits table
     var now = new Date();
     var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01T00:00:00';
-    var { data, error } = await sb.from('ai_usage_logs').select('feature_type').eq('brand_id', BRAND_ID).gte('created_at', monthStart);
-    if (error) throw error;
+    var { data, error } = await sb.from('usage_limits').select('action_type, used_count, max_count')
+      .eq('brand_id', BRAND_ID)
+      .gte('period_start', monthStart);
 
-    var counts = { review_reply: 0, sns_post: 0, pop_image: 0 };
-    (data || []).forEach(function(r) {
-      var ft = r.feature_type || '';
-      if (ft.includes('review')) counts.review_reply++;
-      else if (ft.includes('sns')) counts.sns_post++;
-      else if (ft.includes('pop')) counts.pop_image++;
+    if (error || !data || data.length === 0) {
+      // Fallback: read from ai_usage_logs if usage_limits not available
+      var fallback = await sb.from('ai_usage_logs').select('feature_type').eq('brand_id', BRAND_ID).gte('created_at', monthStart);
+      var counts = { review_reply: 0, sns_post: 0, pop_image: 0 };
+      (fallback.data || []).forEach(function(r) {
+        var ft = r.feature_type || '';
+        if (ft.includes('review')) counts.review_reply++;
+        else if (ft.includes('sns')) counts.sns_post++;
+        else if (ft.includes('pop')) counts.pop_image++;
+      });
+      var limits = { review_reply: 10, sns_post: 10, pop_image: 1 };
+      _aiUsageLimitsCache = {
+        review_reply: { used: counts.review_reply, max: limits.review_reply },
+        sns_post: { used: counts.sns_post, max: limits.sns_post },
+        pop_image: { used: counts.pop_image, max: limits.pop_image }
+      };
+      _renderUsageCounters(_aiUsageLimitsCache);
+      return;
+    }
+
+    _aiUsageLimitsCache = {};
+    (data || []).forEach(function(row) {
+      _aiUsageLimitsCache[row.action_type] = { used: row.used_count || 0, max: row.max_count || 0 };
     });
 
-    // STD plan limits
-    var limits = { review_reply: 10, sns_post: 10, pop_image: 1 };
+    // Ensure defaults exist in cache
+    if (!_aiUsageLimitsCache.review_reply) _aiUsageLimitsCache.review_reply = { used: 0, max: 10 };
+    if (!_aiUsageLimitsCache.sns_post) _aiUsageLimitsCache.sns_post = { used: 0, max: 10 };
+    if (!_aiUsageLimitsCache.pop_image) _aiUsageLimitsCache.pop_image = { used: 0, max: 1 };
 
-    var popEl = document.getElementById('popUsageCounter');
-    if (popEl) popEl.innerHTML = '🤖 今月のAI使用量: POP画像 <strong>' + counts.pop_image + '/' + limits.pop_image + '件</strong>';
-
-    var reviewEl = document.getElementById('reviewUsageCounter');
-    if (reviewEl) reviewEl.innerHTML = '🤖 今月のAI使用量: レビュー返信 <strong>' + counts.review_reply + '/' + limits.review_reply + '件</strong>';
-
-    var snsEl = document.getElementById('snsUsageCounter');
-    if (snsEl) snsEl.innerHTML = '🤖 今月のAI使用量: SNS投稿 <strong>' + counts.sns_post + '/' + limits.sns_post + '件</strong>';
+    _renderUsageCounters(_aiUsageLimitsCache);
   } catch(e) {
     // Table may not be accessible or empty - silent fail
+  }
+}
+
+function _renderUsageCounters(cache) {
+  var items = [
+    { id: 'popUsageCounter', key: 'pop_image', label: 'POP画像' },
+    { id: 'reviewUsageCounter', key: 'review_reply', label: 'レビュー返信' },
+    { id: 'snsUsageCounter', key: 'sns_post', label: 'SNS投稿' }
+  ];
+  items.forEach(function(item) {
+    var el = document.getElementById(item.id);
+    if (!el) return;
+    var info = cache[item.key] || { used: 0, max: 0 };
+    var exceeded = info.used >= info.max;
+    el.innerHTML = (exceeded
+      ? '<span style="color:#e74c3c;font-weight:600">&#x26A0;&#xFE0F; 今月の無料枠を使い切りました</span> '
+      : '') +
+      '&#x1F916; 今月のAI使用量: ' + escH(item.label) + ' <strong>' + info.used + '/' + info.max + '件</strong>';
+  });
+}
+
+async function checkAiUsageLimit(actionType) {
+  if (!BRAND_ID) return { exceeded: false };
+  // Use cache if available
+  if (_aiUsageLimitsCache && _aiUsageLimitsCache[actionType]) {
+    var info = _aiUsageLimitsCache[actionType];
+    return { exceeded: info.used >= info.max, used: info.used, max: info.max };
+  }
+  // Fetch from DB
+  try {
+    var now = new Date();
+    var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01T00:00:00';
+    var { data } = await sb.from('usage_limits').select('used_count, max_count')
+      .eq('brand_id', BRAND_ID).eq('action_type', actionType)
+      .gte('period_start', monthStart).limit(1).single();
+    if (data) {
+      return { exceeded: data.used_count >= data.max_count, used: data.used_count, max: data.max_count };
+    }
+  } catch(e) { /* table may not exist yet */ }
+  // Default: allow (STD plan limits)
+  var defaults = { review_reply: 10, sns_post: 10, pop_image: 1, monthly_ai_comment: 1 };
+  return { exceeded: false, used: 0, max: defaults[actionType] || 10 };
+}
+
+async function recordAiUsage(actionType, detail) {
+  if (!BRAND_ID) return;
+  try {
+    // Increment used_count in usage_limits
+    var now = new Date();
+    var monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01T00:00:00';
+    var { data: existing } = await sb.from('usage_limits').select('id, used_count')
+      .eq('brand_id', BRAND_ID).eq('action_type', actionType)
+      .gte('period_start', monthStart).limit(1).single();
+    if (existing) {
+      await sb.from('usage_limits').update({ used_count: (existing.used_count || 0) + 1, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    }
+    // Insert usage_log
+    await sb.from('usage_logs').insert({ brand_id: BRAND_ID, action_type: actionType, detail: detail || {} });
+    // Update local cache
+    if (_aiUsageLimitsCache && _aiUsageLimitsCache[actionType]) {
+      _aiUsageLimitsCache[actionType].used++;
+      _renderUsageCounters(_aiUsageLimitsCache);
+    }
+  } catch(e) {
+    // Silent fail - don't block AI generation if logging fails
+  }
+}
+
+// ===== AI Generation History (usage_logs) =====
+var _aiActionTypeLabels = {
+  review_reply: 'レビュー返信',
+  sns_post: 'SNS投稿',
+  pop_image: 'POP画像',
+  monthly_ai_comment: '月次AIコメント'
+};
+
+async function loadAiHistory() {
+  if (!BRAND_ID) return;
+  var container = document.getElementById('aiHistoryContainer');
+  if (!container) return;
+  try {
+    var { data, error } = await sb.from('usage_logs').select('action_type, detail, created_at')
+      .eq('brand_id', BRAND_ID)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">AI生成履歴はまだありません</div>';
+      return;
+    }
+
+    var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+      + '<thead><tr style="border-bottom:1px solid var(--border);text-align:left">'
+      + '<th style="padding:6px 8px;font-weight:600;color:#666">日時</th>'
+      + '<th style="padding:6px 8px;font-weight:600;color:#666">種類</th>'
+      + '<th style="padding:6px 8px;font-weight:600;color:#666">詳細</th>'
+      + '</tr></thead><tbody>';
+
+    data.forEach(function(row) {
+      var dt = new Date(row.created_at);
+      var dateStr = dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + String(dt.getDate()).padStart(2, '0')
+        + ' ' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+      var typeLabel = _aiActionTypeLabels[row.action_type] || escH(row.action_type);
+      var detailStr = '';
+      if (row.detail) {
+        var d = typeof row.detail === 'string' ? row.detail : JSON.stringify(row.detail);
+        detailStr = d.length > 50 ? escH(d.substring(0, 50)) + '...' : escH(d);
+      }
+      html += '<tr style="border-bottom:1px solid #f0f0f0">'
+        + '<td style="padding:6px 8px;color:#888;white-space:nowrap">' + escH(dateStr) + '</td>'
+        + '<td style="padding:6px 8px"><span style="background:#f0edff;color:#6c5ce7;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">' + typeLabel + '</span></td>'
+        + '<td style="padding:6px 8px;color:#555;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + detailStr + '</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">AI生成履歴を読み込めませんでした</div>';
   }
 }
 
