@@ -2912,10 +2912,15 @@ content.innerHTML = `
   <div id="memberDashPanelList">
 
   <div class="stats-row">
-    <div class="stat-card"><div class="stat-label">総会員数</div><div class="stat-value">2,847</div></div>
-    <div class="stat-card"><div class="stat-label">今月新規</div><div class="stat-value">134</div><div class="stat-change up">＋ 18%</div><div style="font-size:9px;color:#888;margin-top:2px">当月中の新規会員登録数</div></div>
-    <div class="stat-card"><div class="stat-label">アクティブ会員率</div><div class="stat-value">67.2%</div><div style="font-size:9px;color:#888;margin-top:2px">過去30日以内に決済した会員比率</div></div>
-    <div class="stat-card"><div class="stat-label">平均ポイント残高</div><div class="stat-value">342pt</div></div>
+    <div class="stat-card"><div class="stat-label">総会員数</div><div class="stat-value" id="mbKpiTotal">—</div></div>
+    <div class="stat-card"><div class="stat-label">今月新規</div><div class="stat-value" id="mbKpiNew">—</div><div style="font-size:9px;color:#888;margin-top:2px">当月中の新規会員登録数</div></div>
+    <div class="stat-card"><div class="stat-label">アクティブ会員率</div><div class="stat-value" id="mbKpiActive">—</div><div style="font-size:9px;color:#888;margin-top:2px">過去30日以内に決済した会員比率</div></div>
+    <div class="stat-card"><div class="stat-label">平均ポイント残高</div><div class="stat-value" id="mbKpiPoints">—</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="font-size:12px">📊 ランク分布</div>
+    <div id="memberRankDistChart" style="display:flex;gap:4px;align-items:flex-end;height:120px;padding:8px 0"></div>
   </div>
 
   <!-- 個人情報閲覧権限の通知 -->
@@ -2933,7 +2938,7 @@ content.innerHTML = `
   </div>
 
   <div class="search-bar">
-    <input type="text" placeholder="🔍 会員ID・氏名・電話番号で検索" oninput="filterMemberTable(this.value)">
+    <input type="text" id="memberSearchInput" placeholder="🔍 会員ID・氏名・電話番号で検索" oninput="filterMemberTable(this.value)" onkeyup="memberSearchKeyup()">
     <select style="width:140px;padding:8px;border:1px solid var(--border);border-radius:6px" id="memberRankFilter" onchange="filterMemberTable()"><option value="">全ランク</option><option>プラチナ</option><option>ゴールド</option><option>シルバー</option><option>レギュラー</option></select>
     <button class="btn btn-secondary" onclick="exportMemberCsv()">📥 CSVエクスポート</button>
   </div>
@@ -3409,12 +3414,7 @@ content.innerHTML = `
       <div class="card-title">📋 配信履歴</div>
       <table class="data-table">
         <thead><tr><th>配信日時</th><th>件名</th><th>チャネル</th><th>対象</th><th>開封率</th><th>クリック率</th></tr></thead>
-        <tbody>
-          <tr><td>2026/03/05 10:00</td><td>【炭火亭】春の大感謝祭スタート！</td><td>📧 メール</td><td>2,340名</td><td style="color:#27ae60;font-weight:600">42.3%</td><td style="color:#0984e3;font-weight:600">18.7%</td></tr>
-          <tr><td>2026/02/28 12:00</td><td>【炭火亭】ゴールド会員限定クーポン</td><td>📧 メール</td><td>312名</td><td style="color:#27ae60;font-weight:600">58.1%</td><td style="color:#0984e3;font-weight:600">31.2%</td></tr>
-          <tr><td>2026/02/14 09:00</td><td>バレンタイン特別ディナーのご案内</td><td>📧 メール</td><td>1,890名</td><td style="color:#27ae60;font-weight:600">35.6%</td><td style="color:#0984e3;font-weight:600">12.4%</td></tr>
-          <tr><td>2026/02/01 10:00</td><td>2月のおすすめメニューをご紹介</td><td>📧 メール</td><td>2,710名</td><td style="color:#f39c12;font-weight:600">28.9%</td><td style="color:#0984e3;font-weight:600">9.8%</td></tr>
-        </tbody>
+        <tbody id="crmHistoryBody"><tr><td colspan="6" class="empty-state">読み込み中...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -3683,23 +3683,12 @@ content.innerHTML = `
 
   <div class="card" style="margin-top:8px">
     <div class="card-title">📋 投稿履歴</div>
-    <table class="data-table">
-      <thead><tr><th>日時</th><th>媒体</th><th>内容（抜粋）</th><th>ステータス</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>2026/02/28 18:00</td><td>Instagram, X</td>
-          <td>🍣 本日のおすすめ！サーモン三昧フェア...</td>
-          <td><span class="badge badge-success">投稿済</span></td>
-          <td><button class="btn btn-secondary btn-sm" onclick="snsViewHistory(0)">確認</button></td>
-        </tr>
-        <tr>
-          <td>2026/03/01 12:00</td><td>Instagram</td>
-          <td>🌸 春の大感謝祭スタート！...</td>
-          <td><span class="badge badge-warning">予約中</span></td>
-          <td><button class="btn btn-secondary btn-sm" onclick="snsViewHistory(1)">確認</button></td>
-        </tr>
-      </tbody>
-    </table>
+    <div id="snsHistoryContainer"><div style="padding:16px;text-align:center;color:#999;font-size:12px">読み込み中...</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">📅 投稿カレンダー</div>
+    <div id="snsCalendarContainer" style="font-size:12px;text-align:center;color:#999;padding:16px">投稿スケジュールはsns_postsテーブルにデータ登録後に表示されます</div>
   </div>
   </div>
 
@@ -12508,8 +12497,8 @@ var _memberPrivacy = true; // true = masked (default)
 // MEMBERS (populated from Supabase after login)
 var MEMBERS = [];
 
-function maskName(name) { if(!name || name.length < 2) return '***'; return name.charAt(0) + '＊'.repeat(name.length - 1); }
-function maskTel(tel) { if(!tel) return '***-****-****'; var parts = tel.split('-'); if(parts.length === 3) return parts[0] + '-****-' + parts[2].slice(-2) + '**'; return '***-****-****'; }
+function maskName(name) { if(!name || name.length < 2) return '***'; return name.charAt(0) + '***'; }
+function maskTel(tel) { if(!tel) return '***-****-****'; var parts = tel.split('-'); if(parts.length === 3) return parts[0] + '-****-' + parts[2]; return '***-****-****'; }
 function maskEmail(email) { if(!email) return '****@****.***'; var at = email.indexOf('@'); if(at <= 1) return '****@****.***'; return email.charAt(0) + '***@' + email.substring(at+1); }
 
 function rankBadge(rank) {
@@ -12526,9 +12515,10 @@ function renderMemberTable() {
   var tbody = document.getElementById('memberTableBody');
   if(!tbody) return;
 
-  var filtered = MEMBERS.filter(function(m) {
+  var sourceData = window._memberSearchResults || MEMBERS;
+  var filtered = sourceData.filter(function(m) {
     if(rankFilter && m.rank !== rankFilter) return false;
-    if(search) {
+    if(search && !window._memberSearchResults) {
       var target = m.id.toLowerCase() + (masked ? '' : (m.name + m.tel).toLowerCase());
       if(!target.includes(search)) return false;
     }
@@ -12549,9 +12539,74 @@ function renderMemberTable() {
       '<td><button class="btn btn-secondary btn-sm" onclick="openMemberDetail(\'' + m.id + '\')">詳細</button></td>' +
       '</tr>';
   }).join('');
+  updateMemberKpis();
+  renderMemberRankDist();
 }
 
-function filterMemberTable(val) { renderMemberTable(); }
+function filterMemberTable(val) { window._memberSearchResults = null; renderMemberTable(); }
+
+function updateMemberKpis() {
+  var total = MEMBERS ? MEMBERS.length : 0;
+  var now = new Date();
+  var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var newThisMonth = MEMBERS ? MEMBERS.filter(function(m) {
+    return m.created_at && m.created_at.startsWith(thisMonth);
+  }).length : 0;
+  var activeCount = MEMBERS ? MEMBERS.filter(function(m) {
+    return (m.monthly_order_count || 0) > 0;
+  }).length : 0;
+  var activeRate = total > 0 ? (activeCount / total * 100).toFixed(1) + '%' : '\u2014';
+  var totalPoints = MEMBERS ? MEMBERS.reduce(function(s, m) { return s + (m.point_balance || m.points || 0); }, 0) : 0;
+  var avgPoints = total > 0 ? Math.round(totalPoints / total) : 0;
+  var el1 = document.getElementById('mbKpiTotal'); if (el1) el1.textContent = total.toLocaleString();
+  var el2 = document.getElementById('mbKpiNew'); if (el2) el2.textContent = newThisMonth.toLocaleString();
+  var el3 = document.getElementById('mbKpiActive'); if (el3) el3.textContent = activeRate;
+  var el4 = document.getElementById('mbKpiPoints'); if (el4) el4.textContent = avgPoints + 'pt';
+}
+
+function renderMemberRankDist() {
+  var el = document.getElementById('memberRankDistChart');
+  if (!el || !MEMBERS) return;
+  var rankCounts = {};
+  MEMBERS.forEach(function(m) {
+    var r = m.rank || '未設定';
+    rankCounts[r] = (rankCounts[r] || 0) + 1;
+  });
+  var entries = Object.entries(rankCounts).sort(function(a,b) { return b[1] - a[1]; });
+  var max = entries.length > 0 ? entries[0][1] : 1;
+  var colors = { bronze: '#CD7F32', silver: '#C0C0C0', gold: '#FFD700', platinum: '#E5E4E2', diamond: '#B9F2FF' };
+  el.innerHTML = entries.map(function(e) {
+    var pct = Math.round(e[1] / max * 100);
+    var color = colors[e[0].toLowerCase()] || 'var(--accent)';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">' +
+      '<div style="font-size:10px;font-weight:600">' + e[1] + '</div>' +
+      '<div style="width:100%;background:' + color + ';height:' + pct + '%;min-height:4px;border-radius:4px 4px 0 0"></div>' +
+      '<div style="font-size:9px;color:#888">' + escH(e[0]) + '</div></div>';
+  }).join('');
+}
+
+var _memberSearchTimer = null;
+function memberSearchKeyup() {
+  clearTimeout(_memberSearchTimer);
+  _memberSearchTimer = setTimeout(function() {
+    var searchText = document.getElementById('memberSearchInput') ? document.getElementById('memberSearchInput').value.trim() : '';
+    if (searchText.length >= 2 && MEMBERS.length > 100) {
+      sb.from('members').select('id, display_id, name, email, phone, current_rank_id, total_spend, order_count, point_balance, created_at')
+        .eq('brand_id', BRAND_ID)
+        .or('name.ilike.%' + searchText + '%,email.ilike.%' + searchText + '%,phone.ilike.%' + searchText + '%')
+        .limit(50)
+        .then(function(res) {
+          if (res.data) {
+            window._memberSearchResults = res.data;
+            renderMemberTable();
+          }
+        });
+    } else {
+      window._memberSearchResults = null;
+      renderMemberTable();
+    }
+  }, 300);
+}
 
 function toggleMemberPrivacy() {
   _memberPrivacy = !document.getElementById('memberPrivacyToggle').checked;
@@ -14081,7 +14136,7 @@ function _snsBuildPost(platform, theme) {
   };
   return posts[platform] || posts['Instagram'];
 }
-function snsGeneratePost() {
+async function snsGeneratePost() {
   var theme = document.getElementById('snsPostTheme').value.trim();
   if(!theme) { alert('テーマ・イメージを入力してください'); return; }
   if(!_snsSelectedPlatform) { alert('投稿先を選択してください'); return; }
@@ -14089,13 +14144,34 @@ function snsGeneratePost() {
   var txt = document.getElementById('snsGeneratedText');
   txt.innerHTML = '<div style="color:#888;font-size:11px">生成中...</div>';
   box.style.display = 'block';
-  setTimeout(function() {
-    var post = _snsBuildPost(_snsSelectedPlatform, theme);
-    txt.innerHTML =
-      '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">' + post.note + '</div>' +
-      '<b>📝 投稿文（' + _snsSelectedPlatform + '向け）：</b><br><br>' +
-      '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + post.text + '</div>';
-  }, 800);
+
+  // Try Edge Function
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch(SUPABASE_URL + '/functions/v1/generate-sns-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ brand_id: BRAND_ID, platform: _snsSelectedPlatform, topic: theme })
+    });
+    if (res.ok) {
+      var result = await res.json();
+      var content = result.content || result.data || '';
+      txt.innerHTML =
+        '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">🤖 AIが生成した投稿文です</div>' +
+        '<b>📝 投稿文（' + _snsSelectedPlatform + '向け）：</b><br><br>' +
+        '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + escH(content) + '</div>';
+      return;
+    }
+  } catch(e) {}
+
+  // EF not deployed - use existing demo generation
+  var post = _snsBuildPost(_snsSelectedPlatform, theme);
+  txt.innerHTML =
+    '<div style="font-size:10px;color:#f39c12;background:#fff8e1;border-radius:4px;padding:4px 8px;margin-bottom:10px">📝 デモテキストを生成しました（AI生成はEdge Functionデプロイ後に利用可能）</div>' +
+    '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">' + post.note + '</div>' +
+    '<b>📝 投稿文（' + _snsSelectedPlatform + '向け）：</b><br><br>' +
+    '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + post.text + '</div>';
 }
 
 function snsPreviewPost() {
@@ -14181,13 +14257,46 @@ function snsPreviewPost() {
 
 // ─── テンプレート管理 ─────────────────────────────
 
-function snsSchedulePost() {
+async function snsSchedulePost() {
   var theme = document.getElementById('snsPostTheme').value.trim();
   var dt = document.getElementById('snsPostDatetime').value;
   if(!theme) { alert('テーマ・イメージを入力してください'); return; }
   if(!dt) { alert('投稿日時を設定してください'); return; }
   if(confirm('以下の内容でスケジュール投稿しますか？\n\nテーマ: ' + theme.slice(0,30) + '\n日時: ' + dt.replace('T',' '))) {
+    // Save to DB
+    try {
+      var post = _snsBuildPost(_snsSelectedPlatform || 'Instagram', theme);
+      await sb.from('sns_posts').insert({
+        brand_id: BRAND_ID,
+        platform: _snsSelectedPlatform || 'Instagram',
+        content: typeof post === 'object' ? post.text : theme,
+        status: '予約中',
+        posted_at: dt
+      });
+    } catch(e) { /* table may not exist yet */ }
     alert('📅 スケジュール投稿を設定しました\n\n' + dt.replace('T',' ') + ' に自動投稿されます');
+    if (typeof loadSnsPostHistory === 'function') loadSnsPostHistory();
+  }
+}
+
+async function loadSnsPostHistory() {
+  var container = document.getElementById('snsHistoryContainer');
+  if (!container) return;
+  try {
+    var { data, error } = await sb.from('sns_posts').select('*').eq('brand_id', BRAND_ID).order('created_at', { ascending: false }).limit(20);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="padding:16px;text-align:center;color:#999;font-size:12px">投稿履歴がありません</div>';
+      return;
+    }
+    container.innerHTML = '<table class="data-table" style="font-size:11px"><thead><tr><th>日時</th><th>プラットフォーム</th><th>コンテンツ</th><th>ステータス</th></tr></thead><tbody>' +
+      data.map(function(p) {
+        var dt = p.posted_at || p.created_at;
+        var dateStr = dt ? new Date(dt).toLocaleDateString('ja-JP') : '—';
+        return '<tr><td>' + dateStr + '</td><td>' + escH(p.platform || '—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escH((p.content || '').slice(0,50)) + '</td><td>' + escH(p.status || '—') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  } catch(e) {
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:#999;font-size:12px">読み込みエラー</div>';
   }
 }
 
@@ -14258,39 +14367,85 @@ function switchSnsTab(tab) {
     if(panel) panel.style.display = t === tab ? '' : 'none';
     if(tabEl) { tabEl.style.color = t === tab ? 'var(--accent)' : '#888'; tabEl.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent'; }
   });
+  if(tab === 'sns' && typeof loadSnsPostHistory === 'function') loadSnsPostHistory();
+}
+
+async function loadCrmHistory() {
+  var tbody = document.getElementById('crmHistoryBody');
+  if (!tbody) return;
+  try {
+    var { data, error } = await sb.from('crm_send_logs').select('*').eq('brand_id', BRAND_ID).order('sent_at', { ascending: false }).limit(20);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">配信履歴がありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(function(log) {
+      var dt = log.sent_at ? new Date(log.sent_at) : null;
+      var dateStr = dt ? dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') : '—';
+      return '<tr><td>' + dateStr + '</td><td>' + escH(log.subject || '—') + '</td><td>メール</td><td>' + (log.sent_to_count || 0) + '名</td><td>' + escH(log.status || '—') + '</td><td>—</td></tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">配信履歴の読み込みに失敗しました（テーブル未作成の可能性があります）</td></tr>';
+  }
 }
 
 function updateCrmSegCount() {
-  var el = document.getElementById('crmSegCount');
-  if(!el) return;
+  var countEl = document.getElementById('crmSegCount');
+  if (!countEl) return;
 
-  // 総会員数2,847からoptout人数を引いたものを配信可能ベースとする
-  var TOTAL_MEMBERS = 2847;
-  var optoutCount = MEMBERS.filter(function(m) { return m.optout; }).length;
-  var deliverableBase = TOTAL_MEMBERS - optoutCount;
+  try {
+    var totalMembers = MEMBERS ? MEMBERS.length : 0;
 
-  var rank = document.getElementById('crmSegRank') ? document.getElementById('crmSegRank').value : '';
-  var freq = document.getElementById('crmSegFreq') ? document.getElementById('crmSegFreq').value : '';
-  var reg  = document.getElementById('crmSegReg')  ? document.getElementById('crmSegReg').value  : '';
+    var rankFilter = document.getElementById('crmSegRank');
+    var freqFilter = document.getElementById('crmSegFreq');
+    var regFilter  = document.getElementById('crmSegReg');
 
-  var hasFilter = rank || freq || reg;
-  if(!hasFilter) {
-    el.textContent = '📊 対象: ' + deliverableBase.toLocaleString() + '名（全会員・配信停止除く）';
-    return;
+    var filtered = MEMBERS ? MEMBERS.slice() : [];
+
+    // Remove opt-out members
+    filtered = filtered.filter(function(m) { return !m.optout; });
+
+    var rank = rankFilter ? rankFilter.value : '';
+    var freq = freqFilter ? freqFilter.value : '';
+    var reg  = regFilter  ? regFilter.value  : '';
+
+    var hasFilter = rank || freq || reg;
+
+    // Apply rank filter
+    if (rank) {
+      filtered = filtered.filter(function(m) { return m.rank === rank; });
+    }
+
+    // Apply frequency filter
+    if (freq === 'active')   filtered = filtered.filter(function(m) { return m.count >= 3; });
+    if (freq === 'normal')   filtered = filtered.filter(function(m) { return m.count >= 1 && m.count <= 2; });
+    if (freq === 'inactive') filtered = filtered.filter(function(m) { return m.count === 0; });
+    if (freq === 'dormant')  filtered = filtered.filter(function(m) { return m.count === 0; });
+
+    // Apply registration date filter
+    if (reg) {
+      var now = new Date();
+      filtered = filtered.filter(function(m) {
+        if (!m.created_at) return false;
+        var d = new Date(m.created_at);
+        var diffDays = (now - d) / (1000 * 60 * 60 * 24);
+        if (reg === '7d') return diffDays <= 7;
+        if (reg === '30d') return diffDays <= 30;
+        if (reg === '6m') return diffDays >= 180;
+        if (reg === '1y') return diffDays >= 365;
+        return true;
+      });
+    }
+
+    if (!hasFilter) {
+      countEl.textContent = '📊 対象: ' + filtered.length.toLocaleString() + '名（全会員・配信停止除く）';
+    } else {
+      countEl.textContent = '📊 対象: ' + filtered.length.toLocaleString() + '名（セグメント絞り込み後・配信停止除く）';
+    }
+  } catch(e) {
+    countEl.textContent = '—';
   }
-
-  // セグメント絞り込み時はデモデータ比率で概算（本番はサーバー側で算出）
-  var filtered = MEMBERS.filter(function(m) { return !m.optout; });
-  if(rank) filtered = filtered.filter(function(m) { return m.rank === rank; });
-  if(freq === 'active')   filtered = filtered.filter(function(m) { return m.count >= 3; });
-  if(freq === 'normal')   filtered = filtered.filter(function(m) { return m.count >= 1 && m.count <= 2; });
-  if(freq === 'inactive') filtered = filtered.filter(function(m) { return m.count === 0; });
-  if(freq === 'dormant')  filtered = filtered.filter(function(m) { return m.count === 0; });
-
-  var demoBase = MEMBERS.filter(function(m) { return !m.optout; }).length;
-  var ratio = demoBase > 0 ? filtered.length / demoBase : 0;
-  var estimated = Math.round(deliverableBase * ratio);
-  el.textContent = '📊 対象: 約' + estimated.toLocaleString() + '名（セグメント絞り込み後・配信停止除く）';
 }
 
 function switchCrmTab(tab) {
@@ -14301,6 +14456,7 @@ function switchCrmTab(tab) {
     if(tabEl) { tabEl.style.color = t === tab ? 'var(--accent)' : '#888'; tabEl.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent'; }
   });
   if(tab === 'auto') renderAutoRules();
+  if(tab === 'history') loadCrmHistory();
   if(tab === 'template') renderTemplates();
   if(tab === 'compose') updateCrmSegCount();
 }
@@ -14334,17 +14490,45 @@ function crmPreview() {
   alert('📧 プレビュー\n\n件名: ' + subject + '\n\n※ 実際の配信では差し込み変数が各会員の値に置換されます');
 }
 
-function crmSend() {
+async function crmSend() {
   var type = document.querySelector('input[name=crmType]:checked').value;
   if(type === 'schedule') {
     showToast('📅 スケジュール配信を設定しました');
-  } else {
-    if(!confirm('対象会員にメールを配信します。よろしいですか？')) return;
-    var btn = document.querySelector('button[onclick="crmSend()"]');
-    if (btn) btn.disabled = true;
-    showToast('📧 配信を開始しました');
-    setTimeout(function(){ if (btn) btn.disabled = false; }, 3000);
+    return;
   }
+  if(!confirm('対象会員にメールを配信します。よろしいですか？')) return;
+
+  var contentType = document.getElementById('crmContentType') ? document.getElementById('crmContentType').value : '';
+  var subject = document.getElementById('crmSubject') ? document.getElementById('crmSubject').value : '';
+  var body = document.getElementById('crmBodyEditor') ? document.getElementById('crmBodyEditor').innerHTML : '';
+
+  if (!subject) { alert('件名を入力してください'); return; }
+
+  var btn = document.querySelector('button[onclick="crmSend()"]');
+  if (btn) btn.disabled = true;
+
+  // Try Edge Function
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var res = await fetch(SUPABASE_URL + '/functions/v1/send-crm-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ brand_id: BRAND_ID, subject: subject, body: body, content_type: contentType })
+    });
+    if (res.ok) {
+      showToast('📧 配信を開始しました');
+      if (typeof loadCrmHistory === 'function') loadCrmHistory();
+      if (btn) btn.disabled = false;
+      return;
+    }
+  } catch(e) {}
+
+  // EF not deployed - show Coming Soon with test option
+  if (confirm('一斉配信機能は準備中です。\n\nテストメール（自分宛に1通）を送信しますか？')) {
+    showToast('📧 テストメール送信機能は準備中です');
+  }
+  if (btn) btn.disabled = false;
 }
 
 async function crmSaveTemplate() {
