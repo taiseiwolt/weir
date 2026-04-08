@@ -2689,7 +2689,7 @@ content.innerHTML = `
 <!-- ============================== -->
 <div class="page" id="page-brand-design" style="padding-right:340px">
   <div class="breadcrumb"><a href="#" onclick="return false">ブランドHP</a> ＞ ホームページ管理</div>
-  <div class="page-title">ホームページ管理</div>
+  <div style="display:flex;align-items:center;gap:8px"><div class="page-title" style="margin:0">ホームページ管理</div><button class="btn btn-secondary btn-sm" onclick="previewBrandHp()" style="margin-left:8px">👁 プレビュー</button></div>
   <div class="page-subtitle">ブランドサイトのデザイン・コンテンツ・公開設定を一元管理します</div>
 
   <div class="card">
@@ -2750,6 +2750,14 @@ content.innerHTML = `
           <div id="dpHeaderBgPlaceholder"><div style="font-size:20px">📤</div><div style="font-size:11px;color:#999">クリックまたはドラッグ&ドロップ</div></div>
         </div>
       </div>
+      <div class="form-group">
+        <label>ファビコン（32×32px推奨）</label>
+        <div id="dpFaviconUploadArea" style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer" onclick="document.getElementById('dpFaviconFileInput').click()">
+          <input type="file" id="dpFaviconFileInput" accept="image/png,image/x-icon" style="display:none" onchange="dpHandleFaviconUpload(this)">
+          <div id="dpFaviconPreviewWrap" style="display:none"><img id="dpFaviconPreviewImg" style="max-height:32px;max-width:32px;border-radius:2px" loading="lazy"></div>
+          <div id="dpFaviconPlaceholder"><div style="font-size:16px">🔷</div><div style="font-size:10px;color:#999">32×32px PNG推奨</div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2764,36 +2772,36 @@ content.innerHTML = `
     <div class="card-title">📝 トップページ コンテンツ</div>
     <div style="font-size:10px;color:#888;margin-bottom:12px">ブランドサイトのトップページに表示するコンテンツを編集します。プレビューの「トップページ バナー」にも反映されます。</div>
 
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-        <div style="font-weight:600;font-size:12px;margin-bottom:6px">🎬 ヒーロー</div>
+    <div data-section-container style="display:flex;flex-direction:column;gap:12px">
+      <div data-section-id="hero" draggable="true" style="border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;margin-bottom:6px"><span class="drag-handle" style="cursor:grab;color:#aaa;font-size:14px;user-select:none">☰</span> 🎬 ヒーロー</div>
         <div style="font-size:10px;color:#888;margin-bottom:8px">メインビジュアルの画像/動画とキャッチコピー</div>
         <div style="border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#999">📤 メディアをアップロード</div>
         <div class="form-group" style="margin-top:8px"><label>キャッチコピー</label><textarea rows="2" placeholder="タイトルやキャッチコピーを入力" style="font-size:12px"></textarea></div>
       </div>
 
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-        <div style="font-weight:600;font-size:12px;margin-bottom:6px">📺 キャンペーン動画</div>
+      <div data-section-id="campaign_video" draggable="true" style="border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;margin-bottom:6px"><span class="drag-handle" style="cursor:grab;color:#aaa;font-size:14px;user-select:none">☰</span> 📺 キャンペーン動画</div>
         <div style="font-size:10px;color:#888;margin-bottom:8px">キャンペーン枠の動画</div>
         <div style="border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#999">📤 メディアをアップロード</div>
         <div class="form-group" style="margin-top:8px"><label>テキスト</label><textarea rows="2" placeholder="タイトルやキャッチコピーを入力" style="font-size:12px"></textarea></div>
       </div>
 
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-        <div style="font-weight:600;font-size:12px;margin-bottom:6px">⭐ おすすめトピックス</div>
+      <div data-section-id="recommend" draggable="true" style="border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;margin-bottom:6px"><span class="drag-handle" style="cursor:grab;color:#aaa;font-size:14px;user-select:none">☰</span> ⭐ おすすめトピックス</div>
         <div style="font-size:10px;color:#888;margin-bottom:8px">各トピックに画像・タイトル・本文を設定</div>
         <div style="border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#999">📤 メディアをアップロード</div>
         <div class="form-group" style="margin-top:8px"><label>テキスト</label><textarea rows="2" placeholder="タイトルやキャッチコピーを入力" style="font-size:12px"></textarea></div>
       </div>
 
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-        <div style="font-weight:600;font-size:12px;margin-bottom:6px">🔍 店舗を探す背景画像</div>
+      <div data-section-id="store_search" draggable="true" style="border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;margin-bottom:6px"><span class="drag-handle" style="cursor:grab;color:#aaa;font-size:14px;user-select:none">☰</span> 🔍 店舗を探す背景画像</div>
         <div style="font-size:10px;color:#888;margin-bottom:8px">店舗検索セクションの背景</div>
         <div style="border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#999">📤 メディアをアップロード</div>
       </div>
 
-      <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-        <div style="font-weight:600;font-size:12px;margin-bottom:6px">📢 ご案内（4枠）</div>
+      <div data-section-id="guide" draggable="true" style="border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:12px;margin-bottom:6px"><span class="drag-handle" style="cursor:grab;color:#aaa;font-size:14px;user-select:none">☰</span> 📢 ご案内（4枠）</div>
         <div style="font-size:10px;color:#888;margin-bottom:8px">各枠に画像・タイトル・サブタイトル・本文を設定</div>
         <div style="border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#999">📤 メディアをアップロード</div>
         <div class="form-group" style="margin-top:8px"><label>テキスト</label><textarea rows="2" placeholder="タイトルやキャッチコピーを入力" style="font-size:12px"></textarea></div>
@@ -2811,28 +2819,49 @@ content.innerHTML = `
           <td style="font-weight:600">ホームページ</td>
           <td style="font-size:11px;color:#888">brand.html</td>
           <td><span class="badge badge-success">公開</span></td>
-          <td><select style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
+          <td><select id="dpPublishBrand" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
         </tr>
         <tr>
           <td style="font-weight:600">メニューページ</td>
           <td style="font-size:11px;color:#888">aiden-brand-menu.html</td>
           <td><span class="badge badge-success">公開</span></td>
-          <td><select style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
+          <td><select id="dpPublishMenu" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
         </tr>
         <tr>
           <td style="font-weight:600">店舗ページ</td>
           <td style="font-size:11px;color:#888">aiden-brand-stores.html</td>
           <td><span class="badge badge-success">公開</span></td>
-          <td><select style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
+          <td><select id="dpPublishStores" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
         </tr>
         <tr>
           <td style="font-weight:600">モバイルオーダーページ</td>
           <td style="font-size:11px;color:#888">aiden-order.html</td>
           <td><span class="badge badge-success">公開</span></td>
-          <td><select style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
+          <td><select id="dpPublishOrder" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px" onchange="this.closest('tr').querySelector('.badge').textContent=this.value;this.closest('tr').querySelector('.badge').className='badge '+(this.value==='公開'?'badge-success':this.value==='非公開'?'badge-danger':'badge-warning');markDirty()"><option>公開</option><option>非公開</option><option>メンテナンス中</option></select></td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">🔍 SEO設定</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>ページタイトル（meta title）</label>
+        <input type="text" id="dpSeoTitle" placeholder="ブランド名 | AIden" maxlength="60" oninput="document.getElementById('dpSeoTitleCount').textContent=this.value.length+'/60';markDirty()">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:2px"><span>推奨: 60文字以内</span><span id="dpSeoTitleCount">0/60</span></div>
+      </div>
+      <div class="form-group full">
+        <label>ディスクリプション（meta description）</label>
+        <textarea id="dpSeoDesc" rows="2" placeholder="ブランドの説明文を入力" maxlength="160" oninput="document.getElementById('dpSeoDescCount').textContent=this.value.length+'/120';markDirty()"></textarea>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:2px"><span>推奨: 120文字以内</span><span id="dpSeoDescCount">0/120</span></div>
+      </div>
+      <div class="form-group full">
+        <label>OGP画像URL</label>
+        <input type="url" id="dpOgpImage" placeholder="https://..." oninput="markDirty()">
+        <div style="font-size:10px;color:var(--text-light);margin-top:2px">SNSシェア時に表示される画像。推奨: 1200×630px</div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -7579,6 +7608,17 @@ function clearDirty() {
   if(btn) btn.style.display = 'none';
 }
 var _brandDesignSettings = {};
+async function previewBrandHp() {
+  if (!BRAND_ID) { showToast('⚠️ ブランドIDが未設定です'); return; }
+  try {
+    var { data } = await sb.from('brands').select('slug').eq('id', BRAND_ID).single();
+    var slug = data && data.slug ? data.slug : '';
+    var url = slug ? '/brand.html?brand=' + encodeURIComponent(slug) : '/brand.html?brand_id=' + BRAND_ID;
+    window.open(url, '_blank');
+  } catch(e) {
+    window.open('/brand.html?brand_id=' + BRAND_ID, '_blank');
+  }
+}
 async function saveAllChanges() {
   if (!BRAND_ID) { showToast('⚠️ ブランドIDが未設定です'); return; }
   var page = document.getElementById('page-brand-design');
@@ -7614,6 +7654,41 @@ async function saveAllChanges() {
     }
   }
 
+  // HP publish settings
+  var dpPubBrand = document.getElementById('dpPublishBrand');
+  var dpPubMenu = document.getElementById('dpPublishMenu');
+  var dpPubStores = document.getElementById('dpPublishStores');
+  var dpPubOrder = document.getElementById('dpPublishOrder');
+  if (dpPubBrand || dpPubMenu || dpPubStores || dpPubOrder) {
+    updateData.hp_settings = {
+      brand: dpPubBrand ? dpPubBrand.value : '公開',
+      menu: dpPubMenu ? dpPubMenu.value : '公開',
+      stores: dpPubStores ? dpPubStores.value : '公開',
+      order: dpPubOrder ? dpPubOrder.value : '公開'
+    };
+  }
+
+  // Section order
+  var sectionContainer = page.querySelector('[data-section-container]');
+  if (sectionContainer) {
+    var sections = Array.from(sectionContainer.children).map(function(el) { return el.dataset.sectionId; }).filter(Boolean);
+    if (sections.length > 0) {
+      if (!updateData.design_settings) updateData.design_settings = {};
+      updateData.design_settings.section_order = sections;
+    }
+  }
+
+  // SEO settings (stored in design_settings JSONB)
+  var seoTitle = document.getElementById('dpSeoTitle');
+  var seoDesc = document.getElementById('dpSeoDesc');
+  var ogpImage = document.getElementById('dpOgpImage');
+  if (seoTitle || seoDesc || ogpImage) {
+    if (!updateData.design_settings) updateData.design_settings = {};
+    if (seoTitle) updateData.design_settings.seo_title = seoTitle.value;
+    if (seoDesc) updateData.design_settings.seo_description = seoDesc.value;
+    if (ogpImage) updateData.design_settings.ogp_image_url = ogpImage.value;
+  }
+
   // Logo URL - if a new logo was uploaded, upload to storage first
   var logoImg = document.getElementById('dpLogoPreviewImg');
   if (logoImg && logoImg.src && logoImg.src.startsWith('data:')) {
@@ -7626,6 +7701,23 @@ async function saveAllChanges() {
         if (urlData) updateData.logo_url = urlData.publicUrl;
       }
     } catch(e) { /* skip logo upload error */ }
+  }
+
+  // Favicon upload
+  var faviconImg = document.getElementById('dpFaviconPreviewImg');
+  if (faviconImg && faviconImg.src && faviconImg.src.startsWith('data:')) {
+    try {
+      var favBlob = await fetch(faviconImg.src).then(function(r){return r.blob()});
+      var favPath = 'brands/' + BRAND_ID + '/favicon_' + Date.now() + '.png';
+      var { data: favData, error: favErr } = await sb.storage.from('brand-assets').upload(favPath, favBlob, { upsert: true });
+      if (!favErr && favData) {
+        var { data: favUrl } = sb.storage.from('brand-assets').getPublicUrl(favPath);
+        if (favUrl) {
+          if (!updateData.design_settings) updateData.design_settings = {};
+          updateData.design_settings.favicon_url = favUrl.publicUrl;
+        }
+      }
+    } catch(e) { /* skip */ }
   }
 
   try {
@@ -11393,8 +11485,9 @@ function updateDesignPreview() {
     snsInputs.forEach(function(inp, i) {
       if(inp.value.trim()) links.push(snsNames[i] || '');
     });
+    var snsIcons = { LINE: '💬', X: '𝕏', Instagram: '📷', Facebook: '📘', TikTok: '🎵', YouTube: '▶️', Threads: '🧵', '食べログ': '🍽' };
     dpFooterSns.innerHTML = links.length > 0
-      ? links.map(function(n){ return '<span style="color:rgba(255,255,255,0.6);font-size:8px">'+n+'</span>'; }).join('')
+      ? links.map(function(n){ return '<span style="color:rgba(255,255,255,0.8);font-size:10px">' + (snsIcons[n] || '') + ' ' + n + '</span>'; }).join('')
       : '<span style="color:rgba(255,255,255,0.3);font-size:8px">SNS未設定</span>';
   }
 
@@ -11451,6 +11544,45 @@ document.addEventListener('input', function(e) {
 </script>
 
 <script>
+// Section drag & drop reordering
+(function() {
+  var dragSrc = null;
+  document.addEventListener('dragstart', function(e) {
+    var item = e.target.closest('[data-section-id]');
+    if (!item) return;
+    dragSrc = item;
+    item.style.opacity = '0.4';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.dataset.sectionId);
+  });
+  document.addEventListener('dragover', function(e) {
+    var item = e.target.closest('[data-section-id]');
+    if (!item || !dragSrc) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var container = item.parentElement;
+    var rect = item.getBoundingClientRect();
+    var midY = rect.top + rect.height / 2;
+    if (e.clientY < midY) {
+      container.insertBefore(dragSrc, item);
+    } else {
+      container.insertBefore(dragSrc, item.nextSibling);
+    }
+  });
+  document.addEventListener('dragend', function(e) {
+    if (dragSrc) {
+      dragSrc.style.opacity = '';
+      dragSrc = null;
+      if (typeof markDirty === 'function') markDirty();
+    }
+  });
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+  });
+})();
+</script>
+
+<script>
 // Design page: image upload handler
 function dpHandleUpload(input, type) {
   if(!input.files || !input.files[0]) return;
@@ -11479,6 +11611,18 @@ function dpHandleUpload(input, type) {
         dpHero.style.backgroundPosition = 'center';
       }
     }
+    markDirty();
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function dpHandleFaviconUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('dpFaviconPreviewImg').src = e.target.result;
+    document.getElementById('dpFaviconPreviewWrap').style.display = '';
+    document.getElementById('dpFaviconPlaceholder').style.display = 'none';
     markDirty();
   };
   reader.readAsDataURL(input.files[0]);
@@ -11625,6 +11769,11 @@ function dpHandleDrop(e, type) {
           </div>
           <div style="text-align:center"><span style="color:rgba(255,255,255,0.4);font-size:7px" id="dpFooterCopy"></span></div>
         </div>
+      </div>
+      <!-- ⑥ アクセス（Googleマップ） -->
+      <div style="padding:8px;background:#f5f6fa;border-radius:4px;margin-top:4px">
+        <div style="font-size:8px;font-weight:700;color:#888;margin-bottom:4px">📍 アクセス</div>
+        <div id="dpMapPreview" style="height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999">Googleマップ（店舗住所から自動生成）</div>
       </div>
       <!-- 案A: メニューページ価格サンプル -->
       <div style="padding:4px 10px;background:#fafafa;border-top:1px solid #eee">
