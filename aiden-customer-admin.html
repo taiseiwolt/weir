@@ -685,6 +685,7 @@ function showPage(pageId, catId){
   if(pageId === 'guest-conversion' && typeof loadGuestConversionSettings === 'function') loadGuestConversionSettings();
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
+  if(pageId === 'ban-management' && typeof renderBanList === 'function') renderBanList();
   setTimeout(function(){ if(typeof updateDesignPreview==='function') updateDesignPreview(); }, 100);
 }
 
@@ -1827,7 +1828,7 @@ content.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px" id="csvStoreList"></div>
     </div>
     <div class="form-group"><label>チャネル</label><select><option>全チャネル</option><option>店内注文</option><option>持ち帰り</option><option>デリバリー</option></select></div>
-  </div><div class="btn-group"><button class="btn btn-primary" onclick="showToast('CSV生成を開始しました（デモ）')">CSV生成</button></div></div>
+  </div><div class="btn-group"><button class="btn btn-primary" onclick="generateOrdersCsv()">CSV生成</button></div></div>
 </div>
 
 <!-- 📊 ユーザー分析 -->
@@ -2788,18 +2789,12 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">⭐ おすすめ</div>
-      <button class="btn btn-primary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ 新規追加" onclick="document.getElementById('contentEditModal').style.display='flex'">＋ 追加</button>
+      <button class="btn btn-primary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ 新規追加" onclick="openContentEdit('recommend',-1)">＋ 追加</button>
     </div>
     <div style="font-size:10px;color:#888;margin-bottom:8px">ホームページの「おすすめ」セクションに表示されるコンテンツを管理します。ドラッグで表示順を変更できます。</div>
     <table class="data-table" style="font-size:11px" id="ceRecommendTable">
       <thead><tr><th>表示順</th><th>タイトル</th><th>ステータス</th><th>公開期間</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>現在実施中のキャンペーン</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ編集：現在実施中のキャンペーン" data-ce-index="0" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>2</td><td>北海道産 黒毛和牛 特上カルビ祭</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ編集：北海道産 黒毛和牛 特上カルビ祭" data-ce-index="1" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>3</td><td>なまら特選3品盛り 期間限定</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ編集：なまら特選3品盛り 期間限定" data-ce-index="2" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>4</td><td>うまい肉に真っすぐ！</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ編集：うまい肉に真っすぐ！" data-ce-index="3" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>5</td><td>炭火亭×アニメコラボ</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="recommend" data-ce-label="おすすめ編集：炭火亭×アニメコラボ" data-ce-index="4" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-      </tbody>
+      <tbody id="ceRecommendBody"><tr><td colspan="5" class="empty-state">読み込み中...</td></tr></tbody>
     </table>
   </div>
 
@@ -2807,17 +2802,12 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">📢 ご案内</div>
-      <button class="btn btn-primary btn-sm" data-ce-type="guide" data-ce-label="ご案内 新規追加" onclick="document.getElementById('contentEditModal').style.display='flex'">＋ 追加</button>
+      <button class="btn btn-primary btn-sm" data-ce-type="guide" data-ce-label="ご案内 新規追加" onclick="openContentEdit('guide',-1)">＋ 追加</button>
     </div>
     <div style="font-size:10px;color:#888;margin-bottom:8px">ホームページの「ご案内」セクションに表示される4枠のコンテンツを管理します。</div>
     <table class="data-table" style="font-size:11px" id="ceGuideTable">
       <thead><tr><th>表示順</th><th>タイトル</th><th>サブタイトル</th><th>ステータス</th><th>公開期間</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td style="font-weight:600">LINE公式アカウント</td><td style="color:#888;font-size:11px">友だち募集中！</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="guide" data-ce-label="ご案内編集：LINE公式アカウント" data-ce-index="0" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>2</td><td style="font-weight:600">デジタルギフト</td><td style="color:#888;font-size:11px">贈り物に最適</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="guide" data-ce-label="ご案内編集：デジタルギフト" data-ce-index="1" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>3</td><td style="font-weight:600">シニアカード</td><td style="color:#888;font-size:11px">60歳以上のお客様対象</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="guide" data-ce-label="ご案内編集：シニアカード" data-ce-index="2" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td>4</td><td style="font-weight:600">キャッシュレス決済</td><td style="color:#888;font-size:11px">さらに便利になりました！</td><td><span class="badge badge-success">公開</span></td><td style="font-size:10px;color:#888;white-space:nowrap">—</td><td><button class="btn btn-secondary btn-sm" data-ce-type="guide" data-ce-label="ご案内編集：キャッシュレス決済" data-ce-index="3" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-      </tbody>
+      <tbody id="ceGuideBody"><tr><td colspan="6" class="empty-state">読み込み中...</td></tr></tbody>
     </table>
   </div>
 
@@ -2825,18 +2815,12 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">📰 ニュース</div>
-      <button class="btn btn-primary btn-sm" data-ce-type="news" data-ce-label="ニュース 新規作成" onclick="document.getElementById('contentEditModal').style.display='flex'">＋ 新規作成</button>
+      <button class="btn btn-primary btn-sm" data-ce-type="news" data-ce-label="ニュース 新規作成" onclick="openContentEdit('news',-1)">＋ 新規作成</button>
     </div>
     <div style="font-size:10px;color:#888;margin-bottom:8px">ホームページの「ニュース」セクションに表示されるお知らせ記事を管理します。</div>
     <table class="data-table" id="ceNewsTable">
       <thead><tr><th>公開日</th><th>カテゴリ</th><th>タイトル</th><th>ステータス</th><th>操作</th></tr></thead>
-      <tbody>
-        <tr><td style="font-size:10px;color:#888">2026/02/21</td><td><span class="badge" style="background:#e94560;color:#fff">お店情報</span></td><td>新宿東口店 臨時休業</td><td><span class="badge badge-success">公開</span></td><td><button class="btn btn-secondary btn-sm" data-ce-type="news" data-ce-label="ニュース編集：新宿東口店 臨時休業" data-ce-index="0" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td style="font-size:10px;color:#888">2026/02/21</td><td><span class="badge" style="background:#e94560;color:#fff">お店情報</span></td><td>池袋店 リニューアル休業</td><td><span class="badge badge-success">公開</span></td><td><button class="btn btn-secondary btn-sm" data-ce-type="news" data-ce-label="ニュース編集：池袋店 リニューアル休業" data-ce-index="1" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td style="font-size:10px;color:#888">2026/02/20</td><td><span class="badge" style="background:#42a5f5;color:#fff">会社情報</span></td><td>恵比寿店 リニューアル休業・価格改定</td><td><span class="badge badge-success">公開</span></td><td><button class="btn btn-secondary btn-sm" data-ce-type="news" data-ce-label="ニュース編集：恵比寿店 リニューアル休業・価格改定" data-ce-index="2" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td style="font-size:10px;color:#888">2026/02/18</td><td><span class="badge" style="background:#26a69a;color:#fff">メニュー</span></td><td>「名店監修」特製クッパ 新登場</td><td><span class="badge badge-success">公開</span></td><td><button class="btn btn-secondary btn-sm" data-ce-type="news" data-ce-label="ニュース編集：「名店監修」特製クッパ 新登場" data-ce-index="3" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-        <tr><td style="font-size:10px;color:#888">2026/02/15</td><td><span class="badge" style="background:#26a69a;color:#fff">メニュー</span></td><td>春の特選コース 予約受付開始</td><td><span class="badge badge-success">公開</span></td><td><button class="btn btn-secondary btn-sm" data-ce-type="news" data-ce-label="ニュース編集：春の特選コース 予約受付開始" data-ce-index="4" onclick="document.getElementById('contentEditModal').style.display='flex'">編集</button></td></tr>
-      </tbody>
+      <tbody id="ceNewsBody"><tr><td colspan="5" class="empty-state">読み込み中...</td></tr></tbody>
     </table>
   </div>
 
@@ -4293,7 +4277,7 @@ content.innerHTML = `
     <div class="form-group"><label>終了日</label><input type="date"></div>
     <div class="form-group"><label>データ種類</label><select><option>請求データ</option><option>注文履歴</option><option>支払履歴</option></select></div>
     <div class="form-group"><label>対象店舗</label><select><option>全店舗</option></select></div>
-  </div><div class="btn-group"><button class="btn btn-primary" onclick="showToast('CSV生成を開始しました（デモ）')">CSV生成</button></div></div>
+  </div><div class="btn-group"><button class="btn btn-primary" onclick="generateBillingCsv()">CSV生成</button></div></div>
 </div>
 
 <!-- ============================== -->
@@ -4570,10 +4554,7 @@ content.innerHTML = `
     <div style="overflow:hidden">
       <table class="data-table">
         <thead><tr><th>対象</th><th>タイプ</th><th>理由</th><th>実行日</th><th>実行者</th><th>操作</th></tr></thead>
-        <tbody>
-          <tr><td>test@example.com</td><td>メール</td><td>カスタマーハラスメント</td><td>2026/02/15</td><td>田中太郎</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
-          <tr><td>090-9999-0000</td><td>電話番号</td><td>虚偽注文</td><td>2026/01/20</td><td>AIden運営</td><td><button class="btn btn-secondary btn-sm">解除</button></td></tr>
-        </tbody>
+        <tbody id="banListBody"><tr><td colspan="6" class="empty-state">読み込み中...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -6956,11 +6937,20 @@ function reviewReplyPreview() {
   document.getElementById('reviewReplyStep2').style.display = '';
 }
 
-function reviewReplySubmit() {
+async function reviewReplySubmit() {
   const reviewId = document.getElementById('reviewReplyModalId').value;
   const text = document.getElementById('reviewReplyText').value.trim();
   const review = REVIEWS.find(r => r.id === reviewId);
   if(!review) return;
+
+  try {
+    var { error } = await sb.from('reviews').update({ reply: text, replied_at: new Date().toISOString(), status: 'published' }).eq('id', reviewId);
+    if (error) throw error;
+  } catch(e) {
+    showToast('⚠️ 返信の保存に失敗しました: ' + (e.message || e));
+    return;
+  }
+
   review.reply = text;
   review.replyStatus = '掲載済';
   addChangeLog('レビュー返信', (review.type==='store'?'店舗':'商品')+'レビュー('+review.userName+')に返信');
@@ -7043,13 +7033,16 @@ async function startStripeOnboarding() {
   if (!CORP.id) { alert('法人情報が取得できません'); return; }
   if (!confirm('Stripe Connect Expressアカウントを作成します。\n\n法人名: ' + CORP.name + '\n\n本人確認のためStripeの画面に遷移します。続行しますか？')) return;
 
+  var session = (await sb.auth.getSession()).data.session;
+  var authToken = session ? session.access_token : SUPABASE_KEY;
+
   const statusEl = document.getElementById('stripeStatusContent');
   statusEl.innerHTML = '<div style="text-align:center;padding:32px"><div style="font-size:14px;color:var(--text-light)">⏳ Stripeアカウントを作成中...</div></div>';
 
   try {
     const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-connect-create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({
         corp_id: CORP.id,
         business_name: CORP.name,
@@ -7200,9 +7193,64 @@ function clearDirty() {
   const btn = document.getElementById('floatingSaveBtn');
   if(btn) btn.style.display = 'none';
 }
-function saveAllChanges() {
-  clearDirty();
-  showToast('変更を保存しました');
+var _brandDesignSettings = {};
+async function saveAllChanges() {
+  if (!BRAND_ID) { showToast('⚠️ ブランドIDが未設定です'); return; }
+  var page = document.getElementById('page-brand-design');
+  if (!page) { clearDirty(); showToast('変更を保存しました'); return; }
+
+  var allColorInputs = page.querySelectorAll('input[type=color]');
+  var updateData = {};
+  if (allColorInputs.length >= 6) {
+    updateData.primary_color = allColorInputs[0].value;
+    updateData.secondary_color = allColorInputs[1].value;
+    updateData.header_bg = allColorInputs[2].value;
+    updateData.header_text_color = allColorInputs[3].value;
+    updateData.font_color = allColorInputs[4].value;
+    updateData.design_settings = JSON.parse(JSON.stringify(
+      (typeof _brandDesignSettings === 'object' && _brandDesignSettings) ? _brandDesignSettings : {}
+    ));
+    updateData.design_settings.price_color = allColorInputs[5].value;
+  }
+
+  var fontSelect = document.getElementById('dpFontSelect');
+  if (fontSelect) updateData.font_family = fontSelect.value;
+
+  // SNS links
+  var snsCard = document.getElementById('dpSnsCard');
+  if (snsCard) {
+    var snsInputs = snsCard.querySelectorAll('input[type=url]');
+    var snsKeys = ['sns_line','sns_x','sns_instagram','sns_facebook','sns_tiktok','sns_youtube','sns_threads'];
+    snsInputs.forEach(function(inp, i) {
+      if (i < snsKeys.length) updateData[snsKeys[i]] = inp.value.trim();
+    });
+    if (snsInputs.length > 7) {
+      updateData.social_links = { tabelog: snsInputs[7].value.trim() };
+    }
+  }
+
+  // Logo URL - if a new logo was uploaded, upload to storage first
+  var logoImg = document.getElementById('dpLogoPreviewImg');
+  if (logoImg && logoImg.src && logoImg.src.startsWith('data:')) {
+    try {
+      var logoBlob = await fetch(logoImg.src).then(function(r){return r.blob()});
+      var logoPath = 'brands/' + BRAND_ID + '/logo_' + Date.now() + '.png';
+      var { data: logoData, error: logoErr } = await sb.storage.from('brand-assets').upload(logoPath, logoBlob, { upsert: true });
+      if (!logoErr && logoData) {
+        var { data: urlData } = sb.storage.from('brand-assets').getPublicUrl(logoPath);
+        if (urlData) updateData.logo_url = urlData.publicUrl;
+      }
+    } catch(e) { /* skip logo upload error */ }
+  }
+
+  try {
+    var { error } = await sb.from('brands').update(updateData).eq('id', BRAND_ID);
+    if (error) throw error;
+    clearDirty();
+    showToast('変更を保存しました');
+  } catch(e) {
+    showToast('⚠️ 保存に失敗しました: ' + (e.message || e));
+  }
 }
 (function(){
   const btn = document.createElement('div');
@@ -9494,11 +9542,79 @@ async function deleteStaffAccount(staffId) {
 }
 
 // ===== BAN EXECUTE =====
-function executeBan(btn) {
+async function executeBan(btn) {
   if (!confirm('BANを実行します。よろしいですか？')) return;
   btn.disabled = true;
-  showToast('⛔ BANを実行しました');
-  setTimeout(function(){ btn.disabled = false; }, 3000);
+  try {
+    var banPage = document.getElementById('page-ban-management');
+    var typeSelect = document.getElementById('banType');
+    var targetType = typeSelect ? typeSelect.value : 'email';
+    var targetInput = banPage.querySelectorAll('.form-grid input[type=text]')[0];
+    var targetValue = targetInput ? targetInput.value.trim() : '';
+    if (!targetValue) { showToast('⚠️ 対象値を入力してください'); btn.disabled = false; return; }
+    var reasonSelect = banPage.querySelectorAll('.form-grid select')[1];
+    var reason = reasonSelect ? reasonSelect.value : '';
+    var memoArea = banPage.querySelector('textarea');
+    var memo = memoArea ? memoArea.value.trim() : '';
+
+    var insertData = {
+      target_type: targetType,
+      scope_type: 'brand',
+      scope_id: BRAND_ID,
+      ban_type: 'all_except_dinein',
+      reason: reason + (memo ? ' - ' + memo : ''),
+      banned_by: CURRENT_AUTH_USER ? CURRENT_AUTH_USER.id : null,
+      is_active: true
+    };
+    if (targetType === 'email') insertData.target_email = targetValue;
+    else if (targetType === 'phone') insertData.target_phone = targetValue;
+
+    var { error } = await sb.from('user_bans').insert(insertData);
+    if (error) throw error;
+    showToast('⛔ BANを実行しました');
+    if (typeof renderBanList === 'function') renderBanList();
+    // Clear form
+    if (targetInput) targetInput.value = '';
+    if (memoArea) memoArea.value = '';
+  } catch(e) {
+    showToast('⚠️ BAN実行に失敗しました: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function renderBanList() {
+  var tbody = document.getElementById('banListBody');
+  if (!tbody) return;
+  try {
+    var { data, error } = await sb.from('user_bans').select('*').eq('scope_id', BRAND_ID).eq('is_active', true).order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">BANリストは空です</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(function(b) {
+      var target = escH(b.target_email || b.target_phone || '\u2014');
+      var type = b.target_email ? 'メール' : (b.target_phone ? '電話番号' : '\u2014');
+      var dt = b.created_at ? new Date(b.created_at) : null;
+      var dateStr = dt ? dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') : '\u2014';
+      return '<tr><td>' + target + '</td><td>' + type + '</td><td>' + escH(b.reason || '\u2014') + '</td><td>' + dateStr + '</td><td>\u2014</td><td><button class="btn btn-secondary btn-sm" onclick="releaseBan(\'' + b.id + '\')">解除</button></td></tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">読み込みエラー</td></tr>';
+  }
+}
+
+async function releaseBan(banId) {
+  if (!confirm('本当にBAN登録を解除しますか？')) return;
+  try {
+    var { error } = await sb.from('user_bans').update({ is_active: false, unbanned_at: new Date().toISOString().slice(0,10) }).eq('id', banId);
+    if (error) throw error;
+    showToast('BAN登録を解除しました');
+    renderBanList();
+  } catch(e) {
+    showToast('⚠️ BAN解除に失敗しました: ' + (e.message || e));
+  }
 }
 
 // ===== STAFF PERMISSION MATRIX (READ-ONLY) =====
@@ -11524,6 +11640,85 @@ function ceSaveToTable() {
     }
   }
 
+  // DB persist (async, fire-and-forget)
+  (async function() {
+    try {
+      if (!BRAND_ID) return;
+      var title = '';
+      var subtitle = '';
+      var category = '';
+      var status = 'draft';
+      var publishAt = null;
+      var publishEnd = null;
+      var bodyHtml = '';
+      var sortOrder = 1;
+
+      var pubRadio = document.querySelector('input[name=cePublish]:checked');
+      if (pubRadio) {
+        if (pubRadio.value === 'publish') status = 'published';
+        else if (pubRadio.value === 'draft') status = 'draft';
+        else if (pubRadio.value === 'schedule') status = 'scheduled';
+      }
+      var schedDt = document.querySelector('#ceScheduleFields input[type=datetime-local]');
+      if (schedDt && schedDt.value) publishAt = schedDt.value;
+      var endCb = document.getElementById('ceHasEndDate');
+      if (endCb && endCb.checked) {
+        var endDt = document.querySelector('#ceEndFields input[type=datetime-local]');
+        if (endDt && endDt.value) publishEnd = endDt.value;
+      }
+
+      if (type === 'recommend') {
+        title = document.getElementById('ceTitle') ? document.getElementById('ceTitle').value : '';
+        var orderSel = document.getElementById('ceOrderSelect');
+        sortOrder = orderSel ? parseInt(orderSel.value) || 1 : 1;
+        var recEditor = document.querySelector('#ceRecommendFields .ceRichEditor');
+        if (recEditor) bodyHtml = recEditor.innerHTML;
+      } else if (type === 'guide') {
+        var gf = document.getElementById('ceGuideFields');
+        var gInputs = gf ? gf.querySelectorAll('input[type=text]') : [];
+        title = gInputs[0] ? gInputs[0].value : '';
+        subtitle = gInputs[1] ? gInputs[1].value : '';
+        var gOrdSel = document.getElementById('ceGuideOrderSelect');
+        sortOrder = gOrdSel ? parseInt(gOrdSel.value) || 1 : 1;
+        var guideEditor = gf ? gf.querySelector('.ceRichEditor') : null;
+        if (guideEditor) bodyHtml = guideEditor.innerHTML;
+      } else if (type === 'news') {
+        var nf = document.getElementById('ceNewsFields');
+        var nInputs = nf ? nf.querySelectorAll('input[type=text]') : [];
+        title = nInputs[0] ? nInputs[0].value : '';
+        var catSel = document.getElementById('ceNewsCatSelect');
+        category = catSel ? catSel.value : '';
+        var newsEditor = nf ? nf.querySelector('.ceRichEditor') : null;
+        if (newsEditor) bodyHtml = newsEditor.innerHTML;
+        sortOrder = 0; // news uses date ordering
+      }
+
+      var row = {
+        brand_id: BRAND_ID,
+        type: type,
+        title: title || '（無題）',
+        subtitle: subtitle || null,
+        category: category || null,
+        status: status,
+        publish_at: publishAt,
+        publish_end: publishEnd,
+        body: bodyHtml || null,
+        sort_order: sortOrder
+      };
+
+      if (isEdit && BRAND_CONTENTS[type] && BRAND_CONTENTS[type][parseInt(editIdx)]) {
+        row.id = BRAND_CONTENTS[type][parseInt(editIdx)].id;
+        await sb.from('brand_contents').update(row).eq('id', row.id);
+      } else {
+        await sb.from('brand_contents').insert(row);
+      }
+      // Reload data silently
+      loadBrandContents();
+    } catch(e) {
+      // Table may not exist yet
+    }
+  })();
+
   document.getElementById('contentEditModal').style.display = 'none';
   showToast('保存しました');
   // Apply greyout styling to ended items
@@ -11912,10 +12107,24 @@ function toggleMemberOptout(memberId) {
 
 function exportMemberCsv() {
   var masked = _memberPrivacy;
-  var msg = masked
-    ? 'CSVエクスポート（個人情報マスキング適用済み）を開始しました'
-    : 'CSVエクスポート（個人情報を含む）を開始しました';
-  showToast('📥 ' + msg);
+  if (!MEMBERS || MEMBERS.length === 0) { showToast('\u26a0\ufe0f エクスポートする会員データがありません'); return; }
+
+  var header = '会員ID,氏名,メール,電話番号,ランク,ポイント残高,注文回数,登録日';
+  var rows = MEMBERS.map(function(m) {
+    var name = masked ? (m.name ? m.name.charAt(0) + '\uff0a\uff0a' : '\u2014') : (m.name || '\u2014');
+    var phone = masked ? '***-****-****' : (m.phone || '\u2014');
+    return [
+      m.display_id || '', name, m.email || '', phone,
+      m.rank || '', m.point_balance || 0, m.order_count || 0, m.created_at ? m.created_at.slice(0,10) : ''
+    ].map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+  });
+  var csv = header + '\n' + rows.join('\n');
+  var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'members_' + new Date().toISOString().slice(0,10) + (masked ? '_masked' : '') + '.csv';
+  a.click();
+  showToast('\ud83d\udce5 CSV\u30a8\u30af\u30b9\u30dd\u30fc\u30c8' + (masked ? '\uff08\u30de\u30b9\u30ad\u30f3\u30b0\u9069\u7528\u6e08\u307f\uff09' : '') + '\u3092\u958b\u59cb\u3057\u307e\u3057\u305f');
   logAudit('export_data', 'members', null, {masked: masked, member_count: MEMBERS.length});
 }
 
@@ -13014,7 +13223,7 @@ function snsAccountSetting(name, account) {
     (isLinked ? '<div style="margin-top:8px"><button class="btn btn-sm" style="background:#ffebee;color:var(--danger);border:1px solid #ffcdd2" onclick="if(confirm(\'' + name + ' との連携を解除しますか？\\n\\n解除すると自動投稿が停止されます。\')){alert(\'連携を解除しました\');closeSnsModal()}">🔓 連携解除</button></div>' : '') +
 
     '<div class="btn-group" style="margin-top:20px">' +
-      '<button class="btn btn-primary" onclick="alert(\'設定を保存しました\');closeSnsModal()">💾 保存</button>' +
+      '<button class="btn btn-primary" onclick="saveSnsAccountSetting(\'' + name + '\')">💾 保存</button>' +
       '<button class="btn btn-secondary" onclick="closeSnsModal()">キャンセル</button>' +
     '</div>'
   );
@@ -13551,7 +13760,7 @@ function crmSend() {
   }
 }
 
-function crmSaveTemplate() {
+async function crmSaveTemplate() {
   var subject = document.getElementById('crmSubject').value;
   if(!subject) { alert('件名を入力してください'); return; }
   var typeLabel = {free:'自由記入',coupon:'クーポン付き',menu:'新メニュー'};
@@ -13559,6 +13768,21 @@ function crmSaveTemplate() {
   var now = new Date();
   var dateStr = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0');
   var body = document.getElementById('crmBodyEditor').innerHTML;
+
+  // DB save
+  try {
+    var { error } = await sb.from('crm_templates').insert({
+      brand_id: BRAND_ID,
+      name: subject,
+      content_type: contentType,
+      subject: subject,
+      body: body
+    });
+    if (error) throw error;
+  } catch(e) {
+    // Table may not exist yet, fall through to local save
+  }
+
   CRM_TEMPLATES.push({name:subject, type:typeLabel[contentType]||'自由記入', date:dateStr, body:body});
   showToast('📄 テンプレートに保存しました');
 }
@@ -15583,6 +15807,7 @@ showPage = function(pageId, catId) {
   if (pageId === 'support-aiden') loadSupportTickets();
   if (pageId === 'support-enduser') loadEndUserChats();
   if (pageId === 'support-faq') loadFaqTable();
+  if (pageId === 'brand-news' && typeof loadBrandContents === 'function') loadBrandContents();
 };
 
 // ===================================================================
@@ -16636,27 +16861,223 @@ function requestRefundCaution(orderId, paymentDate) {
   showToast('\u8fd4\u91d1\u30ea\u30af\u30a8\u30b9\u30c8\u3092\u9001\u4fe1\u3057\u307e\u3057\u305f\uff08\u30c7\u30e2\uff09');
 }
 
-// Commission history sample data with dates for refund eligibility
-var COMMISSION_DATA = [
-  { date: '2026/04/05 12:34', orderId: 'ORD-a8f2k3m', channel: '\u5e97\u5185', amount: 3200, rate: '3.8%', fee: 122, paymentDate: '2026-04-05' },
-  { date: '2026/03/28 13:15', orderId: 'ORD-b9g4n5p', channel: '\u30c6\u30a4\u30af\u30a2\u30a6\u30c8', amount: 2800, rate: '4.0%', fee: 112, paymentDate: '2026-03-28' },
-  { date: '2026/03/27 18:42', orderId: 'ORD-c1h6q7r', channel: '\u30c7\u30ea\u30d0\u30ea\u30fc', amount: 4500, rate: '4.0%', fee: 180, paymentDate: '2026-03-27' },
-  { date: '2026/01/20 11:00', orderId: 'ORD-d2j8m4s', channel: '\u5e97\u5185', amount: 3800, rate: '3.8%', fee: 144, paymentDate: '2026-01-20' },
-  { date: '2025/12/15 19:30', orderId: 'ORD-e5k9n6t', channel: '\u30c6\u30a4\u30af\u30a2\u30a6\u30c8', amount: 5200, rate: '4.0%', fee: 208, paymentDate: '2025-12-15' }
-];
+async function generateOrdersCsv() {
+  try {
+    showToast('CSV生成中...');
+    var page = document.getElementById('page-sales-csv');
+    var dateInputs = page.querySelectorAll('input[type=date]');
+    var startDate = dateInputs[0] ? dateInputs[0].value : '';
+    var endDate = dateInputs[1] ? dateInputs[1].value : '';
 
-function renderCommissionHistory() {
+    var query = sb.from('orders').select('display_id, order_type, total_amount, payment_status, created_at, customer_name');
+    if (BRAND_ID) query = query.eq('brand_id', BRAND_ID);
+    if (startDate) query = query.gte('created_at', startDate + 'T00:00:00');
+    if (endDate) query = query.lte('created_at', endDate + 'T23:59:59');
+    var { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) { showToast('\u26a0\ufe0f 該当データがありません'); return; }
+
+    var channelMap = { dine_in: '店内', takeout: 'テイクアウト', delivery: 'デリバリー' };
+    var header = '決済完了日時,注文番号,チャネル,注文合計,手数料率,手数料額,決済ステータス';
+    var rows = data.map(function(o) {
+      var rate = (o.order_type === 'dine_in') ? 3.8 : 4.0;
+      var fee = Math.round((o.total_amount || 0) * rate / 100);
+      return [
+        o.created_at || '', o.display_id || '', channelMap[o.order_type] || o.order_type || '',
+        o.total_amount || 0, rate + '%', fee, o.payment_status || ''
+      ].map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+    });
+    var csv = header + '\n' + rows.join('\n');
+    var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'orders_' + (startDate || 'all') + '_' + (endDate || 'all') + '.csv';
+    a.click();
+    showToast('\u2705 CSVダウンロードを開始しました');
+  } catch(e) {
+    showToast('\u26a0\ufe0f CSV生成に失敗しました: ' + (e.message || e));
+  }
+}
+
+async function generateBillingCsv() {
+  try {
+    showToast('CSV生成中...');
+    var page = document.getElementById('page-billing-csv');
+    var dateInputs = page.querySelectorAll('input[type=date]');
+    var startDate = dateInputs[0] ? dateInputs[0].value : '';
+    var endDate = dateInputs[1] ? dateInputs[1].value : '';
+
+    var query = sb.from('invoices').select('display_id, invoice_number, billing_period_start, billing_period_end, subtotal, tax, total, status, issued_at');
+    if (BRAND_ID) query = query.eq('brand_id', BRAND_ID);
+    if (startDate) query = query.gte('issued_at', startDate + 'T00:00:00');
+    if (endDate) query = query.lte('issued_at', endDate + 'T23:59:59');
+    var { data, error } = await query.order('issued_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) { showToast('\u26a0\ufe0f 該当データがありません'); return; }
+
+    var header = '請求番号,請求期間開始,請求期間終了,小計,税額,合計,ステータス,発行日';
+    var rows = data.map(function(inv) {
+      return [
+        inv.invoice_number || inv.display_id || '', inv.billing_period_start || '', inv.billing_period_end || '',
+        inv.subtotal || 0, inv.tax || 0, inv.total || 0, inv.status || '', inv.issued_at || ''
+      ].map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+    });
+    var csv = header + '\n' + rows.join('\n');
+    var blob = new Blob([new Uint8Array([0xEF,0xBB,0xBF]), csv], {type:'text/csv;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'billing_' + (startDate || 'all') + '_' + (endDate || 'all') + '.csv';
+    a.click();
+    showToast('\u2705 CSVダウンロードを開始しました');
+  } catch(e) {
+    showToast('\u26a0\ufe0f CSV生成に失敗しました: ' + (e.message || e));
+  }
+}
+
+async function renderCommissionHistory() {
   var tbody = document.getElementById('commissionHistoryBody');
   if (!tbody) return;
-  tbody.innerHTML = COMMISSION_DATA.map(function(c) {
-    return '<tr><td>' + escH(c.date) + '</td>' +
-      '<td style="font-family:monospace">' + escH(c.orderId) + '</td>' +
-      '<td>' + escH(c.channel) + '</td>' +
-      '<td>\u00a5' + c.amount.toLocaleString() + '</td>' +
-      '<td>' + escH(c.rate) + '</td>' +
-      '<td>\u00a5' + c.fee.toLocaleString() + '</td>' +
-      '<td>' + buildRefundButton(c.orderId, c.paymentDate) + '</td></tr>';
-  }).join('');
+  try {
+    var query = sb.from('orders').select('id, display_id, order_type, total_amount, created_at, payment_status').eq('payment_status', 'captured');
+    if (BRAND_ID) query = query.eq('brand_id', BRAND_ID);
+    var { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">取引データがありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(function(o) {
+      var dt = new Date(o.created_at);
+      var dateStr = dt.getFullYear() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+      var channelMap = { dine_in: '\u5e97\u5185', takeout: '\u30c6\u30a4\u30af\u30a2\u30a6\u30c8', delivery: '\u30c7\u30ea\u30d0\u30ea\u30fc' };
+      var channel = channelMap[o.order_type] || o.order_type || '\u2014';
+      var rate = (o.order_type === 'dine_in') ? 3.8 : 4.0;
+      var fee = Math.round(o.total_amount * rate / 100);
+      var payDate = dt.toISOString().slice(0, 10);
+      return '<tr><td>' + escH(dateStr) + '</td>' +
+        '<td style="font-family:monospace">' + escH(o.display_id || '\u2014') + '</td>' +
+        '<td>' + escH(channel) + '</td>' +
+        '<td>\u00a5' + (o.total_amount || 0).toLocaleString() + '</td>' +
+        '<td>' + rate.toFixed(1) + '%</td>' +
+        '<td>\u00a5' + fee.toLocaleString() + '</td>' +
+        '<td>' + buildRefundButton(o.display_id, payDate) + '</td></tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">読み込みエラー</td></tr>';
+  }
+}
+
+// ===================================================================
+// Brand Contents (brand_contents) DB integration
+// ===================================================================
+var BRAND_CONTENTS = { recommend: [], guide: [], news: [] };
+
+async function loadBrandContents() {
+  if (!BRAND_ID) return;
+  try {
+    var { data, error } = await sb.from('brand_contents').select('*').eq('brand_id', BRAND_ID).order('sort_order');
+    if (error) throw error;
+    BRAND_CONTENTS = { recommend: [], guide: [], news: [] };
+    (data || []).forEach(function(r) {
+      if (BRAND_CONTENTS[r.type]) BRAND_CONTENTS[r.type].push(r);
+    });
+    renderBrandContents();
+  } catch(e) {
+    // Table may not exist yet
+  }
+}
+
+function renderBrandContents() {
+  // Recommend
+  var rBody = document.getElementById('ceRecommendBody');
+  if (rBody) {
+    if (BRAND_CONTENTS.recommend.length === 0) {
+      rBody.innerHTML = '<tr><td colspan="5" class="empty-state">データがありません</td></tr>';
+    } else {
+      rBody.innerHTML = BRAND_CONTENTS.recommend.map(function(c, i) {
+        var statusBadge = c.status === 'published' ? '<span class="badge badge-success">公開</span>' : '<span class="badge" style="background:#e0e0e0;color:#888">下書き</span>';
+        var sched = c.publish_at ? c.publish_at.slice(0,10) + '\u301C' + (c.publish_end ? c.publish_end.slice(0,10) : '') : '\u2014';
+        return '<tr><td>' + (i+1) + '</td><td>' + escH(c.title || '') + '</td><td>' + statusBadge + '</td><td style="font-size:10px;color:#888;white-space:nowrap">' + sched + '</td><td><button class="btn btn-secondary btn-sm" onclick="openContentEdit(\'recommend\',' + i + ')">編集</button> <button class="btn btn-sm" style="color:var(--danger)" onclick="deleteContent(\'recommend\',\'' + c.id + '\')">削除</button></td></tr>';
+      }).join('');
+    }
+  }
+  // Guide
+  var gBody = document.getElementById('ceGuideBody');
+  if (gBody) {
+    if (BRAND_CONTENTS.guide.length === 0) {
+      gBody.innerHTML = '<tr><td colspan="6" class="empty-state">データがありません</td></tr>';
+    } else {
+      gBody.innerHTML = BRAND_CONTENTS.guide.map(function(c, i) {
+        var statusBadge = c.status === 'published' ? '<span class="badge badge-success">公開</span>' : '<span class="badge" style="background:#e0e0e0;color:#888">下書き</span>';
+        var sched = c.publish_at ? c.publish_at.slice(0,10) + '\u301C' + (c.publish_end ? c.publish_end.slice(0,10) : '') : '\u2014';
+        return '<tr><td>' + (i+1) + '</td><td style="font-weight:600">' + escH(c.title || '') + '</td><td style="color:#888;font-size:11px">' + escH(c.subtitle || '') + '</td><td>' + statusBadge + '</td><td style="font-size:10px;color:#888;white-space:nowrap">' + sched + '</td><td><button class="btn btn-secondary btn-sm" onclick="openContentEdit(\'guide\',' + i + ')">編集</button> <button class="btn btn-sm" style="color:var(--danger)" onclick="deleteContent(\'guide\',\'' + c.id + '\')">削除</button></td></tr>';
+      }).join('');
+    }
+  }
+  // News
+  var nBody = document.getElementById('ceNewsBody');
+  if (nBody) {
+    if (BRAND_CONTENTS.news.length === 0) {
+      nBody.innerHTML = '<tr><td colspan="5" class="empty-state">データがありません</td></tr>';
+    } else {
+      nBody.innerHTML = BRAND_CONTENTS.news.map(function(c, i) {
+        var statusBadge = c.status === 'published' ? '<span class="badge badge-success">公開</span>' : '<span class="badge" style="background:#e0e0e0;color:#888">下書き</span>';
+        var catColors = {shop:'#e94560',menu:'#26a69a',company:'#42a5f5',campaign:'#ff7043',notice:'#ffa726'};
+        var catColor = catColors[c.category] || '#888';
+        var catLabels = {shop:'お店情報',menu:'メニュー',company:'会社情報',campaign:'キャンペーン',notice:'お知らせ'};
+        var catLabel = catLabels[c.category] || c.category || '\u2014';
+        var pubDate = c.publish_at ? c.publish_at.slice(0,10) : (c.created_at ? c.created_at.slice(0,10) : '\u2014');
+        return '<tr><td style="font-size:10px;color:#888">' + pubDate + '</td><td><span class="badge" style="background:' + catColor + ';color:#fff">' + catLabel + '</span></td><td>' + escH(c.title || '') + '</td><td>' + statusBadge + '</td><td><button class="btn btn-secondary btn-sm" onclick="openContentEdit(\'news\',' + i + ')">編集</button> <button class="btn btn-sm" style="color:var(--danger)" onclick="deleteContent(\'news\',\'' + c.id + '\')">削除</button></td></tr>';
+      }).join('');
+    }
+  }
+}
+
+function openContentEdit(type, index) {
+  window._ceEditType = type;
+  window._ceEditIndex = index;
+  document.getElementById('contentEditModal').style.display = 'flex';
+}
+
+async function deleteContent(type, id) {
+  if (!confirm('このコンテンツを削除しますか？')) return;
+  try {
+    var { error } = await sb.from('brand_contents').delete().eq('id', id);
+    if (error) throw error;
+    showToast('削除しました');
+    loadBrandContents();
+  } catch(e) {
+    showToast('削除に失敗しました: ' + (e.message || e));
+  }
+}
+
+// ===================================================================
+// SNS Account Settings DB save
+// ===================================================================
+async function saveSnsAccountSetting(platform) {
+  var modal = document.getElementById('snsModal');
+  if (!modal) return;
+  var inputs = modal.querySelectorAll('input[type=text], input[type=date], input[type=password]');
+  var autoToggle = modal.querySelector('input[type=checkbox]');
+
+  var settingData = {
+    brand_id: BRAND_ID,
+    platform: platform,
+    account_name: inputs[0] ? inputs[0].value : '',
+    profile_url: inputs[1] ? inputs[1].value : '',
+    manager_name: inputs[2] ? inputs[2].value : '',
+    start_date: inputs[3] ? inputs[3].value : null,
+    auto_post_enabled: autoToggle ? autoToggle.checked : false
+  };
+
+  try {
+    var { error } = await sb.from('sns_account_settings').upsert(settingData, { onConflict: 'brand_id,platform' });
+    if (error) throw error;
+    showToast('設定を保存しました');
+  } catch(e) {
+    showToast('保存に失敗しました: ' + (e.message || e));
+  }
+  closeSnsModal();
 }
 
 (function(){
