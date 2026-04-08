@@ -1,0 +1,78 @@
+/* ===== AIden Template Base CSS ===== */
+/* 全テンプレート共通のCSS変数・リセット・構造 */
+
+:root {
+  --tpl-primary: #000000;
+  --tpl-secondary: #FFFFFF;
+  --tpl-accent: #FF0000;
+  --tpl-font: 'Noto Sans JP', sans-serif;
+  --tpl-radius: 8px;
+  --tpl-max-width: 1100px;
+  --tpl-section-padding: 60px 20px;
+}
+
+/* ===== Template Section Control ===== */
+.tpl-section { display: none; }
+.tpl-section.tpl-visible { display: block; }
+
+/* ===== Common Section Structure ===== */
+.tpl-section-inner {
+  max-width: var(--tpl-max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.tpl-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40px;
+  font-family: var(--tpl-font);
+  color: var(--tpl-primary);
+}
+
+.tpl-section-subtitle {
+  font-size: 14px;
+  text-align: center;
+  color: #666;
+  margin-top: -30px;
+  margin-bottom: 40px;
+}
+
+/* ===== Common Button ===== */
+.tpl-btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: var(--tpl-primary);
+  color: var(--tpl-secondary);
+  border: none;
+  border-radius: var(--tpl-radius);
+  font-family: var(--tpl-font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.tpl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+/* ===== Common Card ===== */
+.tpl-card {
+  background: white;
+  border-radius: var(--tpl-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.tpl-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  :root {
+    --tpl-section-padding: 40px 16px;
+  }
+  .tpl-section-title { font-size: 22px; margin-bottom: 24px; }
+}

@@ -1,0 +1,178 @@
+/* ===== Template B: DONMARU — 効率特化 ===== */
+/* 牛丼・定食・弁当チェーン向け。速さが正義、クーポンで回す。 */
+
+:root {
+  --tpl-primary: #D32F2F;
+  --tpl-secondary: #FFC107;
+  --tpl-accent: #FFFFFF;
+  --tpl-font: 'Noto Sans JP', sans-serif;
+}
+
+/* ===== HERO: クーポンバナー ===== */
+.tpl-hero {
+  background: var(--tpl-primary);
+  padding: 40px 20px;
+  text-align: center;
+}
+.tpl-hero-banner {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--tpl-secondary);
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.tpl-hero-badge {
+  display: inline-block;
+  background: var(--tpl-primary);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.tpl-hero-deal {
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: 900;
+  color: var(--tpl-primary);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.tpl-hero-sub {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+}
+.tpl-hero-cta {
+  display: inline-block;
+  background: var(--tpl-primary);
+  color: white;
+  padding: 14px 40px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+.tpl-hero-cta:hover { transform: scale(1.05); }
+
+/* ===== COUPON ===== */
+.tpl-coupon { padding: 32px 20px; background: #FFF8E1; }
+.tpl-coupon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  max-width: var(--tpl-max-width);
+  margin: 0 auto;
+}
+.tpl-coupon-card {
+  background: white;
+  border: 2px dashed var(--tpl-primary);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.tpl-coupon-card::before {
+  content: '🎟️';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 60px;
+  opacity: 0.1;
+}
+.tpl-coupon-value {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--tpl-primary);
+}
+.tpl-coupon-desc { font-size: 13px; color: #666; margin-top: 4px; }
+.tpl-coupon-expire { font-size: 11px; color: #999; margin-top: 8px; }
+
+/* ===== MENU: コンパクトリスト ===== */
+.tpl-menu { padding: var(--tpl-section-padding); background: white; }
+.tpl-menu-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.tpl-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.tpl-menu-row-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.tpl-menu-row-info { flex: 1; }
+.tpl-menu-row-name { font-size: 14px; font-weight: 700; }
+.tpl-menu-row-desc { font-size: 11px; color: #888; margin-top: 2px; }
+.tpl-menu-row-price {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--tpl-primary);
+  white-space: nowrap;
+}
+.tpl-menu-row-tag {
+  display: inline-block;
+  background: var(--tpl-secondary);
+  color: var(--tpl-primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+/* ===== PICKUP: 持ち帰り案内 ===== */
+.tpl-pickup { padding: var(--tpl-section-padding); background: #f9f9f9; }
+.tpl-pickup-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  text-align: center;
+}
+.tpl-pickup-step {
+  background: white;
+  border-radius: var(--tpl-radius);
+  padding: 24px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.tpl-pickup-num {
+  width: 36px;
+  height: 36px;
+  background: var(--tpl-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 0 auto 12px;
+}
+.tpl-pickup-icon { font-size: 32px; margin-bottom: 8px; }
+.tpl-pickup-label { font-size: 14px; font-weight: 600; }
+
+/* ===== ACCESS ===== */
+.tpl-access { padding: var(--tpl-section-padding); background: white; }
+.tpl-access-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.tpl-access-map { width: 100%; height: 250px; border: none; border-radius: var(--tpl-radius); margin-top: 20px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .tpl-pickup-inner { grid-template-columns: 1fr; }
+  .tpl-coupon-grid { grid-template-columns: 1fr; }
+}

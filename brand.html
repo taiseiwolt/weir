@@ -18,6 +18,8 @@
     <meta name="description" content="焼肉 炭火亭の公式サイト。こだわりの炭火焼きで最高の焼肉体験を。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="./aiden-common.css">
+<link rel="stylesheet" href="./public/templates/base.css">
+<link rel="stylesheet" id="tpl-css" href="">
 <script src="./aiden-common.js"></script>
 <link id="font-link" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -466,6 +468,59 @@ function goStoreSearch(area) {
   window.location.href = './aiden-brand-stores.html' + (params.length ? '?' + params.join('&') : '');
 }
 
+// ===== TEMPLATE LOADER =====
+async function loadTemplate(brandId) {
+  try {
+    // 1. Check brand_templates for this brand
+    var btRes = await sb.from('brand_templates').select('template_id, customization').eq('brand_id', brandId).maybeSingle();
+    var templateId = (btRes.data && btRes.data.template_id) ? btRes.data.template_id : 'TPL-A';
+    var customization = (btRes.data && btRes.data.customization) ? btRes.data.customization : {};
+
+    // 2. Get template definition
+    var tplRes = await sb.from('templates').select('css_file, layout_config, default_colors, default_font').eq('id', templateId).maybeSingle();
+    if (!tplRes.data) return;
+
+    var tpl = tplRes.data;
+
+    // 3. Load template CSS
+    var tplLink = document.getElementById('tpl-css');
+    if (tplLink && tpl.css_file) {
+      tplLink.href = './public/templates/' + tpl.css_file;
+    }
+
+    // 4. Apply colors (customization overrides defaults)
+    var colors = tpl.default_colors || {};
+    if (customization.colors) {
+      if (customization.colors.primary) colors.primary = customization.colors.primary;
+      if (customization.colors.secondary) colors.secondary = customization.colors.secondary;
+      if (customization.colors.accent) colors.accent = customization.colors.accent;
+    }
+    var root = document.documentElement;
+    if (colors.primary) root.style.setProperty('--tpl-primary', colors.primary);
+    if (colors.secondary) root.style.setProperty('--tpl-secondary', colors.secondary);
+    if (colors.accent) root.style.setProperty('--tpl-accent', colors.accent);
+
+    // 5. Apply font
+    var font = customization.font || tpl.default_font || 'Noto Sans JP';
+    root.style.setProperty('--tpl-font', "'" + font + "', sans-serif");
+
+    // 6. Show/hide sections based on layout_config
+    var config = tpl.layout_config || {};
+    var sections = config.sections || [];
+    document.querySelectorAll('.tpl-section').forEach(function(el) {
+      var secId = el.getAttribute('data-tpl-section');
+      if (secId && sections.indexOf(secId) !== -1) {
+        el.classList.add('tpl-visible');
+        el.style.order = sections.indexOf(secId);
+      } else {
+        el.classList.remove('tpl-visible');
+      }
+    });
+  } catch(e) {
+    // Silent fallback — use existing styles
+  }
+}
+
 // ===== SUPABASE DATA LOADER =====
 var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュー', info:'お知らせ'};
 
@@ -476,6 +531,9 @@ async function loadFromSupabase() {
     var brand = AidenCommon.brand;
     if (!brand) return;
     var brandId = brand.id;
+
+    // Load template (non-blocking)
+    loadTemplate(brandId);
 
     // Load hero slides for carousel
     heroSlidesRes = await sb.from('brand_hero_slides').select('media_url, media_type, alt_text, sort_order').eq('brand_id', brandId).eq('is_active', true).order('sort_order');

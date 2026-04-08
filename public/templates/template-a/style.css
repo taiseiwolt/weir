@@ -1,0 +1,175 @@
+/* ===== Template A: SILENT CURATOR — 写真訴求 ===== */
+/* カフェ・パン屋・スイーツ店向け。写真で魅せる、世界観で選ばれる。 */
+
+:root {
+  --tpl-primary: #2D5A3D;
+  --tpl-secondary: #FFFFFF;
+  --tpl-accent: #D4C5A9;
+  --tpl-font: 'Noto Sans JP', sans-serif;
+}
+
+/* ===== HERO: フルスクリーン背景画像 ===== */
+.tpl-hero {
+  position: relative;
+  height: 100vh;
+  min-height: 500px;
+  max-height: 900px;
+  overflow: hidden;
+  background: #f5f0eb;
+}
+.tpl-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 8s ease;
+}
+.tpl-hero:hover .tpl-hero-bg { transform: scale(1.03); }
+.tpl-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.tpl-hero-text {
+  color: white;
+  max-width: 600px;
+  padding: 20px;
+}
+.tpl-hero-text h1 {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.tpl-hero-text p {
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+
+/* ===== ABOUT ===== */
+.tpl-about { padding: var(--tpl-section-padding); background: #FAFAF7; }
+.tpl-about-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.tpl-about-inner p {
+  font-size: 15px;
+  line-height: 2.2;
+  color: #555;
+  letter-spacing: 0.05em;
+}
+
+/* ===== MENU: 写真グリッド ===== */
+.tpl-menu { padding: var(--tpl-section-padding); background: white; }
+.tpl-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: var(--tpl-max-width);
+  margin: 0 auto;
+}
+.tpl-menu-item {
+  position: relative;
+  border-radius: var(--tpl-radius);
+  overflow: hidden;
+  cursor: pointer;
+}
+.tpl-menu-item img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.tpl-menu-item:hover img { transform: scale(1.05); }
+.tpl-menu-item-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.tpl-menu-item:hover .tpl-menu-item-overlay { opacity: 1; }
+.tpl-menu-item-name { font-size: 14px; font-weight: 600; }
+.tpl-menu-item-price { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+
+/* ===== GALLERY ===== */
+.tpl-gallery { padding: var(--tpl-section-padding); background: #FAFAF7; }
+.tpl-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: var(--tpl-max-width);
+  margin: 0 auto;
+}
+.tpl-gallery-item {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.tpl-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.tpl-gallery-item:hover img { transform: scale(1.08); }
+
+/* ===== NEWS ===== */
+.tpl-news { padding: var(--tpl-section-padding); background: white; }
+.tpl-news-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.tpl-news-item {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+.tpl-news-date { color: #999; white-space: nowrap; font-size: 12px; }
+.tpl-news-title { color: #333; }
+
+/* ===== ACCESS ===== */
+.tpl-access { padding: var(--tpl-section-padding); background: #FAFAF7; }
+.tpl-access-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.tpl-access-map {
+  width: 100%;
+  height: 300px;
+  border-radius: var(--tpl-radius);
+  border: none;
+  margin-top: 20px;
+}
+.tpl-access-info {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #555;
+  line-height: 2;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .tpl-hero { height: 70vh; min-height: 400px; }
+  .tpl-menu-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .tpl-gallery-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .tpl-menu-grid { grid-template-columns: 1fr; }
+}

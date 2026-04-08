@@ -579,6 +579,7 @@ const NAV = [
     {id:'sales-google-reviews', label:'Google口コミ分析'},
   ]},
   { id:'brand', icon:'🎨', label:'ブランドHP', subs:[
+    {id:'brand-template', label:'テンプレート選択'},
     {id:'brand-design', label:'ホームページ管理'},
         {id:'brand-news', label:'コンテンツ管理'},
       ]},
@@ -699,6 +700,7 @@ function showPage(pageId, catId){
   if(pageId === 'accounts-list' && typeof renderStaffAccountsTable === 'function') renderStaffAccountsTable();
   if(pageId === 'sales-google-reviews' && typeof grLoadData === 'function') grLoadData();
   if(pageId === 'ban-management' && typeof renderBanList === 'function') renderBanList();
+  if(pageId === 'brand-template' && typeof loadTemplateCatalog === 'function') loadTemplateCatalog();
   if (pageId === 'content-pop' || pageId === 'review-store' || pageId === 'ai-sns') {
     if (typeof loadAiUsageCounters === 'function') loadAiUsageCounters();
     if (pageId === 'content-pop' && typeof loadAiHistory === 'function') loadAiHistory();
@@ -2713,6 +2715,77 @@ content.innerHTML = `
         <div style="font-size:11px;font-weight:700;color:#444;margin-bottom:8px">🔍 AIが検出した改善ポイント</div>
         <div id="grAiInsights" style="display:flex;flex-direction:column;gap:8px;font-size:12px"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- 🎨 ブランドHP - テンプレート選択 -->
+<!-- ============================== -->
+<div class="page" id="page-brand-template">
+  <div class="breadcrumb"><a href="#" onclick="return false">ブランドHP</a> ＞ テンプレート選択</div>
+  <div class="page-title">テンプレート選択</div>
+  <div class="page-subtitle">ブランドサイトのデザインテンプレートを選択します。テンプレートを変更するとカラー設定がリセットされます。</div>
+
+  <!-- 現在のテンプレート情報 -->
+  <div class="card" id="tplCurrentCard" style="margin-bottom:20px;display:none">
+    <div class="card-title">現在のテンプレート</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <img id="tplCurrentPreview" src="" style="width:80px;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" loading="lazy">
+      <div>
+        <div id="tplCurrentName" style="font-size:16px;font-weight:700"></div>
+        <div id="tplCurrentNameJa" style="font-size:13px;color:var(--text-light);margin-top:2px"></div>
+        <div id="tplCurrentDesc" style="font-size:12px;color:#888;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- テンプレート一覧 -->
+  <div id="tplCatalogGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:20px">
+    <div style="text-align:center;padding:40px;color:#888">テンプレートを読み込み中...</div>
+  </div>
+
+  <!-- カスタマイズセクション（テンプレート選択後に表示） -->
+  <div class="card" id="tplCustomizeCard" style="margin-top:24px;display:none">
+    <div class="card-title">🎨 テンプレートカスタマイズ</div>
+    <div style="font-size:11px;color:#888;margin-bottom:16px">カラーとフォントをカスタマイズできます。プレビューで確認してから保存してください。</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>プライマリカラー</label>
+        <div class="color-input-group">
+          <input type="color" id="tplColorPrimary" value="#000000" oninput="tplSyncColorText(this);tplUpdatePreview()">
+          <input type="text" id="tplColorPrimaryText" value="#000000" oninput="tplSyncColorPicker(this,'tplColorPrimary');tplUpdatePreview()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>セカンダリカラー</label>
+        <div class="color-input-group">
+          <input type="color" id="tplColorSecondary" value="#FFFFFF" oninput="tplSyncColorText(this);tplUpdatePreview()">
+          <input type="text" id="tplColorSecondaryText" value="#FFFFFF" oninput="tplSyncColorPicker(this,'tplColorSecondary');tplUpdatePreview()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>アクセントカラー</label>
+        <div class="color-input-group">
+          <input type="color" id="tplColorAccent" value="#FF0000" oninput="tplSyncColorText(this);tplUpdatePreview()">
+          <input type="text" id="tplColorAccentText" value="#FF0000" oninput="tplSyncColorPicker(this,'tplColorAccent');tplUpdatePreview()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>フォント</label>
+        <select id="tplFontSelect" onchange="tplUpdatePreview()">
+          <option value="Noto Sans JP">Noto Sans JP</option>
+          <option value="Noto Serif JP">Noto Serif JP</option>
+          <option value="M PLUS Rounded 1c">M PLUS Rounded 1c</option>
+          <option value="Kosugi Maru">Kosugi Maru</option>
+          <option value="Sawarabi Gothic">Sawarabi Gothic</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="tplSaveCustomization()">💾 カスタマイズを保存</button>
+      <button class="btn btn-secondary" onclick="tplResetColors()">🔄 デフォルトに戻す</button>
+      <button class="btn btn-secondary" onclick="tplPreviewInNewTab()">👁 プレビュー</button>
     </div>
   </div>
 </div>
@@ -7706,6 +7779,175 @@ function openInvoiceBreakdown(invId){
 
 // ===== PAGE SHOW HOOK =====
 const _origShowPage = typeof showPage === 'function' ? showPage : null;
+
+// ===== TEMPLATE CATALOG SYSTEM =====
+var _tplCatalog = [];
+var _tplCurrentId = null;
+var _tplCurrentDefaults = null;
+
+async function loadTemplateCatalog() {
+  var brandId = BRAND_ID;
+  if (!brandId) return;
+
+  // Load all active templates
+  var tplRes = await sb.from('templates').select('*').eq('is_active', true).order('sort_order');
+  _tplCatalog = (tplRes.data || []);
+
+  // Load current brand template
+  var btRes = await sb.from('brand_templates').select('template_id, customization').eq('brand_id', brandId).maybeSingle();
+  _tplCurrentId = (btRes.data && btRes.data.template_id) ? btRes.data.template_id : null;
+  var customization = (btRes.data && btRes.data.customization) ? btRes.data.customization : {};
+
+  // Render current template info
+  var currentCard = document.getElementById('tplCurrentCard');
+  if (_tplCurrentId && currentCard) {
+    var cur = _tplCatalog.find(function(t){ return t.id === _tplCurrentId; });
+    if (cur) {
+      currentCard.style.display = 'block';
+      var previewUrl = cur.preview_image_url || ('./public/templates/' + cur.css_file.replace('/style.css', '/preview.svg'));
+      document.getElementById('tplCurrentPreview').src = previewUrl;
+      document.getElementById('tplCurrentName').textContent = cur.name;
+      document.getElementById('tplCurrentNameJa').textContent = cur.name_ja;
+      document.getElementById('tplCurrentDesc').textContent = cur.description;
+
+      // Show customize section
+      _tplCurrentDefaults = cur.default_colors || {};
+      var colors = customization.colors || _tplCurrentDefaults;
+      document.getElementById('tplColorPrimary').value = colors.primary || '#000000';
+      document.getElementById('tplColorPrimaryText').value = colors.primary || '#000000';
+      document.getElementById('tplColorSecondary').value = colors.secondary || '#FFFFFF';
+      document.getElementById('tplColorSecondaryText').value = colors.secondary || '#FFFFFF';
+      document.getElementById('tplColorAccent').value = colors.accent || '#FF0000';
+      document.getElementById('tplColorAccentText').value = colors.accent || '#FF0000';
+      if (customization.font) {
+        document.getElementById('tplFontSelect').value = customization.font;
+      } else {
+        document.getElementById('tplFontSelect').value = cur.default_font || 'Noto Sans JP';
+      }
+      document.getElementById('tplCustomizeCard').style.display = 'block';
+    }
+  } else {
+    if (currentCard) currentCard.style.display = 'none';
+    document.getElementById('tplCustomizeCard').style.display = 'none';
+  }
+
+  // Render template grid
+  var grid = document.getElementById('tplCatalogGrid');
+  if (!grid) return;
+  grid.innerHTML = _tplCatalog.map(function(t) {
+    var isSelected = t.id === _tplCurrentId;
+    var previewUrl = t.preview_image_url || ('./public/templates/' + t.css_file.replace('/style.css', '/preview.svg'));
+    var genres = (t.target_genres || []).map(function(g){ return '<span style="display:inline-block;background:#f0f0f0;padding:2px 8px;border-radius:10px;font-size:10px;margin:2px">' + escH(g) + '</span>'; }).join('');
+    return '<div style="border:2px solid ' + (isSelected ? 'var(--accent)' : 'var(--border)') + ';border-radius:12px;overflow:hidden;transition:border-color .2s;position:relative' + (isSelected ? ';box-shadow:0 0 0 3px rgba(233,69,96,0.2)' : '') + '">'
+      + (isSelected ? '<div style="position:absolute;top:12px;right:12px;background:var(--accent);color:white;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;z-index:1">✓ 選択中</div>' : '')
+      + '<img src="' + escH(previewUrl) + '" style="width:100%;aspect-ratio:2/3;object-fit:cover;background:#f5f5f5" loading="lazy">'
+      + '<div style="padding:16px">'
+      + '<div style="font-size:16px;font-weight:700">' + escH(t.name) + '</div>'
+      + '<div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:2px">' + escH(t.name_ja) + '</div>'
+      + '<div style="font-size:12px;color:#666;margin-top:6px;line-height:1.6">' + escH(t.description) + '</div>'
+      + '<div style="margin-top:8px">' + genres + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:12px">'
+      + '<div style="display:flex;gap:4px">'
+      + '<div style="width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:' + escH((t.default_colors || {}).primary || '#000') + '"></div>'
+      + '<div style="width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:' + escH((t.default_colors || {}).secondary || '#fff') + '"></div>'
+      + '<div style="width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:' + escH((t.default_colors || {}).accent || '#f00') + '"></div>'
+      + '</div>'
+      + '<span style="font-size:11px;color:#888;margin-left:auto">' + escH(t.default_font || 'Noto Sans JP') + '</span>'
+      + '</div>'
+      + (isSelected
+        ? '<button class="btn btn-secondary" style="width:100%;margin-top:12px" disabled>選択中</button>'
+        : '<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="tplSelect(\'' + escH(t.id) + '\')">このテンプレートを選択</button>')
+      + '</div></div>';
+  }).join('');
+}
+
+async function tplSelect(templateId) {
+  if (!confirm('テンプレートを変更するとカラー設定がリセットされます。よろしいですか？')) return;
+  var brandId = BRAND_ID;
+  if (!brandId) return;
+
+  var tpl = _tplCatalog.find(function(t){ return t.id === templateId; });
+  if (!tpl) return;
+
+  var upsertData = {
+    brand_id: brandId,
+    template_id: templateId,
+    selected_at: new Date().toISOString(),
+    customization: { colors: tpl.default_colors || {}, font: tpl.default_font || 'Noto Sans JP' },
+    css_reset_used: false,
+    updated_at: new Date().toISOString()
+  };
+
+  var res = await sb.from('brand_templates').upsert(upsertData, { onConflict: 'brand_id' });
+  if (res.error) {
+    alert('テンプレート選択に失敗しました: ' + res.error.message);
+    return;
+  }
+
+  _tplCurrentId = templateId;
+  loadTemplateCatalog();
+  showToast('テンプレートを「' + (tpl.name_ja || tpl.name) + '」に変更しました');
+}
+
+function tplSyncColorText(picker) {
+  var textInput = document.getElementById(picker.id + 'Text');
+  if (textInput) textInput.value = picker.value;
+}
+function tplSyncColorPicker(textInput, pickerId) {
+  var picker = document.getElementById(pickerId);
+  if (picker && /^#[0-9a-fA-F]{6}$/.test(textInput.value)) picker.value = textInput.value;
+}
+
+function tplResetColors() {
+  if (!_tplCurrentDefaults) return;
+  document.getElementById('tplColorPrimary').value = _tplCurrentDefaults.primary || '#000000';
+  document.getElementById('tplColorPrimaryText').value = _tplCurrentDefaults.primary || '#000000';
+  document.getElementById('tplColorSecondary').value = _tplCurrentDefaults.secondary || '#FFFFFF';
+  document.getElementById('tplColorSecondaryText').value = _tplCurrentDefaults.secondary || '#FFFFFF';
+  document.getElementById('tplColorAccent').value = _tplCurrentDefaults.accent || '#FF0000';
+  document.getElementById('tplColorAccentText').value = _tplCurrentDefaults.accent || '#FF0000';
+  var cur = _tplCatalog.find(function(t){ return t.id === _tplCurrentId; });
+  if (cur) document.getElementById('tplFontSelect').value = cur.default_font || 'Noto Sans JP';
+}
+
+function tplUpdatePreview() {
+  // Real-time preview could be implemented with iframe — for now just visual feedback
+}
+
+async function tplPreviewInNewTab() {
+  var brandId = BRAND_ID;
+  if (!brandId) return;
+  var slugRes = await sb.from('brands').select('slug').eq('id', brandId).maybeSingle();
+  var slug = (slugRes.data && slugRes.data.slug) ? slugRes.data.slug : '';
+  var url = './brand.html' + (slug ? '?brand=' + encodeURIComponent(slug) : '?brand_id=' + brandId);
+  window.open(url, '_blank');
+}
+
+async function tplSaveCustomization() {
+  var brandId = BRAND_ID;
+  if (!brandId || !_tplCurrentId) return;
+
+  var customization = {
+    colors: {
+      primary: document.getElementById('tplColorPrimary').value,
+      secondary: document.getElementById('tplColorSecondary').value,
+      accent: document.getElementById('tplColorAccent').value
+    },
+    font: document.getElementById('tplFontSelect').value
+  };
+
+  var res = await sb.from('brand_templates').update({
+    customization: customization,
+    updated_at: new Date().toISOString()
+  }).eq('brand_id', brandId);
+
+  if (res.error) {
+    alert('保存に失敗しました: ' + res.error.message);
+    return;
+  }
+  showToast('カスタマイズを保存しました');
+}
+
 
 // ===== DIRTY STATE & SAVE SYSTEM =====
 let _isDirty = false;

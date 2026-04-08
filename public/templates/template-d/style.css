@@ -1,0 +1,192 @@
+/* ===== Template D: NAMI BOWL — 自由組立 ===== */
+/* ポケボウル・サラダ・選べる丼向け。自分だけの一杯を組み立てる。 */
+
+:root {
+  --tpl-primary: #00897B;
+  --tpl-secondary: #FF9800;
+  --tpl-accent: #FFFFFF;
+  --tpl-font: 'M PLUS Rounded 1c', sans-serif;
+}
+
+/* ===== HERO: ステップ説明 ===== */
+.tpl-hero {
+  background: linear-gradient(135deg, var(--tpl-primary) 0%, #004D40 100%);
+  padding: 60px 20px;
+  text-align: center;
+  color: white;
+}
+.tpl-hero-text h1 {
+  font-family: var(--tpl-font);
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.tpl-hero-text p {
+  font-size: 16px;
+  opacity: 0.85;
+  margin-bottom: 32px;
+}
+.tpl-hero-steps {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.tpl-hero-step {
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 20px;
+  width: 180px;
+  backdrop-filter: blur(4px);
+}
+.tpl-hero-step-num {
+  width: 32px;
+  height: 32px;
+  background: var(--tpl-secondary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 0 auto 12px;
+}
+.tpl-hero-step-icon { font-size: 36px; margin-bottom: 8px; }
+.tpl-hero-step-label { font-size: 13px; font-weight: 600; }
+
+/* ===== HOWTO ===== */
+.tpl-howto {
+  padding: var(--tpl-section-padding);
+  background: #E0F2F1;
+}
+.tpl-howto-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.tpl-howto-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.tpl-howto-icon { font-size: 48px; margin-bottom: 12px; }
+.tpl-howto-title { font-size: 16px; font-weight: 700; color: var(--tpl-primary); margin-bottom: 8px; }
+.tpl-howto-desc { font-size: 13px; color: #666; line-height: 1.7; }
+
+/* ===== MENU: ビルドユアオウン ===== */
+.tpl-menu { padding: var(--tpl-section-padding); background: white; }
+.tpl-menu-builder {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.tpl-menu-category {
+  margin-bottom: 32px;
+}
+.tpl-menu-cat-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tpl-primary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tpl-menu-cat-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+.tpl-menu-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.tpl-menu-option {
+  background: #F5F5F5;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tpl-menu-option:hover { border-color: var(--tpl-primary); }
+.tpl-menu-option.selected {
+  border-color: var(--tpl-primary);
+  background: #E0F2F1;
+}
+.tpl-menu-option-icon { font-size: 32px; margin-bottom: 6px; }
+.tpl-menu-option-name { font-size: 13px; font-weight: 600; }
+.tpl-menu-option-price { font-size: 12px; color: var(--tpl-secondary); font-weight: 700; margin-top: 2px; }
+
+/* ===== BUILDER: ビジュアルビルダー ===== */
+.tpl-builder { padding: var(--tpl-section-padding); background: #FAFAFA; }
+.tpl-builder-inner {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+.tpl-builder-bowl {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F5F5F5, #EEEEEE);
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  box-shadow: inset 0 4px 20px rgba(0,0,0,0.1);
+}
+.tpl-builder-total {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--tpl-primary);
+}
+
+/* ===== NUTRITION ===== */
+.tpl-nutrition { padding: var(--tpl-section-padding); background: white; }
+.tpl-nutrition-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.tpl-nutrition-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.tpl-nutrition-label { width: 80px; font-size: 13px; font-weight: 600; text-align: right; }
+.tpl-nutrition-track {
+  flex: 1;
+  height: 12px;
+  background: #E8E8E8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tpl-nutrition-fill {
+  height: 100%;
+  background: var(--tpl-primary);
+  border-radius: 6px;
+  transition: width 0.4s;
+}
+.tpl-nutrition-value { width: 50px; font-size: 12px; color: #888; }
+
+/* ===== ACCESS ===== */
+.tpl-access { padding: var(--tpl-section-padding); background: #E0F2F1; }
+.tpl-access-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.tpl-access-map { width: 100%; height: 250px; border: none; border-radius: 16px; margin-top: 20px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .tpl-hero-steps { flex-direction: column; align-items: center; }
+  .tpl-howto-inner { grid-template-columns: 1fr; }
+  .tpl-menu-options { grid-template-columns: repeat(2, 1fr); }
+  .tpl-builder-bowl { width: 220px; height: 220px; font-size: 60px; }
+}

@@ -1,0 +1,220 @@
+/* ===== Template E: REKKA — 好み調整 ===== */
+/* ラーメン・カレー・うどん向け。こだわりの一杯を好みに調整。 */
+
+:root {
+  --tpl-primary: #B71C1C;
+  --tpl-secondary: #FFF8E1;
+  --tpl-accent: #212121;
+  --tpl-font: 'Noto Sans JP', sans-serif;
+}
+
+/* ===== HERO: ドラマティック ===== */
+.tpl-hero {
+  position: relative;
+  height: 85vh;
+  min-height: 500px;
+  max-height: 900px;
+  background: #1a0000;
+  overflow: hidden;
+}
+.tpl-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+/* 湯気/煙エフェクト */
+.tpl-hero-steam {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(26,0,0,1) 0%, transparent 100%);
+  pointer-events: none;
+}
+.tpl-hero-steam::before {
+  content: '';
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, transparent 70%);
+  animation: tplSteam 4s ease-in-out infinite;
+}
+@keyframes tplSteam {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 0.6; }
+  50% { transform: translateX(-50%) translateY(-40px) scale(1.3); opacity: 0.2; }
+}
+.tpl-hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 80px;
+  text-align: center;
+}
+.tpl-hero-text h1 {
+  font-size: clamp(32px, 6vw, 60px);
+  font-weight: 900;
+  color: white;
+  letter-spacing: 0.1em;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin-bottom: 12px;
+}
+.tpl-hero-text p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.1em;
+}
+
+/* ===== PHILOSOPHY ===== */
+.tpl-philosophy {
+  padding: 80px 20px;
+  background: var(--tpl-accent);
+  text-align: center;
+}
+.tpl-philosophy-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.tpl-philosophy-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--tpl-primary);
+  margin-bottom: 24px;
+  letter-spacing: 0.1em;
+}
+.tpl-philosophy-text {
+  font-size: 14px;
+  line-height: 2.2;
+  color: rgba(255,255,255,0.7);
+}
+.tpl-philosophy-divider {
+  width: 60px;
+  height: 3px;
+  background: var(--tpl-primary);
+  margin: 32px auto;
+}
+
+/* ===== MENU: パラメータ調整UI ===== */
+.tpl-menu { padding: var(--tpl-section-padding); background: var(--tpl-secondary); }
+.tpl-menu-items {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+.tpl-menu-card {
+  background: white;
+  border-radius: var(--tpl-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.tpl-menu-card-img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+.tpl-menu-card-body { padding: 16px; }
+.tpl-menu-card-name {
+  font-size: 18px;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+.tpl-menu-card-price {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--tpl-primary);
+  margin-bottom: 12px;
+}
+
+/* ===== CUSTOMIZE: パラメータスライダー ===== */
+.tpl-customize { padding: var(--tpl-section-padding); background: white; }
+.tpl-customize-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.tpl-param {
+  margin-bottom: 24px;
+}
+.tpl-param-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.tpl-param-label { font-size: 14px; font-weight: 700; }
+.tpl-param-value { font-size: 13px; color: var(--tpl-primary); font-weight: 700; }
+.tpl-param-track {
+  position: relative;
+  height: 8px;
+  background: #E8E8E8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tpl-param-fill {
+  height: 100%;
+  background: linear-gradient(to right, var(--tpl-secondary), var(--tpl-primary));
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.tpl-param-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #999;
+}
+
+/* ===== REVIEWS ===== */
+.tpl-reviews { padding: var(--tpl-section-padding); background: var(--tpl-secondary); }
+.tpl-reviews-list {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.tpl-review-card {
+  background: white;
+  border-radius: var(--tpl-radius);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.tpl-review-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.tpl-review-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.tpl-review-name { font-size: 13px; font-weight: 700; }
+.tpl-review-stars { color: var(--tpl-primary); font-size: 12px; }
+.tpl-review-text { font-size: 13px; line-height: 1.8; color: #555; }
+
+/* ===== ACCESS ===== */
+.tpl-access { padding: var(--tpl-section-padding); background: var(--tpl-accent); }
+.tpl-access-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+}
+.tpl-access-info { font-size: 14px; line-height: 2.2; }
+.tpl-access-map { width: 100%; height: 300px; border: none; border-radius: var(--tpl-radius); margin-top: 20px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .tpl-hero { height: 70vh; }
+  .tpl-menu-items { grid-template-columns: 1fr; }
+  .tpl-reviews-list { grid-template-columns: 1fr; }
+}

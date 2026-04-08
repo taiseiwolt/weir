@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#D32F2F"/>
+  <rect x="40" y="40" width="320" height="200" rx="12" fill="#FFC107"/>
+  <text x="200" y="120" text-anchor="middle" font-family="sans-serif" font-size="48" fill="#D32F2F" font-weight="900">50% OFF</text>
+  <text x="200" y="160" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#D32F2F">初回限定クーポン</text>
+  <rect x="40" y="280" width="320" height="50" rx="6" fill="white" opacity="0.2"/>
+  <rect x="40" y="345" width="320" height="50" rx="6" fill="white" opacity="0.2"/>
+  <rect x="40" y="410" width="320" height="50" rx="6" fill="white" opacity="0.2"/>
+  <rect x="40" y="475" width="320" height="50" rx="6" fill="white" opacity="0.2"/>
+  <text x="200" y="560" text-anchor="middle" font-family="sans-serif" font-size="24" fill="white" font-weight="900" letter-spacing="2">DONMARU</text>
+  <text x="200" y="580" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#FFC107">効率特化テンプレート</text>
+</svg>

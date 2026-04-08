@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#1a0000"/>
+  <rect y="0" width="400" height="350" fill="#B71C1C" opacity="0.2"/>
+  <text x="200" y="140" text-anchor="middle" font-family="sans-serif" font-size="48" fill="white" font-weight="900" letter-spacing="4">烈火</text>
+  <text x="200" y="180" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#FFF8E1" opacity="0.6" letter-spacing="8">REKKA</text>
+  <text x="200" y="220" text-anchor="middle" font-family="sans-serif" font-size="12" fill="white" opacity="0.4">こだわりの一杯を、好みに調整</text>
+  <!-- Parameter bars -->
+  <text x="80" y="370" font-family="sans-serif" font-size="12" fill="#FFF8E1" font-weight="700">麺の硬さ</text>
+  <rect x="160" y="358" width="180" height="8" rx="4" fill="#333"/>
+  <rect x="160" y="358" width="120" height="8" rx="4" fill="#B71C1C"/>
+  <text x="80" y="410" font-family="sans-serif" font-size="12" fill="#FFF8E1" font-weight="700">スープ濃さ</text>
+  <rect x="160" y="398" width="180" height="8" rx="4" fill="#333"/>
+  <rect x="160" y="398" width="150" height="8" rx="4" fill="#B71C1C"/>
+  <text x="80" y="450" font-family="sans-serif" font-size="12" fill="#FFF8E1" font-weight="700">油の量</text>
+  <rect x="160" y="438" width="180" height="8" rx="4" fill="#333"/>
+  <rect x="160" y="438" width="90" height="8" rx="4" fill="#B71C1C"/>
+  <text x="80" y="490" font-family="sans-serif" font-size="12" fill="#FFF8E1" font-weight="700">辛さ</text>
+  <rect x="160" y="478" width="180" height="8" rx="4" fill="#333"/>
+  <rect x="160" y="478" width="60" height="8" rx="4" fill="#B71C1C"/>
+  <text x="200" y="560" text-anchor="middle" font-family="sans-serif" font-size="10" fill="white" opacity="0.3">好み調整テンプレート</text>
+</svg>
