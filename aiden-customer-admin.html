@@ -1566,6 +1566,7 @@ content.innerHTML = `
       <select id="productPoolCatFilter" onchange="renderProductPool()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
         <option value="">全カテゴリ</option>
       </select>
+      <button class="btn btn-secondary btn-sm" onclick="openCategoryReorderModal()" style="margin-left:4px">並び替え</button>
     </div>
 
     <div class="card" style="padding:0;overflow-x:auto">
@@ -4655,6 +4656,16 @@ content.innerHTML = `
         <div style="display:flex;gap:4px;flex-wrap:wrap" id="menuItemTags">${['おすすめ','期間限定','季節限定','数量限定','新商品','割引中','一番人気','プレミアム'].map(t=>`<span class="tag" onclick="this.classList.toggle('selected')" style="cursor:pointer">${t}</span>`).join('')}</div>
         <div style="font-size:10px;color:#888;margin-top:4px">※「新商品」タグは付与から30日後に自動的に解除されます</div>
       </div>
+      <div class="form-group full">
+        <div style="margin-top:12px">
+          <label style="font-weight:600;font-size:12px">販売状態</label>
+          <div style="display:flex;gap:12px;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="available" checked> <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px">販売中</span></label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="sold_out_today"> <span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:11px">本日売り切れ</span></label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="discontinued"> <span style="background:#ffebee;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px">終売</span></label>
+          </div>
+        </div>
+      </div>
       <div class="form-group full"><label>チャネル</label>
         <div style="display:flex;gap:12px">
           <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="menuChDineIn" checked>店内注文</label>
@@ -4662,8 +4673,62 @@ content.innerHTML = `
           <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="menuChDelivery" checked>デリバリー</label>
         </div>
       </div>
+      <div class="form-group" style="margin-top:8px">
+        <label>メニューパターン</label>
+        <select id="menuItemPattern" style="width:100%">
+          <option value="">未割当</option>
+        </select>
+      </div>
+      <div class="form-group full" id="menuSalePeriodSection" style="margin-top:12px">
+        <label style="font-weight:600;font-size:12px">販売期間</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <input type="date" id="menuSaleStart" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+          <span style="font-size:12px;color:#888">〜</span>
+          <input type="date" id="menuSaleEnd" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        </div>
+        <div style="font-size:10px;color:var(--text-light);margin-top:4px">※「期間限定」フラグ選択時は販売期間の入力が必須です</div>
+      </div>
       <div class="form-group"><label>販売開始日</label><input type="date" id="menuItemDisplayStart"></div>
       <div class="form-group"><label>販売終了日</label><input type="date" id="menuItemDisplayEnd"></div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">💰 価格・チャネル設定</div>
+      <table class="data-table" style="font-size:11px" id="menuChannelTable">
+        <thead>
+          <tr>
+            <th style="width:80px">チャネル</th>
+            <th style="width:60px">販売</th>
+            <th style="width:100px">価格（税込）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🍽 店内</td>
+            <td><input type="checkbox" id="chDineIn" checked></td>
+            <td><input type="number" id="chDineInPrice" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px" placeholder="¥"></td>
+          </tr>
+          <tr>
+            <td>🥡 テイクアウト</td>
+            <td><input type="checkbox" id="chTakeout"></td>
+            <td><input type="number" id="chTakeoutPrice" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px" placeholder="¥"></td>
+          </tr>
+          <tr>
+            <td>🚚 デリバリー</td>
+            <td><input type="checkbox" id="chDelivery"></td>
+            <td><input type="number" id="chDeliveryPrice" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:4px" placeholder="¥"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:8px">
+        <div style="font-size:11px;font-weight:600;margin-bottom:4px">配達サービス別価格（デリバリーON時）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="deliveryServicePrices">
+          <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#06C167"></span><span style="font-size:11px">Uber Eats</span><input type="number" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="¥" id="chUberPrice"></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E24B4A"></span><span style="font-size:11px">出前館</span><input type="number" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="¥" id="chDemaPrice"></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#333"></span><span style="font-size:11px">menu</span><input type="number" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="¥" id="chMenuPrice"></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#FF8C00"></span><span style="font-size:11px">Rocket Now</span><input type="number" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="¥" id="chRocketPrice"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px;opacity:0.5" disabled>🔄 外部サービスに同期 (Coming Soon)</button>
+      </div>
     </div>
     <div class="btn-group"><button class="btn btn-primary" onclick="saveMenuItem()">追加</button><button class="btn btn-secondary" onclick="closeMenuItemModal()">キャンセル</button></div>
   </div>
@@ -5481,7 +5546,7 @@ async function loadAdminFromSupabase() {
     }
 
     // 4. Products + Sizes (RLS: filtered by brand)
-    const {data: products, error: prodErr} = await sb.from('products').select('id, brand_id, category_id, name, description, image_url, dine_in, takeout, delivery, is_alcohol, sale_status');
+    const {data: products, error: prodErr} = await sb.from('products').select('id, brand_id, category_id, name, description, image_url, dine_in, takeout, delivery, is_alcohol, sale_status, product_flags, menu_pattern_id, display_start, display_end');
     if (prodErr) errors.push('商品: ' + prodErr.message);
     const {data: sizes, error: sizeErr} = await sb.from('product_sizes').select('id, product_id, name, price, sort_order');
     if (sizeErr) errors.push('商品サイズ: ' + sizeErr.message);
@@ -5489,9 +5554,11 @@ async function loadAdminFromSupabase() {
       const catMap = {}; CATEGORIES.forEach(c => catMap[c.id] = c.name);
       PRODUCTS = products.map(p => {
         const pSizes = (sizes || []).filter(s => s.product_id === p.id).sort((a,b) => a.sort_order - b.sort_order);
+        var pFlags = [];
+        try { pFlags = p.product_flags ? (typeof p.product_flags === 'string' ? JSON.parse(p.product_flags) : p.product_flags) : []; } catch(e) { pFlags = []; }
         return {
-          itemId: p.id, name: p.name, category: catMap[p.category_id] || '', tags: [], dineIn: p.dine_in, takeout: p.takeout, delivery: p.delivery,
-          imgData: p.image_url || null, displayStart: '', displayEnd: '', tax: 'reduced', ageRestrict: false, isAlcohol: p.is_alcohol || false,
+          itemId: p.id, name: p.name, category: catMap[p.category_id] || '', tags: pFlags, dineIn: p.dine_in, takeout: p.takeout, delivery: p.delivery,
+          imgData: p.image_url || null, displayStart: p.display_start || '', displayEnd: p.display_end || '', menu_pattern_id: p.menu_pattern_id || null, tax: 'reduced', ageRestrict: false, isAlcohol: p.is_alcohol || false, saleStatus: p.sale_status || 'available',
           sizes: pSizes.map(s => ({name: s.name, price: s.price})), optionGroupIds: []
         };
       });
@@ -5513,7 +5580,7 @@ async function loadAdminFromSupabase() {
     }
 
     // 6. Menu Patterns
-    const {data: mps} = await sb.from('menu_patterns').select('id, brand_id, name, display_start, display_end, created_at');
+    const {data: mps} = await sb.from('menu_patterns').select('id, brand_id, code, name, display_start, display_end, created_at');
     const {data: mpis} = await sb.from('menu_pattern_items').select('id, pattern_id, product_id, category_id, status, sort_order');
     if (mps && mps.length > 0) {
       MENU_PATTERNS = mps.map(mp => {
@@ -5521,7 +5588,7 @@ async function loadAdminFromSupabase() {
         const catGroups = {};
         items.forEach(i => { if (!catGroups[i.category_id]) catGroups[i.category_id] = []; catGroups[i.category_id].push(i); });
         return {
-          id: mp.id, menuId: mp.id.substring(0,5), name: mp.name,
+          id: mp.id, menuId: mp.id.substring(0,5), code: mp.code || '', name: mp.name,
           createdAt: mp.created_at ? new Date(mp.created_at).toLocaleString('ja-JP') : '',
           updatedAt: '', displayStart: mp.display_start || '', displayEnd: mp.display_end || '',
           categories: Object.keys(catGroups).map((catId, idx) => ({
@@ -9934,19 +10001,21 @@ function renderProductPool() {
   document.getElementById('productPoolBody').innerHTML = filtered.map(prod => {
     const tagsHtml = (prod.tags && prod.tags.length)
       ? prod.tags.map(t => '<span class="tag selected" style="font-size:9px;padding:1px 5px;margin:0">'+t+'</span>').join('') : '';
-    const periodText = formatPeriod(prod.displayStart, prod.displayEnd);
+    var periodDisplay = (prod.display_start || prod.display_end)
+      ? (prod.display_start ? prod.display_start.slice(0,10) : '') + '〜' + (prod.display_end ? prod.display_end.slice(0,10) : '')
+      : '';
+    const periodText = periodDisplay || formatPeriod(prod.displayStart, prod.displayEnd);
+    var linkedPattern = MENU_PATTERNS.find(function(mp) { return mp.id === prod.menu_pattern_id; });
+    var patternDisplay = linkedPattern ? escH(linkedPattern.code) : '';
     const linkedMps = MENU_PATTERNS.filter(mp => mpAllItems(mp).some(it => it.itemId === prod.itemId));
     const linkedHtml = linkedMps.length
-      ? linkedMps.map(mp => '<span style="font-size:9px;background:#e3f2fd;color:#2196F3;padding:1px 4px;border-radius:3px;font-family:Poppins,monospace">'+mp.menuId+'</span>').join(' ') : '<span style="font-size:9px;color:#bbb">-</span>';
-    const statuses = linkedMps.flatMap(mp => mpAllItems(mp).filter(it => it.itemId === prod.itemId).map(it => it.status));
-    const hasActive = statuses.includes('販売中');
-    const hasSoldOut = statuses.includes('品切れ');
-    const hasDiscontinued = statuses.includes('終売');
-    const statusColor = hasActive ? '#27ae60' : hasSoldOut ? '#f39c12' : '#e94560';
-    const statusBg = hasActive ? '#e8f5e9' : hasSoldOut ? '#fff8e1' : '#ffebee';
-    const statusHtml = statuses.length
-      ? `<select style="font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:${statusBg};color:${statusColor};font-weight:600;cursor:pointer" onchange="changeProductPoolStatus('${prod.itemId}',this.value)"><option value="販売中" ${hasActive?'selected':''}>販売中</option><option value="品切れ" ${hasSoldOut?'selected':''}>品切れ</option><option value="終売" ${hasDiscontinued?'selected':''}>終売</option></select>`
-      : '<span style="font-size:9px;color:#bbb">—</span>';
+      ? linkedMps.map(mp => '<span style="font-size:9px;background:#e3f2fd;color:#2196F3;padding:1px 4px;border-radius:3px;font-family:Poppins,monospace">'+(mp.code||mp.menuId)+'</span>').join(' ')
+      : (patternDisplay ? '<span style="font-size:9px;background:#e3f2fd;color:#2196F3;padding:1px 4px;border-radius:3px;font-family:Poppins,monospace">'+patternDisplay+'</span>' : '<span style="font-size:9px;color:#bbb">-</span>');
+    const saleStatusVal = prod.saleStatus || 'available';
+    const statusLabel = saleStatusVal === 'sold_out_today' ? '本日売り切れ' : saleStatusVal === 'discontinued' ? '終売' : '販売中';
+    const statusColor = saleStatusVal === 'available' ? '#2e7d32' : saleStatusVal === 'sold_out_today' ? '#e65100' : '#c62828';
+    const statusBg = saleStatusVal === 'available' ? '#e8f5e9' : saleStatusVal === 'sold_out_today' ? '#fff3e0' : '#ffebee';
+    const statusHtml = `<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:${statusBg};color:${statusColor};font-weight:600">${statusLabel}</span>`;
     return `<tr style="white-space:nowrap">
       <td><span style="font-family:Poppins,monospace;font-size:10px;color:#666;background:#f5f5f5;padding:1px 4px;border-radius:3px">${prod.itemId}</span></td>
       <td>${prod.name}</td>
@@ -9985,6 +10054,58 @@ async function changeProductPoolStatus(itemId, val) {
   renderProductPool();
 }
 
+function openCategoryReorderModal() {
+  var cats = CATEGORIES.slice().sort(function(a,b) { return (a.sortOrder||0) - (b.sortOrder||0); });
+  var listHtml = cats.map(function(c, i) {
+    return '<div draggable="true" data-cat-id="' + c.id + '" data-idx="' + i + '" style="padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;cursor:grab;display:flex;align-items:center;gap:8px" ondragstart="event.dataTransfer.setData(\'text/plain\',this.dataset.idx)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'\'" ondrop="event.preventDefault();this.style.borderColor=\'\';dropCategory(this.dataset.idx,event.dataTransfer.getData(\'text/plain\'))">' +
+      '<span style="font-size:16px;color:#ccc">☰</span>' +
+      '<span style="font-size:13px;font-weight:500">' + escH(c.name) + '</span>' +
+      '<span style="font-size:10px;color:#999;margin-left:auto">順番: ' + (i + 1) + '</span>' +
+    '</div>';
+  }).join('');
+
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<h3 style="font-size:16px;font-weight:700;margin-bottom:16px">📋 カテゴリ並び替え</h3>' +
+    '<div style="font-size:11px;color:#888;margin-bottom:12px">ドラッグ&ドロップで表示順を変更してください</div>' +
+    '<div id="catReorderList">' + listHtml + '</div>' +
+    '<div class="btn-group" style="margin-top:16px"><button class="btn btn-primary" onclick="saveCategoryOrder()">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>'
+  );
+}
+
+async function dropCategory(toIdx, fromIdx) {
+  toIdx = parseInt(toIdx); fromIdx = parseInt(fromIdx);
+  var list = document.getElementById('catReorderList');
+  if (!list) return;
+  var items = Array.from(list.children);
+  var moved = items.splice(fromIdx, 1)[0];
+  items.splice(toIdx, 0, moved);
+  list.innerHTML = '';
+  items.forEach(function(el, i) {
+    el.dataset.idx = i;
+    el.querySelector('span:last-child').textContent = '順番: ' + (i + 1);
+    list.appendChild(el);
+  });
+}
+
+async function saveCategoryOrder() {
+  var items = document.querySelectorAll('#catReorderList [data-cat-id]');
+  try {
+    for (var i = 0; i < items.length; i++) {
+      var catId = items[i].dataset.catId;
+      var { error } = await sb.from('categories').update({ sort_order: i + 1 }).eq('id', catId);
+      if (error) throw error;
+      var cat = CATEGORIES.find(function(c) { return c.id === catId; });
+      if (cat) cat.sortOrder = i + 1;
+    }
+    showToast('✅ カテゴリの並び順を保存しました');
+    closeModal();
+    if (typeof renderProductPool === 'function') renderProductPool();
+  } catch(e) {
+    showToast('⚠️ 保存に失敗しました: ' + (e.message || e));
+  }
+}
+
 function editProductPool(itemId) {
   const prod = PRODUCTS.find(p => p.itemId === itemId);
   if(!prod) return;
@@ -10003,8 +10124,34 @@ function editProductPool(itemId) {
   document.getElementById('menuChDelivery').checked = prod.delivery;
   document.getElementById('menuItemDisplayStart').value = prod.displayStart || '';
   document.getElementById('menuItemDisplayEnd').value = prod.displayEnd || '';
+  // Populate pattern dropdown
+  var patternSelect = document.getElementById('menuItemPattern');
+  if (patternSelect) {
+    patternSelect.innerHTML = '<option value="">未割当</option>' +
+      MENU_PATTERNS.map(function(mp) { return '<option value="' + mp.id + '">' + escH(mp.code + ' - ' + mp.name) + '</option>'; }).join('');
+    if (prod && prod.menu_pattern_id) patternSelect.value = prod.menu_pattern_id;
+  }
+  // Populate sale period
+  var saleStartEl = document.getElementById('menuSaleStart');
+  var saleEndEl = document.getElementById('menuSaleEnd');
+  if (saleStartEl) saleStartEl.value = prod.displayStart ? prod.displayStart.slice(0, 10) : '';
+  if (saleEndEl) saleEndEl.value = prod.displayEnd ? prod.displayEnd.slice(0, 10) : '';
+  // Populate price/channel table
+  document.getElementById('chDineIn').checked = prod.dineIn;
+  document.getElementById('chTakeout').checked = prod.takeout;
+  document.getElementById('chDelivery').checked = prod.delivery;
+  var basePrice = getBasePrice(prod);
+  document.getElementById('chDineInPrice').value = basePrice || '';
+  document.getElementById('chTakeoutPrice').value = prod.takeoutPrice || basePrice || '';
+  document.getElementById('chDeliveryPrice').value = prod.deliveryPrice || basePrice || '';
+  document.getElementById('chUberPrice').value = prod.uberPrice || '';
+  document.getElementById('chDemaPrice').value = prod.demaPrice || '';
+  document.getElementById('chMenuPrice').value = prod.menuPrice || '';
+  document.getElementById('chRocketPrice').value = prod.rocketPrice || '';
   document.querySelectorAll('#menuItemTags .tag').forEach(t => t.classList.remove('selected'));
   if(prod.tags && prod.tags.length) prod.tags.forEach(tag => { document.querySelectorAll('#menuItemTags .tag').forEach(t => { if(t.textContent === tag) t.classList.add('selected'); }); });
+  var saleStatusRadio = document.querySelector('input[name="saleStatus"][value="' + (prod.saleStatus || 'available') + '"]');
+  if (saleStatusRadio) saleStatusRadio.checked = true;
   window._menuItemImgData = prod.imgData || null;
   document.getElementById('menuItemImgPreview').style.display = 'none';
   document.getElementById('menuItemImgPreview').innerHTML = '';
@@ -10045,7 +10192,32 @@ function openProductPoolModal() {
   document.getElementById('menuChDelivery').checked = true;
   document.getElementById('menuItemDisplayStart').value = '';
   document.getElementById('menuItemDisplayEnd').value = '';
+  // Reset pattern dropdown
+  var patternSelect = document.getElementById('menuItemPattern');
+  if (patternSelect) {
+    patternSelect.innerHTML = '<option value="">未割当</option>' +
+      MENU_PATTERNS.map(function(mp) { return '<option value="' + mp.id + '">' + escH(mp.code + ' - ' + mp.name) + '</option>'; }).join('');
+    patternSelect.value = '';
+  }
+  // Reset sale period
+  var saleStartEl = document.getElementById('menuSaleStart');
+  var saleEndEl = document.getElementById('menuSaleEnd');
+  if (saleStartEl) saleStartEl.value = '';
+  if (saleEndEl) saleEndEl.value = '';
+  // Reset price/channel table
+  document.getElementById('chDineIn').checked = true;
+  document.getElementById('chTakeout').checked = false;
+  document.getElementById('chDelivery').checked = false;
+  document.getElementById('chDineInPrice').value = '';
+  document.getElementById('chTakeoutPrice').value = '';
+  document.getElementById('chDeliveryPrice').value = '';
+  document.getElementById('chUberPrice').value = '';
+  document.getElementById('chDemaPrice').value = '';
+  document.getElementById('chMenuPrice').value = '';
+  document.getElementById('chRocketPrice').value = '';
   document.querySelectorAll('#menuItemTags .tag').forEach(t => t.classList.remove('selected'));
+  var saleStatusDefault = document.querySelector('input[name="saleStatus"][value="available"]');
+  if (saleStatusDefault) saleStatusDefault.checked = true;
   window._menuItemImgData = null;
   document.getElementById('menuItemImgPreview').style.display = 'none';
   document.getElementById('menuItemImgPreview').innerHTML = '';
@@ -10296,6 +10468,29 @@ function openMenuItemModal(editIdx) {
   document.getElementById('menuChDelivery').checked = true;
   document.getElementById('menuItemDisplayStart').value = '';
   document.getElementById('menuItemDisplayEnd').value = '';
+  // Reset pattern dropdown
+  var patternSelect = document.getElementById('menuItemPattern');
+  if (patternSelect) {
+    patternSelect.innerHTML = '<option value="">未割当</option>' +
+      MENU_PATTERNS.map(function(mp2) { return '<option value="' + mp2.id + '">' + escH(mp2.code + ' - ' + mp2.name) + '</option>'; }).join('');
+    patternSelect.value = '';
+  }
+  // Reset sale period
+  var saleStartEl = document.getElementById('menuSaleStart');
+  var saleEndEl = document.getElementById('menuSaleEnd');
+  if (saleStartEl) saleStartEl.value = '';
+  if (saleEndEl) saleEndEl.value = '';
+  // Reset price/channel table defaults
+  document.getElementById('chDineIn').checked = true;
+  document.getElementById('chTakeout').checked = false;
+  document.getElementById('chDelivery').checked = false;
+  document.getElementById('chDineInPrice').value = '';
+  document.getElementById('chTakeoutPrice').value = '';
+  document.getElementById('chDeliveryPrice').value = '';
+  document.getElementById('chUberPrice').value = '';
+  document.getElementById('chDemaPrice').value = '';
+  document.getElementById('chMenuPrice').value = '';
+  document.getElementById('chRocketPrice').value = '';
   document.querySelectorAll('#menuItemTags .tag').forEach(t => t.classList.remove('selected'));
   window._menuItemImgData = null;
   document.getElementById('menuItemImgPreview').style.display = 'none';
@@ -10319,8 +10514,28 @@ function openMenuItemModal(editIdx) {
       document.getElementById('menuChDineIn').checked = prod.dineIn;
       document.getElementById('menuChTakeout').checked = prod.takeout;
       document.getElementById('menuChDelivery').checked = prod.delivery;
+      // Populate price/channel table
+      document.getElementById('chDineIn').checked = prod.dineIn;
+      document.getElementById('chTakeout').checked = prod.takeout;
+      document.getElementById('chDelivery').checked = prod.delivery;
+      var _bp = getBasePrice(prod);
+      document.getElementById('chDineInPrice').value = _bp || '';
+      document.getElementById('chTakeoutPrice').value = prod.takeoutPrice || _bp || '';
+      document.getElementById('chDeliveryPrice').value = prod.deliveryPrice || _bp || '';
+      document.getElementById('chUberPrice').value = prod.uberPrice || '';
+      document.getElementById('chDemaPrice').value = prod.demaPrice || '';
+      document.getElementById('chMenuPrice').value = prod.menuPrice || '';
+      document.getElementById('chRocketPrice').value = prod.rocketPrice || '';
       document.getElementById('menuItemDisplayStart').value = prod.displayStart || '';
       document.getElementById('menuItemDisplayEnd').value = prod.displayEnd || '';
+      // Populate pattern dropdown for edit
+      var patternSelect2 = document.getElementById('menuItemPattern');
+      if (patternSelect2 && prod.menu_pattern_id) patternSelect2.value = prod.menu_pattern_id;
+      // Populate sale period for edit
+      var saleStartEl2 = document.getElementById('menuSaleStart');
+      var saleEndEl2 = document.getElementById('menuSaleEnd');
+      if (saleStartEl2 && prod.displayStart) saleStartEl2.value = prod.displayStart.slice(0, 10);
+      if (saleEndEl2 && prod.displayEnd) saleEndEl2.value = prod.displayEnd.slice(0, 10);
       if(prod.tags && prod.tags.length) {
         prod.tags.forEach(tag => {
           document.querySelectorAll('#menuItemTags .tag').forEach(t => { if(t.textContent === tag) t.classList.add('selected'); });
@@ -10393,9 +10608,27 @@ async function saveMenuItem() {
   if(!itemId || !name || !price) { alert('商品ID・商品名・価格は必須です'); return; }
   if(!/^[A-Za-z0-9]{3}$/.test(itemId)) { alert('商品IDは半角英数3桁で入力してください'); return; }
 
+  // Sale period and pattern variables
+  var saleStart = document.getElementById('menuSaleStart') ? document.getElementById('menuSaleStart').value : '';
+  var saleEnd = document.getElementById('menuSaleEnd') ? document.getElementById('menuSaleEnd').value : '';
+  var patternSelectSave = document.getElementById('menuItemPattern');
+  var menuPatternId = patternSelectSave ? patternSelectSave.value || null : null;
+
   const selectedTags = [];
   document.querySelectorAll('#menuItemTags .tag.selected').forEach(t => selectedTags.push(t.textContent));
-  const prodData = { itemId, name, category, price, tags: selectedTags, tag: selectedTags.join('・'), imgData: window._menuItemImgData || null, dineIn: document.getElementById('menuChDineIn').checked, takeout: document.getElementById('menuChTakeout').checked, delivery: document.getElementById('menuChDelivery').checked, displayStart: document.getElementById('menuItemDisplayStart').value || '', displayEnd: document.getElementById('menuItemDisplayEnd').value || '' };
+  var saleStatusEl = document.querySelector('input[name="saleStatus"]:checked');
+  var saleStatus = saleStatusEl ? saleStatusEl.value : 'available';
+  
+  // Validate: if 期間限定 tag selected, sale period is required
+  if (selectedTags.indexOf('期間限定') >= 0) {
+    if (!saleStart || !saleEnd) {
+      alert('「期間限定」を選択した場合は販売期間の入力が必須です');
+      return;
+    }
+  }
+
+  const prodData = { itemId, name, category, price, tags: selectedTags, tag: selectedTags.join('・'), imgData: window._menuItemImgData || null, dineIn: document.getElementById('menuChDineIn').checked, takeout: document.getElementById('menuChTakeout').checked, delivery: document.getElementById('menuChDelivery').checked, displayStart: document.getElementById('menuItemDisplayStart').value || '', displayEnd: document.getElementById('menuItemDisplayEnd').value || '', menu_pattern_id: menuPatternId, display_start: saleStart ? saleStart + 'T00:00:00+09:00' : null, display_end: saleEnd ? saleEnd + 'T23:59:59+09:00' : null };
+  const productFlags = JSON.stringify(selectedTags);
 
   // Editing from product pool page
   if(window._editingFromPool) {
@@ -10412,7 +10645,13 @@ async function saveMenuItem() {
           category_id: catRow ? catRow.id : undefined,
           dine_in: prodData.dineIn,
           takeout: prodData.takeout,
-          delivery: prodData.delivery
+          delivery: prodData.delivery,
+          product_flags: productFlags,
+          sale_status: saleStatus,
+          updated_by: 'merchant',
+          menu_pattern_id: menuPatternId,
+          display_start: prodData.display_start,
+          display_end: prodData.display_end
         }).eq('id', window._editingPoolItemId);
         if (prodErr) throw prodErr;
         // Update default size price
@@ -10440,7 +10679,13 @@ async function saveMenuItem() {
           category_id: catRow ? catRow.id : null,
           dine_in: prodData.dineIn,
           takeout: prodData.takeout,
-          delivery: prodData.delivery
+          delivery: prodData.delivery,
+          product_flags: productFlags,
+          sale_status: saleStatus,
+          updated_by: 'merchant',
+          menu_pattern_id: menuPatternId,
+          display_start: prodData.display_start,
+          display_end: prodData.display_end
         }).select().single();
         if (prodErr) throw prodErr;
         // Insert default size with price
@@ -10492,7 +10737,7 @@ async function saveMenuItem() {
     // Persist update to Supabase
     try {
       const catRow = CATEGORIES.find(c => c.name === category);
-      await sb.from('products').update({ name, category_id: catRow ? catRow.id : undefined, dine_in: prodData.dineIn, takeout: prodData.takeout, delivery: prodData.delivery }).eq('id', itemId);
+      await sb.from('products').update({ name, category_id: catRow ? catRow.id : undefined, dine_in: prodData.dineIn, takeout: prodData.takeout, delivery: prodData.delivery, product_flags: productFlags, sale_status: saleStatus, updated_by: 'merchant', menu_pattern_id: menuPatternId, display_start: prodData.display_start, display_end: prodData.display_end }).eq('id', itemId);
       const { error: sizeErr } = await sb.from('product_sizes').update({ price }).eq('product_id', itemId).order('sort_order', {ascending: true}).limit(1);
       if (sizeErr) console.warn('Size update warning:', sizeErr);
       logAudit('update_product', 'products', itemId, {name, price, category});
