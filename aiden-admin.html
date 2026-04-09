@@ -3606,12 +3606,16 @@ function showBulkPreview(rows){
   if(validated.errors.length){
     h+='<div class="upload-result err" style="margin-bottom:12px">⚠️ '+validated.errors.length+'件のエラー:<br>'+validated.errors.map(e=>'・'+e).join('<br>')+'</div>';
   }
+  const totalWarnings=validated.valid.reduce((s,v)=>s+(v._warnings||[]).length,0);
+  if(totalWarnings>0){
+    h+='<div class="upload-result" style="background:#fff3cd;color:#856404;margin-bottom:12px;padding:10px;border-radius:8px;font-size:12px">⚠️ '+totalWarnings+'件の自動補正があります（内容は各行の「⚠️」にマウスを当ててご確認ください）</div>';
+  }
   if(validated.valid.length){
     // Show max 5 display columns for readability
     const dispCols=getDisplayColumns(_bulkType);
     h+='<div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"><table class="data-table" style="font-size:11px"><thead><tr><th>#</th>'+dispCols.map(c=>'<th>'+c.label+'</th>').join('')+'<th>状態</th></tr></thead><tbody>';
     validated.valid.forEach((item,i)=>{
-      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+esc(item[c.key]||'—')+'</td>').join('')+'<td><span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span></td></tr>';
+      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+esc(item[c.key]||'—')+'</td>').join('')+'<td>'+(item._warnings&&item._warnings.length?'<span style="color:#e17055;font-weight:700;font-size:10px" title="'+esc(item._warnings.join('\n'))+'">⚠️ '+item._warnings.length+'件補正</span>':'<span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span>')+'</td></tr>';
     });
     h+='</tbody></table></div>';
     h+='<div style="font-size:12px;margin-top:12px;color:var(--success);font-weight:700">✅ '+validated.valid.length+'件が登録可能です</div>';
@@ -3632,31 +3636,54 @@ function getDisplayColumns(type){
   return [];
 }
 
+function normalizeRow(row){
+  const g=idx=>{let v=row[idx];if(v==null)return '';v=String(v).trim();v=v.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));v=v.replace(/　/g,' ').trim();return v;};
+  const normalize=v=>{if(/^(-+|—+|なし|N\/A|NA|none|ー+)$/i.test(v))return '';return v;};
+  const normalizeOnOff=v=>{if(/^(on|yes|true|1|あり|有)$/i.test(v))return 'ON';if(/^(off|no|false|0|なし|無)$/i.test(v))return 'OFF';return v.toUpperCase();};
+  const normalizeRole=v=>v.toLowerCase();
+  const normalizeGenres=v=>v.replace(/[・／｜/、]/g,',');
+  return {g,normalize,normalizeOnOff,normalizeRole,normalizeGenres};
+}
+
 function validateBulkRows(dataRows,type){
   const valid=[],errors=[];
   dataRows.forEach((row,i)=>{
     const rn=i+2;const g=idx=>String(row[idx]!=null?row[idx]:'').trim();
     try{
       if(type==='corp'){
-        const name=g(0),rep=g(1),brandName=g(5),storeName=g(7),storeAddr=g(8),storeTel=g(9);
+        const nr=normalizeRow(row);
+        const name=nr.g(0),rep=nr.g(1),brandName=nr.g(5),storeName=nr.g(7),storeAddr=nr.g(8),storeTel=nr.g(9);
         if(!name){errors.push('行'+rn+': 法人名が空');return;}
         if(!brandName){errors.push('行'+rn+': ブランド名が空');return;}
         if(!storeName){errors.push('行'+rn+': 店舗名が空');return;}
         if(!storeAddr){errors.push('行'+rn+': 住所が空');return;}
         if(!storeTel){errors.push('行'+rn+': 電話番号が空');return;}
-        const genresRaw=g(12),hoursType=g(14),smoking=g(25),takeout=g(22),delivery=g(23),reserv=g(24),role=g(28);
-        var genres=genresRaw?genresRaw.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
-        var badGenre=genres.find(function(gn){return !GENRE_LIST.includes(gn);});
-        if(badGenre){errors.push('行'+rn+': ジャンル「'+badGenre+'」が不正');return;}
-        const priceLunch=g(20),priceDinner=g(21);
-        if(priceLunch&&!PRICE_RANGES.includes(priceLunch)){errors.push('行'+rn+': 昼の価格帯「'+priceLunch+'」が不正');return;}
-        if(priceDinner&&!PRICE_RANGES.includes(priceDinner)){errors.push('行'+rn+': 夜の価格帯「'+priceDinner+'」が不正');return;}
-        if(smoking&&!_SMOKING_OPTS.includes(smoking)){errors.push('行'+rn+': 喫煙「'+smoking+'」が不正');return;}
-        if(takeout&&!['ON','OFF'].includes(takeout)){errors.push('行'+rn+': テイクアウト「'+takeout+'」が不正(ON/OFF)');return;}
-        if(delivery&&!['ON','OFF'].includes(delivery)){errors.push('行'+rn+': デリバリー「'+delivery+'」が不正(ON/OFF)');return;}
-        if(reserv&&!['ON','OFF'].includes(reserv)){errors.push('行'+rn+': 来店予約「'+reserv+'」が不正(ON/OFF)');return;}
-        if(role&&!['owner','admin','staff','Owner','Admin','Staff'].includes(role)){errors.push('行'+rn+': 権限「'+role+'」が不正');return;}
-        valid.push({name,rep:rep||'—',corpEmail:g(2),hp:g(3),recruit:g(4),brandName,brandSlug:g(6),storeName,storeAddr,storeTel,storeEmail:g(10),storeStation:g(11),storeGenres:genres,storeSeats:g(13),hoursType:hoursType||'通し営業',lunchOpen:xlsxTimeToHHMM(row[15]),lunchClose:xlsxTimeToHHMM(row[16]),dinnerOpen:xlsxTimeToHHMM(row[17]),dinnerClose:xlsxTimeToHHMM(row[18]),storeHoliday:g(19),priceLunch:priceLunch,priceDinner:priceDinner,storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking||'全席禁煙',accName:g(26),accEmail:g(27),accRole:(role||'owner').toLowerCase(),created:new Date().toISOString().split('T')[0]});
+        const warnings=[];
+        const genresRaw=nr.normalizeGenres(nr.g(12));
+        const allGenres=genresRaw?genresRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+        const validGenres=allGenres.filter(gn=>GENRE_LIST.includes(gn));
+        const invalidGenres=allGenres.filter(gn=>!GENRE_LIST.includes(gn));
+        if(invalidGenres.length)warnings.push('ジャンル「'+invalidGenres.join('、')+'」は認識できないためスキップ');
+        const priceLunchRaw=nr.g(20),priceDinnerRaw=nr.g(21);
+        const priceLunch=PRICE_RANGES.includes(priceLunchRaw)?priceLunchRaw:'';
+        const priceDinner=PRICE_RANGES.includes(priceDinnerRaw)?priceDinnerRaw:'';
+        if(priceLunchRaw&&!priceLunch)warnings.push('昼の価格帯「'+priceLunchRaw+'」は認識できないため空白で登録');
+        if(priceDinnerRaw&&!priceDinner)warnings.push('夜の価格帯「'+priceDinnerRaw+'」は認識できないため空白で登録');
+        const takeout=nr.normalizeOnOff(nr.g(22));
+        const delivery=nr.normalizeOnOff(nr.g(23));
+        const reserv=nr.normalizeOnOff(nr.g(24));
+        const smokingRaw=nr.g(25);
+        const smoking=_SMOKING_OPTS.includes(smokingRaw)?smokingRaw:'全席禁煙';
+        if(smokingRaw&&!_SMOKING_OPTS.includes(smokingRaw))warnings.push('喫煙「'+smokingRaw+'」は認識できないため「全席禁煙」で登録');
+        const roleRaw=nr.g(28);
+        const role=nr.normalizeRole(roleRaw);
+        const validRoles=['owner','admin','staff'];
+        const finalRole=validRoles.includes(role)?role:'owner';
+        if(roleRaw&&!validRoles.includes(role))warnings.push('権限「'+roleRaw+'」は認識できないため「owner」で登録');
+        const hp=nr.normalize(nr.g(3));
+        const recruit=nr.normalize(nr.g(4));
+        const hoursType=nr.g(14)||'通し営業';
+        valid.push({name,rep:rep||'—',corpEmail:nr.g(2),hp,recruit,brandName,brandSlug:nr.g(6),storeName,storeAddr,storeTel,storeEmail:nr.g(10),storeStation:nr.g(11),storeGenres:validGenres,storeSeats:nr.g(13),hoursType,lunchOpen:xlsxTimeToHHMM(row[15]),lunchClose:xlsxTimeToHHMM(row[16]),dinnerOpen:xlsxTimeToHHMM(row[17]),dinnerClose:xlsxTimeToHHMM(row[18]),storeHoliday:nr.g(19),priceLunch,priceDinner,storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking,accName:nr.g(26),accEmail:nr.g(27),accRole:finalRole,created:new Date().toISOString().split('T')[0],_warnings:warnings});
       }else if(type==='brand'){
         const name=g(0),slug=g(1),corpId=g(2);
         if(!name||!slug){errors.push('行'+rn+': ブランド名またはスラッグが空');return;}
