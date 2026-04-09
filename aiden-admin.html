@@ -38,7 +38,7 @@
 .sns-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}.sns-row .si{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border-radius:6px;font-size:14px;flex-shrink:0}.sns-row input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:inherit}
 .hgrid{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:8px;align-items:center}.day-l{font-size:12px;font-weight:700}
 .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.mc{background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden;padding:14px;transition:border-color .15s}.mc:hover{border-color:var(--accent-light)}.mc-nm{font-size:13px;font-weight:700;margin-bottom:2px}.mc-ct{font-size:10px;color:var(--text-light);margin-bottom:6px}.mc-pr{font-size:14px;font-weight:800;color:var(--accent)}.mc-ft{display:flex;gap:6px;margin-top:8px}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}.modal-overlay.show{display:flex}.modal{background:#fff;border-radius:14px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:28px;position:relative}.modal h3{font-size:17px;font-weight:700;margin-bottom:20px}.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#999}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}.modal-overlay.show{display:flex}.modal{background:#fff;border-radius:14px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:28px;position:relative}.modal.modal-wide{width:90vw;max-width:1200px}.wiz-step{flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text-light);background:#f5f6fa;border-radius:6px;transition:all .2s}.wiz-step.active{background:var(--primary);color:#fff}.wiz-step.done{background:#00b89420;color:#00b894}.modal h3{font-size:17px;font-weight:700;margin-bottom:20px}.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#999}
 .toast{position:fixed;bottom:24px;right:32px;background:var(--primary);color:#fff;padding:12px 24px;border-radius:10px;font-size:12px;font-weight:600;display:none;z-index:3000;box-shadow:0 4px 16px rgba(0,0,0,.2)}.toast.show{display:block;animation:su .3s}@keyframes su{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 /* === FULL-NAME ALIASES (match JS output) === */
 .data-table{width:100%;border-collapse:collapse}.data-table th{font-size:11px;font-weight:600;color:var(--text-light);text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);white-space:nowrap}.data-table td{font-size:12px;padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}.data-table tr:hover td{background:#fafafe}.data-table .r{text-align:right}
@@ -144,8 +144,8 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('aidenPopList');window.location.href='/';}
 // bfcache防止: ブラウザバックで復元された場合はリロード
 window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
-function openModal(h){document.getElementById('modalBody').innerHTML=h;document.getElementById('modalOverlay').classList.add('show');}
-function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
+function openModal(h,wide){const mb=document.getElementById('modalBody');mb.innerHTML=h;if(wide)mb.classList.add('modal-wide');else mb.classList.remove('modal-wide');document.getElementById('modalOverlay').classList.add('show');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');document.getElementById('modalBody').classList.remove('modal-wide');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 function getCorpForBrand(b){return CORPS.find(c=>c.id===b.corpId);}
 function getBrandsForCorp(c){return BRANDS.filter(b=>b.corpId===c.id);}
@@ -398,7 +398,7 @@ const brands=BRANDS.filter(b=>b.name.toLowerCase().includes(q)||b.id.toLowerCase
 const stores=STORES.filter(s=>{const br=getBrandForStore(s);const fn=br?br.name+' '+s.name:s.name;return fn.toLowerCase().includes(q)||s.id.toLowerCase().includes(q);});
 if(!corps.length&&!brands.length&&!stores.length){box.innerHTML='<div class="sd-empty">該当なし</div>';box.classList.add('show');return;}
 let h='';
-if(corps.length){h+='<div class="sd-sec">🏢 法人</div>';h+=corps.map(c=>'<div class="sd-item" onclick="goToCorp(\''+c.id+'\')"><div class="sd-ic c">🏢</div><div class="sd-nm">'+c.name+'</div><div class="sd-id">'+c.id+'</div></div>').join('');}
+if(corps.length){h+='<div class="sd-sec">🏢 法人</div>';h+=corps.map(c=>'<div class="sd-item" onclick="openCorpModal(\''+c.id+'\')"><div class="sd-ic c">🏢</div><div class="sd-nm">'+c.name+'</div><div class="sd-id">'+c.id+'</div></div>').join('');}
 if(brands.length){h+='<div class="sd-sec">🏷️ ブランド</div>';h+=brands.map(b=>{const cp=getCorpForBrand(b);return '<div class="sd-item" onclick="goToBrand(\''+b.id+'\')"><div class="sd-ic b">🏷️</div><div class="sd-nm">'+b.name+'</div><div class="sd-id">'+b.id+'</div></div>';}).join('');}
 if(stores.length){h+='<div class="sd-sec">🏪 店舗</div>';h+=stores.map(s=>{const br=getBrandForStore(s);return '<div class="sd-item" onclick="goToStore(\''+s.id+'\')"><div class="sd-ic s">🏪</div><div class="sd-nm">'+(br?br.name+' ':'')+s.name+'</div><div class="sd-id">'+s.id+'</div></div>';}).join('');}
 box.innerHTML=h;box.classList.add('show');}
@@ -407,7 +407,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.header-search'))doc
 // NAVIGATION
 let currentView={type:'dashboard',id:null};
 function goTo(p){currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
-function goToCorp(id){currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
+function openCorpModal(id){currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
 function goToBrand(id){currentView={type:'brand',id:id};clearSearch();updateSidebar();renderPage();}
 function goToStore(id){currentView={type:'store',id:id};clearSearch();updateSidebar();renderPage();}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
@@ -451,7 +451,7 @@ function renderPage(){
   else if(v.type==='compensation')el.innerHTML=renderCompensation();
   else if(v.type==='auditlog'){el.innerHTML=renderAuditLogPage();loadAuditLogs();}
   else if(v.type==='bulk'){_bulkDbType=null;_bulkDbMode='upsert';_bulkDbStep=1;_bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;_bulkDbDeleteSelected=null;_bulkDbFuzzyWarnings=[];el.innerHTML=renderBulkPage();}
-  else if(v.type==='corp')el.innerHTML=renderCorpPage(CORPS.find(c=>c.id===v.id));
+  else if(v.type==='corp'){openCorpModal(v.id);currentView={type:'corps',id:null};updateSidebar();return;}
   else if(v.type==='brand')el.innerHTML=renderBrandPage(BRANDS.find(b=>b.id===v.id));
   else if(v.type==='store')el.innerHTML=renderStorePage(STORES.find(s=>s.id===v.id));
   // post hooks
@@ -459,10 +459,6 @@ function renderPage(){
   if(v.type==='cost')initCostManagement();
   if(v.type==='brand')initBrandTabs();
   if(v.type==='store')initStoreTabs();
-  if(v.type==='corp'){
-    var c=CORPS.find(function(x){return x.id===v.id;});
-    if(c)loadFeeSchedules(c._uuid,c.id);
-  }
 }
 
 // ===== DASHBOARD =====
@@ -644,7 +640,7 @@ function renderCorpsList(){
   return '<div class="page-title">法人管理</div><div class="page-subtitle">AIden利用法人の一覧（法人ID: 7桁英数字）</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 法人名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'corp\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'corp\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openCorpWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddCorpModal()">＋ 法人追加</button></div></div>'+
   '<table class="data-table"><thead><tr><th>法人ID</th><th>法人名</th><th>代表者</th><th>ブランド</th><th>店舗</th><th>ステータス</th><th></th></tr></thead><tbody>'+
-  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToCorp(\''+c.id+'\')">詳細</button></td></tr>';}).join('')+
+  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -2018,9 +2014,17 @@ function refreshCompHistory(){
 }
 
 // ===== CORP DETAIL =====
+function openCorpModal(corpDisplayId){
+  const c=CORPS.find(x=>x.id===corpDisplayId);
+  if(!c)return;
+  const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderCorpPage(c);
+  openModal(html,true);
+  // post hooks for corp tabs
+  loadFeeSchedules(c._uuid,c.id);
+}
 function renderCorpPage(c){
   const brands=getBrandsForCorp(c),stores=getStoresForCorp(c),accounts=ACCOUNTS.filter(a=>a.corpId===c.id),tR=stores.reduce((s,x)=>s+x.revenue,0);
-  return '<div class="breadcrumb"><a onclick="goTo(\'corps\')">法人管理</a><span class="sep">></span><span>'+c.name+'</span></div>'+
+  return '<div class="page-header"><div class="page-title">'+c.name+'</div><span class="page-type-badge corp">法人</span></div>'+
   '<div class="page-header"><div class="page-title">'+c.name+'</div><span class="page-type-badge corp">法人</span></div>'+
   '<div class="page-subtitle">'+c.id+' / '+c.rep+' / '+statusBadge(c.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)"><div class="stat-card purple"><div class="sc-label">ブランド数</div><div class="sc-val">'+brands.length+'</div></div><div class="stat-card blue"><div class="sc-label">店舗数</div><div class="sc-val">'+stores.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card orange"><div class="sc-label">アカウント数</div><div class="sc-val">'+accounts.length+'</div></div></div>'+
@@ -2054,7 +2058,7 @@ function renderBrandPage(b){
   '<div class="tab-content" id="brand-menu"><div class="card"><div class="card-title">メニュー管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddMenuPatternModal(\''+b._uuid+'\',\''+b.id+'\')">＋ パターン追加</button></span></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><select id="brandMenuPatternSelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:200px" onchange="onMenuPatternChange(\''+b._uuid+'\',\''+b.id+'\')"></select><button class="btn btn-secondary btn-sm" onclick="openEditMenuPatternModal(\''+b._uuid+'\',\''+b.id+'\')">パターン編集</button><button class="btn btn-danger btn-sm" onclick="deleteMenuPattern(\''+b._uuid+'\',\''+b.id+'\')">パターン削除</button></div></div><div class="card"><div class="card-title">商品一覧 <span class="ct-right"><button class="btn-outline btn-sm" onclick="openMenuProductWizard(\''+b._uuid+'\',\''+b.id+'\')">🧭 ウィザードで登録</button> <button class="btn btn-primary btn-sm" onclick="openAddProductModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 商品追加</button></span></div><div class="menu-toolbar"><input class="menu-search" placeholder="🔍 商品名で検索..." id="brandMenuSearch" oninput="renderBrandMenu()"><div id="brandMenuCats" style="margin-top:8px"></div></div><div class="menu-grid" id="brandMenuGrid"></div></div></div>'+
   '<div class="tab-content" id="brand-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandCancelPolicy(\''+b.id+'\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド共通のキャンセルポリシーです。店舗ごとに上書き可能です。</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" id="cancelNoShow" value="'+((b.cancelPolicy&&b.cancelPolicy.no_show!=null)?b.cancelPolicy.no_show:100)+'"></div><div class="form-group"><label>当日（%）</label><input type="number" id="cancelSameDay" value="'+((b.cancelPolicy&&b.cancelPolicy.same_day!=null)?b.cancelPolicy.same_day:100)+'"></div><div class="form-group"><label>3日前（%）</label><input type="number" id="cancel3Days" value="'+((b.cancelPolicy&&b.cancelPolicy['3_days_before']!=null)?b.cancelPolicy['3_days_before']:50)+'"></div></div></div></div>'+
   '<div class="tab-content" id="brand-pii"><div class="card"><div class="card-title">🔒 個人情報アクセス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePiiAccessSettings(\''+b.id+'\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">加盟店スタッフがエンドユーザーの個人情報にアクセスできる範囲を制御します。設定はこのブランド配下の全店舗に適用されます。</p><div id="piiAccessToggles">'+renderPiiAccessToggles(b)+'</div></div></div>'+
-  '<div class="tab-content" id="brand-related"><div class="card"><div class="card-title">所属法人</div><div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+escHtml(cp.name)+'</div><div class="lc-sub">'+escHtml(cp.id)+'</div></div><div class="lc-arrow">›</div></div></div><div class="card"><div class="card-title">店舗一覧（'+ss.length+'）</div>'+(ss.length?'<table class="data-table"><thead><tr><th>店舗コード</th><th>店舗名</th><th>住所</th><th>ステータス</th><th></th></tr></thead><tbody>'+ss.map(s=>'<tr><td style="font-family:monospace;font-size:11px">'+escHtml(s.id)+'</td><td>'+escHtml(s.name)+'</td><td>'+escHtml(s.addr||'—')+'</td><td><span class="status '+(s.status==='active'?'status-active':s.status==='trial'?'status-trial':'status-suspended')+'">'+escHtml(s.status)+'</span></td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>').join('')+'</tbody></table>':'<div class="empty-state">店舗がありません</div>')+'</div></div>';
+  '<div class="tab-content" id="brand-related"><div class="card"><div class="card-title">所属法人</div><div class="link-card" onclick="openCorpModal(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+escHtml(cp.name)+'</div><div class="lc-sub">'+escHtml(cp.id)+'</div></div><div class="lc-arrow">›</div></div></div><div class="card"><div class="card-title">店舗一覧（'+ss.length+'）</div>'+(ss.length?'<table class="data-table"><thead><tr><th>店舗コード</th><th>店舗名</th><th>住所</th><th>ステータス</th><th></th></tr></thead><tbody>'+ss.map(s=>'<tr><td style="font-family:monospace;font-size:11px">'+escHtml(s.id)+'</td><td>'+escHtml(s.name)+'</td><td>'+escHtml(s.addr||'—')+'</td><td><span class="status '+(s.status==='active'?'status-active':s.status==='trial'?'status-trial':'status-suspended')+'">'+escHtml(s.status)+'</span></td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>').join('')+'</tbody></table>':'<div class="empty-state">店舗がありません</div>')+'</div></div>';
 }
 let brandMenuCat='all';
 function menuCardHtml(m){return '<div class="mcard"><div class="mcard-img">'+(m.emoji||'🍽')+'</div><div class="mcard-body"><div class="mcard-header"><h4>'+escHtml(m.name)+'</h4><span class="mh-price">'+Y(m.price)+'</span></div><div class="mcard-cat">'+escHtml(m.cat)+'</div><div class="mcard-desc">'+escHtml(m.desc||'')+'</div><div class="mcard-footer"><button onclick="openEditProductModal(\''+m._uuid+'\')">編集</button><button onclick="deleteProduct(\''+m._uuid+'\')">削除</button></div></div></div>';}
@@ -2409,7 +2413,7 @@ function renderStorePage(s){
   '<div class="tab-content" id="store-flags"><div class="card"><div class="card-title">機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">席のみ予約</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">テイクアウト</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">デリバリー</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
   '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody><tr><td>2026-03-10</td><td>ゲスト</td><td>⭐⭐⭐⭐⭐</td><td>最高！</td><td><button class="btn btn-secondary btn-sm">返信</button></td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>'+
-  '<div class="tab-content" id="store-related"><div class="card"><div class="card-title">所属法人</div>'+(cp?'<div class="link-card" onclick="goToCorp(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div><div class="card"><div class="card-title">所属ブランド</div>'+(br?'<div class="link-card" onclick="goToBrand(\''+br.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+br.name+'</div><div class="lc-sub">'+br.slug+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div></div>';
+  '<div class="tab-content" id="store-related"><div class="card"><div class="card-title">所属法人</div>'+(cp?'<div class="link-card" onclick="openCorpModal(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div><div class="card"><div class="card-title">所属ブランド</div>'+(br?'<div class="link-card" onclick="goToBrand(\''+br.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+br.name+'</div><div class="lc-sub">'+br.slug+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div></div>';
 }
 async function saveAdminDelivery(storeId){
   const s=STORES.find(x=>x.id===storeId);
@@ -2656,25 +2660,144 @@ async function toggleSvc(entityId,key,level){
 function genId(prefix){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<7;i++)r+=c[Math.floor(Math.random()*62)];return prefix+r;}
 
 // ===== ADD MODALS =====
+let _corpWizStep=1;
+const _GENRE_MAJOR=['和食','洋食','中華','焼肉','ラーメン','カフェ','居酒屋','その他'];
+const _PRICE_RANGES=['〜¥999','¥1,000〜¥1,999','¥2,000〜¥2,999','¥3,000〜¥4,999','¥5,000〜¥9,999','¥10,000〜'];
+const _SMOKING_OPTS=['全席禁煙','喫煙可','分煙'];
 function openAddCorpModal(){
-  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>🏢 法人追加</h3>'+
-  '<div class="form-grid">'+
-  '<div class="form-group"><label>法人名 <span style="color:var(--danger)">*</span></label><input type="text" id="addCorpName" placeholder="例: 株式会社〇〇"></div>'+
-  '<div class="form-group"><label>代表者 <span style="color:var(--danger)">*</span></label><input type="text" id="addCorpRep" placeholder="氏名"></div>'+
-  '<div class="form-group"><label>ステータス</label><select id="addCorpStatus"><option value="active" selected>稼働中</option><option value="trial">トライアル</option></select></div>'+
-  '</div>'+
-  '<div class="btn-group"><button class="btn btn-primary" onclick="saveCorp()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+  _corpWizStep=1;
+  const h='<button class="modal-close" onclick="closeModal()">✕</button><h3>🏢 法人追加（ステップウィザード）</h3>'+
+  '<div style="display:flex;gap:4px;margin-bottom:20px" id="corpWizSteps">'+
+  '<div class="wiz-step active" data-s="1">1. 法人情報</div><div class="wiz-step" data-s="2">2. ブランド情報</div><div class="wiz-step" data-s="3">3. 店舗情報</div><div class="wiz-step" data-s="4">4. アカウント情報</div></div>'+
+  '<div id="corpWizBody"></div>'+
+  '<div class="btn-group" style="margin-top:16px" id="corpWizBtns"></div>';
+  openModal(h,true);
+  renderCorpWizStep();
 }
-async function saveCorp(){
-  const name=document.getElementById('addCorpName').value.trim();
-  const rep=document.getElementById('addCorpRep').value.trim();
-  if(!name||!rep){showToast('⚠️ 法人名と代表者は必須です');return;}
-  const status=document.getElementById('addCorpStatus').value;
+function renderCorpWizStep(){
+  const body=document.getElementById('corpWizBody');
+  const btns=document.getElementById('corpWizBtns');
+  document.querySelectorAll('#corpWizSteps .wiz-step').forEach(el=>{el.classList.toggle('active',parseInt(el.dataset.s)===_corpWizStep);el.classList.toggle('done',parseInt(el.dataset.s)<_corpWizStep);});
+  if(_corpWizStep===1){
+    body.innerHTML='<div class="form-grid">'+
+    '<div class="form-group"><label>法人名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwCorpName" placeholder="例: 株式会社〇〇"></div>'+
+    '<div class="form-group"><label>代表者名</label><input type="text" id="cwCorpRep" placeholder="氏名"></div>'+
+    '<div class="form-group"><label>代表メールアドレス</label><input type="email" id="cwCorpEmail" placeholder="rep@example.co.jp"></div>'+
+    '<div class="form-group"><label>会社HP</label><input type="url" id="cwCorpWebsite" placeholder="https://example.co.jp"></div>'+
+    '<div class="form-group"><label>採用ページ</label><input type="url" id="cwCorpRecruit" placeholder="https://example.co.jp/recruit"></div>'+
+    '</div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
+  }else if(_corpWizStep===2){
+    body.innerHTML='<div class="form-grid">'+
+    '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwBrandName" placeholder="例: 焼肉 炭火亭"></div>'+
+    '<div class="form-group"><label>ブランドスラッグ</label><input type="text" id="cwBrandSlug" placeholder="例: sumibite（英数字+ハイフン）" pattern="[a-z0-9\\-]+"></div>'+
+    '</div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
+  }else if(_corpWizStep===3){
+    body.innerHTML='<div class="form-grid">'+
+    '<div class="form-group"><label>店舗名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwStoreName" placeholder="例: 渋谷店"></div>'+
+    '<div class="form-group full"><label>住所 <span style="color:var(--danger)">*</span></label><input type="text" id="cwStoreAddr" placeholder="東京都渋谷区道玄坂1-12-5"></div>'+
+    '<div class="form-group"><label>電話番号 <span style="color:var(--danger)">*</span></label><input type="tel" id="cwStoreTel" placeholder="03-1234-5678"></div>'+
+    '<div class="form-group"><label>メールアドレス</label><input type="email" id="cwStoreEmail" placeholder="store@example.com"></div>'+
+    '<div class="form-group"><label>最寄り駅/アクセス</label><input type="text" id="cwStoreStation" placeholder="渋谷駅 徒歩5分"></div>'+
+    '<div class="form-group"><label>ジャンル大分類</label><select id="cwStoreGenre"><option value="">選択してください</option>'+_GENRE_MAJOR.map(g=>'<option value="'+g+'">'+g+'</option>').join('')+'</select></div>'+
+    '<div class="form-group"><label>ジャンル小分類</label><input type="text" id="cwStoreGenreSub" placeholder="例: 寿司、天ぷら"></div>'+
+    '<div class="form-group"><label>価格帯</label><select id="cwStorePrice"><option value="">選択してください</option>'+_PRICE_RANGES.map(p=>'<option value="'+p+'">'+p+'</option>').join('')+'</select></div>'+
+    '<div class="form-group"><label>座席数</label><input type="number" id="cwStoreSeats" min="0" placeholder="6"></div>'+
+    '<div class="form-group"><label>営業開始時間</label><input type="time" id="cwStoreOpen" value="11:00"></div>'+
+    '<div class="form-group"><label>営業終了時間</label><input type="time" id="cwStoreClose" value="22:00"></div>'+
+    '<div class="form-group"><label>テイクアウト</label><select id="cwStoreTakeout"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
+    '<div class="form-group"><label>デリバリー</label><select id="cwStoreDelivery"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
+    '<div class="form-group"><label>来店予約</label><select id="cwStoreReserv"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
+    '<div class="form-group"><label>喫煙</label><select id="cwStoreSmoking">'+_SMOKING_OPTS.map(s=>'<option value="'+s+'">'+s+'</option>').join('')+'</select></div>'+
+    '</div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
+  }else if(_corpWizStep===4){
+    body.innerHTML='<div class="form-grid">'+
+    '<div class="form-group"><label>管理者氏名</label><input type="text" id="cwAccName" placeholder="氏名"></div>'+
+    '<div class="form-group"><label>管理者メール</label><input type="email" id="cwAccEmail" placeholder="admin@example.com"></div>'+
+    '<div class="form-group"><label>権限</label><select id="cwAccRole"><option value="owner">Owner</option><option value="admin">Admin</option><option value="staff">Staff</option></select></div>'+
+    '</div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">確認 →</button>';
+  }else if(_corpWizStep===5){
+    // confirmation
+    const d=_getCorpWizData();
+    body.innerHTML='<div style="font-size:13px"><div class="card" style="margin-bottom:12px"><div class="card-title">法人情報</div><div class="form-grid">'+
+    '<div class="form-group"><label>法人名</label><div style="font-weight:600">'+escHtml(d.corpName)+'</div></div>'+
+    '<div class="form-group"><label>代表者</label><div>'+escHtml(d.corpRep||'—')+'</div></div>'+
+    '<div class="form-group"><label>メール</label><div>'+escHtml(d.corpEmail||'—')+'</div></div>'+
+    '<div class="form-group"><label>HP</label><div>'+escHtml(d.corpWebsite||'—')+'</div></div>'+
+    '</div></div>'+
+    '<div class="card" style="margin-bottom:12px"><div class="card-title">ブランド情報</div><div class="form-grid">'+
+    '<div class="form-group"><label>ブランド名</label><div style="font-weight:600">'+escHtml(d.brandName)+'</div></div>'+
+    '<div class="form-group"><label>スラッグ</label><div>'+escHtml(d.brandSlug||'—')+'</div></div>'+
+    '</div></div>'+
+    '<div class="card" style="margin-bottom:12px"><div class="card-title">店舗情報</div><div class="form-grid">'+
+    '<div class="form-group"><label>店舗名</label><div style="font-weight:600">'+escHtml(d.storeName)+'</div></div>'+
+    '<div class="form-group"><label>住所</label><div>'+escHtml(d.storeAddr)+'</div></div>'+
+    '<div class="form-group"><label>電話</label><div>'+escHtml(d.storeTel)+'</div></div>'+
+    '<div class="form-group"><label>ジャンル</label><div>'+escHtml((d.storeGenre||'—')+' / '+(d.storeGenreSub||'—'))+'</div></div>'+
+    '<div class="form-group"><label>座席</label><div>'+escHtml(d.storeSeats||'—')+'</div></div>'+
+    '<div class="form-group"><label>喫煙</label><div>'+escHtml(d.storeSmoking)+'</div></div>'+
+    '</div></div>'+
+    '<div class="card"><div class="card-title">アカウント情報</div><div class="form-grid">'+
+    '<div class="form-group"><label>氏名</label><div>'+escHtml(d.accName||'—')+'</div></div>'+
+    '<div class="form-group"><label>メール</label><div>'+escHtml(d.accEmail||'—')+'</div></div>'+
+    '<div class="form-group"><label>権限</label><div>'+escHtml(d.accRole||'—')+'</div></div>'+
+    '</div></div></div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="saveCorpWizard()">登録する</button>';
+  }
+}
+let _corpWizCache={};
+function _cacheCorpWizStep(){
+  if(_corpWizStep===1){_corpWizCache.corpName=(document.getElementById('cwCorpName')||{}).value||'';_corpWizCache.corpRep=(document.getElementById('cwCorpRep')||{}).value||'';_corpWizCache.corpEmail=(document.getElementById('cwCorpEmail')||{}).value||'';_corpWizCache.corpWebsite=(document.getElementById('cwCorpWebsite')||{}).value||'';_corpWizCache.corpRecruit=(document.getElementById('cwCorpRecruit')||{}).value||'';}
+  else if(_corpWizStep===2){_corpWizCache.brandName=(document.getElementById('cwBrandName')||{}).value||'';_corpWizCache.brandSlug=(document.getElementById('cwBrandSlug')||{}).value||'';}
+  else if(_corpWizStep===3){_corpWizCache.storeName=(document.getElementById('cwStoreName')||{}).value||'';_corpWizCache.storeAddr=(document.getElementById('cwStoreAddr')||{}).value||'';_corpWizCache.storeTel=(document.getElementById('cwStoreTel')||{}).value||'';_corpWizCache.storeEmail=(document.getElementById('cwStoreEmail')||{}).value||'';_corpWizCache.storeStation=(document.getElementById('cwStoreStation')||{}).value||'';_corpWizCache.storeGenre=(document.getElementById('cwStoreGenre')||{}).value||'';_corpWizCache.storeGenreSub=(document.getElementById('cwStoreGenreSub')||{}).value||'';_corpWizCache.storePrice=(document.getElementById('cwStorePrice')||{}).value||'';_corpWizCache.storeSeats=(document.getElementById('cwStoreSeats')||{}).value||'';_corpWizCache.storeOpen=(document.getElementById('cwStoreOpen')||{}).value||'11:00';_corpWizCache.storeClose=(document.getElementById('cwStoreClose')||{}).value||'22:00';_corpWizCache.storeTakeout=(document.getElementById('cwStoreTakeout')||{}).value||'OFF';_corpWizCache.storeDelivery=(document.getElementById('cwStoreDelivery')||{}).value||'OFF';_corpWizCache.storeReserv=(document.getElementById('cwStoreReserv')||{}).value||'OFF';_corpWizCache.storeSmoking=(document.getElementById('cwStoreSmoking')||{}).value||'全席禁煙';}
+  else if(_corpWizStep===4){_corpWizCache.accName=(document.getElementById('cwAccName')||{}).value||'';_corpWizCache.accEmail=(document.getElementById('cwAccEmail')||{}).value||'';_corpWizCache.accRole=(document.getElementById('cwAccRole')||{}).value||'owner';}
+}
+function _restoreCorpWizStep(){
+  if(_corpWizStep===1){if(_corpWizCache.corpName!=null){document.getElementById('cwCorpName').value=_corpWizCache.corpName;document.getElementById('cwCorpRep').value=_corpWizCache.corpRep;document.getElementById('cwCorpEmail').value=_corpWizCache.corpEmail;document.getElementById('cwCorpWebsite').value=_corpWizCache.corpWebsite;document.getElementById('cwCorpRecruit').value=_corpWizCache.corpRecruit;}}
+  else if(_corpWizStep===2){if(_corpWizCache.brandName!=null){document.getElementById('cwBrandName').value=_corpWizCache.brandName;document.getElementById('cwBrandSlug').value=_corpWizCache.brandSlug;}}
+  else if(_corpWizStep===3){if(_corpWizCache.storeName!=null){document.getElementById('cwStoreName').value=_corpWizCache.storeName;document.getElementById('cwStoreAddr').value=_corpWizCache.storeAddr;document.getElementById('cwStoreTel').value=_corpWizCache.storeTel;document.getElementById('cwStoreEmail').value=_corpWizCache.storeEmail;document.getElementById('cwStoreStation').value=_corpWizCache.storeStation;document.getElementById('cwStoreGenre').value=_corpWizCache.storeGenre;document.getElementById('cwStoreGenreSub').value=_corpWizCache.storeGenreSub;document.getElementById('cwStorePrice').value=_corpWizCache.storePrice;document.getElementById('cwStoreSeats').value=_corpWizCache.storeSeats;document.getElementById('cwStoreOpen').value=_corpWizCache.storeOpen||'11:00';document.getElementById('cwStoreClose').value=_corpWizCache.storeClose||'22:00';document.getElementById('cwStoreTakeout').value=_corpWizCache.storeTakeout||'OFF';document.getElementById('cwStoreDelivery').value=_corpWizCache.storeDelivery||'OFF';document.getElementById('cwStoreReserv').value=_corpWizCache.storeReserv||'OFF';document.getElementById('cwStoreSmoking').value=_corpWizCache.storeSmoking||'全席禁煙';}}
+  else if(_corpWizStep===4){if(_corpWizCache.accName!=null){document.getElementById('cwAccName').value=_corpWizCache.accName;document.getElementById('cwAccEmail').value=_corpWizCache.accEmail;document.getElementById('cwAccRole').value=_corpWizCache.accRole;}}
+}
+function _getCorpWizData(){return Object.assign({},_corpWizCache);}
+function corpWizNext(){
+  _cacheCorpWizStep();
+  if(_corpWizStep===1&&!_corpWizCache.corpName.trim()){showToast('⚠️ 法人名は必須です');return;}
+  if(_corpWizStep===2&&!_corpWizCache.brandName.trim()){showToast('⚠️ ブランド名は必須です');return;}
+  if(_corpWizStep===3){if(!_corpWizCache.storeName.trim()||!_corpWizCache.storeAddr.trim()||!_corpWizCache.storeTel.trim()){showToast('⚠️ 店舗名・住所・電話番号は必須です');return;}}
+  _corpWizStep++;renderCorpWizStep();if(_corpWizStep<=4)_restoreCorpWizStep();
+}
+function corpWizPrev(){_cacheCorpWizStep();_corpWizStep--;renderCorpWizStep();_restoreCorpWizStep();}
+async function saveCorpWizard(){
+  const d=_getCorpWizData();
   try{
-    const res=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,representative:rep,status:status})});
-    const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
-    CORPS.push({_uuid:d.data.id,id:d.data.display_id,name:name,rep:rep,status:status,created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:''});
-    closeModal();showToast('✅ 法人を追加しました');renderPage();
+    showToast('⏳ 登録中...');
+    // 1. Corporation
+    const corpRes=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.corpName.trim(),representative:d.corpRep.trim(),rep_email:d.corpEmail.trim(),website_url:d.corpWebsite.trim(),recruit_url:d.corpRecruit.trim()})});
+    const corpD=await corpRes.json();if(!corpRes.ok)throw new Error(corpD.error||'法人の保存に失敗');
+    const corpUuid=corpD.data.id,corpDisplayId=corpD.data.display_id;
+    CORPS.push({_uuid:corpUuid,id:corpDisplayId,name:d.corpName.trim(),rep:d.corpRep.trim()||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:d.corpEmail.trim(),website_url:d.corpWebsite.trim(),recruit_url:d.corpRecruit.trim()});
+    // 2. Brand
+    const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName.trim(),corp_id:corpUuid,slug:d.brandSlug.trim()||undefined})});
+    const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランドの保存に失敗');
+    const brandUuid=brandD.data.id,brandDisplayId=brandD.data.display_id;
+    BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:corpDisplayId,name:d.brandName.trim(),slug:d.brandSlug.trim()||'',status:'active',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
+    // 3. Store
+    const smokingMap={'全席禁煙':'no_smoking','喫煙可':'allowed','分煙':'separated'};
+    const storeBody={name:d.storeName.trim(),brand_id:brandUuid,address:d.storeAddr.trim(),phone:d.storeTel.trim(),email:d.storeEmail.trim()||undefined,nearest_station:d.storeStation.trim()||undefined,genre_major:d.storeGenre||undefined,genre_sub:d.storeGenreSub.trim()||undefined,price_range:d.storePrice||undefined,seats:d.storeSeats?parseInt(d.storeSeats):undefined,open_time:d.storeOpen||undefined,close_time:d.storeClose||undefined,takeout_enabled:d.storeTakeout==='ON',delivery_enabled:d.storeDelivery==='ON',reservation_enabled:d.storeReserv==='ON',smoking_policy:smokingMap[d.storeSmoking]||'no_smoking',is_active:true};
+    const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify(storeBody)});
+    const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗の保存に失敗');
+    STORES.push({_uuid:storeD.data.id,id:storeD.data.display_id,brandId:brandDisplayId,name:d.storeName.trim(),status:'active',addr:d.storeAddr.trim(),tel:d.storeTel.trim(),orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
+    // 4. Account (if provided)
+    if(d.accName.trim()&&d.accEmail.trim()){
+      const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
+      if(accErr)throw accErr;
+      ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corpId:corpDisplayId,status:'active',lastLogin:'—'});
+    }
+    _corpWizCache={};
+    closeModal();showToast('✅ 法人・ブランド・店舗を追加しました');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
@@ -3251,8 +3374,9 @@ async function saveStoreBasic(storeDisplayId){
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
   corp:{filename:'aiden_corp_template.csv',
-    headers:['法人名*','代表者*','ステータス(active/trial)','会社HP URL','採用ページURL'],
-    sample:[['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']]},
+    comment:'# 有効値: ジャンル大分類=和食/洋食/中華/焼肉/ラーメン/カフェ/居酒屋/その他, 価格帯=〜¥999/¥1,000〜¥1,999/¥2,000〜¥2,999/¥3,000〜¥4,999/¥5,000〜¥9,999/¥10,000〜, 喫煙=全席禁煙/喫煙可/分煙, テイクアウト・デリバリー・来店予約=ON/OFF, 権限=owner/admin/staff',
+    headers:['法人名*','代表者名','代表メール','会社HP','採用ページ','ブランド名*','ブランドスラッグ','店舗名*','住所*','電話番号*','店舗メール','最寄り駅','ジャンル大分類','ジャンル小分類','価格帯','座席数','営業開始','営業終了','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙(全席禁煙/喫煙可/分煙)','管理者氏名','管理者メール','権限(owner/admin/staff)'],
+    sample:[['株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','https://example.co.jp/recruit','焼肉サンプル','sample-yakiniku','渋谷店','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','焼肉','炭火焼肉','¥3,000〜¥4,999','40','11:00','22:00','ON','OFF','OFF','全席禁煙','山田太郎','yamada@example.com','owner']]},
   brand:{filename:'aiden_brand_template.csv',
     headers:['ブランド名*','スラッグ*','所属法人ID*','ステータス(active/trial)','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント(Noto Sans JP等)'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','active','#DC3232','#1A1A1A','#DC3232','#FFFFFF','#333333','Noto Sans JP']]},
@@ -3266,7 +3390,9 @@ const TEMPLATES={
 function downloadTemplate(type){
   const t=TEMPLATES[type];if(!t)return;
   const bom='\uFEFF';
-  const csv=bom+t.headers.join(',')+'\n'+t.sample.map(r=>r.join(',')).join('\n');
+  let csv=bom;
+  if(t.comment)csv+=t.comment+'\n';
+  csv+=t.headers.join(',')+'\n'+t.sample.map(r=>r.map(c=>String(c).includes(',')?'"'+c+'"':c).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=t.filename;a.click();
   showToast('📋 テンプレートをダウンロードしました');
@@ -3318,6 +3444,8 @@ function parseCSV(text){
 
 function showBulkPreview(rows){
   const pv=document.getElementById('bulkPreview');
+  // Filter out comment rows (starting with #)
+  rows=rows.filter(r=>!String(r[0]||'').trim().startsWith('#'));
   if(rows.length<2){pv.innerHTML='<div class="upload-result err">❌ データ行がありません</div>';return;}
   const headers=rows[0].map(h=>String(h||'').replace(/\*/g,'').trim());
   const dataRows=rows.slice(1).filter(r=>r.some(c=>c&&String(c).trim()));
@@ -3349,7 +3477,7 @@ function showBulkPreview(rows){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function getDisplayColumns(type){
-  if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'status',label:'ステータス'},{key:'hp',label:'会社HP'}];
+  if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'brandName',label:'ブランド'},{key:'storeName',label:'店舗'},{key:'storeTel',label:'電話'}];
   if(type==='brand')return [{key:'name',label:'ブランド名'},{key:'slug',label:'スラッグ'},{key:'corpName',label:'法人'},{key:'mainColor',label:'カラー'},{key:'status',label:'ステータス'}];
   if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'status',label:'ステータス'}];
   if(type==='account')return [{key:'name',label:'氏名'},{key:'email',label:'メール'},{key:'role',label:'権限'},{key:'corpName',label:'法人'}];
@@ -3362,9 +3490,21 @@ function validateBulkRows(dataRows,type){
     const rn=i+2;const g=idx=>String(row[idx]||'').trim();
     try{
       if(type==='corp'){
-        const name=g(0),rep=g(1);
+        const name=g(0),rep=g(1),brandName=g(5),storeName=g(7),storeAddr=g(8),storeTel=g(9);
         if(!name){errors.push('行'+rn+': 法人名が空');return;}
-        valid.push({name,rep:rep||'—',status:g(2)||'active',hp:g(3),recruit:g(4),created:new Date().toISOString().split('T')[0]});
+        if(!brandName){errors.push('行'+rn+': ブランド名が空');return;}
+        if(!storeName){errors.push('行'+rn+': 店舗名が空');return;}
+        if(!storeAddr){errors.push('行'+rn+': 住所が空');return;}
+        if(!storeTel){errors.push('行'+rn+': 電話番号が空');return;}
+        const genre=g(12),price=g(14),smoking=g(21),takeout=g(18),delivery=g(19),reserv=g(20),role=g(24);
+        if(genre&&!_GENRE_MAJOR.includes(genre)){errors.push('行'+rn+': ジャンル大分類「'+genre+'」が不正');return;}
+        if(price&&!_PRICE_RANGES.includes(price)){errors.push('行'+rn+': 価格帯「'+price+'」が不正');return;}
+        if(smoking&&!_SMOKING_OPTS.includes(smoking)){errors.push('行'+rn+': 喫煙「'+smoking+'」が不正');return;}
+        if(takeout&&!['ON','OFF'].includes(takeout)){errors.push('行'+rn+': テイクアウト「'+takeout+'」が不正(ON/OFF)');return;}
+        if(delivery&&!['ON','OFF'].includes(delivery)){errors.push('行'+rn+': デリバリー「'+delivery+'」が不正(ON/OFF)');return;}
+        if(reserv&&!['ON','OFF'].includes(reserv)){errors.push('行'+rn+': 来店予約「'+reserv+'」が不正(ON/OFF)');return;}
+        if(role&&!['owner','admin','staff'].includes(role)){errors.push('行'+rn+': 権限「'+role+'」が不正(owner/admin/staff)');return;}
+        valid.push({name,rep:rep||'—',corpEmail:g(2),hp:g(3),recruit:g(4),brandName,brandSlug:g(6),storeName,storeAddr,storeTel,storeEmail:g(10),storeStation:g(11),storeGenre:genre,storeGenreSub:g(13),storePrice:price,storeSeats:g(15),storeOpen:g(16),storeClose:g(17),storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking||'全席禁煙',accName:g(22),accEmail:g(23),accRole:role||'owner',created:new Date().toISOString().split('T')[0]});
       }else if(type==='brand'){
         const name=g(0),slug=g(1),corpId=g(2);
         if(!name||!slug){errors.push('行'+rn+': ブランド名またはスラッグが空');return;}
@@ -3390,14 +3530,33 @@ function validateBulkRows(dataRows,type){
   return {valid,errors};
 }
 
-function confirmBulkImport(){
+async function confirmBulkImport(){
   if(confirmBulkImport._p){showToast('⚠️ 処理中です。しばらくお待ちください');return;}
   confirmBulkImport._p=true;
   if(!_bulkParsed||!_bulkParsed.length){confirmBulkImport._p=false;showToast('⚠️ 登録データがありません');return;}
   let added=0;
-  _bulkParsed.forEach(item=>{
+  for(const item of _bulkParsed){
     if(_bulkType==='corp'){
-      CORPS.push({id:genId('CRP-'),name:item.name,rep:item.rep,status:item.status,created:item.created,hp:item.hp,recruit:item.recruit});added++;
+      try{
+        const token=await getToken();
+        const corpRes=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,representative:item.rep,rep_email:item.corpEmail,website_url:item.hp,recruit_url:item.recruit})});
+        const corpD=await corpRes.json();if(!corpRes.ok)throw new Error(corpD.error||'法人保存失敗');
+        const corpUuid=corpD.data.id,corpDid=corpD.data.display_id;
+        CORPS.push({_uuid:corpUuid,id:corpDid,name:item.name,rep:item.rep,status:'active',created:item.created,stripe_account_id:null,rep_email:item.corpEmail||''});
+        const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.brandName,corp_id:corpUuid,slug:item.brandSlug||undefined})});
+        const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランド保存失敗');
+        const brandUuid=brandD.data.id,brandDid=brandD.data.display_id;
+        BRANDS.push({_uuid:brandUuid,id:brandDid,corpId:corpDid,name:item.brandName,slug:item.brandSlug||'',status:'active',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
+        const smokingMap={'全席禁煙':'no_smoking','喫煙可':'allowed','分煙':'separated'};
+        const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.storeName,brand_id:brandUuid,address:item.storeAddr,phone:item.storeTel,email:item.storeEmail||undefined,nearest_station:item.storeStation||undefined,genre_major:item.storeGenre||undefined,genre_sub:item.storeGenreSub||undefined,price_range:item.storePrice||undefined,seats:item.storeSeats?parseInt(item.storeSeats):undefined,open_time:item.storeOpen||undefined,close_time:item.storeClose||undefined,takeout_enabled:item.storeTakeout==='ON',delivery_enabled:item.storeDelivery==='ON',reservation_enabled:item.storeReserv==='ON',smoking_policy:smokingMap[item.storeSmoking]||'no_smoking',is_active:true})});
+        const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗保存失敗');
+        STORES.push({_uuid:storeD.data.id,id:storeD.data.display_id,brandId:brandDid,name:item.storeName,status:'active',addr:item.storeAddr,tel:item.storeTel,orders:0,revenue:0});
+        if(item.accName&&item.accEmail){
+          const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:item.accName,email:item.accEmail,role:item.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
+          if(!accErr&&accData)ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:item.accName,email:item.accEmail,role:item.accRole||'owner',corpId:corpDid,status:'active',lastLogin:'—'});
+        }
+        added++;
+      }catch(e){showToast('⚠️ '+item.name+': '+e.message);continue;}
     }else if(_bulkType==='brand'){
       BRANDS.push({id:genId('BRD-'),corpId:item.corpId,name:item.name,slug:item.slug,status:item.status,mainColor:item.mainColor,subColor:item.subColor,hdrBg:item.hdrBg,hdrTx:item.hdrTx,fontColor:item.fontColor,font:item.font});added++;
     }else if(_bulkType==='store'){
@@ -3405,7 +3564,7 @@ function confirmBulkImport(){
     }else if(_bulkType==='account'){
       ACCOUNTS.push({id:genId('ACC-'),name:item.name,email:item.email,role:item.role,corpId:item.corpId,phone:item.phone,status:'active',lastLogin:'—'});added++;
     }
-  });
+  }
   closeModal();
   showToast('✅ '+added+'件を登録しました');
   _bulkParsed=null;_bulkType=null;
@@ -5712,10 +5871,10 @@ function renderSetupChecklist(){
       return '<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:'+(sPct>=100?'#e6f9f0':'#fff7e6')+';color:'+(sPct>=100?'#00b894':'#d68910')+';font-size:10px;cursor:pointer" onclick="goToStore(\''+esc(st.store.id)+'\')">'+sIcon+' '+esc(st.store.name)+' ('+st.done+'/'+st.total+')</span>';
     }).join('');
     var missHtml=missingItems.length?missingItems.map(function(mi){
-      return '<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:#fab1a0;color:#b71c1c;font-size:10px;cursor:pointer" onclick="goToCorp(\''+esc(c.id)+'\')">❌ '+esc(mi.label)+'</span>';
+      return '<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:#fab1a0;color:#b71c1c;font-size:10px;cursor:pointer" onclick="openCorpModal(\''+esc(c.id)+'\')">❌ '+esc(mi.label)+'</span>';
     }).join(''):'<span style="color:#00b894;font-size:11px;font-weight:700">✅ 法人基本情報 完了</span>';
     h+='<div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer" onclick="goToCorp(\''+esc(c.id)+'\')">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer" onclick="openCorpModal(\''+esc(c.id)+'\')">'+
         '<span style="font-weight:700;font-size:12px">'+esc(c.name)+'</span>'+
         '<span style="font-size:10px;color:var(--text-light)">'+esc(c.id)+'</span>'+
         '<div style="flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+color+'"></div></div>'+
