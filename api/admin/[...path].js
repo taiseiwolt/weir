@@ -69,9 +69,20 @@ export default async function handler(req, res) {
   const admin = await isAdmin(auth.user);
   if (!admin) return error(res, '管理者権限が必要です', 403);
 
-  // Parse path
-  const rawPath = req.query.path || [];
-  const segments = (Array.isArray(rawPath) ? rawPath : rawPath.split('/')).filter(Boolean);
+  // Parse path — prefer req.query.path, fallback to URL parsing
+  let rawPath = req.query.path || [];
+  let segments = (Array.isArray(rawPath) ? rawPath : rawPath.split('/')).filter(Boolean);
+
+  // Fallback: parse from req.url if query.path is empty
+  if (segments.length === 0 && req.url) {
+    const urlPath = req.url.split('?')[0];
+    const parts = urlPath.split('/').filter(Boolean);
+    const adminIdx = parts.indexOf('admin');
+    if (adminIdx >= 0) {
+      segments = parts.slice(adminIdx + 1);
+    }
+  }
+
   const entity = segments[0];
   const id = segments[1];
 
