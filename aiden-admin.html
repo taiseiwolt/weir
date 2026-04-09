@@ -240,7 +240,7 @@ async function getToken(){return(await sb.auth.getSession()).data.session?.acces
     if(!session){window.location.href='/';return;}
     // SEC: staff_accountsでロールチェック — platform_admin/corp_adminのみ許可
     const{data:staff}=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',session.user.id).single();
-    if(!staff||!['platform_admin','corp_admin'].includes(staff.role)){
+    if(!staff||!['platform_admin','corp_admin','owner','admin'].includes(staff.role)){
       alert('管理者権限がありません');window.location.href='/';return;
     }
     // SEC: 管理者ログイン記録 (05-P1-3)
