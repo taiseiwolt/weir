@@ -417,7 +417,7 @@ function updateSidebar(){
 }
 function switchTab(prefix,el,tabId){
   el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  const container=document.getElementById('content');
+  const container=el.closest('.modal')||document.getElementById('content');
   container.querySelectorAll('.tab-content').forEach(tc=>{if(tc.id&&tc.id.startsWith(prefix+'-'))tc.classList.remove('active');});
   const tgt=document.getElementById(prefix+'-'+tabId);if(tgt)tgt.classList.add('active');
   // Fee schedule lazy load
@@ -640,7 +640,7 @@ function renderCorpsList(){
   return '<div class="page-title">法人管理</div><div class="page-subtitle">AIden利用法人の一覧（法人ID: 7桁英数字）</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 法人名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'corp\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'corp\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openCorpWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddCorpModal()">＋ 法人追加</button></div></div>'+
   '<table class="data-table"><thead><tr><th>法人ID</th><th>法人名</th><th>代表者</th><th>ブランド</th><th>店舗</th><th>ステータス</th><th></th></tr></thead><tbody>'+
-  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button></td></tr>';}).join('')+
+  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleCorpStatus(\''+c._uuid+'\',\''+c.status+'\')">'+( c.status==='active'?'停止':'有効化')+'</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -2025,11 +2025,10 @@ function openCorpModal(corpDisplayId){
 function renderCorpPage(c){
   const brands=getBrandsForCorp(c),stores=getStoresForCorp(c),accounts=ACCOUNTS.filter(a=>a.corpId===c.id),tR=stores.reduce((s,x)=>s+x.revenue,0);
   return '<div class="page-header"><div class="page-title">'+c.name+'</div><span class="page-type-badge corp">法人</span></div>'+
-  '<div class="page-header"><div class="page-title">'+c.name+'</div><span class="page-type-badge corp">法人</span></div>'+
   '<div class="page-subtitle">'+c.id+' / '+c.rep+' / '+statusBadge(c.status)+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)"><div class="stat-card purple"><div class="sc-label">ブランド数</div><div class="sc-val">'+brands.length+'</div></div><div class="stat-card blue"><div class="sc-label">店舗数</div><div class="sc-val">'+stores.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card orange"><div class="sc-label">アカウント数</div><div class="sc-val">'+accounts.length+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'corp\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'corp\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'corp\',this,\'brands\')">ブランド一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'stores\')">店舗一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'accounts\')">アカウント一覧</div><div class="tab" onclick="switchTab(\'corp\',this,\'fees\')">手数料設定</div></div>'+
-  '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveCorpBasic(\''+c.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" placeholder="https://example.co.jp/recruit"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
+  '<div class="tab-content active" id="corp-basic"><div class="card"><div class="card-title">法人情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveCorpBasic(\''+c.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>法人名</label><input type="text" value="'+c.name+'"></div><div class="form-group"><label>代表者</label><input type="text" value="'+c.rep+'"></div><div class="form-group"><label>法人ID</label><input type="text" value="'+c.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>登録日</label><input type="text" value="'+c.created+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>会社HP</label><input type="url" id="corpWebsite" value="'+esc(c.website_url||'')+'" placeholder="https://example.co.jp"></div><div class="form-group"><label>採用ページ</label><input type="url" id="corpRecruit" value="'+esc(c.recruit_url||'')+'" placeholder="https://example.co.jp/recruit"></div><div class="form-group"><label>法人番号</label><input type="text" id="corpNumber" value="'+esc(c.corp_number||'')+'"></div><div class="form-group"><label>銀行名</label><input type="text" id="corpBankName" value="'+esc(c.bank_name||'')+'"></div><div class="form-group"><label>支店番号</label><input type="text" id="corpBankBranch" value="'+esc(c.bank_branch_code||'')+'"></div><div class="form-group"><label>口座番号</label><input type="text" id="corpBankAccount" value="'+esc(c.bank_account_number||'')+'"></div><div class="form-group full"><label>本部住所</label><input type="text" id="corpHqAddress" value="'+esc(c.hq_address||'')+'"></div><div class="form-group"><label>本部電話番号</label><input type="text" id="corpHqPhone" value="'+esc(c.hq_phone||'')+'"></div><div class="form-group"><label>代表メール</label><input type="email" id="corpRepEmail" value="'+esc(c.rep_email||'')+'"></div><div class="form-group"><label>担当者氏名</label><input type="text" id="corpContactName" value="'+esc(c.contact_name||'')+'"></div><div class="form-group"><label>担当者メール</label><input type="email" id="corpContactEmail" value="'+esc(c.contact_email||'')+'"></div></div></div><div class="card"><div class="card-title">💳 Stripe Connect（決済連携）</div>'+stripeStatusHtml(c)+'</div></div>'+
   '<div class="tab-content" id="corp-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ここでONにしたサービスのみ、配下のブランド・店舗で選択できるようになります。</p><div class="svc-grid">'+renderServiceCards(c.id,'corp',null)+'</div></div></div>'+
   '<div class="tab-content" id="corp-accounts"><div class="card"><div class="card-title">アカウント一覧 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddAccountModal()">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>氏名</th><th>メール</th><th>権限</th><th>最終ログイン</th><th></th></tr></thead><tbody>'+accounts.map(a=>'<tr><td style="font-weight:600">'+a.name+'</td><td>'+a.email+'</td><td>'+roleBadge(a.role)+'</td><td>'+(a.lastLogin||'—')+'</td><td><button class="btn btn-secondary btn-sm" style="margin-right:4px" onclick="openEditAccountModal(\''+a.id+'\')">編集</button><button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="deleteAccount(\''+a.id+'\')">削除</button></td></tr>').join('')+'</tbody></table></div></div>'+
   '<div class="tab-content" id="corp-brands"><div class="card"><div class="card-title">ブランド一覧（'+brands.length+'）</div><div class="link-grid">'+brands.map(b=>{const ss=getStoresForBrand(b).length;return '<div class="link-card" onclick="goToBrand(\''+b.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+b.name+'</div><div class="lc-sub">'+b.slug+' / '+ss+'店舗</div></div><div class="lc-arrow">›</div></div>';}).join('')+'</div></div></div>'+
@@ -3041,18 +3040,42 @@ async function deleteAccount(accId){
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
+async function toggleCorpStatus(uuid,currentStatus){
+  const newStatus=currentStatus==='active'?'suspended':'active';
+  const label=newStatus==='active'?'有効化':'停止';
+  if(!confirm('この法人を'+label+'しますか？'))return;
+  try{
+    const token=await getToken();
+    const res=await fetch('/api/admin/corporations/'+uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({status:newStatus})});
+    const d=await res.json();if(!res.ok)throw new Error(d.error);
+    const corp=CORPS.find(c=>c._uuid===uuid);if(corp)corp.status=newStatus;
+    showToast('✅ '+label+'しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+
 async function saveCorpBasic(corpDisplayId){
   const c=CORPS.find(x=>x.id===corpDisplayId);
   if(!c)return;
   const inputs=document.querySelectorAll('#corp-basic input');
   const name=inputs[0]?.value.trim()||c.name;
   const rep=inputs[1]?.value.trim()||c.rep;
-  const website=inputs[4]?.value.trim()||'';
-  const recruit=inputs[5]?.value.trim()||'';
+  const body={name:name,representative:rep,
+    website_url:document.getElementById('corpWebsite')?.value.trim()||null,
+    recruit_url:document.getElementById('corpRecruit')?.value.trim()||null,
+    corp_number:document.getElementById('corpNumber')?.value.trim()||null,
+    bank_name:document.getElementById('corpBankName')?.value.trim()||null,
+    bank_branch_code:document.getElementById('corpBankBranch')?.value.trim()||null,
+    bank_account_number:document.getElementById('corpBankAccount')?.value.trim()||null,
+    hq_address:document.getElementById('corpHqAddress')?.value.trim()||null,
+    hq_phone:document.getElementById('corpHqPhone')?.value.trim()||null,
+    rep_email:document.getElementById('corpRepEmail')?.value.trim()||null,
+    contact_name:document.getElementById('corpContactName')?.value.trim()||null,
+    contact_email:document.getElementById('corpContactEmail')?.value.trim()||null,
+  };
   try{
-    const res=await fetch('/api/admin/corporations/'+c._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,representative:rep,website_url:website,recruit_url:recruit})});
+    const res=await fetch('/api/admin/corporations/'+c._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify(body)});
     if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
-    c.name=name;c.rep=rep;c.website_url=website;c.recruit_url=recruit;
+    c.name=name;c.rep=rep;Object.assign(c,body);
     showToast('✅ 法人情報を保存しました');
   }catch(e){showToast('⚠️ '+e.message);}
 }
@@ -3486,9 +3509,9 @@ async function saveStoreBasic(storeDisplayId){
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
   corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',
-    headers:['法人名','代表者名','代表メール','会社HP','採用ページ','ブランド名','ブランドスラッグ','店舗名','住所','電話番号','メール','最寄り駅','ジャンル（カンマ区切り）','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト','デリバリー','来店予約','喫煙','アカウント氏名','アカウントメール','アカウント権限'],
-    sample:[['株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','https://example.co.jp/recruit','居酒屋 潮','ushio','渋谷店','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','居酒屋,鍋,和食','40','中休みあり','11:00','14:00','17:00','22:00','日曜日、祝日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','OFF','全席禁煙','山田太郎','yamada@example.com','Owner']],
-    categories:[{cols:[0,4],color:'f0ecff',label:'法人'},{cols:[5,6],color:'e8f4fd',label:'ブランド'},{cols:[7,11],color:'e6f9f0',label:'店舗基本'},{cols:[12,13],color:'fff8e1',label:'ジャンル・座席'},{cols:[14,18],color:'fff0e0',label:'営業時間'},{cols:[19,21],color:'fce4ec',label:'定休日・価格帯'},{cols:[22,25],color:'f5f5f5',label:'サービス設定'},{cols:[26,28],color:'f3e5f5',label:'アカウント'}]},
+    headers:['法人名*','代表者名','代表メールアドレス','会社HP','採用ページ','法人番号','銀行名','支店番号','口座番号','本部住所','本部電話番号','代表メール','担当者氏名','担当者メールアドレス'],
+    sample:[['株式会社サンプル','渡辺太郎','rep@example.co.jp','-','-','1234567890123','○○銀行','○○支店','1234567','東京都目黒区○○1-2-3','03-XXXX-XXXX','tanto@example.com','担当花子','tanto@example.com']],
+    categories:[{cols:[0,4],color:'f0ecff',label:'法人基本'},{cols:[5,8],color:'e8f4fd',label:'銀行情報'},{cols:[9,11],color:'e6f9f0',label:'本部連絡先'},{cols:[12,13],color:'fff8e1',label:'担当者'}]},
   brand:{filename:'aiden_brand_template.csv',
     headers:['ブランド名*','スラッグ*','所属法人ID*','ステータス(active/trial)','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント(Noto Sans JP等)'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','active','#DC3232','#1A1A1A','#DC3232','#FFFFFF','#333333','Noto Sans JP']]},
@@ -3629,7 +3652,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function xlsxTimeToHHMM(val){if(typeof val==='number'&&val>=0&&val<1){var totalMins=Math.round(val*24*60);var h=Math.floor(totalMins/60)%24;var m=totalMins%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}return String(val!=null?val:'').trim();}
 
 function getDisplayColumns(type){
-  if(type==='corp')return [{key:'name',label:'法人名'},{key:'brandName',label:'ブランド'},{key:'storeName',label:'店舗'},{key:'storeAddr',label:'住所'},{key:'storeTel',label:'電話'}];
+  if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'hqAddress',label:'本部住所'},{key:'contactName',label:'担当者'},{key:'contactEmail',label:'担当者メール'}];
   if(type==='brand')return [{key:'name',label:'ブランド名'},{key:'slug',label:'スラッグ'},{key:'corpName',label:'法人'},{key:'mainColor',label:'カラー'},{key:'status',label:'ステータス'}];
   if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'status',label:'ステータス'}];
   if(type==='account')return [{key:'name',label:'氏名'},{key:'email',label:'メール'},{key:'role',label:'権限'},{key:'corpName',label:'法人'}];
@@ -3652,38 +3675,15 @@ function validateBulkRows(dataRows,type){
     try{
       if(type==='corp'){
         const nr=normalizeRow(row);
-        const name=nr.g(0),rep=nr.g(1),brandName=nr.g(5),storeName=nr.g(7),storeAddr=nr.g(8),storeTel=nr.g(9);
+        const name=nr.g(0);
         if(!name){errors.push('行'+rn+': 法人名が空');return;}
-        if(!brandName){errors.push('行'+rn+': ブランド名が空');return;}
-        if(!storeName){errors.push('行'+rn+': 店舗名が空');return;}
-        if(!storeAddr){errors.push('行'+rn+': 住所が空');return;}
-        if(!storeTel){errors.push('行'+rn+': 電話番号が空');return;}
         const warnings=[];
-        const genresRaw=nr.normalizeGenres(nr.g(12));
-        const allGenres=genresRaw?genresRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
-        const validGenres=allGenres.filter(gn=>GENRE_LIST.includes(gn));
-        const invalidGenres=allGenres.filter(gn=>!GENRE_LIST.includes(gn));
-        if(invalidGenres.length)warnings.push('ジャンル「'+invalidGenres.join('、')+'」は認識できないためスキップ');
-        const priceLunchRaw=nr.g(20),priceDinnerRaw=nr.g(21);
-        const priceLunch=PRICE_RANGES.includes(priceLunchRaw)?priceLunchRaw:'';
-        const priceDinner=PRICE_RANGES.includes(priceDinnerRaw)?priceDinnerRaw:'';
-        if(priceLunchRaw&&!priceLunch)warnings.push('昼の価格帯「'+priceLunchRaw+'」は認識できないため空白で登録');
-        if(priceDinnerRaw&&!priceDinner)warnings.push('夜の価格帯「'+priceDinnerRaw+'」は認識できないため空白で登録');
-        const takeout=nr.normalizeOnOff(nr.g(22));
-        const delivery=nr.normalizeOnOff(nr.g(23));
-        const reserv=nr.normalizeOnOff(nr.g(24));
-        const smokingRaw=nr.g(25);
-        const smoking=_SMOKING_OPTS.includes(smokingRaw)?smokingRaw:'全席禁煙';
-        if(smokingRaw&&!_SMOKING_OPTS.includes(smokingRaw))warnings.push('喫煙「'+smokingRaw+'」は認識できないため「全席禁煙」で登録');
-        const roleRaw=nr.g(28);
-        const role=nr.normalizeRole(roleRaw);
-        const validRoles=['owner','admin','staff'];
-        const finalRole=validRoles.includes(role)?role:'owner';
-        if(roleRaw&&!validRoles.includes(role))warnings.push('権限「'+roleRaw+'」は認識できないため「owner」で登録');
         const hp=nr.normalize(nr.g(3));
         const recruit=nr.normalize(nr.g(4));
-        const hoursType=nr.g(14)||'通し営業';
-        valid.push({name,rep:rep||'—',corpEmail:nr.g(2),hp,recruit,brandName,brandSlug:nr.g(6),storeName,storeAddr,storeTel,storeEmail:nr.g(10),storeStation:nr.g(11),storeGenres:validGenres,storeSeats:nr.g(13),hoursType,lunchOpen:xlsxTimeToHHMM(row[15]),lunchClose:xlsxTimeToHHMM(row[16]),dinnerOpen:xlsxTimeToHHMM(row[17]),dinnerClose:xlsxTimeToHHMM(row[18]),storeHoliday:nr.g(19),priceLunch,priceDinner,storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking,accName:nr.g(26),accEmail:nr.g(27),accRole:finalRole,created:new Date().toISOString().split('T')[0],_warnings:warnings});
+        valid.push({name,rep:nr.g(1),corpEmail:nr.g(2),hp,recruit,
+          corpNumber:nr.g(5),bankName:nr.g(6),bankBranch:nr.g(7),bankAccount:nr.g(8),
+          hqAddress:nr.g(9),hqPhone:nr.g(10),repEmail:nr.g(11),
+          contactName:nr.g(12),contactEmail:nr.g(13),_warnings:warnings});
       }else if(type==='brand'){
         const name=g(0),slug=g(1),corpId=g(2);
         if(!name||!slug){errors.push('行'+rn+': ブランド名またはスラッグが空');return;}
@@ -3718,28 +3718,9 @@ async function confirmBulkImport(){
     if(_bulkType==='corp'){
       try{
         const token=await getToken();
-        const corpRes=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,representative:item.rep,rep_email:item.corpEmail,website_url:item.hp,recruit_url:item.recruit})});
-        const corpD=await corpRes.json();if(!corpRes.ok)throw new Error(corpD.error||'法人保存失敗');
-        const corpUuid=corpD.data.id,corpDid=corpD.data.display_id;
-        CORPS.push({_uuid:corpUuid,id:corpDid,name:item.name,rep:item.rep,status:'active',created:item.created,stripe_account_id:null,rep_email:item.corpEmail||''});
-        const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.brandName,corp_id:corpUuid,slug:item.brandSlug||undefined})});
-        const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランド保存失敗');
-        const brandUuid=brandD.data.id,brandDid=brandD.data.display_id;
-        BRANDS.push({_uuid:brandUuid,id:brandDid,corpId:corpDid,name:item.brandName,slug:item.brandSlug||'',status:'active',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
-        const smokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','分煙':'separated'};
-        const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.storeName,brand_id:brandUuid,address:item.storeAddr,phone:item.storeTel,email:item.storeEmail||undefined,nearest_station:item.storeStation||undefined,genres:item.storeGenres||[],regular_holiday:item.storeHoliday||'',price_range_lunch:item.priceLunch||'',price_range_dinner:item.priceDinner||'',seats:item.storeSeats?parseInt(item.storeSeats):undefined,takeout_enabled:item.storeTakeout==='ON',delivery_enabled:item.storeDelivery==='ON',reservation_enabled:item.storeReserv==='ON',smoking_policy:smokingMap[item.storeSmoking]||'no_smoking',is_active:true})});
-        const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗保存失敗');
-        var bulkStoreUuid=storeD.data.id;
-        // Insert store_hours from Excel data
-        var bulkHours=[];var allDows=[0,1,2,3,4,5,6];
-        if(item.hoursType==='中休みあり'&&item.lunchOpen&&item.dinnerOpen){allDows.forEach(function(dow){bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.lunchOpen,close_time:item.lunchClose,is_closed:false});bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.dinnerOpen,close_time:item.dinnerClose,is_closed:false});});}
-        else if(item.lunchOpen){allDows.forEach(function(dow){bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.lunchOpen,close_time:item.lunchClose,is_closed:false});});}
-        if(bulkHours.length)await sb.from('store_hours').insert(bulkHours);
-        STORES.push({_uuid:bulkStoreUuid,id:storeD.data.display_id,brandId:brandDid,name:item.storeName,status:'active',addr:item.storeAddr,tel:item.storeTel,orders:0,revenue:0});
-        if(item.accName&&item.accEmail){
-          const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:item.accName,email:item.accEmail,role:item.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
-          if(!accErr&&accData)ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:item.accName,email:item.accEmail,role:item.accRole||'owner',corpId:corpDid,status:'active',lastLogin:'—'});
-        }
+        const res=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,representative:item.rep||undefined,rep_email:item.repEmail||item.corpEmail||undefined,website_url:item.hp||undefined,recruit_url:item.recruit||undefined,corp_number:item.corpNumber||undefined,bank_name:item.bankName||undefined,bank_branch_code:item.bankBranch||undefined,bank_account_number:item.bankAccount||undefined,hq_address:item.hqAddress||undefined,hq_phone:item.hqPhone||undefined,contact_name:item.contactName||undefined,contact_email:item.contactEmail||undefined})});
+        const d=await res.json();if(!res.ok)throw new Error(d.error||'法人保存失敗');
+        CORPS.push({_uuid:d.data.id,id:d.data.display_id,name:item.name,rep:item.rep||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:item.repEmail||'',corp_number:item.corpNumber||'',bank_name:item.bankName||'',hq_address:item.hqAddress||'',contact_name:item.contactName||''});
         added++;
       }catch(e){var msg=item.name+': '+e.message;showToast('⚠️ '+msg);var pv=document.getElementById('bulkPreview');if(pv)pv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(msg)+'</div>';continue;}
     }else if(_bulkType==='brand'){
