@@ -2493,58 +2493,82 @@ async function loadStoreHours(storeUuid){
   var hoursByDay={};
   rows.forEach(function(r){hoursByDay[r.day_of_week]=r;});
   hg.innerHTML=DAYS_ORDER.map(function(day){
-    var h=hoursByDay[day]||{open_time:'11:00',close_time:'22:00',is_closed:false};
+    var h=hoursByDay[day]||{open_time:'11:00',close_time:'22:00',is_closed:false,hours_type:'through'};
     var openVal=(h.open_time||'11:00').substring(0,5);
     var closeVal=(h.close_time||'22:00').substring(0,5);
+    var open2Val=(h.open_time2||'17:00').substring(0,5);
+    var close2Val=(h.close_time2||'22:00').substring(0,5);
+    var type=h.hours_type||'through';
     var closed=!!h.is_closed;
     var opStyle=closed?' style="opacity:0.4;pointer-events:none"':'';
+    var op2Style=(type!=='split'||closed)?' style="opacity:0.4;pointer-events:none"':'';
     return '<div class="day-label">'+DAYS_MAP[day]+'</div>'+
+      '<label class="closed-check"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>'+
+      '<select id="storeHour_'+day+'_type" onchange="toggleDayType('+day+')"'+opStyle+'><option value="through"'+(type!=='split'?' selected':'')+'>通し</option><option value="split"'+(type==='split'?' selected':'')+'>中休みあり</option></select>'+
       '<input type="time" id="storeHour_'+day+'_open" value="'+openVal+'"'+opStyle+'>'+
       '<input type="time" id="storeHour_'+day+'_close" value="'+closeVal+'"'+opStyle+'>'+
-      '<label class="closed-check"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>';
+      '<input type="time" id="storeHour_'+day+'_open2" value="'+open2Val+'"'+op2Style+'>'+
+      '<input type="time" id="storeHour_'+day+'_close2" value="'+close2Val+'"'+op2Style+'>';
   }).join('');
 }
 
 function toggleDayClosed(day){
   var cb=document.getElementById('storeHour_'+day+'_closed');
-  var openEl=document.getElementById('storeHour_'+day+'_open');
-  var closeEl=document.getElementById('storeHour_'+day+'_close');
-  if(!cb||!openEl||!closeEl)return;
-  if(cb.checked){
-    openEl.style.opacity='0.4';openEl.style.pointerEvents='none';
-    closeEl.style.opacity='0.4';closeEl.style.pointerEvents='none';
-  }else{
-    openEl.style.opacity='';openEl.style.pointerEvents='';
-    closeEl.style.opacity='';closeEl.style.pointerEvents='';
-  }
+  if(!cb)return;
+  var els=['_type','_open','_close','_open2','_close2'].map(function(s){return document.getElementById('storeHour_'+day+s);});
+  els.forEach(function(el){if(el){el.style.opacity=cb.checked?'0.4':'';el.style.pointerEvents=cb.checked?'none':'';}});
+  if(!cb.checked)toggleDayType(day);
+}
+
+function toggleDayType(day){
+  var sel=document.getElementById('storeHour_'+day+'_type');
+  var open2=document.getElementById('storeHour_'+day+'_open2');
+  var close2=document.getElementById('storeHour_'+day+'_close2');
+  if(!sel||!open2||!close2)return;
+  var isSplit=sel.value==='split';
+  open2.style.opacity=isSplit?'':'0.4';open2.style.pointerEvents=isSplit?'':'none';
+  close2.style.opacity=isSplit?'':'0.4';close2.style.pointerEvents=isSplit?'':'none';
 }
 
 function applyAllStoreHours(storeUuid){
+  var typeVal=document.getElementById('storeHour_1_type').value;
   var openVal=document.getElementById('storeHour_1_open').value;
   var closeVal=document.getElementById('storeHour_1_close').value;
+  var open2Val=document.getElementById('storeHour_1_open2').value;
+  var close2Val=document.getElementById('storeHour_1_close2').value;
   var closed=document.getElementById('storeHour_1_closed').checked;
   DAYS_ORDER.forEach(function(day){
     if(day===1)return;
+    document.getElementById('storeHour_'+day+'_type').value=typeVal;
     document.getElementById('storeHour_'+day+'_open').value=openVal;
     document.getElementById('storeHour_'+day+'_close').value=closeVal;
+    document.getElementById('storeHour_'+day+'_open2').value=open2Val;
+    document.getElementById('storeHour_'+day+'_close2').value=close2Val;
     document.getElementById('storeHour_'+day+'_closed').checked=closed;
-    toggleDayClosed(day);
+    toggleDayClosed(day);toggleDayType(day);
   });
   showToast('✅ 月曜の設定を全日に適用しました');
 }
 
 async function saveStoreHours(storeUuid){
   var rows=DAYS_ORDER.map(function(day){
+    var type=document.getElementById('storeHour_'+day+'_type')?.value||'through';
+    var open2=document.getElementById('storeHour_'+day+'_open2')?.value;
+    var close2=document.getElementById('storeHour_'+day+'_close2')?.value;
     return {
       store_id:storeUuid,
       day_of_week:day,
       open_time:document.getElementById('storeHour_'+day+'_open').value+':00',
       close_time:document.getElementById('storeHour_'+day+'_close').value+':00',
+      open_time2:type==='split'&&open2?(open2+':00'):null,
+      close_time2:type==='split'&&close2?(close2+':00'):null,
+      hours_type:type,
       is_closed:document.getElementById('storeHour_'+day+'_closed').checked
     };
   });
   try{
-    var {error}=await sb.from('store_hours').upsert(rows,{onConflict:'store_id,day_of_week'});
+    await sb.from('store_hours').delete().eq('store_id',storeUuid);
+    var {error}=await sb.from('store_hours').insert(rows);
     if(error)throw error;
     showToast('✅ 営業時間を保存しました');
     logAudit('update_store_hours','store_hours',storeUuid,{days:7});
@@ -3580,9 +3604,11 @@ const TEMPLATES={
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','','','','','','Noto Sans JP','ON','OFF','OFF','全席禁煙','焼肉,和食','https://example.co.jp','担当太郎','tanto@example.co.jp']],
     comment:'※カラー欄は空白でもOK。登録後に管理画面で自動取得できます。',
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'f0ecff',label:'デザイン（任意）'},{cols:[9,13],color:'e6f9f0',label:'サービス設定'},{cols:[14,16],color:'fff8e1',label:'担当者'}]},
-  store:{filename:'aiden_store_template.csv',
-    headers:['店舗名*','所属ブランドID*','住所','電話番号','メール','最寄り駅','価格帯','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','緯度','経度','配達圏(km)','配達料金(円)','最低注文額(円)','サービス料(%)','ステータス(active/trial)'],
-    sample:[['渋谷店','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','¥8,000〜¥14,999','6席','全席禁煙','同伴不可','同伴不可','なし','35.6595','139.7005','5','770','1500','10','active']]},
+  store:{filename:'aiden_store_template.xlsx',format:'xlsx',
+    headers:['店舗名*','所属法人ID','所属ブランドID*','住所','電話番号','メール','最寄り駅','価格帯','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','店舗担当者メール','店舗担当者電話','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙'],
+    sample:[['渋谷店','CRP-xxxxxxx','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','¥3,000~¥3,999','40','全席禁煙','同伴不可','同伴不可','なし','tanto@example.com','090-1234-5678','40','中休みあり','11:00','14:00','17:00','22:00','日曜日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','ON','全席禁煙']],
+    comment:'※営業時間は全日共通で入力してください。曜日別設定は登録後に管理画面で行えます。',
+    categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'e6f9f0',label:'店舗情報'},{cols:[9,12],color:'fff8e1',label:'施設情報'},{cols:[13,14],color:'f0ecff',label:'担当者'},{cols:[15,21],color:'fff0e0',label:'営業時間'},{cols:[22,27],color:'fce4ec',label:'サービス設定'}]},
   account:{filename:'aiden_account_template.csv',
     headers:['氏名*','メールアドレス*','権限(owner/admin/staff)*','所属法人ID*','電話番号'],
     sample:[['山田太郎','yamada@example.com','staff','CRP-xxxxxxx','090-1234-5678']]}
@@ -3719,7 +3745,7 @@ function xlsxTimeToHHMM(val){if(typeof val==='number'&&val>=0&&val<1){var totalM
 function getDisplayColumns(type){
   if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'hqAddress',label:'本部住所'},{key:'contactName',label:'担当者'},{key:'contactEmail',label:'担当者メール'}];
   if(type==='brand')return [{key:'name',label:'ブランド名'},{key:'slug',label:'スラッグ'},{key:'corpName',label:'法人'},{key:'mainColor',label:'カラー'},{key:'status',label:'ステータス'}];
-  if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'status',label:'ステータス'}];
+  if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'hoursType',label:'営業形態'}];
   if(type==='account')return [{key:'name',label:'氏名'},{key:'email',label:'メール'},{key:'role',label:'権限'},{key:'corpName',label:'法人'}];
   return [];
 }
@@ -3771,11 +3797,23 @@ function validateBulkRows(dataRows,type){
           smoking:nr.g(12)||'全席禁煙',genres:validGenres,
           hpUrl:nr.normalize(nr.g(14)),contactName:nr.g(15),contactEmail:nr.g(16),_warnings:warnings});
       }else if(type==='store'){
-        const name=g(0),brandId=g(1);
-        if(!name){errors.push('行'+rn+': 店舗名が空');return;}
-        const brand=BRANDS.find(b=>b.id===brandId);
+        var nr=normalizeRow(row);
+        var sName=nr.g(0),brandId=nr.g(2);
+        if(!sName){errors.push('行'+rn+': 店舗名が空');return;}
+        if(!brandId){errors.push('行'+rn+': 所属ブランドIDが空');return;}
+        var brand=BRANDS.find(function(b){return b.id===brandId;});
         if(!brand){errors.push('行'+rn+': ブランドID「'+brandId+'」が存在しません');return;}
-        valid.push({name,brandId,brandName:brand.name,addr:g(2),tel:g(3),email:g(4),station:g(5),priceRange:g(6),seats:g(7),smoking:g(8)||'全席禁煙',children:g(9)||'同伴不可',pets:g(10)||'同伴不可',parking:g(11)||'なし',lat:g(12),lng:g(13),deliveryRadius:g(14),deliveryFee:g(15),minOrder:g(16),serviceCharge:g(17)||'0',status:g(18)||'active'});
+        var sWarnings=[];
+        var sHoursType=nr.g(16)||'通し営業';
+        var sPriceLunchRaw=nr.g(22),sPriceDinnerRaw=nr.g(23);
+        var sPriceLunch=PRICE_RANGES.includes(sPriceLunchRaw)?sPriceLunchRaw:'';
+        var sPriceDinner=PRICE_RANGES.includes(sPriceDinnerRaw)?sPriceDinnerRaw:'';
+        if(sPriceLunchRaw&&!sPriceLunch)sWarnings.push('昼の価格帯「'+sPriceLunchRaw+'」は認識できないため空白で登録');
+        if(sPriceDinnerRaw&&!sPriceDinner)sWarnings.push('夜の価格帯「'+sPriceDinnerRaw+'」は認識できないため空白で登録');
+        var sSmokingRaw=nr.g(27)||nr.g(9);
+        var sSmoking=_SMOKING_OPTS.includes(sSmokingRaw)?sSmokingRaw:'全席禁煙';
+        if(sSmokingRaw&&!_SMOKING_OPTS.includes(sSmokingRaw))sWarnings.push('喫煙「'+sSmokingRaw+'」は認識できないため「全席禁煙」で登録');
+        valid.push({name:sName,brandId:brandId,brandName:brand.name,corpId:brand.corpId,addr:nr.g(3),tel:nr.g(4),email:nr.g(5),station:nr.g(6),priceRange:nr.g(7),seats:nr.g(15)||nr.g(8),smoking:sSmoking,children:nr.g(10)||'同伴不可',pets:nr.g(11)||'同伴不可',parking:nr.g(12)||'なし',contactEmail:nr.g(13),contactPhone:nr.g(14),hoursType:sHoursType,lunchOpen:xlsxTimeToHHMM(row[17]),lunchClose:xlsxTimeToHHMM(row[18]),dinnerOpen:xlsxTimeToHHMM(row[19]),dinnerClose:xlsxTimeToHHMM(row[20]),holiday:nr.g(21),priceLunch:sPriceLunch,priceDinner:sPriceDinner,takeout:(nr.normalizeOnOff(nr.g(24))||'OFF'),delivery:(nr.normalizeOnOff(nr.g(25))||'OFF'),reserv:(nr.normalizeOnOff(nr.g(26))||'OFF'),_warnings:sWarnings});
       }else if(type==='account'){
         const name=g(0),email=g(1),role=g(2),corpId=g(3);
         if(!name||!email){errors.push('行'+rn+': 氏名またはメールが空');return;}
@@ -3812,7 +3850,23 @@ async function confirmBulkImport(){
         added++;
       }catch(e){var msg=item.name+': '+e.message;showToast('⚠️ '+msg);var pv=document.getElementById('bulkPreview');if(pv)pv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(msg)+'</div>';continue;}
     }else if(_bulkType==='store'){
-      STORES.push({id:genId('STR-'),brandId:item.brandId,name:item.name,status:item.status,addr:item.addr,tel:item.tel,email:item.email,station:item.station,priceRange:item.priceRange,seats:item.seats,smoking:item.smoking,children:item.children,pets:item.pets,parking:item.parking,lat:item.lat,lng:item.lng,deliveryRadius:item.deliveryRadius,deliveryFee:item.deliveryFee,minOrder:item.minOrder,serviceCharge:item.serviceCharge,orders:0,revenue:0});added++;
+      try{
+        var token=await getToken();
+        var sBrand=BRANDS.find(function(b){return b.id===item.brandId;});
+        var sSmokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','喫煙可':'allowed','分煙':'separated'};
+        var sStoreRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,brand_id:sBrand?._uuid,address:item.addr||undefined,phone:item.tel||undefined,email:item.email||undefined,nearest_station:item.station||undefined,price_range_lunch:item.priceLunch||undefined,price_range_dinner:item.priceDinner||undefined,seats:item.seats?parseInt(item.seats):undefined,smoking_policy:sSmokingMap[item.smoking]||'no_smoking',children_policy:item.children==='同伴可'?'allowed':item.children==='要相談'?'consultation':'not_allowed',regular_holiday:item.holiday||undefined,takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON',reservation_enabled:item.reserv==='ON',is_active:true})});
+        var sStoreD=await sStoreRes.json();if(!sStoreRes.ok)throw new Error(sStoreD.error||'店舗保存失敗');
+        var sStoreUuid=sStoreD.data.id;
+        var allDows=[0,1,2,3,4,5,6];var sHoursRows=[];
+        var sIsSplit=(item.hoursType||'').indexOf('中休み')>=0&&item.lunchOpen&&item.dinnerOpen;
+        allDows.forEach(function(dow){
+          if(sIsSplit){sHoursRows.push({store_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',open_time2:item.dinnerOpen+':00',close_time2:item.dinnerClose+':00',hours_type:'split',is_closed:false});}
+          else if(item.lunchOpen){sHoursRows.push({store_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',hours_type:'through',is_closed:false});}
+        });
+        if(sHoursRows.length)await sb.from('store_hours').insert(sHoursRows);
+        STORES.push({_uuid:sStoreUuid,id:sStoreD.data.display_id,brandId:item.brandId,name:item.name,status:'active',addr:item.addr||'',tel:item.tel||'',orders:0,revenue:0});
+        added++;
+      }catch(e){var sMsg=item.name+': '+e.message;showToast('⚠️ '+sMsg);var sPv=document.getElementById('bulkPreview');if(sPv)sPv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(sMsg)+'</div>';continue;}
     }else if(_bulkType==='account'){
       ACCOUNTS.push({id:genId('ACC-'),name:item.name,email:item.email,role:item.role,corpId:item.corpId,phone:item.phone,status:'active',lastLogin:'—'});added++;
     }
