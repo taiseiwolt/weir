@@ -5282,7 +5282,7 @@ async function saveBasicInfo() {
   var zip = document.getElementById('basicStoreZip').value;
   var address = document.getElementById('addressInput').value;
   var access = document.getElementById('basicStoreAccess').value;
-  var genres = Array.from(document.querySelectorAll('.basicGenreChk:checked')).map(function(c){return c.value;});
+  var genres = _caGetGenreSelection('basicGenreTags');
   var holiday = document.getElementById('basicStoreHoliday').value;
   var priceMode = (document.querySelector('input[name="basicPriceMode"]:checked')||{}).value||'same';
   var priceLunch = priceMode==='split'?document.getElementById('basicPriceLunch').value:document.getElementById('basicStorePrice').value;
@@ -5583,9 +5583,32 @@ const GENRE_MAP = {
 const GENRE_LIST_CA=['居酒屋','和食','寿司','焼肉','ステーキ','鍋','焼鳥','イタリアン','フレンチ','スペイン料理','中華','韓国料理','タイ料理','インド料理','ベトナム料理','メキシコ料理','カフェ','パン屋','スイーツ','バー','ラーメン','うどん','そば','丼もの','定食','ハンバーガー','ピザ','カレー','弁当','ファストフード','懐石','割烹','天ぷら','とんかつ','お好み焼き','その他'];
 const PRICE_RANGES_CA=['~¥999','¥1,000~¥1,999','¥2,000~¥2,999','¥3,000~¥3,999','¥4,000~¥4,999','¥5,000~¥5,999','¥6,000~¥7,999','¥8,000~¥9,999','¥10,000~¥14,999','¥15,000~¥19,999','¥20,000~¥29,999','¥30,000~'];
 function initBasicGenreTags(selectedGenres){
-  var el=document.getElementById('basicGenreTags');if(!el)return;
-  el.innerHTML=GENRE_LIST_CA.map(function(g){var checked=selectedGenres&&selectedGenres.indexOf(g)>=0;return '<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:16px;font-size:11px;cursor:pointer;transition:all .15s'+(checked?';background:var(--accent-light,#e8f4fd);border-color:var(--accent,#0984e3)':'')+'"><input type="checkbox" class="basicGenreChk" value="'+g+'" style="accent-color:var(--accent,#0984e3)"'+(checked?' checked':'')+' onchange="this.parentElement.style.background=this.checked?\'#e8f4fd\':\'\';this.parentElement.style.borderColor=this.checked?\'#0984e3\':\'\'">'+g+'</label>';}).join('');
+  _initGenreTagInputCA('basicGenreTags',GENRE_LIST_CA,selectedGenres||[]);
 }
+function _initGenreTagInputCA(containerId,genreList,selected){
+  var el=document.getElementById(containerId);if(!el)return;
+  var sel=selected?selected.slice():[];
+  function render(){
+    var tags=sel.map(function(g){return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#dbeafe;color:#1e40af;border-radius:14px;font-size:11px;font-weight:600">'+escH(g)+'<span style="cursor:pointer;font-size:13px;line-height:1;color:#1e40af;opacity:.7" onclick="event.stopPropagation();_caGenreRemove(\''+containerId+'\',\''+g+'\')">&times;</span></span>';}).join('');
+    el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="'+containerId+'_tags">'+tags+'</div>'+
+    '<div style="position:relative"><input type="text" id="'+containerId+'_input" placeholder="ジャンルを検索..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onclick="_caGenreShowDrop(\''+containerId+'\')" oninput="_caGenreShowDrop(\''+containerId+'\')"><div id="'+containerId+'_drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div></div>';
+    el._selected=sel;el._genreList=genreList;
+    var inp=document.getElementById(containerId+'_input');
+    if(inp){inp.addEventListener('focus',function(){_caGenreShowDrop(containerId);});}
+    document.addEventListener('click',function(e){if(!el.contains(e.target)){var d=document.getElementById(containerId+'_drop');if(d)d.style.display='none';}});
+  }
+  render();
+}
+function _caGenreShowDrop(cid){
+  var el=document.getElementById(cid);var drop=document.getElementById(cid+'_drop');var inp=document.getElementById(cid+'_input');
+  if(!el||!drop||!inp)return;
+  var q=(inp.value||'').trim().toLowerCase();var sel=el._selected||[];var list=el._genreList||[];
+  drop.innerHTML=list.filter(function(g){return !q||g.toLowerCase().indexOf(q)>=0;}).map(function(g){var added=sel.indexOf(g)>=0;return '<div style="padding:8px 12px;font-size:12px;cursor:'+(added?'default':'pointer')+';color:'+(added?'#999':'var(--text)')+';background:'+(added?'#f5f5f5':'#fff')+'" '+(added?'':'onclick="_caGenreAdd(\''+cid+'\',\''+g+'\')"')+' onmouseover="if(!'+added+')this.style.background=\'#f0f0ff\'" onmouseout="if(!'+added+')this.style.background=\'#fff\'">'+g+(added?' ✓':'')+'</div>';}).join('');
+  drop.style.display='';
+}
+function _caGenreAdd(cid,genre){var el=document.getElementById(cid);var sel=el._selected||[];if(sel.indexOf(genre)<0){sel.push(genre);el._selected=sel;_initGenreTagInputCA(cid,el._genreList,sel);}}
+function _caGenreRemove(cid,genre){var el=document.getElementById(cid);var sel=el._selected||[];var idx=sel.indexOf(genre);if(idx>=0){sel.splice(idx,1);el._selected=sel;_initGenreTagInputCA(cid,el._genreList,sel);}}
+function _caGetGenreSelection(cid){var el=document.getElementById(cid);return el&&el._selected?el._selected.slice():[];}
 function initBasicPriceDropdowns(){
   var opts='<option value="">選択してください</option>'+PRICE_RANGES_CA.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
   ['basicStorePrice','basicPriceLunch','basicPriceDinner'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
