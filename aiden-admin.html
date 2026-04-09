@@ -640,7 +640,7 @@ function renderCorpsList(){
   return '<div class="page-title">法人管理</div><div class="page-subtitle">AIden利用法人の一覧（法人ID: 7桁英数字）</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 法人名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'corp\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'corp\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openCorpWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddCorpModal()">＋ 法人追加</button></div></div>'+
   '<table class="data-table"><thead><tr><th>法人ID</th><th>法人名</th><th>代表者</th><th>ブランド</th><th>店舗</th><th>ステータス</th><th></th></tr></thead><tbody>'+
-  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr style="'+(c.status==='suspended'?'opacity:0.5;background:#f9f9f9':'')+'"><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleCorpStatus(\''+c._uuid+'\',\''+c.status+'\')">'+(c.status==='active'?'停止':'再開')+'</button><button class="btn btn-sm" style="background:#fab1a0;color:#d63031;margin-left:4px" onclick="deleteCorp(\''+c._uuid+'\',\''+escHtml(c.name)+'\')">削除</button></td></tr>';}).join('')+
+  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr style="'+(c.status==='suspended'?'opacity:0.5;background:#f9f9f9':'')+'"><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleCorpStatus(\''+c._uuid+'\',\''+c.status+'\')">'+(c.status==='active'?'停止':'再開')+'</button><button class="btn btn-sm" style="background:#d63031;color:#fff;margin-left:4px" onclick="deleteCorp(\''+c._uuid+'\',\''+escHtml(c.id)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -649,7 +649,7 @@ function renderBrandsList(){
   return '<div class="page-title">ブランド管理</div><div class="page-subtitle">全ブランドの一覧</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'brand\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
   '<table class="data-table"><thead><tr><th>ID</th><th>法人</th><th>ブランド名</th><th>スラッグ</th><th>店舗数</th><th>ステータス</th><th></th></tr></thead><tbody>'+
-  BRANDS.map(b=>{const cp=getCorpForBrand(b),ss=getStoresForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(b.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button></td></tr>';}).join('')+
+  BRANDS.map(b=>{const cp=getCorpForBrand(b),ss=getStoresForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(b.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -665,7 +665,7 @@ function renderStoresRows(stores){
   return stores.map(s=>{
     var br=getBrandForStore(s),cp=getCorpForStore(s);
     var svcs=SERVICES.filter(sv=>!sv.comingSoon&&getSvc(s.id,sv.key)).map(sv=>sv.icon).join(' ');
-    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+escHtml(br?br.name:'')+'</td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button></td></tr>';
+    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+escHtml(br?br.name:'')+'</td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="goToStore(\''+s.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteStore(\''+s._uuid+'\',\''+escHtml(s.id)+'\')">削除</button></td></tr>';
   }).join('');
 }
 function filterStoresList(){
@@ -3064,10 +3064,18 @@ async function deleteAccount(accId){
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
+async function checkOwnerRole(){
+  try{
+    var sess=await sb.auth.getSession();
+    var email=sess.data.session?.user?.email;
+    if(!email)return false;
+    var {data}=await sb.from('staff_accounts').select('role').eq('email',email).single();
+    return data&&data.role==='owner';
+  }catch(e){return false;}
+}
 async function toggleCorpStatus(uuid,currentStatus){
-  var me=null;
-  try{var sess=await sb.auth.getSession();me=ACCOUNTS.find(function(a){return a.email===sess.data.session?.user?.email;});}catch(e){}
-  if(!me||me.role!=='owner'){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  var isOwner=await checkOwnerRole();
+  if(!isOwner){showToast('⚠️ この操作はオーナー権限が必要です');return;}
   var isSuspending=currentStatus==='active';
   var newCorpStatus=isSuspending?'suspended':'active';
   var label=isSuspending?'停止':'再開';
@@ -3088,12 +3096,12 @@ async function toggleCorpStatus(uuid,currentStatus){
     showToast('✅ 法人を'+label+'しました');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
-async function deleteCorp(uuid,corpName){
-  try{var sess=await sb.auth.getSession();var me=ACCOUNTS.find(function(a){return a.email===sess.data.session?.user?.email;});}catch(e){var me=null;}
-  if(!me||me.role!=='owner'){showToast('⚠️ この操作はオーナー権限が必要です');return;}
-  if(!confirm('「'+corpName+'」を削除します。\n\n⚠️ この操作は取り消せません。配下のブランド・店舗データも全て削除されます。\n\n本当に削除しますか？'))return;
-  var input=prompt('削除するには法人名「'+corpName+'」を入力してください:');
-  if(input!==corpName){showToast('⚠️ 法人名が一致しません。削除を中止しました');return;}
+async function deleteCorp(uuid,corpId){
+  var isOwner=await checkOwnerRole();
+  if(!isOwner){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  if(!confirm('法人ID「'+corpId+'」を削除します。\n\n⚠️ この操作は取り消せません。配下のブランド・店舗データも全て削除されます。\n\n本当に削除しますか？'))return;
+  var input=prompt('削除するには法人ID（例: CRP-xxxxxxx）を入力してください:');
+  if(input!==corpName){showToast('⚠️ 法人IDが一致しません。削除を中止しました');return;}
   try{
     var token=await getToken();
     var res=await fetch('/api/admin/corporations/'+uuid,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
@@ -3101,6 +3109,36 @@ async function deleteCorp(uuid,corpName){
     var idx=CORPS.findIndex(function(c){return c._uuid===uuid;});
     if(idx>=0)CORPS.splice(idx,1);
     showToast('✅ 法人を削除しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function deleteBrand(uuid,brandId){
+  var isOwner=await checkOwnerRole();
+  if(!isOwner){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  if(!confirm('ブランドID「'+brandId+'」を削除します。\n\n⚠️ この操作は取り消せません。配下の店舗データも全て削除されます。\n\n本当に削除しますか？'))return;
+  var input=prompt('削除するにはブランドID「'+brandId+'」を入力してください:');
+  if(input!==brandId){showToast('⚠️ ブランドIDが一致しません。削除を中止しました');return;}
+  try{
+    var token=await getToken();
+    var res=await fetch('/api/admin/brands/'+uuid,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+    var d=await res.json();if(!res.ok)throw new Error(d.error);
+    var idx=BRANDS.findIndex(function(b){return b._uuid===uuid;});
+    if(idx>=0)BRANDS.splice(idx,1);
+    showToast('✅ ブランドを削除しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function deleteStore(uuid,storeId){
+  var isOwner=await checkOwnerRole();
+  if(!isOwner){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  if(!confirm('店舗ID「'+storeId+'」を削除します。\n\n⚠️ この操作は取り消せません。\n\n本当に削除しますか？'))return;
+  var input=prompt('削除するには店舗ID「'+storeId+'」を入力してください:');
+  if(input!==storeId){showToast('⚠️ 店舗IDが一致しません。削除を中止しました');return;}
+  try{
+    var token=await getToken();
+    var res=await fetch('/api/admin/stores/'+uuid,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+    var d=await res.json();if(!res.ok)throw new Error(d.error);
+    var idx=STORES.findIndex(function(s){return s._uuid===uuid;});
+    if(idx>=0)STORES.splice(idx,1);
+    showToast('✅ 店舗を削除しました');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
