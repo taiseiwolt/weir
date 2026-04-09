@@ -82,6 +82,10 @@ a{color:inherit;text-decoration:none} button{cursor:pointer}
 .store-attr-tag{font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:10px;color:var(--text2);background:var(--bg2)}
 .store-attr-tag.on{border-color:var(--brand-primary);color:var(--brand-primary);background:var(--brand-primary-light)}
 .store-card-hours{font-size:11px;color:var(--text3);margin-top:6px}
+.store-card-genres{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.store-genre-tag{font-size:10px;padding:2px 8px;border-radius:12px;background:var(--brand-primary-light,#f0ecff);color:var(--brand-primary,#6c5ce7);font-weight:600}
+.store-card-price{font-size:11px;color:var(--text2);margin-top:4px}
+.store-card-holiday{font-size:11px;color:#c62828;margin-top:4px}
 /* 空き状況バッジ */
 .store-avail{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
 .avail-ok{background:#E8F5E9;color:#2E7D32}
@@ -339,8 +343,11 @@ function renderResults(stores) {
         + '<div class="store-card-name">'+escH(s.name)+'</div>'
         + '<div class="store-card-addr">'+escH(s.addr)+'</div>'
         + '<div class="store-card-station">'+escH(s.station)+'</div>'
-        + '<div class="store-card-attrs">'+attrTags+'</div>'
+        + (s.genres&&s.genres.length?'<div class="store-card-genres">'+s.genres.map(function(g){return '<span class="store-genre-tag">'+escH(g)+'</span>';}).join('')+'</div>':'')
         + '<div class="store-card-hours">営業時間：'+escH(s.hours)+'</div>'
+        + (s.holiday?'<div class="store-card-holiday">定休日：'+escH(s.holiday)+'</div>':'')
+        + (s.priceText?'<div class="store-card-price">予算：'+escH(s.priceText)+'</div>':'')
+        + '<div class="store-card-attrs">'+attrTags+'</div>'
         + '</div></a>';
     });
     html += '</div></div>';
@@ -356,7 +363,7 @@ function getUrlParam(key) {
 var BRAND_ID = null;
 
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status, reservation_enabled').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status, reservation_enabled, genres, regular_holiday, price_range_lunch, price_range_dinner').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails
@@ -365,33 +372,45 @@ async function loadStoresFromSupabase() {
   var thumbMap = {};
   if (thumbs) thumbs.forEach(function(t){ thumbMap[t.entity_id] = t.url; });
 
-  // Load store hours
+  // Load store hours (multiple per day for split hours)
   var {data: hoursData} = await sb.from('store_hours')
     .select('store_id, day_of_week, open_time, close_time, is_closed')
     .in('store_id', storeIds)
-    .order('day_of_week');
+    .order('day_of_week').order('open_time');
 
   var today = new Date().getDay(); // 0=Sunday
   var hoursMap = {};
   if (hoursData) {
     hoursData.forEach(function(h) {
       if (!hoursMap[h.store_id]) hoursMap[h.store_id] = {};
-      hoursMap[h.store_id][h.day_of_week] = h;
+      if (!hoursMap[h.store_id][h.day_of_week]) hoursMap[h.store_id][h.day_of_week] = [];
+      hoursMap[h.store_id][h.day_of_week].push(h);
     });
+  }
+
+  function formatHoursForDay(entries) {
+    if (!entries || !entries.length) return '17:00〜23:00';
+    var open = entries.filter(function(e){ return !e.is_closed; });
+    if (!open.length) return '本日定休日';
+    return open.map(function(e){ return e.open_time.slice(0,5) + '〜' + e.close_time.slice(0,5); }).join(' / ');
+  }
+
+  function formatPriceRange(s) {
+    if (s.price_range_lunch && s.price_range_dinner && s.price_range_lunch !== s.price_range_dinner) {
+      return 'ランチ: ' + s.price_range_lunch + ' / ディナー: ' + s.price_range_dinner;
+    }
+    return s.price_range_dinner || s.price_range_lunch || '';
   }
 
   var bgs = ['linear-gradient(135deg,#1a0000,#5a1a1a)','linear-gradient(135deg,#1a1a00,#5a5a00)','linear-gradient(135deg,#001a00,#005a00)','linear-gradient(135deg,#001a1a,#005a5a)','linear-gradient(135deg,#1a001a,#5a005a)','linear-gradient(135deg,#001a2a,#005a7a)','linear-gradient(135deg,#2a1a00,#7a5000)'];
   STORES = stores.map(function(s, i) {
     var prefCity = (s.address || '').substring(0, 3);
-    var todayHours = hoursMap[s.id] && hoursMap[s.id][today];
-    var hoursText = '17:00〜23:00'; // fallback
-    if (todayHours) {
-      if (todayHours.is_closed) hoursText = '本日定休日';
-      else hoursText = todayHours.open_time.slice(0,5) + '〜' + todayHours.close_time.slice(0,5);
-    }
+    var todayEntries = hoursMap[s.id] && hoursMap[s.id][today];
+    var hoursText = formatHoursForDay(todayEntries);
     return {
       id: s.slug || s.id, uuid: s.id, name: s.name, pref: prefCity, city: '',
       addr: s.address || '', station: '', hours: hoursText,
+      genres: s.genres || [], holiday: s.regular_holiday || '', priceText: formatPriceRange(s),
       bg: thumbMap[s.id] ? 'url('+thumbMap[s.id]+') center/cover no-repeat' : bgs[i % bgs.length],
       thumbUrl: thumbMap[s.id] || null,
       avail: s.status === 'open' ? 'ok' : s.status === 'closed' ? 'full' : 'few',

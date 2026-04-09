@@ -2661,9 +2661,12 @@ function genId(prefix){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv
 
 // ===== ADD MODALS =====
 let _corpWizStep=1;
-const _GENRE_MAJOR=['和食','洋食','中華','焼肉','ラーメン','カフェ','居酒屋','その他'];
-const _PRICE_RANGES=['〜¥999','¥1,000〜¥1,999','¥2,000〜¥2,999','¥3,000〜¥4,999','¥5,000〜¥9,999','¥10,000〜'];
-const _SMOKING_OPTS=['全席禁煙','喫煙可','分煙'];
+const GENRE_LIST=['居酒屋','和食','寿司','焼肉','ステーキ','鍋','焼鳥','イタリアン','フレンチ','スペイン料理','中華','韓国料理','タイ料理','インド料理','ベトナム料理','メキシコ料理','カフェ','パン屋','スイーツ','バー','ラーメン','うどん','そば','丼もの','定食','ハンバーガー','ピザ','カレー','弁当','ファストフード','懐石','割烹','天ぷら','とんかつ','お好み焼き','その他'];
+const _GENRE_MAJOR=GENRE_LIST;
+const PRICE_RANGES=['~¥999','¥1,000~¥1,999','¥2,000~¥2,999','¥3,000~¥3,999','¥4,000~¥4,999','¥5,000~¥5,999','¥6,000~¥7,999','¥8,000~¥9,999','¥10,000~¥14,999','¥15,000~¥19,999','¥20,000~¥29,999','¥30,000~'];
+const _PRICE_RANGES=PRICE_RANGES;
+const _SMOKING_OPTS=['全席禁煙','全席喫煙','分煙'];
+const _HOURS_TYPES=['通し営業','中休みあり'];
 function openAddCorpModal(){
   _corpWizStep=1;
   const h='<button class="modal-close" onclick="closeModal()">✕</button><h3>🏢 法人追加（ステップウィザード）</h3>'+
@@ -2695,22 +2698,36 @@ function renderCorpWizStep(){
     btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===3){
     body.innerHTML='<div class="form-grid">'+
-    '<div class="form-group"><label>店舗名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwStoreName" placeholder="例: 渋谷店"></div>'+
-    '<div class="form-group full"><label>住所 <span style="color:var(--danger)">*</span></label><input type="text" id="cwStoreAddr" placeholder="東京都渋谷区道玄坂1-12-5"></div>'+
-    '<div class="form-group"><label>電話番号 <span style="color:var(--danger)">*</span></label><input type="tel" id="cwStoreTel" placeholder="03-1234-5678"></div>'+
+    '<div class="form-group"><label>店舗名</label><input type="text" id="cwStoreName" placeholder="例: 渋谷店"></div>'+
+    '<div class="form-group full"><label>住所</label><input type="text" id="cwStoreAddr" placeholder="東京都渋谷区道玄坂1-12-5"></div>'+
+    '<div class="form-group"><label>電話番号</label><input type="tel" id="cwStoreTel" placeholder="03-1234-5678"></div>'+
     '<div class="form-group"><label>メールアドレス</label><input type="email" id="cwStoreEmail" placeholder="store@example.com"></div>'+
     '<div class="form-group"><label>最寄り駅/アクセス</label><input type="text" id="cwStoreStation" placeholder="渋谷駅 徒歩5分"></div>'+
-    '<div class="form-group"><label>ジャンル大分類</label><select id="cwStoreGenre"><option value="">選択してください</option>'+_GENRE_MAJOR.map(g=>'<option value="'+g+'">'+g+'</option>').join('')+'</select></div>'+
-    '<div class="form-group"><label>ジャンル小分類</label><input type="text" id="cwStoreGenreSub" placeholder="例: 寿司、天ぷら"></div>'+
-    '<div class="form-group"><label>価格帯</label><select id="cwStorePrice"><option value="">選択してください</option>'+_PRICE_RANGES.map(p=>'<option value="'+p+'">'+p+'</option>').join('')+'</select></div>'+
     '<div class="form-group"><label>座席数</label><input type="number" id="cwStoreSeats" min="0" placeholder="6"></div>'+
-    '<div class="form-group"><label>営業開始時間</label><input type="time" id="cwStoreOpen" value="11:00"></div>'+
-    '<div class="form-group"><label>営業終了時間</label><input type="time" id="cwStoreClose" value="22:00"></div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px"><div class="card-title">ジャンル（複数選択可）</div>'+
+    '<div id="cwGenreTags" style="display:flex;flex-wrap:wrap;gap:6px">'+GENRE_LIST.map(g=>'<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:16px;font-size:11px;cursor:pointer;transition:all .15s"><input type="checkbox" class="cwGenreChk" value="'+g+'" style="accent-color:var(--primary)">'+g+'</label>').join('')+'</div></div>'+
+    '<div class="card" style="margin-top:16px"><div class="card-title">営業時間</div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:12px;margin-right:12px"><input type="radio" name="cwHoursMode" value="all" checked onchange="cwToggleHoursMode()"> 全日共通</label><label style="font-size:12px"><input type="radio" name="cwHoursMode" value="daily" onchange="cwToggleHoursMode()"> 曜日ごとに設定</label></div>'+
+    '<div id="cwHoursAll"><div style="margin-bottom:8px"><label style="font-size:12px;margin-right:12px"><input type="radio" name="cwHoursType" value="through" checked onchange="cwToggleHoursType()"> 通し営業</label><label style="font-size:12px"><input type="radio" name="cwHoursType" value="split" onchange="cwToggleHoursType()"> 中休みあり</label></div>'+
+    '<div id="cwHoursThrough" style="display:flex;gap:8px;align-items:center"><input type="time" id="cwStoreOpen" value="11:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"><span>〜</span><input type="time" id="cwStoreClose" value="22:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></div>'+
+    '<div id="cwHoursSplit" style="display:none"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="font-size:11px;width:50px">ランチ</span><input type="time" id="cwLunchOpen" value="11:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"><span>〜</span><input type="time" id="cwLunchClose" value="14:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></div>'+
+    '<div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;width:50px">ディナー</span><input type="time" id="cwDinnerOpen" value="17:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"><span>〜</span><input type="time" id="cwDinnerClose" value="22:00" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px"></div></div></div>'+
+    '<div id="cwHoursDaily" style="display:none"><table style="font-size:12px;width:100%;border-collapse:collapse"><thead><tr><th>曜日</th><th>営業</th><th>形態</th><th>開始1</th><th>終了1</th><th>開始2</th><th>終了2</th></tr></thead><tbody id="cwDailyBody"></tbody></table></div></div>'+
+    '<div class="card" style="margin-top:16px"><div class="card-title">定休日</div>'+
+    '<input type="text" id="cwStoreHoliday" placeholder="例: 日曜日、祝日" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"></div>'+
+    '<div class="card" style="margin-top:16px"><div class="card-title">価格帯</div>'+
+    '<div style="margin-bottom:8px"><label style="font-size:12px;margin-right:12px"><input type="radio" name="cwPriceMode" value="same" checked onchange="cwTogglePriceMode()"> 昼夜共通</label><label style="font-size:12px"><input type="radio" name="cwPriceMode" value="split" onchange="cwTogglePriceMode()"> 昼夜で分ける</label></div>'+
+    '<div id="cwPriceSame"><select id="cwStorePrice" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><option value="">選択してください</option>'+PRICE_RANGES.map(p=>'<option value="'+p+'">'+p+'</option>').join('')+'</select></div>'+
+    '<div id="cwPriceSplit" style="display:none;display:none"><div style="display:flex;gap:12px;align-items:center"><span style="font-size:12px;width:50px">ランチ</span><select id="cwPriceLunch" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><option value="">選択</option>'+PRICE_RANGES.map(p=>'<option value="'+p+'">'+p+'</option>').join('')+'</select></div>'+
+    '<div style="display:flex;gap:12px;align-items:center;margin-top:6px"><span style="font-size:12px;width:50px">ディナー</span><select id="cwPriceDinner" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><option value="">選択</option>'+PRICE_RANGES.map(p=>'<option value="'+p+'">'+p+'</option>').join('')+'</select></div></div></div>'+
+    '<div class="form-grid" style="margin-top:16px">'+
     '<div class="form-group"><label>テイクアウト</label><select id="cwStoreTakeout"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
     '<div class="form-group"><label>デリバリー</label><select id="cwStoreDelivery"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
     '<div class="form-group"><label>来店予約</label><select id="cwStoreReserv"><option value="OFF">OFF</option><option value="ON">ON</option></select></div>'+
     '<div class="form-group"><label>喫煙</label><select id="cwStoreSmoking">'+_SMOKING_OPTS.map(s=>'<option value="'+s+'">'+s+'</option>').join('')+'</select></div>'+
     '</div>';
+    cwInitDailyRows();
     btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===4){
     body.innerHTML='<div class="form-grid">'+
@@ -2736,7 +2753,10 @@ function renderCorpWizStep(){
     '<div class="form-group"><label>店舗名</label><div style="font-weight:600">'+escHtml(d.storeName)+'</div></div>'+
     '<div class="form-group"><label>住所</label><div>'+escHtml(d.storeAddr)+'</div></div>'+
     '<div class="form-group"><label>電話</label><div>'+escHtml(d.storeTel)+'</div></div>'+
-    '<div class="form-group"><label>ジャンル</label><div>'+escHtml((d.storeGenre||'—')+' / '+(d.storeGenreSub||'—'))+'</div></div>'+
+    '<div class="form-group full"><label>ジャンル</label><div>'+(d.storeGenres&&d.storeGenres.length?d.storeGenres.map(function(g){return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;background:#6c5ce720;color:#6c5ce7;margin:2px">'+escHtml(g)+'</span>';}).join(''):'—')+'</div></div>'+
+    '<div class="form-group"><label>営業時間</label><div style="font-size:12px">'+(d.hoursMode==='daily'?'曜日別設定':(d.hoursType==='split'?escHtml(d.lunchOpen+'〜'+d.lunchClose+' / '+d.dinnerOpen+'〜'+d.dinnerClose):escHtml(d.storeOpen+'〜'+d.storeClose)))+'</div></div>'+
+    '<div class="form-group"><label>定休日</label><div>'+escHtml(d.storeHoliday||'—')+'</div></div>'+
+    '<div class="form-group"><label>価格帯</label><div style="font-size:12px">'+(d.priceMode==='split'?'ランチ: '+escHtml(d.priceLunch||'—')+' / ディナー: '+escHtml(d.priceDinner||'—'):escHtml(d.storePrice||'—'))+'</div></div>'+
     '<div class="form-group"><label>座席</label><div>'+escHtml(d.storeSeats||'—')+'</div></div>'+
     '<div class="form-group"><label>喫煙</label><div>'+escHtml(d.storeSmoking)+'</div></div>'+
     '</div></div>'+
@@ -2748,17 +2768,21 @@ function renderCorpWizStep(){
     btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="saveCorpWizard()">登録する</button>';
   }
 }
+function cwToggleHoursMode(){var m=document.querySelector('input[name="cwHoursMode"]:checked').value;document.getElementById('cwHoursAll').style.display=m==='all'?'':'none';document.getElementById('cwHoursDaily').style.display=m==='daily'?'':'none';}
+function cwToggleHoursType(){var t=document.querySelector('input[name="cwHoursType"]:checked').value;document.getElementById('cwHoursThrough').style.display=t==='through'?'flex':'none';document.getElementById('cwHoursSplit').style.display=t==='split'?'':'none';}
+function cwTogglePriceMode(){var m=document.querySelector('input[name="cwPriceMode"]:checked').value;document.getElementById('cwPriceSame').style.display=m==='same'?'':'none';document.getElementById('cwPriceSplit').style.display=m==='split'?'':'none';}
+function cwInitDailyRows(){var b=document.getElementById('cwDailyBody');if(!b)return;var days=['月','火','水','木','金','土','日'];b.innerHTML=days.map(function(d,i){var dow=[1,2,3,4,5,6,0][i];return '<tr data-dow="'+dow+'"><td style="font-weight:600">'+d+'</td><td><select class="cwDayOpen" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px"><option value="open">営業</option><option value="closed">定休日</option></select></td><td><select class="cwDayType" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px"><option value="through">通し</option><option value="split">中休み</option></select></td><td><input type="time" class="cwDayO1" value="11:00" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:90px"></td><td><input type="time" class="cwDayC1" value="22:00" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:90px"></td><td><input type="time" class="cwDayO2" value="17:00" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:90px" disabled></td><td><input type="time" class="cwDayC2" value="22:00" style="padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:90px" disabled></td></tr>';}).join('');b.querySelectorAll('.cwDayType').forEach(function(sel){sel.onchange=function(){var tr=sel.closest('tr');var isSplit=sel.value==='split';tr.querySelector('.cwDayO2').disabled=!isSplit;tr.querySelector('.cwDayC2').disabled=!isSplit;};});b.querySelectorAll('.cwDayOpen').forEach(function(sel){sel.onchange=function(){var tr=sel.closest('tr');var closed=sel.value==='closed';tr.querySelectorAll('input[type=time],select.cwDayType').forEach(function(el){el.disabled=closed;});};});}
 let _corpWizCache={};
 function _cacheCorpWizStep(){
   if(_corpWizStep===1){_corpWizCache.corpName=(document.getElementById('cwCorpName')||{}).value||'';_corpWizCache.corpRep=(document.getElementById('cwCorpRep')||{}).value||'';_corpWizCache.corpEmail=(document.getElementById('cwCorpEmail')||{}).value||'';_corpWizCache.corpWebsite=(document.getElementById('cwCorpWebsite')||{}).value||'';_corpWizCache.corpRecruit=(document.getElementById('cwCorpRecruit')||{}).value||'';}
   else if(_corpWizStep===2){_corpWizCache.brandName=(document.getElementById('cwBrandName')||{}).value||'';_corpWizCache.brandSlug=(document.getElementById('cwBrandSlug')||{}).value||'';}
-  else if(_corpWizStep===3){_corpWizCache.storeName=(document.getElementById('cwStoreName')||{}).value||'';_corpWizCache.storeAddr=(document.getElementById('cwStoreAddr')||{}).value||'';_corpWizCache.storeTel=(document.getElementById('cwStoreTel')||{}).value||'';_corpWizCache.storeEmail=(document.getElementById('cwStoreEmail')||{}).value||'';_corpWizCache.storeStation=(document.getElementById('cwStoreStation')||{}).value||'';_corpWizCache.storeGenre=(document.getElementById('cwStoreGenre')||{}).value||'';_corpWizCache.storeGenreSub=(document.getElementById('cwStoreGenreSub')||{}).value||'';_corpWizCache.storePrice=(document.getElementById('cwStorePrice')||{}).value||'';_corpWizCache.storeSeats=(document.getElementById('cwStoreSeats')||{}).value||'';_corpWizCache.storeOpen=(document.getElementById('cwStoreOpen')||{}).value||'11:00';_corpWizCache.storeClose=(document.getElementById('cwStoreClose')||{}).value||'22:00';_corpWizCache.storeTakeout=(document.getElementById('cwStoreTakeout')||{}).value||'OFF';_corpWizCache.storeDelivery=(document.getElementById('cwStoreDelivery')||{}).value||'OFF';_corpWizCache.storeReserv=(document.getElementById('cwStoreReserv')||{}).value||'OFF';_corpWizCache.storeSmoking=(document.getElementById('cwStoreSmoking')||{}).value||'全席禁煙';}
+  else if(_corpWizStep===3){_corpWizCache.storeName=(document.getElementById('cwStoreName')||{}).value||'';_corpWizCache.storeAddr=(document.getElementById('cwStoreAddr')||{}).value||'';_corpWizCache.storeTel=(document.getElementById('cwStoreTel')||{}).value||'';_corpWizCache.storeEmail=(document.getElementById('cwStoreEmail')||{}).value||'';_corpWizCache.storeStation=(document.getElementById('cwStoreStation')||{}).value||'';_corpWizCache.storeSeats=(document.getElementById('cwStoreSeats')||{}).value||'';_corpWizCache.storeGenres=Array.from(document.querySelectorAll('.cwGenreChk:checked')).map(function(c){return c.value;});_corpWizCache.storeHoliday=(document.getElementById('cwStoreHoliday')||{}).value||'';var hm=document.querySelector('input[name="cwHoursMode"]:checked');_corpWizCache.hoursMode=hm?hm.value:'all';var ht=document.querySelector('input[name="cwHoursType"]:checked');_corpWizCache.hoursType=ht?ht.value:'through';_corpWizCache.storeOpen=(document.getElementById('cwStoreOpen')||{}).value||'11:00';_corpWizCache.storeClose=(document.getElementById('cwStoreClose')||{}).value||'22:00';_corpWizCache.lunchOpen=(document.getElementById('cwLunchOpen')||{}).value||'11:00';_corpWizCache.lunchClose=(document.getElementById('cwLunchClose')||{}).value||'14:00';_corpWizCache.dinnerOpen=(document.getElementById('cwDinnerOpen')||{}).value||'17:00';_corpWizCache.dinnerClose=(document.getElementById('cwDinnerClose')||{}).value||'22:00';var pm=document.querySelector('input[name="cwPriceMode"]:checked');_corpWizCache.priceMode=pm?pm.value:'same';_corpWizCache.storePrice=(document.getElementById('cwStorePrice')||{}).value||'';_corpWizCache.priceLunch=(document.getElementById('cwPriceLunch')||{}).value||'';_corpWizCache.priceDinner=(document.getElementById('cwPriceDinner')||{}).value||'';_corpWizCache.storeTakeout=(document.getElementById('cwStoreTakeout')||{}).value||'OFF';_corpWizCache.storeDelivery=(document.getElementById('cwStoreDelivery')||{}).value||'OFF';_corpWizCache.storeReserv=(document.getElementById('cwStoreReserv')||{}).value||'OFF';_corpWizCache.storeSmoking=(document.getElementById('cwStoreSmoking')||{}).value||'全席禁煙';var dailyRows=document.querySelectorAll('#cwDailyBody tr');if(dailyRows.length){_corpWizCache.dailyHours=Array.from(dailyRows).map(function(tr){return {dow:tr.dataset.dow,open:tr.querySelector('.cwDayOpen').value,type:tr.querySelector('.cwDayType').value,o1:tr.querySelector('.cwDayO1').value,c1:tr.querySelector('.cwDayC1').value,o2:tr.querySelector('.cwDayO2').value,c2:tr.querySelector('.cwDayC2').value};})}}
   else if(_corpWizStep===4){_corpWizCache.accName=(document.getElementById('cwAccName')||{}).value||'';_corpWizCache.accEmail=(document.getElementById('cwAccEmail')||{}).value||'';_corpWizCache.accRole=(document.getElementById('cwAccRole')||{}).value||'owner';}
 }
 function _restoreCorpWizStep(){
   if(_corpWizStep===1){if(_corpWizCache.corpName!=null){document.getElementById('cwCorpName').value=_corpWizCache.corpName;document.getElementById('cwCorpRep').value=_corpWizCache.corpRep;document.getElementById('cwCorpEmail').value=_corpWizCache.corpEmail;document.getElementById('cwCorpWebsite').value=_corpWizCache.corpWebsite;document.getElementById('cwCorpRecruit').value=_corpWizCache.corpRecruit;}}
   else if(_corpWizStep===2){if(_corpWizCache.brandName!=null){document.getElementById('cwBrandName').value=_corpWizCache.brandName;document.getElementById('cwBrandSlug').value=_corpWizCache.brandSlug;}}
-  else if(_corpWizStep===3){if(_corpWizCache.storeName!=null){document.getElementById('cwStoreName').value=_corpWizCache.storeName;document.getElementById('cwStoreAddr').value=_corpWizCache.storeAddr;document.getElementById('cwStoreTel').value=_corpWizCache.storeTel;document.getElementById('cwStoreEmail').value=_corpWizCache.storeEmail;document.getElementById('cwStoreStation').value=_corpWizCache.storeStation;document.getElementById('cwStoreGenre').value=_corpWizCache.storeGenre;document.getElementById('cwStoreGenreSub').value=_corpWizCache.storeGenreSub;document.getElementById('cwStorePrice').value=_corpWizCache.storePrice;document.getElementById('cwStoreSeats').value=_corpWizCache.storeSeats;document.getElementById('cwStoreOpen').value=_corpWizCache.storeOpen||'11:00';document.getElementById('cwStoreClose').value=_corpWizCache.storeClose||'22:00';document.getElementById('cwStoreTakeout').value=_corpWizCache.storeTakeout||'OFF';document.getElementById('cwStoreDelivery').value=_corpWizCache.storeDelivery||'OFF';document.getElementById('cwStoreReserv').value=_corpWizCache.storeReserv||'OFF';document.getElementById('cwStoreSmoking').value=_corpWizCache.storeSmoking||'全席禁煙';}}
+  else if(_corpWizStep===3){if(_corpWizCache.storeName!=null){document.getElementById('cwStoreName').value=_corpWizCache.storeName;document.getElementById('cwStoreAddr').value=_corpWizCache.storeAddr;document.getElementById('cwStoreTel').value=_corpWizCache.storeTel;document.getElementById('cwStoreEmail').value=_corpWizCache.storeEmail;document.getElementById('cwStoreStation').value=_corpWizCache.storeStation;document.getElementById('cwStoreSeats').value=_corpWizCache.storeSeats;if(_corpWizCache.storeGenres)_corpWizCache.storeGenres.forEach(function(g){var c=document.querySelector('.cwGenreChk[value="'+g+'"]');if(c)c.checked=true;});document.getElementById('cwStoreHoliday').value=_corpWizCache.storeHoliday||'';var hmr=document.querySelector('input[name="cwHoursMode"][value="'+(_corpWizCache.hoursMode||'all')+'"]');if(hmr){hmr.checked=true;cwToggleHoursMode();}var htr=document.querySelector('input[name="cwHoursType"][value="'+(_corpWizCache.hoursType||'through')+'"]');if(htr){htr.checked=true;cwToggleHoursType();}document.getElementById('cwStoreOpen').value=_corpWizCache.storeOpen||'11:00';document.getElementById('cwStoreClose').value=_corpWizCache.storeClose||'22:00';document.getElementById('cwLunchOpen').value=_corpWizCache.lunchOpen||'11:00';document.getElementById('cwLunchClose').value=_corpWizCache.lunchClose||'14:00';document.getElementById('cwDinnerOpen').value=_corpWizCache.dinnerOpen||'17:00';document.getElementById('cwDinnerClose').value=_corpWizCache.dinnerClose||'22:00';var pmr=document.querySelector('input[name="cwPriceMode"][value="'+(_corpWizCache.priceMode||'same')+'"]');if(pmr){pmr.checked=true;cwTogglePriceMode();}document.getElementById('cwStorePrice').value=_corpWizCache.storePrice||'';document.getElementById('cwPriceLunch').value=_corpWizCache.priceLunch||'';document.getElementById('cwPriceDinner').value=_corpWizCache.priceDinner||'';document.getElementById('cwStoreTakeout').value=_corpWizCache.storeTakeout||'OFF';document.getElementById('cwStoreDelivery').value=_corpWizCache.storeDelivery||'OFF';document.getElementById('cwStoreReserv').value=_corpWizCache.storeReserv||'OFF';document.getElementById('cwStoreSmoking').value=_corpWizCache.storeSmoking||'全席禁煙';}}
   else if(_corpWizStep===4){if(_corpWizCache.accName!=null){document.getElementById('cwAccName').value=_corpWizCache.accName;document.getElementById('cwAccEmail').value=_corpWizCache.accEmail;document.getElementById('cwAccRole').value=_corpWizCache.accRole;}}
 }
 function _getCorpWizData(){return Object.assign({},_corpWizCache);}
@@ -2766,7 +2790,7 @@ function corpWizNext(){
   _cacheCorpWizStep();
   if(_corpWizStep===1&&!_corpWizCache.corpName.trim()){showToast('⚠️ 法人名は必須です');return;}
   if(_corpWizStep===2&&!_corpWizCache.brandName.trim()){showToast('⚠️ ブランド名は必須です');return;}
-  if(_corpWizStep===3){if(!_corpWizCache.storeName.trim()||!_corpWizCache.storeAddr.trim()||!_corpWizCache.storeTel.trim()){showToast('⚠️ 店舗名・住所・電話番号は必須です');return;}}
+  if(_corpWizStep===3){if(!_corpWizCache.storeName.trim()||!_corpWizCache.storeAddr.trim()||!_corpWizCache.storeTel.trim()){showToast('⚠️ 店舗名・住所・電話番号は必須です');return;}if(!_corpWizCache.storeGenres||!_corpWizCache.storeGenres.length){showToast('⚠️ ジャンルを1つ以上選択してください');return;}}
   _corpWizStep++;renderCorpWizStep();if(_corpWizStep<=4)_restoreCorpWizStep();
 }
 function corpWizPrev(){_cacheCorpWizStep();_corpWizStep--;renderCorpWizStep();_restoreCorpWizStep();}
@@ -2785,11 +2809,24 @@ async function saveCorpWizard(){
     const brandUuid=brandD.data.id,brandDisplayId=brandD.data.display_id;
     BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:corpDisplayId,name:d.brandName.trim(),slug:d.brandSlug.trim()||'',status:'active',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
     // 3. Store
-    const smokingMap={'全席禁煙':'no_smoking','喫煙可':'allowed','分煙':'separated'};
-    const storeBody={name:d.storeName.trim(),brand_id:brandUuid,address:d.storeAddr.trim(),phone:d.storeTel.trim(),email:d.storeEmail.trim()||undefined,nearest_station:d.storeStation.trim()||undefined,genre_major:d.storeGenre||undefined,genre_sub:d.storeGenreSub.trim()||undefined,price_range:d.storePrice||undefined,seats:d.storeSeats?parseInt(d.storeSeats):undefined,open_time:d.storeOpen||undefined,close_time:d.storeClose||undefined,takeout_enabled:d.storeTakeout==='ON',delivery_enabled:d.storeDelivery==='ON',reservation_enabled:d.storeReserv==='ON',smoking_policy:smokingMap[d.storeSmoking]||'no_smoking',is_active:true};
+    const smokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','分煙':'separated'};
+    var priceLunch=d.priceMode==='split'?d.priceLunch:d.storePrice;
+    var priceDinner=d.priceMode==='split'?d.priceDinner:d.storePrice;
+    const storeBody={name:d.storeName.trim(),brand_id:brandUuid,address:d.storeAddr.trim(),phone:d.storeTel.trim(),email:d.storeEmail.trim()||undefined,nearest_station:d.storeStation.trim()||undefined,genres:d.storeGenres||[],regular_holiday:d.storeHoliday||'',price_range_lunch:priceLunch||'',price_range_dinner:priceDinner||'',seats:d.storeSeats?parseInt(d.storeSeats):undefined,takeout_enabled:d.storeTakeout==='ON',delivery_enabled:d.storeDelivery==='ON',reservation_enabled:d.storeReserv==='ON',smoking_policy:smokingMap[d.storeSmoking]||'no_smoking',is_active:true};
     const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify(storeBody)});
     const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗の保存に失敗');
-    STORES.push({_uuid:storeD.data.id,id:storeD.data.display_id,brandId:brandDisplayId,name:d.storeName.trim(),status:'active',addr:d.storeAddr.trim(),tel:d.storeTel.trim(),orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
+    var storeUuid=storeD.data.id;
+    // 3b. Store hours
+    var hoursInserts=[];
+    if(d.hoursMode==='daily'&&d.dailyHours){
+      d.dailyHours.forEach(function(dh){if(dh.open==='closed')return;hoursInserts.push({store_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o1,close_time:dh.c1,is_closed:false});if(dh.type==='split')hoursInserts.push({store_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o2,close_time:dh.c2,is_closed:false});});
+    }else{
+      var allDows=[0,1,2,3,4,5,6];
+      if(d.hoursType==='split'){allDows.forEach(function(dow){hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.lunchOpen,close_time:d.lunchClose,is_closed:false});hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.dinnerOpen,close_time:d.dinnerClose,is_closed:false});});}
+      else{allDows.forEach(function(dow){hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.storeOpen,close_time:d.storeClose,is_closed:false});});}
+    }
+    if(hoursInserts.length){var {error:hErr}=await sb.from('store_hours').insert(hoursInserts);if(hErr)showToast('⚠️ 営業時間の保存に一部失敗');}
+    STORES.push({_uuid:storeUuid,id:storeD.data.display_id,brandId:brandDisplayId,name:d.storeName.trim(),status:'active',addr:d.storeAddr.trim(),tel:d.storeTel.trim(),orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
     // 4. Account (if provided)
     if(d.accName.trim()&&d.accEmail.trim()){
       const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
@@ -3373,10 +3410,10 @@ async function saveStoreBasic(storeDisplayId){
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
-  corp:{filename:'aiden_corp_template.csv',
-    comment:'# 有効値: ジャンル大分類=和食/洋食/中華/焼肉/ラーメン/カフェ/居酒屋/その他, 価格帯=〜¥999/¥1,000〜¥1,999/¥2,000〜¥2,999/¥3,000〜¥4,999/¥5,000〜¥9,999/¥10,000〜, 喫煙=全席禁煙/喫煙可/分煙, テイクアウト・デリバリー・来店予約=ON/OFF, 権限=owner/admin/staff',
-    headers:['法人名*','代表者名','代表メール','会社HP','採用ページ','ブランド名*','ブランドスラッグ','店舗名*','住所*','電話番号*','店舗メール','最寄り駅','ジャンル大分類','ジャンル小分類','価格帯','座席数','営業開始','営業終了','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙(全席禁煙/喫煙可/分煙)','管理者氏名','管理者メール','権限(owner/admin/staff)'],
-    sample:[['株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','https://example.co.jp/recruit','焼肉サンプル','sample-yakiniku','渋谷店','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','焼肉','炭火焼肉','¥3,000〜¥4,999','40','11:00','22:00','ON','OFF','OFF','全席禁煙','山田太郎','yamada@example.com','owner']]},
+  corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',
+    headers:['法人名','代表者名','代表メール','会社HP','採用ページ','ブランド名','ブランドスラッグ','店舗名','住所','電話番号','メール','最寄り駅','ジャンル（カンマ区切り）','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト','デリバリー','来店予約','喫煙','アカウント氏名','アカウントメール','アカウント権限'],
+    sample:[['株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','https://example.co.jp/recruit','居酒屋 潮','ushio','渋谷店','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','居酒屋,鍋,和食','40','中休みあり','11:00','14:00','17:00','22:00','日曜日、祝日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','OFF','全席禁煙','山田太郎','yamada@example.com','Owner']],
+    categories:[{cols:[0,4],color:'f0ecff',label:'法人'},{cols:[5,6],color:'e8f4fd',label:'ブランド'},{cols:[7,11],color:'e6f9f0',label:'店舗基本'},{cols:[12,13],color:'fff8e1',label:'ジャンル・座席'},{cols:[14,18],color:'fff0e0',label:'営業時間'},{cols:[19,21],color:'fce4ec',label:'定休日・価格帯'},{cols:[22,25],color:'f5f5f5',label:'サービス設定'},{cols:[26,28],color:'f3e5f5',label:'アカウント'}]},
   brand:{filename:'aiden_brand_template.csv',
     headers:['ブランド名*','スラッグ*','所属法人ID*','ステータス(active/trial)','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント(Noto Sans JP等)'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','active','#DC3232','#1A1A1A','#DC3232','#FFFFFF','#333333','Noto Sans JP']]},
@@ -3389,6 +3426,7 @@ const TEMPLATES={
 };
 function downloadTemplate(type){
   const t=TEMPLATES[type];if(!t)return;
+  if(t.format==='xlsx'&&typeof XLSX!=='undefined'){downloadXlsxTemplate(t);return;}
   const bom='\uFEFF';
   let csv=bom;
   if(t.comment)csv+=t.comment+'\n';
@@ -3396,6 +3434,40 @@ function downloadTemplate(type){
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=t.filename;a.click();
   showToast('📋 テンプレートをダウンロードしました');
+}
+function downloadXlsxTemplate(t){
+  var wb=XLSX.utils.book_new();
+  // Sheet 1: data
+  var ws1Data=[t.headers].concat(t.sample);
+  var ws1=XLSX.utils.aoa_to_sheet(ws1Data);
+  // Column widths
+  ws1['!cols']=t.headers.map(function(h,i){var maxLen=Math.max(h.length,(t.sample[0]&&t.sample[0][i]?String(t.sample[0][i]).length:0));return {wch:Math.max(maxLen+4,12)};});
+  // Header styling: dark navy bg + white text
+  var headerStyle={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A1A2E'}},alignment:{horizontal:'center'}};
+  t.headers.forEach(function(h,i){var cell=XLSX.utils.encode_cell({r:0,c:i});if(ws1[cell])ws1[cell].s=headerStyle;});
+  // Category color banding for data rows
+  if(t.categories&&t.sample.length>0){
+    t.categories.forEach(function(cat){
+      for(var ci=cat.cols[0];ci<=cat.cols[1];ci++){
+        var cell=XLSX.utils.encode_cell({r:1,c:ci});
+        if(ws1[cell])ws1[cell].s={fill:{fgColor:{rgb:cat.color.toUpperCase()}}};
+      }
+    });
+  }
+  XLSX.utils.book_append_sheet(wb,ws1,'店舗登録');
+  // Sheet 2: dropdown source data
+  var s2Data=[['営業形態','価格帯','ON/OFF','喫煙','権限','ジャンル一覧']];
+  var maxRows=Math.max(2,PRICE_RANGES.length,GENRE_LIST.length);
+  for(var ri=0;ri<maxRows;ri++){s2Data.push([ri<2?['通し営業','中休みあり'][ri]:'',ri<PRICE_RANGES.length?PRICE_RANGES[ri]:'',ri<2?['ON','OFF'][ri]:'',ri<3?_SMOKING_OPTS[ri]:'',ri<3?['Owner','Admin','Staff'][ri]:'',ri<GENRE_LIST.length?GENRE_LIST[ri]:'']);}
+  var ws2=XLSX.utils.aoa_to_sheet(s2Data);
+  ws2['!cols']=[{wch:14},{wch:20},{wch:8},{wch:14},{wch:10},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'選択肢一覧');
+  // Add data validations to Sheet 1
+  if(!ws1['!dataValidation'])ws1['!dataValidation']=[];
+  var dvDefs=[{col:14,list:'"通し営業,中休みあり"'},{col:20,list:'"'+PRICE_RANGES.join(',')+'"'},{col:21,list:'"'+PRICE_RANGES.join(',')+'"'},{col:22,list:'"ON,OFF"'},{col:23,list:'"ON,OFF"'},{col:24,list:'"ON,OFF"'},{col:25,list:'"'+_SMOKING_OPTS.join(',')+'"'},{col:28,list:'"Owner,Admin,Staff"'}];
+  dvDefs.forEach(function(dv){ws1['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});});
+  XLSX.writeFile(wb,t.filename);
+  showToast('📋 Excelテンプレートをダウンロードしました');
 }
 
 // ===== BULK UPLOAD =====
@@ -3477,7 +3549,7 @@ function showBulkPreview(rows){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function getDisplayColumns(type){
-  if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'brandName',label:'ブランド'},{key:'storeName',label:'店舗'},{key:'storeTel',label:'電話'}];
+  if(type==='corp')return [{key:'name',label:'法人名'},{key:'brandName',label:'ブランド'},{key:'storeName',label:'店舗'},{key:'storeAddr',label:'住所'},{key:'storeTel',label:'電話'}];
   if(type==='brand')return [{key:'name',label:'ブランド名'},{key:'slug',label:'スラッグ'},{key:'corpName',label:'法人'},{key:'mainColor',label:'カラー'},{key:'status',label:'ステータス'}];
   if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'status',label:'ステータス'}];
   if(type==='account')return [{key:'name',label:'氏名'},{key:'email',label:'メール'},{key:'role',label:'権限'},{key:'corpName',label:'法人'}];
@@ -3496,15 +3568,19 @@ function validateBulkRows(dataRows,type){
         if(!storeName){errors.push('行'+rn+': 店舗名が空');return;}
         if(!storeAddr){errors.push('行'+rn+': 住所が空');return;}
         if(!storeTel){errors.push('行'+rn+': 電話番号が空');return;}
-        const genre=g(12),price=g(14),smoking=g(21),takeout=g(18),delivery=g(19),reserv=g(20),role=g(24);
-        if(genre&&!_GENRE_MAJOR.includes(genre)){errors.push('行'+rn+': ジャンル大分類「'+genre+'」が不正');return;}
-        if(price&&!_PRICE_RANGES.includes(price)){errors.push('行'+rn+': 価格帯「'+price+'」が不正');return;}
+        const genresRaw=g(12),hoursType=g(14),smoking=g(25),takeout=g(22),delivery=g(23),reserv=g(24),role=g(28);
+        var genres=genresRaw?genresRaw.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
+        var badGenre=genres.find(function(gn){return !GENRE_LIST.includes(gn);});
+        if(badGenre){errors.push('行'+rn+': ジャンル「'+badGenre+'」が不正');return;}
+        const priceLunch=g(20),priceDinner=g(21);
+        if(priceLunch&&!PRICE_RANGES.includes(priceLunch)){errors.push('行'+rn+': 昼の価格帯「'+priceLunch+'」が不正');return;}
+        if(priceDinner&&!PRICE_RANGES.includes(priceDinner)){errors.push('行'+rn+': 夜の価格帯「'+priceDinner+'」が不正');return;}
         if(smoking&&!_SMOKING_OPTS.includes(smoking)){errors.push('行'+rn+': 喫煙「'+smoking+'」が不正');return;}
         if(takeout&&!['ON','OFF'].includes(takeout)){errors.push('行'+rn+': テイクアウト「'+takeout+'」が不正(ON/OFF)');return;}
         if(delivery&&!['ON','OFF'].includes(delivery)){errors.push('行'+rn+': デリバリー「'+delivery+'」が不正(ON/OFF)');return;}
         if(reserv&&!['ON','OFF'].includes(reserv)){errors.push('行'+rn+': 来店予約「'+reserv+'」が不正(ON/OFF)');return;}
-        if(role&&!['owner','admin','staff'].includes(role)){errors.push('行'+rn+': 権限「'+role+'」が不正(owner/admin/staff)');return;}
-        valid.push({name,rep:rep||'—',corpEmail:g(2),hp:g(3),recruit:g(4),brandName,brandSlug:g(6),storeName,storeAddr,storeTel,storeEmail:g(10),storeStation:g(11),storeGenre:genre,storeGenreSub:g(13),storePrice:price,storeSeats:g(15),storeOpen:g(16),storeClose:g(17),storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking||'全席禁煙',accName:g(22),accEmail:g(23),accRole:role||'owner',created:new Date().toISOString().split('T')[0]});
+        if(role&&!['owner','admin','staff','Owner','Admin','Staff'].includes(role)){errors.push('行'+rn+': 権限「'+role+'」が不正');return;}
+        valid.push({name,rep:rep||'—',corpEmail:g(2),hp:g(3),recruit:g(4),brandName,brandSlug:g(6),storeName,storeAddr,storeTel,storeEmail:g(10),storeStation:g(11),storeGenres:genres,storeSeats:g(13),hoursType:hoursType||'通し営業',lunchOpen:g(15),lunchClose:g(16),dinnerOpen:g(17),dinnerClose:g(18),storeHoliday:g(19),priceLunch:priceLunch,priceDinner:priceDinner,storeTakeout:takeout||'OFF',storeDelivery:delivery||'OFF',storeReserv:reserv||'OFF',storeSmoking:smoking||'全席禁煙',accName:g(26),accEmail:g(27),accRole:(role||'owner').toLowerCase(),created:new Date().toISOString().split('T')[0]});
       }else if(type==='brand'){
         const name=g(0),slug=g(1),corpId=g(2);
         if(!name||!slug){errors.push('行'+rn+': ブランド名またはスラッグが空');return;}
@@ -3547,10 +3623,16 @@ async function confirmBulkImport(){
         const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランド保存失敗');
         const brandUuid=brandD.data.id,brandDid=brandD.data.display_id;
         BRANDS.push({_uuid:brandUuid,id:brandDid,corpId:corpDid,name:item.brandName,slug:item.brandSlug||'',status:'active',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
-        const smokingMap={'全席禁煙':'no_smoking','喫煙可':'allowed','分煙':'separated'};
-        const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.storeName,brand_id:brandUuid,address:item.storeAddr,phone:item.storeTel,email:item.storeEmail||undefined,nearest_station:item.storeStation||undefined,genre_major:item.storeGenre||undefined,genre_sub:item.storeGenreSub||undefined,price_range:item.storePrice||undefined,seats:item.storeSeats?parseInt(item.storeSeats):undefined,open_time:item.storeOpen||undefined,close_time:item.storeClose||undefined,takeout_enabled:item.storeTakeout==='ON',delivery_enabled:item.storeDelivery==='ON',reservation_enabled:item.storeReserv==='ON',smoking_policy:smokingMap[item.storeSmoking]||'no_smoking',is_active:true})});
+        const smokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','分煙':'separated'};
+        const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.storeName,brand_id:brandUuid,address:item.storeAddr,phone:item.storeTel,email:item.storeEmail||undefined,nearest_station:item.storeStation||undefined,genres:item.storeGenres||[],regular_holiday:item.storeHoliday||'',price_range_lunch:item.priceLunch||'',price_range_dinner:item.priceDinner||'',seats:item.storeSeats?parseInt(item.storeSeats):undefined,takeout_enabled:item.storeTakeout==='ON',delivery_enabled:item.storeDelivery==='ON',reservation_enabled:item.storeReserv==='ON',smoking_policy:smokingMap[item.storeSmoking]||'no_smoking',is_active:true})});
         const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗保存失敗');
-        STORES.push({_uuid:storeD.data.id,id:storeD.data.display_id,brandId:brandDid,name:item.storeName,status:'active',addr:item.storeAddr,tel:item.storeTel,orders:0,revenue:0});
+        var bulkStoreUuid=storeD.data.id;
+        // Insert store_hours from Excel data
+        var bulkHours=[];var allDows=[0,1,2,3,4,5,6];
+        if(item.hoursType==='中休みあり'&&item.lunchOpen&&item.dinnerOpen){allDows.forEach(function(dow){bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.lunchOpen,close_time:item.lunchClose,is_closed:false});bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.dinnerOpen,close_time:item.dinnerClose,is_closed:false});});}
+        else if(item.lunchOpen){allDows.forEach(function(dow){bulkHours.push({store_id:bulkStoreUuid,day_of_week:dow,open_time:item.lunchOpen,close_time:item.lunchClose,is_closed:false});});}
+        if(bulkHours.length)await sb.from('store_hours').insert(bulkHours);
+        STORES.push({_uuid:bulkStoreUuid,id:storeD.data.display_id,brandId:brandDid,name:item.storeName,status:'active',addr:item.storeAddr,tel:item.storeTel,orders:0,revenue:0});
         if(item.accName&&item.accEmail){
           const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:item.accName,email:item.accEmail,role:item.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
           if(!accErr&&accData)ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:item.accName,email:item.accEmail,role:item.accRole||'owner',corpId:corpDid,status:'active',lastLogin:'—'});

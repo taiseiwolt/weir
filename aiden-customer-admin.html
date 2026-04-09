@@ -834,14 +834,16 @@ content.innerHTML = `
           <div class="map-hint">💡 住所を入力して「検索」をクリックすると地図が表示されます。地図をドラッグしてピン位置を調整し、確定位置から緯度・経度が自動取得されます。</div>
         </div>
         <div class="form-group"><label>最寄り駅/アクセス</label><input type="text" id="basicStoreAccess"></div>
-        <div class="form-group"><label>ジャンル（大分類）<span class="req">*</span></label>
-          <select id="basicStoreGenre" onchange="updateSubGenre(this)"><option>和食</option><option>洋食</option><option>中華</option><option>イタリアン</option><option>フレンチ</option><option>焼肉</option><option>ラーメン・麺類</option><option>居酒屋</option><option>カフェ</option><option>バー</option><option>寿司</option><option>韓国料理</option><option>エスニック</option><option>その他</option></select>
+        <div class="form-group full"><label>ジャンル（複数選択可）</label>
+          <div id="basicGenreTags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
-        <div class="form-group"><label>ジャンル（小分類）</label>
-          <select id="basicStoreSubGenre"><option>回転寿司</option><option>握り寿司</option><option>押し寿司</option><option>その他寿司</option></select>
+        <div class="form-group full"><label>定休日</label>
+          <input type="text" id="basicStoreHoliday" placeholder="例: 日曜日、祝日">
         </div>
-        <div class="form-group"><label>価格帯</label>
-          <select id="basicStorePrice"><option>〜¥1,000</option><option>¥1,000〜¥2,000</option><option>¥2,000〜¥3,000</option><option>¥3,000〜¥5,000</option><option>¥5,000〜¥10,000</option><option>¥10,000〜</option></select>
+        <div class="form-group full"><label>価格帯</label>
+          <div style="margin-bottom:8px"><label style="font-size:12px;margin-right:12px"><input type="radio" name="basicPriceMode" value="same" checked onchange="basicTogglePriceMode()"> 昼夜共通</label><label style="font-size:12px"><input type="radio" name="basicPriceMode" value="split" onchange="basicTogglePriceMode()"> 昼夜で分ける</label></div>
+          <div id="basicPriceSame"><select id="basicStorePrice"></select></div>
+          <div id="basicPriceSplit" style="display:none"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="font-size:12px;width:60px">ランチ</span><select id="basicPriceLunch"></select></div><div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;width:60px">ディナー</span><select id="basicPriceDinner"></select></div></div>
         </div>
         <div class="form-group full"><label>店舗紹介文</label><textarea rows="3" id="basicStoreDesc"></textarea></div>
       </div>
@@ -5280,9 +5282,11 @@ async function saveBasicInfo() {
   var zip = document.getElementById('basicStoreZip').value;
   var address = document.getElementById('addressInput').value;
   var access = document.getElementById('basicStoreAccess').value;
-  var genre = document.getElementById('basicStoreGenre').value;
-  var subGenre = document.getElementById('basicStoreSubGenre').value;
-  var price = document.getElementById('basicStorePrice').value;
+  var genres = Array.from(document.querySelectorAll('.basicGenreChk:checked')).map(function(c){return c.value;});
+  var holiday = document.getElementById('basicStoreHoliday').value;
+  var priceMode = (document.querySelector('input[name="basicPriceMode"]:checked')||{}).value||'same';
+  var priceLunch = priceMode==='split'?document.getElementById('basicPriceLunch').value:document.getElementById('basicStorePrice').value;
+  var priceDinner = priceMode==='split'?document.getElementById('basicPriceDinner').value:document.getElementById('basicStorePrice').value;
   var desc = document.getElementById('basicStoreDesc').value;
 
   // Validate required fields
@@ -5290,19 +5294,14 @@ async function saveBasicInfo() {
     { val: name, label: '店舗名' },
     { val: phone, label: '電話番号' },
     { val: email, label: '店舗担当者メールアドレス' },
-    { val: address, label: '住所' },
-    { val: genre, label: 'ジャンル（大分類）' }
+    { val: address, label: '住所' }
   ];
   var missing = requiredFields.filter(function(f) { return !f.val || !f.val.trim(); });
   if (missing.length > 0) {
     alert('以下の必須項目が未入力です:\n' + missing.map(function(f) { return '・' + f.label; }).join('\n'));
     return;
   }
-  // Validate subGenre if genre is set
-  if (genre && (!subGenre || !subGenre.trim())) {
-    alert('ジャンル（大分類）が選択されている場合、ジャンル（小分類）も選択してください。');
-    return;
-  }
+  if(!genres.length){alert('ジャンルを1つ以上選択してください');return;}
 
   store.name = name;
   store.kana = kana;
@@ -5311,9 +5310,10 @@ async function saveBasicInfo() {
   store.zip = zip;
   store.address = address;
   store.access = access;
-  store.genre = genre;
-  store.subGenre = subGenre;
-  store.price = price;
+  store.genres = genres;
+  store.regular_holiday = holiday;
+  store.price_range_lunch = priceLunch;
+  store.price_range_dinner = priceDinner;
   store.desc = desc;
   store.reservation = document.getElementById('basicChReservation').checked;
   store.takeout = document.getElementById('basicChTakeout').checked;
@@ -5327,7 +5327,10 @@ async function saveBasicInfo() {
       address: store.address,
       phone: store.phone,
       email: store.email || null,
-      genre: store.genre || null,
+      genres: store.genres || [],
+      regular_holiday: store.regular_holiday || '',
+      price_range_lunch: store.price_range_lunch || '',
+      price_range_dinner: store.price_range_dinner || '',
       lat: store.lat,
       lng: store.lng,
       has_takeout: store.takeout,
@@ -5377,9 +5380,10 @@ function openSingleStoreEdit(storeName) {
     document.getElementById('basicStoreZip').value = store.zip || '';
     document.getElementById('addressInput').value = store.address;
     document.getElementById('basicStoreAccess').value = store.access || '';
-    document.getElementById('basicStoreGenre').value = isAddressLike(store.genre) ? '' : (store.genre || '');
-    document.getElementById('basicStoreSubGenre').value = store.subGenre || '';
-    document.getElementById('basicStorePrice').value = store.price || '¥1,000〜¥2,000';
+    initBasicGenreTags(store.genres||[]);
+    initBasicPriceDropdowns();
+    document.getElementById('basicStoreHoliday').value = store.regular_holiday || '';
+    if(store.price_range_lunch&&store.price_range_dinner&&store.price_range_lunch!==store.price_range_dinner){var spl=document.querySelector('input[name="basicPriceMode"][value="split"]');if(spl){spl.checked=true;basicTogglePriceMode();}document.getElementById('basicPriceLunch').value=store.price_range_lunch;document.getElementById('basicPriceDinner').value=store.price_range_dinner;}else{document.getElementById('basicStorePrice').value=store.price_range_dinner||store.price_range_lunch||store.price||'';}
     document.getElementById('basicStoreDesc').value = store.desc || '';
     document.getElementById('basicChReservation').checked = store.reservation;
     document.getElementById('basicChTakeout').checked = store.takeout;
@@ -5575,6 +5579,18 @@ const GENRE_MAP = {
   'その他': ['弁当','デリ','フードコート','その他'],
 };
 
+// Genre/Price constants (tabelog-aligned)
+const GENRE_LIST_CA=['居酒屋','和食','寿司','焼肉','ステーキ','鍋','焼鳥','イタリアン','フレンチ','スペイン料理','中華','韓国料理','タイ料理','インド料理','ベトナム料理','メキシコ料理','カフェ','パン屋','スイーツ','バー','ラーメン','うどん','そば','丼もの','定食','ハンバーガー','ピザ','カレー','弁当','ファストフード','懐石','割烹','天ぷら','とんかつ','お好み焼き','その他'];
+const PRICE_RANGES_CA=['~¥999','¥1,000~¥1,999','¥2,000~¥2,999','¥3,000~¥3,999','¥4,000~¥4,999','¥5,000~¥5,999','¥6,000~¥7,999','¥8,000~¥9,999','¥10,000~¥14,999','¥15,000~¥19,999','¥20,000~¥29,999','¥30,000~'];
+function initBasicGenreTags(selectedGenres){
+  var el=document.getElementById('basicGenreTags');if(!el)return;
+  el.innerHTML=GENRE_LIST_CA.map(function(g){var checked=selectedGenres&&selectedGenres.indexOf(g)>=0;return '<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:16px;font-size:11px;cursor:pointer;transition:all .15s'+(checked?';background:var(--accent-light,#e8f4fd);border-color:var(--accent,#0984e3)':'')+'"><input type="checkbox" class="basicGenreChk" value="'+g+'" style="accent-color:var(--accent,#0984e3)"'+(checked?' checked':'')+' onchange="this.parentElement.style.background=this.checked?\'#e8f4fd\':\'\';this.parentElement.style.borderColor=this.checked?\'#0984e3\':\'\'">'+g+'</label>';}).join('');
+}
+function initBasicPriceDropdowns(){
+  var opts='<option value="">選択してください</option>'+PRICE_RANGES_CA.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  ['basicStorePrice','basicPriceLunch','basicPriceDinner'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+function basicTogglePriceMode(){var m=document.querySelector('input[name="basicPriceMode"]:checked');if(!m)return;document.getElementById('basicPriceSame').style.display=m.value==='same'?'':'none';document.getElementById('basicPriceSplit').style.display=m.value==='split'?'':'none';}
 function updateSubGenre(majorSelect) {
   const parent = majorSelect.closest('.form-grid');
   if(!parent) return;
@@ -5778,12 +5794,12 @@ async function loadAdminFromSupabase() {
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
     // 2. Stores (RLS: filtered by brand)
-    const {data: stores, error: storeErr} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
+    const {data: stores, error: storeErr} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, genres, regular_holiday, price_range_lunch, price_range_dinner, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
     if (storeErr) errors.push('店舗: ' + storeErr.message);
     if (stores && stores.length > 0) {
       STORES = stores.map(s => ({
         id: s.id, storeId: s.slug || s.id.substring(0,6), name: s.name, kana: '', address: s.address || '', zip: '', phone: s.phone || '', email: s.email || '',
-        access: '', genre: s.genre || '', subGenre: '', price: '', desc: '', lat: s.lat || 0, lng: s.lng || 0,
+        access: '', genre: s.genre || '', genres: s.genres || [], regular_holiday: s.regular_holiday || '', price_range_lunch: s.price_range_lunch || '', price_range_dinner: s.price_range_dinner || '', price: '', desc: '', lat: s.lat || 0, lng: s.lng || 0,
         hoursOpen: '11:00', hoursClose: '22:00', delOpen: '11:30', delClose: '21:00',
         seats: s.seats || 0, smoking: ({'no_smoking':'完全禁煙','allowed':'喫煙可','separated':'分煙','heat_only':'加熱式専用'})[s.smoking_policy] || '完全禁煙', parking: false, kids: s.children_policy === 'allowed', pets: false,
         payment: 'Card/QR/電子マネー/交通系IC/現金', delivery: s.has_delivery !== false, takeout: s.has_takeout !== false, reservation: s.reservation_enabled !== false,
@@ -6068,7 +6084,7 @@ function storeBrandName(storeName) {
 const TABLE_CONFIGS = {
   storeBasicTable: s => `
     <td class="store-name">${escH(storeBrandName(s.name))}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
-    <td>${escH(isAddressLike(s.genre)?'—':(s.genre||'—'))} / ${escH(s.subGenre||'—')}</td>
+    <td style="font-size:10px">${s.genres&&s.genres.length?s.genres.slice(0,2).map(function(g){return escH(g);}).join(', ')+(s.genres.length>2?' +':''):escH(isAddressLike(s.genre)?'—':(s.genre||'—'))}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td><td>${yesNo(s.reservation)}</td>
     <td>${statusBadge(s.status)}</td>
     <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">編集</button></td>`,
