@@ -640,7 +640,7 @@ function renderCorpsList(){
   return '<div class="page-title">法人管理</div><div class="page-subtitle">AIden利用法人の一覧（法人ID: 7桁英数字）</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 法人名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'corp\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'corp\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openCorpWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddCorpModal()">＋ 法人追加</button></div></div>'+
   '<table class="data-table"><thead><tr><th>法人ID</th><th>法人名</th><th>代表者</th><th>ブランド</th><th>店舗</th><th>ステータス</th><th></th></tr></thead><tbody>'+
-  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleCorpStatus(\''+c._uuid+'\',\''+c.status+'\')">'+( c.status==='active'?'停止':'有効化')+'</button></td></tr>';}).join('')+
+  CORPS.map(c=>{const bs=getBrandsForCorp(c).length,ss=getStoresForCorp(c).length;return '<tr style="'+(c.status==='suspended'?'opacity:0.5;background:#f9f9f9':'')+'"><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td style="text-align:center">'+bs+'</td><td style="text-align:center">'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openCorpModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleCorpStatus(\''+c._uuid+'\',\''+c.status+'\')">'+(c.status==='active'?'停止':'再開')+'</button><button class="btn btn-sm" style="background:#fab1a0;color:#d63031;margin-left:4px" onclick="deleteCorp(\''+c._uuid+'\',\''+escHtml(c.name)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -3041,15 +3041,42 @@ async function deleteAccount(accId){
 }
 
 async function toggleCorpStatus(uuid,currentStatus){
-  const newStatus=currentStatus==='active'?'suspended':'active';
-  const label=newStatus==='active'?'有効化':'停止';
-  if(!confirm('この法人を'+label+'しますか？'))return;
+  var me=null;
+  try{var sess=await sb.auth.getSession();me=ACCOUNTS.find(function(a){return a.email===sess.data.session?.user?.email;});}catch(e){}
+  if(!me||me.role!=='owner'){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  var isSuspending=currentStatus==='active';
+  var newCorpStatus=isSuspending?'suspended':'active';
+  var label=isSuspending?'停止':'再開';
+  var detail=isSuspending?'この法人を停止すると、配下の全ブランド・店舗が非公開になり、全機能が使えなくなります。':'この法人を再開します。配下のブランド・店舗が再び公開されます。';
+  if(!confirm(detail+'\n\nよろしいですか？'))return;
   try{
-    const token=await getToken();
-    const res=await fetch('/api/admin/corporations/'+uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({status:newStatus})});
-    const d=await res.json();if(!res.ok)throw new Error(d.error);
-    const corp=CORPS.find(c=>c._uuid===uuid);if(corp)corp.status=newStatus;
-    showToast('✅ '+label+'しました');renderPage();
+    var token=await getToken();
+    var res=await fetch('/api/admin/corporations/'+uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({status:newCorpStatus})});
+    var d=await res.json();if(!res.ok)throw new Error(d.error);
+    var corp=CORPS.find(function(c){return c._uuid===uuid;});
+    if(corp){
+      var brandUuids=BRANDS.filter(function(b){return b.corpId===corp.id;}).map(function(b){return b._uuid;});
+      if(brandUuids.length){await sb.from('brands').update({status:isSuspending?'suspended':'active'}).in('id',brandUuids);BRANDS.filter(function(b){return b.corpId===corp.id;}).forEach(function(b){b.status=isSuspending?'suspended':'active';});}
+      var storeUuids=STORES.filter(function(s){var br=getBrandForStore(s);return br&&br.corpId===corp.id;}).map(function(s){return s._uuid;});
+      if(storeUuids.length){await sb.from('stores').update({is_active:!isSuspending}).in('id',storeUuids);STORES.filter(function(s){var br=getBrandForStore(s);return br&&br.corpId===corp.id;}).forEach(function(s){s.status=isSuspending?'suspended':'active';});}
+      corp.status=newCorpStatus;
+    }
+    showToast('✅ 法人を'+label+'しました');renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function deleteCorp(uuid,corpName){
+  try{var sess=await sb.auth.getSession();var me=ACCOUNTS.find(function(a){return a.email===sess.data.session?.user?.email;});}catch(e){var me=null;}
+  if(!me||me.role!=='owner'){showToast('⚠️ この操作はオーナー権限が必要です');return;}
+  if(!confirm('「'+corpName+'」を削除します。\n\n⚠️ この操作は取り消せません。配下のブランド・店舗データも全て削除されます。\n\n本当に削除しますか？'))return;
+  var input=prompt('削除するには法人名「'+corpName+'」を入力してください:');
+  if(input!==corpName){showToast('⚠️ 法人名が一致しません。削除を中止しました');return;}
+  try{
+    var token=await getToken();
+    var res=await fetch('/api/admin/corporations/'+uuid,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+    var d=await res.json();if(!res.ok)throw new Error(d.error);
+    var idx=CORPS.findIndex(function(c){return c._uuid===uuid;});
+    if(idx>=0)CORPS.splice(idx,1);
+    showToast('✅ 法人を削除しました');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
@@ -3712,6 +3739,8 @@ function validateBulkRows(dataRows,type){
     const rn=i+2;const g=idx=>String(row[idx]!=null?row[idx]:'').trim();
     try{
       if(type==='corp'){
+        const EXPECTED_CORP_COLS=14;
+        if(row.length>EXPECTED_CORP_COLS&&row[EXPECTED_CORP_COLS]!=null&&String(row[EXPECTED_CORP_COLS]).trim()!==''){errors.push('行'+rn+': テンプレート形式が古い可能性があります。最新テンプレートをDLして再試行してください（14列形式）');return;}
         const nr=normalizeRow(row);
         const name=nr.g(0);
         if(!name){errors.push('行'+rn+': 法人名が空');return;}
