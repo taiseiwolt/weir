@@ -2682,7 +2682,8 @@ function renderCorpWizStep(){
   const btns=document.getElementById('corpWizBtns');
   document.querySelectorAll('#corpWizSteps .wiz-step').forEach(el=>{el.classList.toggle('active',parseInt(el.dataset.s)===_corpWizStep);el.classList.toggle('done',parseInt(el.dataset.s)<_corpWizStep);});
   if(_corpWizStep===1){
-    body.innerHTML='<div class="form-grid">'+
+    body.innerHTML='<div class="card" style="margin-bottom:16px;background:#f0f9ff;border:1px dashed #0284c7"><div class="card-title" style="color:#0369a1">🔗 公式HPから自動入力（任意）</div><p style="font-size:11px;color:#64748b;margin-bottom:10px">店舗の公式HPやGoogleマップのURLを入力すると、店舗情報を自動で取得しフォームに入力します。</p><div style="display:flex;gap:8px"><input type="url" id="cwAutoFillUrl" placeholder="https://..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><button class="btn btn-primary btn-sm" id="cwAutoFillBtn" onclick="cwAutoFillFromUrl()">情報を取得</button></div><div id="cwAutoFillStatus" style="margin-top:8px;font-size:11px;display:none"></div></div>'+
+    '<div class="form-grid">'+
     '<div class="form-group"><label>法人名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwCorpName" placeholder="例: 株式会社〇〇"></div>'+
     '<div class="form-group"><label>代表者名</label><input type="text" id="cwCorpRep" placeholder="氏名"></div>'+
     '<div class="form-group"><label>代表メールアドレス</label><input type="email" id="cwCorpEmail" placeholder="rep@example.co.jp"></div>'+
@@ -2729,6 +2730,16 @@ function renderCorpWizStep(){
     '</div>';
     cwInitDailyRows();
     initGenreTagInput('cwGenreWidget',GENRE_LIST,_corpWizCache.storeGenres||[]);
+    // Apply auto-fill highlighting
+    if(_cwAutoFillData){
+      var afMap={cwStoreName:'store_name',cwStoreAddr:'address',cwStoreTel:'phone',cwStoreHoliday:'regular_holiday'};
+      Object.keys(afMap).forEach(function(fid){var v=_cwAutoFillData[afMap[fid]];if(v){var el=document.getElementById(fid);if(el&&!el.value){el.value=v;el.style.background='#eff6ff';}}});
+      if(_cwAutoFillData.business_hours){var hoursRef=document.createElement('div');hoursRef.style.cssText='margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:6px;font-size:11px;color:#0369a1';hoursRef.innerHTML='📋 取得した営業時間: <b>'+escHtml(_cwAutoFillData.business_hours)+'</b>（上記フォームで設定してください）';var hc=document.getElementById('cwHoursAll');if(hc&&hc.parentElement)hc.parentElement.appendChild(hoursRef);}
+      if(_cwAutoFillData.price_range_lunch||_cwAutoFillData.price_range_dinner){
+        if(_corpWizCache.priceMode==='split'){var pmr=document.querySelector('input[name="cwPriceMode"][value="split"]');if(pmr){pmr.checked=true;cwTogglePriceMode();}if(_cwAutoFillData.price_range_lunch){var pl=document.getElementById('cwPriceLunch');if(pl){pl.value=_cwAutoFillData.price_range_lunch;pl.style.background='#eff6ff';}}if(_cwAutoFillData.price_range_dinner){var pd=document.getElementById('cwPriceDinner');if(pd){pd.value=_cwAutoFillData.price_range_dinner;pd.style.background='#eff6ff';}}}
+        else{var ps=document.getElementById('cwStorePrice');if(ps&&_cwAutoFillData.price_range_dinner){ps.value=_cwAutoFillData.price_range_dinner;ps.style.background='#eff6ff';}}
+      }
+    }
     btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===4){
     body.innerHTML='<div class="form-grid">'+
@@ -2799,6 +2810,39 @@ function _genreTagRemove(cid,genre){
   var idx=sel.indexOf(genre);if(idx>=0){sel.splice(idx,1);el._selected=sel;initGenreTagInput(cid,el._genreList,sel);}
 }
 function getGenreTagSelection(cid){var el=document.getElementById(cid);return el&&el._selected?el._selected.slice():[];}
+let _cwAutoFillData=null;
+async function cwAutoFillFromUrl(){
+  var url=(document.getElementById('cwAutoFillUrl')||{}).value||'';
+  if(!url.trim()){showToast('⚠️ URLを入力してください');return;}
+  var btn=document.getElementById('cwAutoFillBtn');
+  var status=document.getElementById('cwAutoFillStatus');
+  btn.disabled=true;btn.textContent='取得中...';
+  status.style.display='';status.style.color='#0369a1';status.innerHTML='⏳ ページを解析中です（10〜20秒程度）...';
+  try{
+    var res=await fetch('/api/extract-store-info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url.trim()})});
+    var d=await res.json();
+    if(!res.ok||!d.success)throw new Error(d.error||'取得に失敗しました');
+    _cwAutoFillData=d.data;
+    // Fill Step 1 fields
+    if(d.data.website_url){var wf=document.getElementById('cwCorpWebsite');if(wf&&!wf.value)_cwAutoFillField(wf,d.data.website_url);}
+    // Cache for Step 3
+    if(d.data.store_name)_corpWizCache.storeName=d.data.store_name;
+    if(d.data.phone)_corpWizCache.storeTel=d.data.phone;
+    if(d.data.address)_corpWizCache.storeAddr=d.data.address;
+    if(d.data.genres&&d.data.genres.length)_corpWizCache.storeGenres=d.data.genres;
+    if(d.data.regular_holiday)_corpWizCache.storeHoliday=d.data.regular_holiday;
+    if(d.data.price_range_lunch)_corpWizCache.priceLunch=d.data.price_range_lunch;
+    if(d.data.price_range_dinner)_corpWizCache.priceDinner=d.data.price_range_dinner;
+    if(d.data.price_range_lunch&&d.data.price_range_dinner&&d.data.price_range_lunch!==d.data.price_range_dinner)_corpWizCache.priceMode='split';
+    if(d.data.business_hours)_corpWizCache._autoHoursText=d.data.business_hours;
+    status.style.color='#16a34a';status.innerHTML='✅ 店舗情報を取得しました。Step 3に自動入力されます。';
+    showToast('✅ 店舗情報を取得しました');
+  }catch(e){
+    status.style.color='#dc2626';status.innerHTML='❌ '+escHtml(e.message);
+    showToast('⚠️ '+e.message);
+  }finally{btn.disabled=false;btn.textContent='情報を取得';}
+}
+function _cwAutoFillField(el,val){el.value=val;el.style.background='#eff6ff';}
 function cwToggleHoursMode(){var m=document.querySelector('input[name="cwHoursMode"]:checked').value;document.getElementById('cwHoursAll').style.display=m==='all'?'':'none';document.getElementById('cwHoursDaily').style.display=m==='daily'?'':'none';}
 function cwToggleHoursType(){var t=document.querySelector('input[name="cwHoursType"]:checked').value;document.getElementById('cwHoursThrough').style.display=t==='through'?'flex':'none';document.getElementById('cwHoursSplit').style.display=t==='split'?'':'none';}
 function cwTogglePriceMode(){var m=document.querySelector('input[name="cwPriceMode"]:checked').value;document.getElementById('cwPriceSame').style.display=m==='same'?'':'none';document.getElementById('cwPriceSplit').style.display=m==='split'?'':'none';}
