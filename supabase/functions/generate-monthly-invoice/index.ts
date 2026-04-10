@@ -194,6 +194,7 @@ serve(async (req) => {
         .from('invoices')
         .insert({
           corp_id: corp.id,
+          corp_name_snapshot: corp.name,
           billing_period: billingPeriod,
           subtotal: inv.subtotal,
           adjustments: inv.adjustments,
