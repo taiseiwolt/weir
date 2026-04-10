@@ -87,6 +87,7 @@
   <div class="nav-item" data-page="corps" onclick="goTo('corps')"><span class="icon">🏢</span><span class="label">法人管理</span></div>
   <div class="nav-item" data-page="brands" onclick="goTo('brands')"><span class="icon">🏷️</span><span class="label">ブランド管理</span></div>
   <div class="nav-item" data-page="stores" onclick="goTo('stores')"><span class="icon">🏪</span><span class="label">店舗管理</span></div>
+  <div class="nav-item" data-page="menus" onclick="goTo('menus')"><span class="icon">🍽️</span><span class="label">メニュー管理</span></div>
   <div class="nav-item" data-page="users" onclick="goTo('users')"><span class="icon">👤</span><span class="label">ユーザー管理</span></div>
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
   <div class="nav-item" data-page="ai" onclick="goTo('ai')"><span class="icon">🤖</span><span class="label">AI品質管理</span></div>
@@ -148,6 +149,7 @@ window.addEventListener('pageshow',function(e){if(e.persisted){window.location.r
 function openModal(h,wide){const mb=document.getElementById('modalBody');mb.innerHTML=h;if(wide)mb.classList.add('modal-wide');else mb.classList.remove('modal-wide');document.getElementById('modalOverlay').classList.add('show');}
 function closeModal(){history.replaceState(null,'','#');document.getElementById('modalOverlay').classList.remove('show');document.getElementById('modalBody').classList.remove('modal-wide');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.getElementById('modalOverlay').classList.contains('show'))closeModal();});
 function getMerchantForBrand(b){return MERCHANTS.find(c=>c.id===b.corpId);}
 function getBrandsForMerchant(c){var brandUuids=CBR.filter(function(r){return r.corp_id===c._uuid;}).map(function(r){return r.brand_id;});return BRANDS.filter(function(b){return brandUuids.includes(b._uuid);});}
 function getVenuesForBrand(b){return VENUES.filter(s=>s.brandId===b.id);}
@@ -426,7 +428,7 @@ function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=
 function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -457,6 +459,7 @@ function renderPage(){
   else if(v.type==='corps')el.innerHTML=renderCorpsList();
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
+  else if(v.type==='menus'){el.innerHTML=renderMenusPage();initMenusPage();}
   else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();loadUsersData().then(function(){renderMembersList();renderGuestsList();});}
   else if(v.type==='system'){el.innerHTML=renderSystem();initSystemSettings();}
   else if(v.type==='ai')el.innerHTML=renderAI();
@@ -689,7 +692,7 @@ function renderStoresRows(stores){
             +'background:#f0f0f0;color:#555;font-size:10px;font-weight:600;margin-right:2px">'+l+'</span>';
         }).join('')
       : '<span style="color:var(--text-light);font-size:11px">—</span>';
-    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+escHtml(br?br.name:'')+'</td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td>'+(s.slug?'<a href="https://aiden-jp.net/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🛒 MO</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openVenueModal(\''+s.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteVenue(\''+s._uuid+'\',\''+escHtml(s.id)+'\')">削除</button></td></tr>';
+    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+escHtml(br?br.name:'')+'</td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td>'+(s.slug?'<a href="https://aiden-jp.net/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🛒 MO</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openVenueModal(\''+s.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteVenue(\''+s._uuid+'\',\''+escHtml(s.id)+'\')">削除</button></td></tr>';
   }).join('');
 }
 function filterStoresList(){
@@ -702,6 +705,518 @@ function filterStoresList(){
   });
   var body=document.getElementById('storeListBody');
   if(body)body.innerHTML=renderStoresRows(filtered);
+}
+
+// ===== MENUS (STANDALONE PAGE) =====
+// 実DBスキーマ: products は price/category/emoji カラム無し。
+// 価格 → product_sizes、カテゴリ → categories(FK)、絵文字は列が存在しないためUI placeholder (🍽) のみ。
+var menusState={selectedBrandUuid:null,selectedBrandDisplayId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
+var menusImageUploadState={file:null,currentUrl:null};
+
+function renderMenusPage(){
+  return '<div class="page-title">メニュー管理</div><div class="page-subtitle">ブランドごとのメニューパターン・商品・サイズを管理</div>'+
+    '<div style="display:grid;grid-template-columns:20% 25% 1fr;gap:16px;align-items:flex-start">'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title">🏷️ ブランド</div><div id="menusBrandList"></div></div>'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title">📋 メニューパターン <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddPattern" onclick="openMenusAddPatternModal()" disabled>＋ 新規作成</button></span></div><div id="menusPatternList"><div class="empty-state">ブランドを選択してください</div></div></div>'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title">🍽️ 商品 <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddProduct" onclick="openMenusAddProductModal()" disabled>＋ 商品追加</button></span></div><div id="menusProductList"><div class="empty-state">パターンを選択してください</div></div></div>'+
+    '</div>';
+}
+
+function initMenusPage(){
+  menusState={selectedBrandUuid:null,selectedBrandDisplayId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
+  menusImageUploadState={file:null,currentUrl:null};
+  menusRenderBrandList();
+}
+
+function menusRenderBrandList(){
+  var el=document.getElementById('menusBrandList');
+  if(!el)return;
+  if(!BRANDS||!BRANDS.length){el.innerHTML='<div class="empty-state">ブランドがありません</div>';return;}
+  el.innerHTML=BRANDS.map(function(b){
+    var isActive=menusState.selectedBrandUuid===b._uuid;
+    var bg=isActive?'#f3efff':'#fff';
+    var border=isActive?'var(--accent)':'var(--border)';
+    return '<div style="padding:10px 12px;border:1px solid '+border+';border-radius:6px;margin-bottom:6px;cursor:pointer;background:'+bg+'" onclick="menusSelectBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')"><div style="font-weight:700;font-size:12px">'+escHtml(b.name)+'</div><div style="font-size:10px;color:var(--text-light);font-family:monospace;margin-top:2px">'+escHtml(b.id)+'</div></div>';
+  }).join('');
+}
+
+async function menusSelectBrand(brandUuid,brandDisplayId){
+  menusState.selectedBrandUuid=brandUuid;
+  menusState.selectedBrandDisplayId=brandDisplayId;
+  menusState.selectedPatternId=null;
+  menusState.patterns=[];
+  menusState.products=[];
+  menusState.productSizesMap={};
+  menusState.categories=[];
+  menusRenderBrandList();
+  var addPatternBtn=document.getElementById('menusBtnAddPattern');
+  if(addPatternBtn)addPatternBtn.disabled=false;
+  var addProductBtn=document.getElementById('menusBtnAddProduct');
+  if(addProductBtn)addProductBtn.disabled=true;
+  try{
+    var [pRes,cRes]=await Promise.all([
+      sb.from('menu_patterns').select('*').eq('brand_id',brandUuid).order('code'),
+      sb.from('categories').select('*').eq('brand_id',brandUuid).order('sort_order').order('name')
+    ]);
+    if(pRes.error)throw pRes.error;
+    if(cRes.error)throw cRes.error;
+    menusState.patterns=pRes.data||[];
+    menusState.categories=cRes.data||[];
+  }catch(e){
+    showToast('❌ 読み込みエラー: '+(e.message||e));
+    menusState.patterns=[];
+    menusState.categories=[];
+  }
+  menusRenderPatternList();
+  menusRenderProductList();
+}
+
+function menusRenderPatternList(){
+  var el=document.getElementById('menusPatternList');
+  if(!el)return;
+  if(!menusState.selectedBrandUuid){el.innerHTML='<div class="empty-state">ブランドを選択してください</div>';return;}
+  if(!menusState.patterns.length){el.innerHTML='<div class="empty-state">パターンがありません<br><span style="font-size:11px">右上の「＋新規作成」から追加</span></div>';return;}
+  el.innerHTML=menusState.patterns.map(function(p){
+    var isActive=menusState.selectedPatternId===p.id;
+    var bg=isActive?'#f3efff':'#fff';
+    var border=isActive?'var(--accent)':'var(--border)';
+    var dimmed=p.is_active===false?'opacity:0.55;':'';
+    var inactiveTag=p.is_active===false?' <span style="font-size:9px;background:#dfe6e9;color:#636e72;padding:1px 6px;border-radius:4px">無効</span>':'';
+    return '<div style="padding:10px 12px;border:1px solid '+border+';border-radius:6px;margin-bottom:6px;background:'+bg+';'+dimmed+'display:flex;align-items:center;gap:8px">'+
+      '<div style="flex:1;min-width:0;cursor:pointer" onclick="menusSelectPattern(\''+p.id+'\')">'+
+        '<div style="font-weight:700;font-size:12px">'+escHtml(p.name||'')+inactiveTag+'</div>'+
+        '<div style="font-size:10px;color:var(--text-light);font-family:monospace;margin-top:2px">'+escHtml(p.code||'')+'</div>'+
+      '</div>'+
+      '<button class="btn-outline btn-sm" title="編集" onclick="openMenusEditPatternModal(\''+p.id+'\')">✏️</button>'+
+      '<button class="btn-outline btn-sm" title="削除" onclick="deleteMenusPattern(\''+p.id+'\')">🗑️</button>'+
+    '</div>';
+  }).join('');
+}
+
+async function menusSelectPattern(patternId){
+  menusState.selectedPatternId=patternId;
+  menusState.products=[];
+  menusState.productSizesMap={};
+  menusRenderPatternList();
+  var addProductBtn=document.getElementById('menusBtnAddProduct');
+  if(addProductBtn)addProductBtn.disabled=false;
+  var el=document.getElementById('menusProductList');
+  if(el)el.innerHTML='<div class="empty-state">読み込み中...</div>';
+  try{
+    var pRes=await sb.from('products').select('id,name,description,image_url,category_id,menu_pattern_id,brand_id').eq('menu_pattern_id',patternId).order('name');
+    if(pRes.error)throw pRes.error;
+    menusState.products=pRes.data||[];
+    if(menusState.products.length){
+      var prodIds=menusState.products.map(function(p){return p.id;});
+      var sRes=await sb.from('product_sizes').select('*').in('product_id',prodIds).order('sort_order');
+      if(sRes.error)throw sRes.error;
+      var map={};
+      (sRes.data||[]).forEach(function(s){
+        if(!map[s.product_id])map[s.product_id]=[];
+        map[s.product_id].push(s);
+      });
+      menusState.productSizesMap=map;
+    }
+  }catch(e){
+    showToast('❌ 商品読み込みエラー: '+(e.message||e));
+    menusState.products=[];
+    menusState.productSizesMap={};
+  }
+  menusRenderProductList();
+}
+
+function menusRenderProductList(){
+  var el=document.getElementById('menusProductList');
+  if(!el)return;
+  if(!menusState.selectedPatternId){el.innerHTML='<div class="empty-state">パターンを選択してください</div>';return;}
+  if(!menusState.products.length){el.innerHTML='<div class="empty-state">商品がありません<br><span style="font-size:11px">右上の「＋商品追加」から追加</span></div>';return;}
+  var html='<div style="display:flex;flex-direction:column;gap:8px">';
+  menusState.products.forEach(function(p){
+    var sizes=menusState.productSizesMap[p.id]||[];
+    var cat=menusState.categories.find(function(c){return c.id===p.category_id;});
+    var catName=cat?cat.name:'—';
+    var imgHtml;
+    if(p.image_url){
+      imgHtml='<div style="width:56px;height:56px;border-radius:6px;background-color:#f5f5f5;background-image:url('+JSON.stringify(p.image_url)+');background-size:cover;background-position:center;flex-shrink:0"></div>';
+    }else{
+      imgHtml='<div style="width:56px;height:56px;border-radius:6px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽</div>';
+    }
+    var priceInfo;
+    if(sizes.length===0){
+      priceInfo='<span style="font-size:10px;color:var(--danger)">価格未設定</span>';
+    }else if(sizes.length===1){
+      priceInfo='<span style="font-size:13px;font-weight:800;color:var(--accent)">'+Y(sizes[0].price)+'</span>';
+    }else{
+      priceInfo='<span style="font-size:11px;font-weight:600;color:var(--text-light)">サイズあり ('+sizes.length+'件)</span>';
+    }
+    var sizeDetail='';
+    if(sizes.length>1){
+      sizeDetail='<div style="font-size:10px;color:var(--text-light);margin-top:4px">'+
+        sizes.map(function(s){return escHtml(s.name)+':'+Y(s.price);}).join(' / ')+
+      '</div>';
+    }
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;background:#fff">'+
+      imgHtml+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:13px">'+escHtml(p.name||'')+'</div>'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:2px">'+escHtml(catName)+'</div>'+
+        sizeDetail+
+      '</div>'+
+      '<div style="text-align:right;min-width:80px">'+priceInfo+'</div>'+
+      '<div style="display:flex;gap:4px;flex-shrink:0">'+
+        '<button class="btn-outline btn-sm" title="編集" onclick="openMenusEditProductModal(\''+p.id+'\')">✏️</button>'+
+        '<button class="btn-outline btn-sm" title="削除" onclick="deleteMenusProduct(\''+p.id+'\')">🗑️</button>'+
+      '</div>'+
+    '</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ----- Pattern CRUD -----
+async function openMenusAddPatternModal(){
+  if(!menusState.selectedBrandUuid){showToast('⚠️ ブランドを選択してください');return;}
+  var nextCode='MP-001';
+  try{
+    var d=await sb.from('menu_patterns').select('code').eq('brand_id',menusState.selectedBrandUuid).order('code',{ascending:false}).limit(1);
+    if(d.data&&d.data.length){
+      var m=/MP-(\d+)/.exec(d.data[0].code||'');
+      if(m){var num=parseInt(m[1],10)||0;nextCode='MP-'+String(num+1).padStart(3,'0');}
+    }
+  }catch(e){}
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>メニューパターン追加</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>コード</label><input type="text" id="menusNewPatternCode" value="'+escHtml(nextCode)+'" readonly style="background:#f5f6fa"></div>'+
+      '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="menusNewPatternName" placeholder="例: ランチメニュー"></div>'+
+    '</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-primary" onclick="saveMenusNewPattern()">追加</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+  setTimeout(function(){var el=document.getElementById('menusNewPatternName');if(el)el.focus();},50);
+}
+
+async function saveMenusNewPattern(){
+  if(!menusState.selectedBrandUuid){showToast('⚠️ ブランドが選択されていません');return;}
+  var name=((document.getElementById('menusNewPatternName')||{}).value||'').trim();
+  var code=((document.getElementById('menusNewPatternCode')||{}).value||'').trim();
+  if(!name){showToast('⚠️ パターン名は必須です');return;}
+  try{
+    var r=await sb.from('menu_patterns').insert({brand_id:menusState.selectedBrandUuid,code:code,name:name,is_active:true}).select().single();
+    if(r.error)throw r.error;
+    logAudit('create_menu_pattern','menu_patterns',r.data?r.data.id:null,{code:code,name:name,brand_id:menusState.selectedBrandUuid});
+    closeModal();
+    showToast('✅ メニューパターンを追加しました');
+    var p=await sb.from('menu_patterns').select('*').eq('brand_id',menusState.selectedBrandUuid).order('code');
+    menusState.patterns=p.data||[];
+    menusRenderPatternList();
+  }catch(e){
+    showToast('❌ 保存に失敗しました: '+(e.message||e));
+  }
+}
+
+function openMenusEditPatternModal(patternId){
+  var p=menusState.patterns.find(function(x){return x.id===patternId;});
+  if(!p){showToast('⚠️ パターンが見つかりません');return;}
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>メニューパターン編集</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>コード</label><input type="text" value="'+escHtml(p.code||'')+'" readonly style="background:#f5f6fa"></div>'+
+      '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="menusEditPatternName" value="'+escHtml(p.name||'')+'"></div>'+
+      '<div class="form-group full"><label>有効</label><label class="toggle-sw" style="align-self:flex-start"><input type="checkbox" id="menusEditPatternActive"'+(p.is_active!==false?' checked':'')+'><span class="slider"></span></label></div>'+
+    '</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-primary" onclick="saveMenusEditPattern(\''+patternId+'\')">保存</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+}
+
+async function saveMenusEditPattern(patternId){
+  var name=((document.getElementById('menusEditPatternName')||{}).value||'').trim();
+  if(!name){showToast('⚠️ パターン名は必須です');return;}
+  var isActive=document.getElementById('menusEditPatternActive')?document.getElementById('menusEditPatternActive').checked:true;
+  try{
+    var r=await sb.from('menu_patterns').update({name:name,is_active:isActive}).eq('id',patternId).select();
+    if(r.error)throw r.error;
+    if(!r.data||!r.data.length)throw new Error('更新権限がないか対象が見つかりません');
+    logAudit('update_menu_pattern','menu_patterns',patternId,{name:name,is_active:isActive});
+    closeModal();
+    showToast('✅ メニューパターンを更新しました');
+    var idx=menusState.patterns.findIndex(function(x){return x.id===patternId;});
+    if(idx>=0)menusState.patterns[idx]=Object.assign({},menusState.patterns[idx],r.data[0]);
+    menusRenderPatternList();
+  }catch(e){
+    showToast('❌ 更新に失敗しました: '+(e.message||e));
+  }
+}
+
+async function deleteMenusPattern(patternId){
+  var p=menusState.patterns.find(function(x){return x.id===patternId;});
+  if(!p){showToast('⚠️ パターンが見つかりません');return;}
+  if(!confirm('パターン「'+p.name+'」を削除します。\nこのパターンと紐づく商品をすべて削除します。よろしいですか？'))return;
+  try{
+    var pr=await sb.from('products').select('id').eq('menu_pattern_id',patternId);
+    if(pr.error)throw pr.error;
+    var pids=(pr.data||[]).map(function(x){return x.id;});
+    if(pids.length){
+      var sDel=await sb.from('product_sizes').delete().in('product_id',pids);
+      if(sDel.error)throw sDel.error;
+      var pDel=await sb.from('products').delete().in('id',pids);
+      if(pDel.error)throw pDel.error;
+    }
+    var mpDel=await sb.from('menu_patterns').delete().eq('id',patternId).select();
+    if(mpDel.error)throw mpDel.error;
+    if(!mpDel.data||!mpDel.data.length)throw new Error('削除権限がないか対象が見つかりません');
+    logAudit('delete_menu_pattern','menu_patterns',patternId,{products_deleted:pids.length});
+    showToast('✅ メニューパターンを削除しました');
+    menusState.patterns=menusState.patterns.filter(function(x){return x.id!==patternId;});
+    if(menusState.selectedPatternId===patternId){
+      menusState.selectedPatternId=null;
+      menusState.products=[];
+      menusState.productSizesMap={};
+      var btn=document.getElementById('menusBtnAddProduct');
+      if(btn)btn.disabled=true;
+    }
+    menusRenderPatternList();
+    menusRenderProductList();
+  }catch(e){
+    showToast('❌ 削除に失敗しました: '+(e.message||e));
+  }
+}
+
+// ----- Product CRUD (with sizes + image upload) -----
+function openMenusAddProductModal(){
+  if(!menusState.selectedPatternId){showToast('⚠️ パターンを選択してください');return;}
+  menusImageUploadState={file:null,currentUrl:null};
+  _renderMenusProductModal(null);
+}
+
+function openMenusEditProductModal(productId){
+  var p=menusState.products.find(function(x){return x.id===productId;});
+  if(!p){showToast('⚠️ 商品が見つかりません');return;}
+  menusImageUploadState={file:null,currentUrl:p.image_url||null};
+  _renderMenusProductModal(p);
+}
+
+function _renderMenusProductModal(product){
+  var isEdit=!!product;
+  var title=isEdit?'商品編集':'商品追加';
+  var pname=isEdit?(product.name||''):'';
+  var pdesc=isEdit?(product.description||''):'';
+  var catName='';
+  if(isEdit&&product.category_id){
+    var cat=menusState.categories.find(function(c){return c.id===product.category_id;});
+    if(cat)catName=cat.name;
+  }
+  var sizes=isEdit?(menusState.productSizesMap[product.id]||[]):[];
+  var currentImageUrl=isEdit?(product.image_url||''):'';
+  var hasSize=sizes.length>0;
+  var catOptions=menusState.categories.map(function(c){return '<option value="'+escHtml(c.name)+'">';}).join('');
+  var previewStyle='width:100px;height:100px;border:1px solid var(--border);border-radius:8px;background-color:#f5f5f5;';
+  if(currentImageUrl){
+    previewStyle+='background-image:url('+JSON.stringify(currentImageUrl)+');background-size:cover;background-position:center';
+  }else{
+    previewStyle+='display:flex;align-items:center;justify-content:center;font-size:32px;color:#ccc';
+  }
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>'+title+'</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group full"><label>商品名 <span style="color:var(--danger)">*</span></label><input type="text" id="menusProdName" value="'+escHtml(pname)+'" placeholder="例: 特選カルビ"></div>'+
+      '<div class="form-group"><label>カテゴリ</label><input type="text" id="menusProdCategory" list="menusProdCatList" value="'+escHtml(catName)+'" placeholder="例: 焼肉（新規入力可）"><datalist id="menusProdCatList">'+catOptions+'</datalist></div>'+
+      '<div class="form-group" id="menusProdPriceGroup"'+(hasSize?' style="display:none"':'')+'><label>価格 (サイズなし時) <span style="color:var(--danger)">*</span></label><input type="number" id="menusProdPrice" value="" placeholder="例: 1280" min="0"></div>'+
+      '<div class="form-group full"><label>説明</label><textarea id="menusProdDesc" rows="2" placeholder="商品の説明...">'+escHtml(pdesc)+'</textarea></div>'+
+      '<div class="form-group full"><label>商品画像</label>'+
+        '<div style="display:flex;gap:12px;align-items:flex-start">'+
+          '<div id="menusProdImgPreview" style="'+previewStyle+'">'+(currentImageUrl?'':'🍽')+'</div>'+
+          '<div style="flex:1">'+
+            '<input type="file" id="menusProdImgFile" accept="image/*" onchange="menusOnImageSelected(event)">'+
+            '<p style="font-size:11px;color:var(--text-light);margin-top:6px">JPG / PNG / WebP、最大5MB</p>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="form-group full"><label>サイズ管理 <span style="font-size:10px;color:var(--text-light);font-weight:400">（サイズを1件以上追加すると「価格」欄は無視されます）</span></label>'+
+        '<div id="menusProdSizes"></div>'+
+        '<button type="button" class="btn-outline btn-sm" style="margin-top:8px" onclick="menusAddSizeRow()">＋ サイズを追加</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-primary" onclick="menusSaveProduct('+(isEdit?('\''+product.id+'\''):'null')+')">保存</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  ,true);
+  if(sizes.length){sizes.forEach(function(s){menusAddSizeRow(s.name,s.price);});}
+}
+
+function menusAddSizeRow(sizeName,sizePrice){
+  var container=document.getElementById('menusProdSizes');
+  if(!container)return;
+  var rowId='menusSizeRow_'+Math.random().toString(36).slice(2,10);
+  var row=document.createElement('div');
+  row.id=rowId;
+  row.className='menus-size-row';
+  row.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:center';
+  var nameVal=typeof sizeName==='string'?sizeName:'';
+  var priceVal=(typeof sizePrice==='number'||typeof sizePrice==='string')?sizePrice:'';
+  row.innerHTML=
+    '<input type="text" class="menus-size-name" placeholder="サイズ名 (例: S, M, L)" value="'+escHtml(String(nameVal))+'" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">'+
+    '<input type="number" class="menus-size-price" placeholder="価格" value="'+escHtml(String(priceVal))+'" min="0" style="width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">'+
+    '<button type="button" class="btn btn-sm" style="background:#fab1a0;color:#d63031" onclick="menusRemoveSizeRow(\''+rowId+'\')">×</button>';
+  container.appendChild(row);
+  _menusUpdatePriceFieldVisibility();
+}
+
+function menusRemoveSizeRow(rowId){
+  var row=document.getElementById(rowId);
+  if(row&&row.parentNode)row.parentNode.removeChild(row);
+  _menusUpdatePriceFieldVisibility();
+}
+
+function _menusUpdatePriceFieldVisibility(){
+  var container=document.getElementById('menusProdSizes');
+  var priceGroup=document.getElementById('menusProdPriceGroup');
+  if(!container||!priceGroup)return;
+  var hasSize=container.querySelectorAll('.menus-size-row').length>0;
+  priceGroup.style.display=hasSize?'none':'';
+}
+
+function menusOnImageSelected(e){
+  var file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){
+    showToast('⚠️ 画像サイズは5MB以下にしてください');
+    e.target.value='';
+    return;
+  }
+  if(!/^image\//.test(file.type)){
+    showToast('⚠️ 画像ファイルを選択してください');
+    e.target.value='';
+    return;
+  }
+  menusImageUploadState.file=file;
+  var preview=document.getElementById('menusProdImgPreview');
+  if(preview){
+    var url=URL.createObjectURL(file);
+    preview.style.backgroundImage='url('+JSON.stringify(url)+')';
+    preview.style.backgroundSize='cover';
+    preview.style.backgroundPosition='center';
+    preview.innerHTML='';
+  }
+}
+
+async function menusUploadProductImage(file,brandUuid){
+  var ts=Date.now();
+  var safeName=(file.name||'image').replace(/[^a-zA-Z0-9._-]/g,'_');
+  var path=brandUuid+'/'+ts+'_'+safeName;
+  var up=await sb.storage.from('menu-images').upload(path,file,{cacheControl:'3600',upsert:false});
+  if(up.error)throw up.error;
+  var pub=sb.storage.from('menu-images').getPublicUrl(path);
+  return pub.data.publicUrl;
+}
+
+async function menusGetOrCreateCategory(catName,brandUuid){
+  if(!catName||!catName.trim())return null;
+  var trimmed=catName.trim();
+  var existing=menusState.categories.find(function(c){return c.name===trimmed;});
+  if(existing)return existing.id;
+  var maxSort=menusState.categories.reduce(function(m,c){return Math.max(m,c.sort_order||0);},0);
+  var r=await sb.from('categories').insert({brand_id:brandUuid,name:trimmed,sort_order:maxSort+1}).select().single();
+  if(r.error)throw r.error;
+  menusState.categories.push(r.data);
+  return r.data.id;
+}
+
+async function menusSaveProduct(productId){
+  if(!menusState.selectedBrandUuid||!menusState.selectedPatternId){
+    showToast('⚠️ ブランドとパターンを選択してください');
+    return;
+  }
+  var name=((document.getElementById('menusProdName')||{}).value||'').trim();
+  var catName=((document.getElementById('menusProdCategory')||{}).value||'').trim();
+  var desc=((document.getElementById('menusProdDesc')||{}).value||'').trim();
+  if(!name){showToast('⚠️ 商品名は必須です');return;}
+  var container=document.getElementById('menusProdSizes');
+  var sizeRows=container?container.querySelectorAll('.menus-size-row'):[];
+  var sizes=[];
+  for(var i=0;i<sizeRows.length;i++){
+    var nameEl=sizeRows[i].querySelector('.menus-size-name');
+    var priceEl=sizeRows[i].querySelector('.menus-size-price');
+    var sn=((nameEl&&nameEl.value)||'').trim();
+    var sp=parseInt(priceEl&&priceEl.value,10);
+    if(!sn){showToast('⚠️ サイズ名を入力してください');return;}
+    if(isNaN(sp)||sp<0){showToast('⚠️ サイズ「'+sn+'」の価格を正しく入力してください');return;}
+    sizes.push({name:sn,price:sp,sort_order:i+1});
+  }
+  if(sizes.length===0){
+    var singlePriceStr=(document.getElementById('menusProdPrice')||{}).value;
+    var singlePrice=parseInt(singlePriceStr,10);
+    if(isNaN(singlePrice)||singlePrice<0){showToast('⚠️ 価格またはサイズを入力してください');return;}
+    sizes.push({name:'通常',price:singlePrice,sort_order:1});
+  }
+  try{
+    var imageUrl=null;
+    if(menusImageUploadState.file){
+      imageUrl=await menusUploadProductImage(menusImageUploadState.file,menusState.selectedBrandUuid);
+    }else if(menusImageUploadState.currentUrl){
+      imageUrl=menusImageUploadState.currentUrl;
+    }
+    var categoryId=await menusGetOrCreateCategory(catName,menusState.selectedBrandUuid);
+    var payload={
+      name:name,
+      description:desc||null,
+      category_id:categoryId,
+      brand_id:menusState.selectedBrandUuid,
+      menu_pattern_id:menusState.selectedPatternId
+    };
+    if(imageUrl!==null)payload.image_url=imageUrl;
+    var savedProductId;
+    if(productId){
+      var u=await sb.from('products').update(payload).eq('id',productId).select().single();
+      if(u.error)throw u.error;
+      savedProductId=productId;
+      var dRes=await sb.from('product_sizes').delete().eq('product_id',savedProductId);
+      if(dRes.error)throw dRes.error;
+      logAudit('update_product','products',savedProductId,{name:name,sizes:sizes.length});
+    }else{
+      var ins=await sb.from('products').insert(payload).select().single();
+      if(ins.error)throw ins.error;
+      savedProductId=ins.data.id;
+      logAudit('create_product','products',savedProductId,{name:name,sizes:sizes.length});
+    }
+    var sizePayload=sizes.map(function(s){return {product_id:savedProductId,name:s.name,price:s.price,sort_order:s.sort_order};});
+    var si=await sb.from('product_sizes').insert(sizePayload);
+    if(si.error)throw si.error;
+    closeModal();
+    showToast(productId?'✅ 商品を更新しました':'✅ 商品を追加しました');
+    await menusSelectPattern(menusState.selectedPatternId);
+  }catch(e){
+    showToast('❌ '+(productId?'更新':'保存')+'に失敗しました: '+(e.message||e));
+  }
+}
+
+async function deleteMenusProduct(productId){
+  var p=menusState.products.find(function(x){return x.id===productId;});
+  if(!p){showToast('⚠️ 商品が見つかりません');return;}
+  if(!confirm('商品「'+p.name+'」を削除します。よろしいですか？'))return;
+  try{
+    var s=await sb.from('product_sizes').delete().eq('product_id',productId);
+    if(s.error)throw s.error;
+    var d=await sb.from('products').delete().eq('id',productId).select();
+    if(d.error)throw d.error;
+    if(!d.data||!d.data.length)throw new Error('削除権限がないか対象が見つかりません');
+    logAudit('delete_product','products',productId,{name:p.name});
+    showToast('✅ 商品を削除しました');
+    menusState.products=menusState.products.filter(function(x){return x.id!==productId;});
+    delete menusState.productSizesMap[productId];
+    menusRenderProductList();
+  }catch(e){
+    showToast('❌ 削除に失敗しました: '+(e.message||e));
+  }
 }
 
 // ===== USERS =====
@@ -2145,7 +2660,7 @@ async function saveMenuPattern(brandUuid,brandDisplayId){
     logAudit('create_menu_pattern','menu_patterns',brandUuid,{code,name:name.trim()});
     closeModal();showToast('✅ メニューパターンを追加しました');
     await loadMenuPatterns(brandUuid,brandDisplayId);
-  }catch(e){showToast('⚠️ '+e.message);}
+  }catch(e){showToast('❌ 保存に失敗しました: '+e.message);}
 }
 async function openEditMenuPatternModal(brandUuid,brandDisplayId){
   if(!currentMenuPatternId){showToast('⚠️ パターンを選択してください');return;}
@@ -2166,24 +2681,26 @@ async function updateMenuPattern(patternId,brandUuid,brandDisplayId){
   if(!name.trim()){showToast('⚠️ パターン名は必須です');return;}
   const isActive=document.getElementById('mpEditActive')?.checked!==false;
   try{
-    const {error}=await sb.from('menu_patterns').update({name:name.trim(),is_active:isActive}).eq('id',patternId);
+    const {data,error}=await sb.from('menu_patterns').update({name:name.trim(),is_active:isActive}).eq('id',patternId).select();
     if(error)throw error;
+    if(!data||!data.length)throw new Error('更新権限がないか対象が見つかりません');
     logAudit('update_menu_pattern','menu_patterns',patternId,{name:name.trim(),is_active:isActive});
     closeModal();showToast('✅ メニューパターンを更新しました');
     await loadMenuPatterns(brandUuid,brandDisplayId);
-  }catch(e){showToast('⚠️ '+e.message);}
+  }catch(e){showToast('❌ 保存に失敗しました: '+e.message);}
 }
 async function deleteMenuPattern(brandUuid,brandDisplayId){
   if(!currentMenuPatternId){showToast('⚠️ パターンを選択してください');return;}
   if(!confirm('このメニューパターンと紐づく商品をすべて削除します。よろしいですか？'))return;
   try{
-    const {error}=await sb.from('menu_patterns').delete().eq('id',currentMenuPatternId);
+    const {data,error}=await sb.from('menu_patterns').delete().eq('id',currentMenuPatternId).select();
     if(error)throw error;
+    if(!data||!data.length)throw new Error('削除権限がないか対象が見つかりません');
     logAudit('delete_menu_pattern','menu_patterns',currentMenuPatternId,{});
     currentMenuPatternId=null;
     showToast('✅ メニューパターンを削除しました');
     await loadMenuPatterns(brandUuid,brandDisplayId);
-  }catch(e){showToast('⚠️ '+e.message);}
+  }catch(e){showToast('❌ 削除に失敗しました: '+e.message);}
 }
 
 // ===== PRODUCT CRUD =====
