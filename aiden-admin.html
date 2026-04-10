@@ -146,7 +146,7 @@ async function doLogout(){if(!confirm('ログアウトしますか？'))return;t
 // bfcache防止: ブラウザバックで復元された場合はリロード
 window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
 function openModal(h,wide){const mb=document.getElementById('modalBody');mb.innerHTML=h;if(wide)mb.classList.add('modal-wide');else mb.classList.remove('modal-wide');document.getElementById('modalOverlay').classList.add('show');}
-function closeModal(){document.getElementById('modalOverlay').classList.remove('show');document.getElementById('modalBody').classList.remove('modal-wide');}
+function closeModal(){history.replaceState(null,'','#');document.getElementById('modalOverlay').classList.remove('show');document.getElementById('modalBody').classList.remove('modal-wide');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 function getMerchantForBrand(b){return MERCHANTS.find(c=>c.id===b.corpId);}
 function getBrandsForMerchant(c){var brandUuids=CBR.filter(function(r){return r.corp_id===c._uuid;}).map(function(r){return r.brand_id;});return BRANDS.filter(function(b){return brandUuids.includes(b._uuid);});}
@@ -420,11 +420,10 @@ document.addEventListener('click',e=>{if(!e.target.closest('.header-search'))doc
 // NAVIGATION
 let currentView={type:'dashboard',id:null};
 function goTo(p){currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
-function openMerchantModal(id){currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
+function openMerchantModal(id){history.replaceState(null,'','#merchants/'+id);currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
 function goToBrand(id){openBrandModal(id);}
-function openBrandModal(id){const b=BRANDS.find(x=>x.id===id);if(!b)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderBrandPage(b);openModal(html,true);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);loadMenuPatterns(b._uuid,b.id);}
-function openVenueModal(id){openVenueModal(id);}
-function openVenueModal(id){const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
+function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=BRANDS.find(x=>x.id===id);if(!b)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderBrandPage(b);openModal(html,true);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);loadMenuPatterns(b._uuid,b.id);}
+function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
   const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
@@ -6294,11 +6293,30 @@ function renderSetupChecklist(){
   el.innerHTML=h;
 }
 
+// HASH ROUTING
+function handleHashNavigation(){
+  var hash=window.location.hash.slice(1);
+  if(!hash)return;
+  var parts=hash.split('/');
+  if(parts.length!==2)return;
+  var type=parts[0],id=parts[1];
+  if(!id)return;
+  if(type==='merchants')openMerchantModal(id);
+  else if(type==='brands')openBrandModal(id);
+  else if(type==='venues')openVenueModal(id);
+}
+window.addEventListener('hashchange',function(){
+  var hash=window.location.hash.slice(1);
+  if(!hash||hash==='#')return;
+  handleHashNavigation();
+});
+
 // INIT
 (async()=>{
   document.getElementById('content').innerHTML='<div style="text-align:center;padding:60px"><div class="spinner" style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div><div style="margin-top:12px;font-size:13px;color:#999">データを読み込み中...</div></div>';
   try{await loadAllData();}catch(e){console.error('loadAllData error',e);}
   renderPage();
+  handleHashNavigation();
 })();
 </script>
 
