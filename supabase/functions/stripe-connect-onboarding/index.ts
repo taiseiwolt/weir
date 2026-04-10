@@ -37,7 +37,7 @@ serve(async (req) => {
     if (!accountId && corp_id) {
       const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
       const { data: corp } = await sbAdmin
-        .from('corps')
+        .from('merchants')
         .select('stripe_account_id')
         .eq('id', corp_id)
         .single()

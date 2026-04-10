@@ -110,11 +110,11 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-  // store_id に紐づく FCM トークンを取得
+  // venue_id に紐づく FCM トークンを取得
   const { data: tokens, error } = await supabase
     .from('device_tokens')
     .select('token, platform')
-    .eq('store_id', payload.store_id)
+    .eq('venue_id', payload.store_id)
 
   if (error || !tokens || tokens.length === 0) {
     return new Response(JSON.stringify({ sent: 0 }), {

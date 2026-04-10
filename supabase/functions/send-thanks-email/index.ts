@@ -77,8 +77,8 @@ serve(async (req) => {
         date,
         time,
         member_id,
-        store_id,
-        stores ( name ),
+        venue_id,
+        venues ( name ),
         members:member_id ( first_name, last_name, email )
       `)
       .eq('status', 'completed')
@@ -113,7 +113,7 @@ serve(async (req) => {
       if (rsvDatetime > fourHoursAgo) continue
 
       const member = rsv.members as { first_name: string; last_name: string; email: string } | null
-      const store = rsv.stores as { name: string } | null
+      const store = rsv.venues as { name: string } | null
 
       if (!member?.email || !store?.name) continue
 

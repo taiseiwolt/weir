@@ -213,7 +213,7 @@ serve(async (req) => {
     // 1. 請求書データ取得
     const { data: invoice, error: invErr } = await sbAdmin
       .from('invoices')
-      .select('id, corp_id, billing_period, subtotal, adjustments, tax, total, due_date, pdf_url, adjustment_details, status')
+      .select('id, merchant_id, billing_period, subtotal, adjustments, tax, total, due_date, pdf_url, adjustment_details, status')
       .eq('id', invoice_id)
       .single()
 
@@ -223,9 +223,9 @@ serve(async (req) => {
 
     // 2. 法人情報取得
     const { data: corp } = await sbAdmin
-      .from('corps')
+      .from('merchants')
       .select('id, name, rep, representative, email, rep_email')
-      .eq('id', invoice.corp_id)
+      .eq('id', invoice.merchant_id)
       .single()
 
     // 3. 送信先メールアドレスの決定
@@ -238,7 +238,7 @@ serve(async (req) => {
       const { data: ownerAccount } = await sbAdmin
         .from('accounts')
         .select('email, name')
-        .eq('corp_id', invoice.corp_id)
+        .eq('merchant_id', invoice.merchant_id)
         .eq('role', 'owner')
         .limit(1)
         .single()

@@ -164,9 +164,9 @@ serve(async (req) => {
       // メール送信（既存注文でもpending→paid遷移時は送信）
       try {
         const { data: storeRow } = await supabase
-          .from('stores')
+          .from('venues')
           .select('name, brands(name)')
-          .eq('id', pi.metadata?.store_id)
+          .eq('id', pi.metadata?.venue_id ?? pi.metadata?.store_id)
           .single()
 
         const { data: orderDetail } = await supabase
@@ -234,7 +234,7 @@ serve(async (req) => {
 
     // 4. orders テーブルに INSERT（ここで初めてDBに注文レコードが作られる）
     const orderPayload = {
-      store_id: meta.store_id,
+      venue_id: meta.venue_id ?? meta.store_id,
       order_type: meta.order_type || 'takeout',
       tracking_status: 'placed',
       payment_status: 'paid',
@@ -293,9 +293,9 @@ serve(async (req) => {
     try {
       // 店舗名 + ブランド名を取得
       const { data: storeRow } = await supabase
-        .from('stores')
+        .from('venues')
         .select('name, brands(name)')
-        .eq('id', meta.store_id)
+        .eq('id', meta.venue_id ?? meta.store_id)
         .single()
 
       const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
@@ -340,7 +340,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           order_id: orderRow.id,
-          store_id: meta.store_id,
+          store_id: meta.venue_id ?? meta.store_id,
           display_id: orderRow.display_id,
           total_amount: pi.amount,
           order_type: meta.order_type || 'takeout',

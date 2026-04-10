@@ -31,7 +31,7 @@ async function getFeeRate(
   const { data: override } = await supabase
     .from('fee_schedules')
     .select('rate')
-    .eq('corporation_id', corporationId)
+    .eq('merchant_id', corporationId)
     .eq('fee_type', feeType)
     .eq('is_base', false)
     .lte('effective_from', now)
@@ -48,7 +48,7 @@ async function getFeeRate(
   const { data: base } = await supabase
     .from('fee_schedules')
     .select('rate')
-    .eq('corporation_id', corporationId)
+    .eq('merchant_id', corporationId)
     .eq('fee_type', feeType)
     .eq('is_base', true)
     .single()
@@ -118,8 +118,8 @@ serve(async (req) => {
 
       // 1. 店舗情報取得（Stripe Connect Account ID含む）
       const { data: storeRow, error: storeErr } = await supabase
-        .from('stores')
-        .select('*, brands(id, name, corp_id)')
+        .from('venues')
+        .select('*, brands(id, name, merchant_id)')
         .eq('id', store_id)
         .single()
 
@@ -140,9 +140,9 @@ serve(async (req) => {
         const currentMinutes = jst.getUTCHours() * 60 + jst.getUTCMinutes()
 
         const { data: hoursRows } = await supabase
-          .from('store_hours')
+          .from('venue_hours')
           .select('open_time, close_time, is_closed')
-          .eq('store_id', store_id)
+          .eq('venue_id', store_id)
           .eq('day_of_week', dayOfWeek)
 
         // 今日の営業時間が存在しない or 全て is_closed の場合は拒否
@@ -358,10 +358,10 @@ serve(async (req) => {
 
       // 3. Stripe Connect Account ID を取得
       let stripeAccountId: string | null = null
-      const corpId = storeRow.brands?.corp_id
+      const corpId = storeRow.brands?.merchant_id
       if (corpId) {
         const { data: corpRow } = await supabase
-          .from('corps')
+          .from('merchants')
           .select('stripe_account_id')
           .eq('id', corpId)
           .single()
@@ -394,7 +394,7 @@ serve(async (req) => {
       }
 
       // メタデータ
-      params['metadata[store_id]'] = store_id
+      params['metadata[venue_id]'] = store_id
       params['metadata[order_type]'] = channel
       params['metadata[delivery_fee]'] = String(deliveryFee)
       params['metadata[service_fee]'] = String(serviceFee)
@@ -428,7 +428,7 @@ serve(async (req) => {
 
       // 6. orders テーブルに INSERT（payment_status='pending'）
       const orderPayload = {
-        store_id,
+        venue_id: store_id,
         order_type: channel,
         tracking_status: 'placed',
         payment_status: 'pending',

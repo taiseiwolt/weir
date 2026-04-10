@@ -46,7 +46,7 @@ serve(async (req) => {
     // 予約を取得
     let query = supabase
       .from('reservations')
-      .select('*, stores(name, reservation_cancel_deadline_hours, reservation_cancellation_fee)')
+      .select('*, venues(name, reservation_cancel_deadline_hours, reservation_cancellation_fee)')
 
     if (data.display_id) {
       query = query.eq('display_id', data.display_id)
@@ -78,7 +78,7 @@ serve(async (req) => {
     const reservationDateTime = new Date(`${reservation.date}T${reservation.time}:00+09:00`)
     const now = new Date()
     const hoursUntilReservation = (reservationDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-    const deadlineHours = reservation.stores?.reservation_cancel_deadline_hours ?? 72
+    const deadlineHours = reservation.venues?.reservation_cancel_deadline_hours ?? 72
 
     let newStatus: string
     let responseMessage: string
@@ -124,8 +124,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           type: newStatus === 'cancelled' ? 'cancelled_store' : 'cancel_requested_store',
-          store_id: reservation.store_id,
-          store_name: reservation.stores?.name || '',
+          store_id: reservation.venue_id,
+          store_name: reservation.venues?.name || '',
           display_id: reservation.display_id,
           date: reservation.date,
           time: reservation.time,
@@ -147,7 +147,7 @@ serve(async (req) => {
             type: newStatus === 'cancelled' ? 'cancelled_customer' : 'cancel_requested_customer',
             to: reservation.email,
             name: reservation.name,
-            store_name: reservation.stores?.name || '',
+            store_name: reservation.venues?.name || '',
             display_id: reservation.display_id,
             date: reservation.date,
             time: reservation.time,

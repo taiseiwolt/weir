@@ -45,10 +45,10 @@ serve(async (req) => {
       )
     }
 
-    // 1. corporations テーブルから stripe_customer_id を取得
+    // 1. merchants テーブルから stripe_customer_id を取得
     const sbAdmin = createClient(SUPABASE_URL, SERVICE_KEY)
     const { data: corp, error: corpErr } = await sbAdmin
-      .from('corporations')
+      .from('merchants')
       .select('id, name, stripe_customer_id')
       .eq('id', corp_id)
       .single()

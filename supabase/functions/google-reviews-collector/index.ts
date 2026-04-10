@@ -149,7 +149,7 @@ serve(async (req) => {
 
     // a. google_place_id を持つ全店舗を取得
     const { data: stores, error: storesErr } = await supabase
-      .from('stores')
+      .from('venues')
       .select('id, name, google_place_id, latitude, longitude, genre')
       .not('google_place_id', 'is', null)
 
@@ -222,7 +222,7 @@ serve(async (req) => {
               // ネガティブ口コミアラート（rating <= 2）
               if (review.rating <= 2) {
                 await supabase.from('review_alerts').upsert({
-                  store_id: store.id,
+                  venue_id: store.id,
                   google_review_id: insertedReview.id,
                   is_read: false,
                 }, { onConflict: 'google_review_id', ignoreDuplicates: true })
@@ -303,10 +303,10 @@ serve(async (req) => {
           )
 
           await supabase.from('competitor_mappings').upsert({
-            store_id: store.id,
+            venue_id: store.id,
             place_id: comp.id,
             distance_meters: Math.round(distance),
-          }, { onConflict: 'store_id,place_id', ignoreDuplicates: true })
+          }, { onConflict: 'venue_id,place_id', ignoreDuplicates: true })
         }
 
         results.stores_processed++

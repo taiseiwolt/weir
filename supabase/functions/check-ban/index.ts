@@ -45,14 +45,14 @@ serve(async (req) => {
 
     if (store_id) {
       const { data: storeRow } = await sbAdmin
-        .from('stores')
-        .select('brand_id, brands!inner(corp_id)')
+        .from('venues')
+        .select('brand_id, brands!inner(merchant_id)')
         .eq('id', store_id)
         .single()
 
       if (storeRow) {
         resolvedBrandId = resolvedBrandId || storeRow.brand_id
-        corporationId = (storeRow.brands as any)?.corp_id || null
+        corporationId = (storeRow.brands as any)?.merchant_id || null
       }
     }
 

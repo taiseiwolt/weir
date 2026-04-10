@@ -136,8 +136,8 @@ serve(async (req) => {
         name,
         guest_email,
         member_id,
-        store_id,
-        stores ( name, address ),
+        venue_id,
+        venues ( name, address ),
         members:member_id ( first_name, last_name, email )
       `)
       .in('status', ['confirmed', 'pending'])
@@ -172,7 +172,7 @@ serve(async (req) => {
       if (rsvDatetime < windowStart || rsvDatetime > windowEnd) continue
 
       const member = rsv.members as { first_name: string; last_name: string; email: string } | null
-      const store = rsv.stores as { name: string; address: string } | null
+      const store = rsv.venues as { name: string; address: string } | null
 
       // メールアドレス決定: 会員→members.email、ゲスト→guest_email
       const toEmail = member?.email || rsv.guest_email

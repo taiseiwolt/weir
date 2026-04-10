@@ -69,7 +69,7 @@ serve(async (req) => {
     const { data: orders } = await sbAdmin
       .from('orders')
       .select('id, total_amount, order_type, created_at')
-      .eq('store_id', store_id)
+      .eq('venue_id', store_id)
       .eq('payment_status', 'captured')
       .gte('created_at', monthStart)
       .lt('created_at', monthEnd)
@@ -106,7 +106,7 @@ serve(async (req) => {
     // Google レビュー傾向
     let reviewSummary = { avgRating: 0, count: 0, recentTexts: [] as string[] }
     const { data: storeData } = await sbAdmin
-      .from('stores')
+      .from('venues')
       .select('google_place_id')
       .eq('id', store_id)
       .single()

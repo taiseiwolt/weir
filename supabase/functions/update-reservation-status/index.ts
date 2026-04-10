@@ -57,7 +57,7 @@ serve(async (req) => {
     // 現在の予約を取得
     const { data: reservation, error: fetchError } = await supabase
       .from('reservations')
-      .select('*, stores(name, reservation_cancellation_fee)')
+      .select('*, venues(name, reservation_cancellation_fee)')
       .eq('id', data.reservation_id)
       .single()
 
@@ -120,7 +120,7 @@ serve(async (req) => {
               type: emailType,
               to: updated.email,
               name: updated.name,
-              store_name: reservation.stores?.name || '',
+              store_name: reservation.venues?.name || '',
               display_id: updated.display_id,
               date: reservation.date,
               time: reservation.time,

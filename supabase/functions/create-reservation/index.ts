@@ -86,7 +86,7 @@ serve(async (req) => {
 
     // 店舗の予約設定を確認
     const { data: store, error: storeError } = await supabase
-      .from('stores')
+      .from('venues')
       .select('id, name, reservation_enabled, reservation_confirmation_mode, reservation_require_card')
       .eq('id', data.store_id)
       .single()
@@ -124,7 +124,7 @@ serve(async (req) => {
 
     // 予約作成
     const insertData: Record<string, unknown> = {
-      store_id: data.store_id,
+      venue_id: data.store_id,
       display_id: displayId,
       date: data.date,
       time: data.time,

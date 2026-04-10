@@ -58,7 +58,7 @@ serve(async (req) => {
 
     // 1. 全法人を取得
     const { data: corps, error: corpsErr } = await sbAdmin
-      .from('corps')
+      .from('merchants')
       .select('id, name')
 
     if (corpsErr) {
@@ -72,7 +72,7 @@ serve(async (req) => {
     // 2. 対象期間の全注文を取得
     const { data: orders, error: ordersErr } = await sbAdmin
       .from('orders')
-      .select('id, corp_id, brand_id, store_id, total_amount, application_fee_amount, order_type, payment_status, aiden_points_used, created_at')
+      .select('id, merchant_id, brand_id, venue_id, total_amount, application_fee_amount, order_type, payment_status, aiden_points_used, created_at')
       .gte('created_at', periodStart)
       .lt('created_at', periodEnd)
 
@@ -103,17 +103,17 @@ serve(async (req) => {
 
     // store → corp/brand マッピング用
     const { data: stores } = await sbAdmin
-      .from('stores')
+      .from('venues')
       .select('id, brand_id')
     const { data: brands } = await sbAdmin
       .from('brands')
-      .select('id, corp_id')
+      .select('id, merchant_id')
 
     const storeToInfo: Record<string, { brandId: string; corpId: string }> = {}
     const brandToCorpMap: Record<string, string> = {}
     if (brands) {
       for (const b of brands) {
-        brandToCorpMap[b.id] = b.corp_id
+        brandToCorpMap[b.id] = b.merchant_id
       }
     }
     if (stores) {
@@ -138,10 +138,10 @@ serve(async (req) => {
 
     const allOrders = orders || []
     for (const order of allOrders) {
-      // 法人IDの解決: order.corp_id → store → brand → corp
-      let corpId = order.corp_id
-      if (!corpId && order.store_id) {
-        const info = storeToInfo[order.store_id]
+      // 法人IDの解決: order.merchant_id → store → brand → merchant
+      let corpId = order.merchant_id
+      if (!corpId && order.venue_id) {
+        const info = storeToInfo[order.venue_id]
         if (info) corpId = info.corpId
       }
       if (!corpId) continue
@@ -193,7 +193,7 @@ serve(async (req) => {
       const { data: inserted, error: insertErr } = await sbAdmin
         .from('invoices')
         .insert({
-          corp_id: corp.id,
+          merchant_id: corp.id,
           corp_name_snapshot: corp.name,
           billing_period: billingPeriod,
           subtotal: inv.subtotal,

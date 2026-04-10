@@ -39,7 +39,7 @@ serve(async (req) => {
     let query = supabase
       .from('reservations')
       .select('*')
-      .eq('store_id', storeId)
+      .eq('venue_id', storeId)
       .order('date', { ascending: true })
       .order('time', { ascending: true })
 

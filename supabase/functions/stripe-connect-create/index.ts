@@ -69,10 +69,10 @@ serve(async (req) => {
 
     const account = await accountRes.json()
 
-    // 2. corps テーブルに stripe_account_id を保存
+    // 2. merchants テーブルに stripe_account_id を保存
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     const { error: dbError } = await sbAdmin
-      .from('corps')
+      .from('merchants')
       .update({ stripe_account_id: account.id })
       .eq('id', corp_id)
 

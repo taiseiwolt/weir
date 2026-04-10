@@ -49,7 +49,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     const { error } = await supabase.from('payment_attempts').insert({
-      store_id: body.store_id || null,
+      venue_id: body.store_id || null,
       email: body.email || null,
       phone: body.phone || null,
       order_type: body.order_type || null,

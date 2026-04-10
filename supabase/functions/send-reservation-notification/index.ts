@@ -137,7 +137,7 @@ serve(async (req) => {
       case 'new_reservation_store': {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         const { data: store } = await supabase
-          .from('stores')
+          .from('venues')
           .select('contact_email')
           .eq('id', data.store_id)
           .single()
@@ -189,7 +189,7 @@ serve(async (req) => {
       case 'cancel_requested_store': {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         const { data: store } = await supabase
-          .from('stores')
+          .from('venues')
           .select('contact_email')
           .eq('id', data.store_id)
           .single()

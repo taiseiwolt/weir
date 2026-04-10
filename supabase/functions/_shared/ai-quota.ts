@@ -14,7 +14,7 @@ const STD_LIMITS: Record<string, number> = {
 async function resolveStoreId(sbAdmin: SupabaseClient, storeId: string): Promise<string | null> {
   const col = storeId.startsWith('STR-') ? 'display_id' : 'id'
   const { data } = await sbAdmin
-    .from('stores')
+    .from('venues')
     .select('id')
     .eq(col, storeId)
     .single()
@@ -46,7 +46,7 @@ export async function checkAiQuota(
 
   // store → brand 取得
   const { data: store } = await sbAdmin
-    .from('stores')
+    .from('venues')
     .select('brand_id')
     .eq('id', resolvedId)
     .single()
@@ -82,7 +82,7 @@ export async function checkAiQuota(
   const { count } = await sbAdmin
     .from('ai_interactions')
     .select('id', { count: 'exact', head: true })
-    .eq('store_id', resolvedId)
+    .eq('venue_id', resolvedId)
     .eq('interaction_type', interactionType)
     .eq('status', 'completed')
     .gte('created_at', monthStart.toISOString())
@@ -122,7 +122,7 @@ export async function logAiInteraction(
   // display_id が渡された場合は UUID に解決
   const storeUuid = await resolveStoreId(sbAdmin, params.store_id)
   const { error } = await sbAdmin.from('ai_interactions').insert({
-    store_id: storeUuid || params.store_id,
+    venue_id: storeUuid || params.store_id,
     brand_id: params.brand_id || null,
     interaction_type: params.interaction_type,
     input_data: params.input_data || {},
@@ -144,7 +144,7 @@ export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) 
   if (!resolvedId) return null
 
   const { data: store } = await sbAdmin
-    .from('stores')
+    .from('venues')
     .select('id, name, brand_id, genre, google_place_id, brands(id, name)')
     .eq('id', resolvedId)
     .single()
@@ -155,7 +155,7 @@ export async function getStoreContext(sbAdmin: SupabaseClient, storeId: string) 
   const { data: products } = await sbAdmin
     .from('products')
     .select('name, category')
-    .eq('store_id', resolvedId)
+    .eq('venue_id', resolvedId)
     .eq('is_available', true)
     .limit(10)
 
