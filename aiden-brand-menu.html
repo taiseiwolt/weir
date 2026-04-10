@@ -865,7 +865,7 @@ const API_BASE = 'https://aiden-jp.net'; // Production domain
 var BRAND_ID = null;
 
 async function loadReservationStores() {
-  var { data: stores } = await sb.from('stores').select('id, name').eq('brand_id', BRAND_ID).order('name');
+  var { data: stores } = await sb.from('venues').select('id, name').eq('brand_id', BRAND_ID).order('name');
   if (!stores || !stores.length) return;
   var sel = document.getElementById('rm-store');
   if (!sel) return;

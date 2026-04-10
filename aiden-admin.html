@@ -163,9 +163,9 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 // DB DATA LOADING
 async function loadAllData(){
   const [{data:corpsRaw},{data:brandsRaw},{data:storesRaw},{data:svcRaw}]=await Promise.all([
-    sb.from('corporations').select('*'),
-    sb.from('brands').select('*, corporations!brands_corp_id_fkey(display_id)'),
-    sb.from('stores').select('*, brands(display_id)'),
+    sb.from('merchants').select('*'),
+    sb.from('brands').select('*, corporations:merchants!brands_merchant_id_fkey(display_id)'),
+    sb.from('venues').select('*, corp_id:merchant_id, brands(display_id)'),
     sb.from('service_subscriptions').select('*').eq('is_active',true),
   ]);
   // Map corporations
@@ -216,10 +216,10 @@ async function loadAllData(){
     b.status = hasActiveVenue ? 'active' : 'suspended';
   });
   // Load corporation_brand_relations
-  const {data:cbrRaw}=await sb.from('corporation_brand_relations').select('corp_id,brand_id,role');
+  const {data:cbrRaw}=await sb.from('merchant_brand_relations').select('corp_id:merchant_id,brand_id,role');
   CBR=cbrRaw||[];
   // Load staff accounts
-  const {data:accRaw}=await sb.from('staff_accounts').select('id,display_id,display_name,email,role,corp_id,status,last_login,created_at');
+  const {data:accRaw}=await sb.from('staff_accounts').select('id,display_id,display_name,email,role,corp_id:merchant_id,status,last_login,created_at');
   ACCOUNTS=(accRaw||[]).map(r=>{
     const corpDid=MERCHANTS.find(c=>c._uuid===r.corp_id);
     return {
@@ -541,7 +541,7 @@ async function initDashboard(){
 async function loadDashKPIs(){
   try{
     // Fetch orders for date range
-    var q=sb.from('orders').select('id,store_id,total_amount,payment_status,customer_id,created_at,application_fee_amount,order_type').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
+    var q=sb.from('orders').select('id,store_id:venue_id,total_amount,payment_status,customer_id,created_at,application_fee_amount,order_type').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
     var res=await q;
     var orders=res.data||[];
 
@@ -634,7 +634,7 @@ async function loadDashActivity(){
 async function renderDashGMV(){
   var el=document.getElementById('dashGMV');if(!el)return;
   try{
-    var res=await sb.from('orders').select('store_id,total_amount').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
+    var res=await sb.from('orders').select('store_id:venue_id,total_amount').gte('created_at',dateRange.from+'T00:00:00').lte('created_at',dateRange.to+'T23:59:59');
     var orders=res.data||[];
     // Build store_uuid→corp mapping
     var storeCorpMap={};
@@ -1225,7 +1225,7 @@ async function loadUsersData(){
   try{
     var [membersRes,guestsRes,bansRes]=await Promise.all([
       sb.from('members').select('id,display_id,full_name,email,phone,rank,points_balance,brand_id,created_at').order('created_at',{ascending:false}).limit(100),
-      sb.from('orders').select('guest_email,guest_phone,order_type,created_at,store_id').not('guest_email','is',null).order('created_at',{ascending:false}).limit(200),
+      sb.from('orders').select('guest_email,guest_phone,order_type,created_at,store_id:venue_id').not('guest_email','is',null).order('created_at',{ascending:false}).limit(200),
       sb.from('user_bans').select('*').order('created_at',{ascending:false})
     ]);
     MEMBERS_DATA=(membersRes.data||[]).map(function(m){
@@ -1820,7 +1820,7 @@ async function renderAICharts(){
   const storeUuids=getFilteredStoreUuids();
   let curQuery=sb.from('ai_monthly_usage').select('*').gte('month',r.from.toISOString()).lte('month',r.to.toISOString());
   let prevQuery=sb.from('ai_monthly_usage').select('*').gte('month',pr.from.toISOString()).lte('month',pr.to.toISOString());
-  if(storeUuids.length>0){curQuery=curQuery.in('store_id',storeUuids);prevQuery=prevQuery.in('store_id',storeUuids);}
+  if(storeUuids.length>0){curQuery=curQuery.in('venue_id',storeUuids);prevQuery=prevQuery.in('venue_id',storeUuids);}
   const[curRes,prevRes]=await Promise.all([curQuery,prevQuery]);
   const usage=curRes.data||[];
   const prevUsage=prevRes.data||[];
@@ -2138,7 +2138,7 @@ async function loadCompensationHistory(){
   // 2) 返金 (orders where payment_status in refunded/partially_refunded)
   try{
     const {data:refs}=await sb.from('orders')
-      .select('id,display_id,refund_amount,refund_reason,refunded_at,refunded_by,payment_status,total_amount,brand_id,store_id')
+      .select('id,display_id,refund_amount,refund_reason,refunded_at,refunded_by,payment_status,total_amount,brand_id,store_id:venue_id')
       .in('payment_status',['refunded','partially_refunded'])
       .not('refunded_at','is',null)
       .order('refunded_at',{ascending:false})
@@ -2665,7 +2665,7 @@ async function loadFeeSchedules(corpUuid,corpDisplayId){
   var el=document.getElementById('feeScheduleList-'+corpDisplayId);
   if(!el)return;
   try{
-    var {data:fees,error}=await sb.from('fee_schedules').select('*').eq('corporation_id',corpUuid).order('fee_type').order('effective_from',{ascending:true});
+    var {data:fees,error}=await sb.from('fee_schedules').select('*').eq('merchant_id',corpUuid).order('fee_type').order('effective_from',{ascending:true});
     if(error)throw error;
     if(!fees||!fees.length){el.innerHTML='<div class="empty-state">手数料スケジュールが設定されていません</div>';return;}
     var typeLabels={dinein:'店内注文',takeout:'テイクアウト',delivery:'デリバリー'};
@@ -2727,7 +2727,7 @@ async function saveFeeSchedule(corpUuid,corpDisplayId){
   if(!feeType||isNaN(rate)||!from||!to){showToast('⚠️ 全項目を入力してください');return;}
   try{
     var {error}=await sb.from('fee_schedules').insert({
-      corporation_id:corpUuid, fee_type:feeType, rate:rate/100,
+      merchant_id:corpUuid, fee_type:feeType, rate:rate/100,
       is_base:false, effective_from:from, effective_to:to
     });
     if(error)throw error;
@@ -2804,7 +2804,7 @@ async function saveAdminDelivery(storeId){
   s.surchargeMax=surchargeMax;s.prepTime=prepTime;s.deliveryRadius=deliveryRadius;
   s.minOrderApplyTypes=minOrderApplyTypes;
   try{
-    const{error}=await sb.from('stores').update({
+    const{error}=await sb.from('venues').update({
       delivery_fee:deliveryFee,min_order_amount:minOrder,min_order_policy:minOrderPolicy,
       small_order_surcharge_max:surchargeMax,prep_time_minutes:prepTime,
       delivery_radius_km:deliveryRadius,min_order_apply_types:minOrderApplyTypes
@@ -2829,7 +2829,7 @@ async function saveAdminReservation(storeId){
   s.reservationEnabled=enabled;s.resConfMode=confMode;s.resRequireCard=requireCard;
   s.resCancelFee=cancelFee;s.resCancelDeadline=cancelDeadline;
   try{
-    const{error}=await sb.from('stores').update({
+    const{error}=await sb.from('venues').update({
       reservation_enabled:enabled,reservation_confirmation_mode:confMode,
       reservation_require_card:requireCard,reservation_cancellation_fee:cancelFee,
       reservation_cancel_deadline_hours:cancelDeadline
@@ -2859,7 +2859,7 @@ async function loadStoreHours(storeUuid){
   if(!hg)return;
   var rows=[];
   try{
-    var {data}=await sb.from('store_hours').select('*').eq('store_id',storeUuid);
+    var {data}=await sb.from('venue_hours').select('*').eq('venue_id',storeUuid);
     if(data)rows=data;
   }catch(e){}
   var hoursByDay={};
@@ -2928,7 +2928,7 @@ async function saveStoreHours(storeUuid){
     var open2=document.getElementById('storeHour_'+day+'_open2')?.value;
     var close2=document.getElementById('storeHour_'+day+'_close2')?.value;
     return {
-      store_id:storeUuid,
+      venue_id:storeUuid,
       day_of_week:day,
       open_time:document.getElementById('storeHour_'+day+'_open').value+':00',
       close_time:document.getElementById('storeHour_'+day+'_close').value+':00',
@@ -2939,8 +2939,8 @@ async function saveStoreHours(storeUuid){
     };
   });
   try{
-    await sb.from('store_hours').delete().eq('store_id',storeUuid);
-    var {error}=await sb.from('store_hours').insert(rows);
+    await sb.from('venue_hours').delete().eq('venue_id',storeUuid);
+    var {error}=await sb.from('venue_hours').insert(rows);
     if(error)throw error;
     showToast('✅ 営業時間を保存しました');
     logAudit('update_store_hours','store_hours',storeUuid,{days:7});
@@ -2958,7 +2958,7 @@ async function saveStoreFacility(storeUuid,storeId){
   var s=VENUES.find(x=>x._uuid===storeUuid);
   if(s){s.seats=seats;s.smoking=smoking;s.children=children;s.serviceChargeType=chargeType;s.serviceChargeValue=chargeValue;}
   try{
-    var {error}=await sb.from('stores').update({
+    var {error}=await sb.from('venues').update({
       seats:seats,smoking_policy:smoking,children_policy:children,
       service_charge_type:chargeType,service_charge_value:chargeValue
     }).eq('id',storeUuid);
@@ -3289,17 +3289,17 @@ async function saveCorpWizard(){
     // 3b. Store hours
     var hoursInserts=[];
     if(d.hoursMode==='daily'&&d.dailyHours){
-      d.dailyHours.forEach(function(dh){if(dh.open==='closed')return;hoursInserts.push({store_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o1,close_time:dh.c1,is_closed:false});if(dh.type==='split')hoursInserts.push({store_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o2,close_time:dh.c2,is_closed:false});});
+      d.dailyHours.forEach(function(dh){if(dh.open==='closed')return;hoursInserts.push({venue_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o1,close_time:dh.c1,is_closed:false});if(dh.type==='split')hoursInserts.push({venue_id:storeUuid,day_of_week:parseInt(dh.dow),open_time:dh.o2,close_time:dh.c2,is_closed:false});});
     }else{
       var allDows=[0,1,2,3,4,5,6];
-      if(d.hoursType==='split'){allDows.forEach(function(dow){hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.lunchOpen,close_time:d.lunchClose,is_closed:false});hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.dinnerOpen,close_time:d.dinnerClose,is_closed:false});});}
-      else{allDows.forEach(function(dow){hoursInserts.push({store_id:storeUuid,day_of_week:dow,open_time:d.storeOpen,close_time:d.storeClose,is_closed:false});});}
+      if(d.hoursType==='split'){allDows.forEach(function(dow){hoursInserts.push({venue_id:storeUuid,day_of_week:dow,open_time:d.lunchOpen,close_time:d.lunchClose,is_closed:false});hoursInserts.push({venue_id:storeUuid,day_of_week:dow,open_time:d.dinnerOpen,close_time:d.dinnerClose,is_closed:false});});}
+      else{allDows.forEach(function(dow){hoursInserts.push({venue_id:storeUuid,day_of_week:dow,open_time:d.storeOpen,close_time:d.storeClose,is_closed:false});});}
     }
-    if(hoursInserts.length){var {error:hErr}=await sb.from('store_hours').insert(hoursInserts);if(hErr)showToast('⚠️ 営業時間の保存に一部失敗');}
+    if(hoursInserts.length){var {error:hErr}=await sb.from('venue_hours').insert(hoursInserts);if(hErr)showToast('⚠️ 営業時間の保存に一部失敗');}
     VENUES.push({_uuid:storeUuid,id:storeD.data.display_id,brandId:brandDisplayId,name:d.storeName.trim(),status:'active',addr:d.storeAddr.trim(),tel:d.storeTel.trim(),orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
     // 4. Account (if provided)
     if(d.accName.trim()&&d.accEmail.trim()){
-      const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corp_id:corpUuid,status:'active'}).select().single();
+      const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',merchant_id:corpUuid,status:'active'}).select().single();
       if(accErr)throw accErr;
       ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corpId:corpDisplayId,status:'active',lastLogin:'—'});
     }
@@ -3389,7 +3389,7 @@ async function saveAccount(){
   try{
     const {data,error}=await sb.from('staff_accounts').insert({
       display_name:name, email:email, role:role,
-      corp_id:corp?corp._uuid:null, status:'active'
+      merchant_id:corp?corp._uuid:null, status:'active'
     }).select().single();
     if(error)throw error;
     ACCOUNTS.push({_uuid:data.id,id:data.display_id||data.id.substring(0,8),name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
@@ -3462,7 +3462,7 @@ async function toggleMerchantStatus(uuid,currentStatus){
       var brandUuids=BRANDS.filter(function(b){return b.corpId===corp.id;}).map(function(b){return b._uuid;});
       if(brandUuids.length){await sb.from('brands').update({status:isSuspending?'suspended':'active'}).in('id',brandUuids);BRANDS.filter(function(b){return b.corpId===corp.id;}).forEach(function(b){b.status=isSuspending?'suspended':'active';});}
       var storeUuids=VENUES.filter(function(s){var br=getBrandForVenue(s);return br&&br.corpId===corp.id;}).map(function(s){return s._uuid;});
-      if(storeUuids.length){await sb.from('stores').update({is_active:!isSuspending}).in('id',storeUuids);VENUES.filter(function(s){var br=getBrandForVenue(s);return br&&br.corpId===corp.id;}).forEach(function(s){s.status=isSuspending?'suspended':'active';});}
+      if(storeUuids.length){await sb.from('venues').update({is_active:!isSuspending}).in('id',storeUuids);VENUES.filter(function(s){var br=getBrandForVenue(s);return br&&br.corpId===corp.id;}).forEach(function(s){s.status=isSuspending?'suspended':'active';});}
       corp.status=newCorpStatus;
     }
     showToast('✅ 法人を'+label+'しました');renderPage();
@@ -3602,14 +3602,14 @@ async function confirmAddCorpRelation(brandUuid,brandDisplayId){
   var corpUuid=document.getElementById('addRelCorp').value;
   var role=document.getElementById('addRelRole').value;
   if(!corpUuid){showToast('⚠️ 法人を選択してください');return;}
-  var {error}=await sb.from('corporation_brand_relations').insert({corp_id:corpUuid,brand_id:brandUuid,role:role});
+  var {error}=await sb.from('merchant_brand_relations').insert({merchant_id:corpUuid,brand_id:brandUuid,role:role});
   if(error){showToast('⚠️ '+error.message);return;}
   CBR.push({corp_id:corpUuid,brand_id:brandUuid,role:role});
   closeModal();showToast('✅ FC法人を追加しました');renderPage();
 }
 async function removeCorpBrandRelation(corpUuid,brandUuid){
   if(!confirm('この法人のFC関係を解除しますか？'))return;
-  var {error}=await sb.from('corporation_brand_relations').delete().eq('corp_id',corpUuid).eq('brand_id',brandUuid);
+  var {error}=await sb.from('merchant_brand_relations').delete().eq('merchant_id',corpUuid).eq('brand_id',brandUuid);
   if(error){showToast('⚠️ '+error.message);return;}
   CBR=CBR.filter(function(r){return !(r.corp_id===corpUuid&&r.brand_id===brandUuid);});
   showToast('✅ FC関係を解除しました');renderPage();
@@ -4021,11 +4021,11 @@ async function saveStoreBasic(storeDisplayId){
     // corp_id 変更時のみ history を挿入
     if(newCorpUuid!==(s.corpUuid||null)){
       if(s.corpUuid){
-        await sb.from('store_corp_history').update({ended_at:new Date().toISOString()}).eq('store_id',s._uuid).is('ended_at',null);
+        await sb.from('venue_merchant_history').update({ended_at:new Date().toISOString()}).eq('venue_id',s._uuid).is('ended_at',null);
       }
       if(newCorpUuid){
         var newCorp=MERCHANTS.find(function(c){return c._uuid===newCorpUuid;});
-        await sb.from('store_corp_history').insert({store_id:s._uuid,corp_id:newCorpUuid,corp_name_snapshot:newCorp?.name||'',started_at:new Date().toISOString()});
+        await sb.from('venue_merchant_history').insert({venue_id:s._uuid,merchant_id:newCorpUuid,corp_name_snapshot:newCorp?.name||'',started_at:new Date().toISOString()});
       }
     }
     const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,address:addr,phone:tel,corp_id:newCorpUuid||null})});
@@ -4303,10 +4303,10 @@ async function confirmBulkImport(){
         var allDows=[0,1,2,3,4,5,6];var sHoursRows=[];
         var sIsSplit=(item.hoursType||'').indexOf('中休み')>=0&&item.lunchOpen&&item.dinnerOpen;
         allDows.forEach(function(dow){
-          if(sIsSplit){sHoursRows.push({store_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',open_time2:item.dinnerOpen+':00',close_time2:item.dinnerClose+':00',hours_type:'split',is_closed:false});}
-          else if(item.lunchOpen){sHoursRows.push({store_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',hours_type:'through',is_closed:false});}
+          if(sIsSplit){sHoursRows.push({venue_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',open_time2:item.dinnerOpen+':00',close_time2:item.dinnerClose+':00',hours_type:'split',is_closed:false});}
+          else if(item.lunchOpen){sHoursRows.push({venue_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',hours_type:'through',is_closed:false});}
         });
-        if(sHoursRows.length)await sb.from('store_hours').insert(sHoursRows);
+        if(sHoursRows.length)await sb.from('venue_hours').insert(sHoursRows);
         VENUES.push({_uuid:sStoreUuid,id:sStoreD.data.display_id,brandId:item.brandId,name:item.name,status:'active',addr:item.addr||'',tel:item.tel||'',orders:0,revenue:0});
         added++;
       }catch(e){var sMsg=item.name+': '+e.message;showToast('⚠️ '+sMsg);var sPv=document.getElementById('bulkPreview');if(sPv)sPv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(sMsg)+'</div>';continue;}
@@ -5077,7 +5077,7 @@ let _costDataSource='demo'; // 'demo' or 'real'
 async function loadRealCostLogs(){
   try{
     const from=new Date(2026,0,1).toISOString();
-    const{data,error}=await sb.from('ai_usage_logs').select('id, store_id, brand_id, corp_id, feature_type, model, input_tokens, output_tokens, cost_usd, api_cost_yen, action, created_at').gte('created_at',from).order('created_at',{ascending:false}).limit(5000);
+    const{data,error}=await sb.from('ai_usage_logs').select('id, store_id:venue_id, brand_id, corp_id:merchant_id, feature_type, model, input_tokens, output_tokens, cost_usd, api_cost_yen, action, created_at').gte('created_at',from).order('created_at',{ascending:false}).limit(5000);
     if(error){console.warn('ai_usage_logs load error:',error.message);return;}
     if(!data||data.length===0){return;}
     // Map feature_type to content_type keys & find matching cost info
@@ -5989,7 +5989,7 @@ async function loadStoreTables(storeId){
   const tbody=document.getElementById('storeTablesBody');
   if(!tbody)return;
   try{
-    const{data,error}=await sb.from('store_tables').select('*').eq('store_id',storeId).order('table_number');
+    const{data,error}=await sb.from('venue_tables').select('*').eq('venue_id',storeId).order('table_number');
     if(error)throw error;
     if(!data||data.length===0){
       tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">テーブルが登録されていません</td></tr>';
@@ -6026,7 +6026,7 @@ function showAddTableModal(storeId){
 }
 async function editStoreTable(tableId,storeId){
   try{
-    const{data,error}=await sb.from('store_tables').select('*').eq('id',tableId).single();
+    const{data,error}=await sb.from('venue_tables').select('*').eq('id',tableId).single();
     if(error)throw error;
     showAddTableModal(storeId);
     document.getElementById('tableModalId').value=tableId;
@@ -6048,11 +6048,11 @@ async function saveStoreTable(storeId){
   if(!table_number){showToast('⚠️ テーブル番号は必須です');return;}
   try{
     if(tableId){
-      const{error}=await sb.from('store_tables').update({table_number,table_name,capacity,floor,is_active,updated_at:new Date().toISOString()}).eq('id',tableId);
+      const{error}=await sb.from('venue_tables').update({table_number,table_name,capacity,floor,is_active,updated_at:new Date().toISOString()}).eq('id',tableId);
       if(error)throw error;
       showToast('✅ テーブルを更新しました');
     }else{
-      const{error}=await sb.from('store_tables').insert({store_id:storeId,table_number,table_name,capacity,floor,is_active});
+      const{error}=await sb.from('venue_tables').insert({venue_id:storeId,table_number,table_name,capacity,floor,is_active});
       if(error)throw error;
       showToast('✅ テーブルを追加しました');
     }
@@ -6063,7 +6063,7 @@ async function saveStoreTable(storeId){
 async function deleteVenueTable(tableId,storeId){
   if(!confirm('このテーブルを削除しますか？'))return;
   try{
-    const{error}=await sb.from('store_tables').delete().eq('id',tableId);
+    const{error}=await sb.from('venue_tables').delete().eq('id',tableId);
     if(error)throw error;
     showToast('🗑 テーブルを削除しました');
     loadStoreTables(storeId);

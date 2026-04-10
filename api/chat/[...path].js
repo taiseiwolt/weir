@@ -138,7 +138,7 @@ async function handleSend(req, res) {
   if (!currentSessionId) {
     const sessionData = {
       session_type: session_type || 'enduser',
-      store_id: store_id || null,
+      venue_id: store_id || null,
       brand_id: brand_id || null,
       customer_id: customer_id || null,
       operator_id: operator_id || null,
@@ -149,7 +149,7 @@ async function handleSend(req, res) {
     // If store_id provided but no brand_id, fetch brand_id
     if (store_id && !brand_id) {
       const { data: store } = await supabase
-        .from('stores')
+        .from('venues')
         .select('brand_id')
         .eq('id', store_id)
         .single();
@@ -186,7 +186,7 @@ async function handleSend(req, res) {
   // 3. Get session info
   const { data: sessionInfo } = await supabase
     .from('chat_sessions')
-    .select('session_type, store_id, brand_id')
+    .select('session_type, store_id:venue_id, brand_id')
     .eq('id', currentSessionId)
     .single();
 
@@ -299,7 +299,7 @@ async function handleSend(req, res) {
   try {
     await supabase.from('ai_interactions').insert({
       interaction_type: isMerchant ? 'cs_chat_merchant' : 'cs_chat_enduser',
-      store_id: sessionInfo?.store_id,
+      venue_id: sessionInfo?.store_id,
       brand_id: sessionInfo?.brand_id,
       customer_id: sessionInfo?.customer_id || null,
       input_text: message.trim().substring(0, 500),
@@ -361,9 +361,9 @@ async function getStorePolicies(storeId, brandId) {
   if (storeId) {
     // Get store-level policies
     const { data: storePolicies } = await supabase
-      .from('store_policies')
+      .from('venue_policies')
       .select('policy_type, content')
-      .eq('store_id', storeId);
+      .eq('venue_id', storeId);
 
     if (storePolicies) policies = storePolicies;
   }
@@ -371,10 +371,10 @@ async function getStorePolicies(storeId, brandId) {
   if (brandId) {
     // Get brand-level policies (fallback for missing policy_types)
     const { data: brandPolicies } = await supabase
-      .from('store_policies')
+      .from('venue_policies')
       .select('policy_type, content')
       .eq('brand_id', brandId)
-      .is('store_id', null);
+      .is('venue_id', null);
 
     if (brandPolicies) {
       const existingTypes = new Set(policies.map(p => p.policy_type));
@@ -419,7 +419,7 @@ async function triggerEscalationEmail(sessionId, sessionInfo) {
   let storeName = '不明';
   if (sessionInfo?.store_id) {
     const { data: store } = await supabase
-      .from('stores')
+      .from('venues')
       .select('name')
       .eq('id', sessionInfo.store_id)
       .single();
@@ -516,7 +516,7 @@ async function handleSessions(req, res) {
   let query = supabase
     .from('chat_sessions')
     .select(`
-      id, session_type, store_id, brand_id, customer_id, operator_id,
+      id, session_type, store_id:venue_id, brand_id, customer_id, operator_id,
       guest_session_id, status, escalated_at, resolved_at, created_at, updated_at
     `)
     .order('created_at', { ascending: false })
@@ -524,7 +524,7 @@ async function handleSessions(req, res) {
 
   if (filterStatus) query = query.eq('status', filterStatus);
   if (filterType) query = query.eq('session_type', filterType);
-  if (filterStore) query = query.eq('store_id', filterStore);
+  if (filterStore) query = query.eq('venue_id', filterStore);
   if (filterBrand) query = query.eq('brand_id', filterBrand);
   if (offsetParam) query = query.range(parseInt(offsetParam), parseInt(offsetParam) + (parseInt(limitParam) || 50) - 1);
 
@@ -549,7 +549,7 @@ async function handleSessions(req, res) {
       let store_name = null;
       if (s.store_id) {
         const { data: store } = await supabase
-          .from('stores')
+          .from('venues')
           .select('name')
           .eq('id', s.store_id)
           .single();
@@ -619,7 +619,7 @@ async function handleAnalytics(req, res) {
     .select('id, session_type, status, created_at', { count: 'exact' })
     .gte('created_at', since);
 
-  if (store_id) sessQuery = sessQuery.eq('store_id', store_id);
+  if (store_id) sessQuery = sessQuery.eq('venue_id', store_id);
   if (brand_id) sessQuery = sessQuery.eq('brand_id', brand_id);
 
   const { data: sessions, count: totalSessions } = await sessQuery;
@@ -676,11 +676,11 @@ async function handlePolicies(req, res) {
     const { store_id, brand_id } = req.query;
 
     let query = supabase
-      .from('store_policies')
-      .select('id, store_id, brand_id, policy_type, content, created_at, updated_at')
+      .from('venue_policies')
+      .select('id, store_id:venue_id, brand_id, policy_type, content, created_at, updated_at')
       .order('policy_type');
 
-    if (store_id) query = query.eq('store_id', store_id);
+    if (store_id) query = query.eq('venue_id', store_id);
     if (brand_id) query = query.eq('brand_id', brand_id);
 
     const { data, error: fetchErr } = await query;
@@ -701,15 +701,15 @@ async function handlePolicies(req, res) {
     if (id) {
       // Update existing
       const { error: updateErr } = await supabase
-        .from('store_policies')
-        .update({ content, policy_type, store_id, brand_id })
+        .from('venue_policies')
+        .update({ content, policy_type, venue_id: store_id, brand_id })
         .eq('id', id);
       if (updateErr) return error(res, 'ポリシー更新に失敗しました', 500);
     } else {
       // Insert new
       const { error: insertErr } = await supabase
-        .from('store_policies')
-        .insert({ store_id, brand_id, policy_type, content });
+        .from('venue_policies')
+        .insert({ venue_id: store_id, brand_id, policy_type, content });
       if (insertErr) return error(res, 'ポリシー作成に失敗しました', 500);
     }
 
@@ -721,7 +721,7 @@ async function handlePolicies(req, res) {
     if (!id) return error(res, 'id は必須です');
 
     const { error: delErr } = await supabase
-      .from('store_policies')
+      .from('venue_policies')
       .delete()
       .eq('id', id);
 

@@ -363,7 +363,7 @@ function getUrlParam(key) {
 var BRAND_ID = null;
 
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, status, reservation_enabled, genres, regular_holiday, price_range_lunch, price_range_dinner').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, lat, lng, status, reservation_enabled, genres, regular_holiday, price_range_lunch, price_range_dinner').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails
@@ -373,9 +373,9 @@ async function loadStoresFromSupabase() {
   if (thumbs) thumbs.forEach(function(t){ thumbMap[t.entity_id] = t.url; });
 
   // Load store hours (multiple per day for split hours)
-  var {data: hoursData} = await sb.from('store_hours')
-    .select('store_id, day_of_week, open_time, close_time, is_closed')
-    .in('store_id', storeIds)
+  var {data: hoursData} = await sb.from('venue_hours')
+    .select('store_id:venue_id, day_of_week, open_time, close_time, is_closed')
+    .in('venue_id', storeIds)
     .order('day_of_week').order('open_time');
 
   var today = new Date().getDay(); // 0=Sunday

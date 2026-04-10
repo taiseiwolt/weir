@@ -5322,7 +5322,7 @@ async function saveBasicInfo() {
   store.lng = parseFloat(document.getElementById('lngVal').textContent) || 0;
 
   try {
-    const { error } = await sb.from('stores').update({
+    const { error } = await sb.from('venues').update({
       name: store.name,
       address: store.address,
       phone: store.phone,
@@ -5486,7 +5486,7 @@ async function saveFacility() {
 
   try {
     for (const store of targets) {
-      const { error } = await sb.from('stores').update({
+      const { error } = await sb.from('venues').update({
         seats: seats,
         smoking_policy: smokingPolicy,
         children_policy: childrenPolicy
@@ -5678,7 +5678,7 @@ async function executeBulkStoreEdit() {
 
   try {
     for (var i = 0; i < ids.length; i++) {
-      var { error } = await sb.from('stores').update(updateData).eq('id', ids[i]);
+      var { error } = await sb.from('venues').update(updateData).eq('id', ids[i]);
       if (error) throw error;
     }
     showToast('✅ ' + ids.length + '店舗を一括更新しました');
@@ -5761,7 +5761,7 @@ window.addEventListener('pageshow', function(e) { if(e.persisted) { window.locat
 async function onAuthSuccess(user) {
   CURRENT_AUTH_USER = user;
   // Get staff account (RLS: own record only)
-  const { data: staffRows, error: staffErr } = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id, display_name, role, email, created_at').eq('auth_user_id', user.id);
+  const { data: staffRows, error: staffErr } = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id:merchant_id, display_name, role, email, created_at').eq('auth_user_id', user.id);
   if (staffErr || !staffRows || staffRows.length === 0) {
     document.getElementById('loginError').textContent = 'このアカウントに紐づく加盟店情報が見つかりません。管理者にお問い合わせください。';
     document.getElementById('loginError').style.display = 'block';
@@ -5817,7 +5817,7 @@ async function loadAdminFromSupabase() {
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
     // 2. Stores (RLS: filtered by brand)
-    const {data: stores, error: storeErr} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, genres, regular_holiday, price_range_lunch, price_range_dinner, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
+    const {data: stores, error: storeErr} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, genres, regular_holiday, price_range_lunch, price_range_dinner, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
     if (storeErr) errors.push('店舗: ' + storeErr.message);
     if (stores && stores.length > 0) {
       STORES = stores.map(s => ({
@@ -5903,7 +5903,7 @@ async function loadAdminFromSupabase() {
     }
 
     // 7. Reviews (RLS: filtered by store→brand)
-    const {data: reviews, error: revErr} = await sb.from('reviews').select('id, store_id, order_id, member_id, rating, comment, status, reply, replied_at, created_at, display_id').order('created_at', {ascending: false});
+    const {data: reviews, error: revErr} = await sb.from('reviews').select('id, store_id:venue_id, order_id, member_id, rating, comment, status, reply, replied_at, created_at, display_id').order('created_at', {ascending: false});
     if (revErr) errors.push('口コミ: ' + revErr.message);
     if (reviews && reviews.length > 0) {
       REVIEWS = reviews.map(r => {
@@ -6389,7 +6389,7 @@ async function fillHoursEditor() {
   let hoursData = [];
   if(storeId && sb) {
     try {
-      const { data } = await sb.from('store_hours').select('*').eq('store_id', storeId);
+      const { data } = await sb.from('venue_hours').select('*').eq('venue_id', storeId);
       if(data) hoursData = data;
     } catch(e) { /* use defaults */ }
   }
@@ -6434,7 +6434,7 @@ async function fillHoursEditor() {
   const tbody = document.getElementById('spotClosureBody');
   if(tbody && storeId && sb) {
     try {
-      const { data: closures } = await sb.from('spot_closures').select('*').eq('store_id', storeId).order('closed_from');
+      const { data: closures } = await sb.from('spot_closures').select('*').eq('venue_id', storeId).order('closed_from');
       if(closures && closures.length > 0) {
         tbody.innerHTML = closures.map(c => {
           const from = c.closed_from ? c.closed_from.substring(0,10) : '';
@@ -6469,7 +6469,7 @@ async function saveBusinessHours() {
       const openTime = inputs[0].value || '11:00';
       const closeTime = inputs[1].value || '22:00';
       upserts.push({
-        store_id: storeId,
+        venue_id: storeId,
         day_of_week: dow,
         open_time: openTime,
         close_time: closeTime,
@@ -6478,8 +6478,8 @@ async function saveBusinessHours() {
     });
 
     // Delete existing hours for this store then insert new ones
-    await sb.from('store_hours').delete().eq('store_id', storeId);
-    const { error } = await sb.from('store_hours').insert(upserts);
+    await sb.from('venue_hours').delete().eq('venue_id', storeId);
+    const { error } = await sb.from('venue_hours').insert(upserts);
     if(error) throw error;
 
     // Update local STORES array for display
@@ -6939,7 +6939,7 @@ async function saveDelivery() {
   try {
     for (const store of targets) {
       const deliveryRadiusKm = parseFloat(document.getElementById('deliveryRadiusInput').value) || 3;
-      const { error } = await sb.from('stores').update({
+      const { error } = await sb.from('venues').update({
         delivery_fee: deliveryFee,
         min_order_amount: minOrderAmount,
         min_order_policy: minOrderPolicy,
@@ -8801,9 +8801,9 @@ async function sdUpdateDashboard() {
     function buildOrderQuery(tMin, tMax) {
       let q = sb.from('orders').select('id, total_amount, delivery_fee, service_fee, status, created_at, order_type, order_source').gte('created_at', tMin).lte('created_at', tMax);
       if (storeFilter && storeFilter !== 'all') {
-        q = q.eq('store_id', storeFilter);
+        q = q.eq('venue_id', storeFilter);
       } else if (brandStoreIds.length > 0) {
-        q = q.in('store_id', brandStoreIds);
+        q = q.in('venue_id', brandStoreIds);
       }
       if (channelFilter !== 'total' && channelMap[channelFilter]) q = q.eq('order_type', channelMap[channelFilter]);
       if (statusSel === '受渡済のみ') q = q.in('status', ['completed', 'done', 'delivered', 'picked_up']);
@@ -10302,7 +10302,7 @@ var STAFF_ACCOUNTS = [];
 async function loadStaffAccounts() {
   if (!BRAND_ID) return;
   try {
-    var res = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id, store_id, display_name, email, role, status, last_login, created_at').eq('brand_id', BRAND_ID).order('created_at', {ascending: false});
+    var res = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id:merchant_id, store_id:venue_id, display_name, email, role, status, last_login, created_at').eq('brand_id', BRAND_ID).order('created_at', {ascending: false});
     if (res.data) STAFF_ACCOUNTS = res.data;
   } catch(e) { console.warn('staff_accounts load:', e); }
 }
@@ -10372,7 +10372,7 @@ async function saveStaffAccount() {
   try {
     var res = await sb.from('staff_accounts').insert({
       display_name: name, email: email, role: role,
-      brand_id: BRAND_ID, corp_id: CORP_ID, store_id: storeId, status: 'active'
+      brand_id: BRAND_ID, merchant_id: CORP_ID, venue_id: storeId, status: 'active'
     }).select().single();
     if (res.error) throw res.error;
     STAFF_ACCOUNTS.unshift(res.data);
@@ -10414,7 +10414,7 @@ async function updateStaffAccount(staffId) {
   showToast('保存中...');
   try {
     var res = await sb.from('staff_accounts').update({
-      display_name: name, role: role, store_id: storeId, status: status
+      display_name: name, role: role, venue_id: storeId, status: status
     }).eq('id', staffId);
     if (res.error) throw res.error;
     var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
@@ -17490,13 +17490,13 @@ async function grLoadData() {
     var placeId = null;
 
     if (storeId) {
-      var { data: store } = await sb.from('stores').select('google_place_id').eq('id', storeId).single();
+      var { data: store } = await sb.from('venues').select('google_place_id').eq('id', storeId).single();
       placeId = store ? store.google_place_id : null;
     }
 
     if (!placeId) {
       // google_place_idを持つ最初の店舗を使用
-      var { data: stores } = await sb.from('stores').select('id, google_place_id').not('google_place_id', 'is', null).limit(1);
+      var { data: stores } = await sb.from('venues').select('id, google_place_id').not('google_place_id', 'is', null).limit(1);
       if (stores && stores.length > 0) {
         placeId = stores[0].google_place_id;
         storeId = stores[0].id;
@@ -17514,13 +17514,13 @@ async function grLoadData() {
 
       // アラート
       if (storeId) {
-        var { data: alerts } = await sb.from('review_alerts').select('*, google_reviews(*)').eq('store_id', storeId).order('created_at', { ascending: false });
+        var { data: alerts } = await sb.from('review_alerts').select('*, google_reviews(*)').eq('venue_id', storeId).order('created_at', { ascending: false });
         _grData.alerts = alerts || [];
       }
 
       // 競合
       if (storeId) {
-        var { data: comps } = await sb.from('competitor_mappings').select('*, google_places(*)').eq('store_id', storeId).order('distance_meters', { ascending: true }).limit(10);
+        var { data: comps } = await sb.from('competitor_mappings').select('*, google_places(*)').eq('venue_id', storeId).order('distance_meters', { ascending: true }).limit(10);
         _grData.competitors = comps || [];
       }
     }
@@ -18290,7 +18290,7 @@ async function custLoadStoreTables(storeId) {
   const tbody = document.getElementById('custStoreTablesBody');
   if (!tbody) return;
   try {
-    const { data, error } = await sb.from('store_tables').select('*').eq('store_id', storeId).order('table_number');
+    const { data, error } = await sb.from('venue_tables').select('*').eq('venue_id', storeId).order('table_number');
     if (error) throw error;
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">テーブルが登録されていません</td></tr>';
@@ -18334,7 +18334,7 @@ function custShowAddTableModal(storeId) {
 
 async function custEditStoreTable(tableId, storeId) {
   try {
-    const { data, error } = await sb.from('store_tables').select('*').eq('id', tableId).single();
+    const { data, error } = await sb.from('venue_tables').select('*').eq('id', tableId).single();
     if (error) throw error;
     custShowAddTableModal(storeId);
     document.getElementById('custTableModalId').value = tableId;
@@ -18359,7 +18359,7 @@ async function custSaveStoreTable(storeId) {
   if (!table_number) { showToast('⚠️ テーブル番号は必須です'); return; }
   // Check for duplicate table_number in the same store
   try {
-    var dupQuery = sb.from('store_tables').select('id').eq('store_id', storeId).eq('table_number', table_number);
+    var dupQuery = sb.from('venue_tables').select('id').eq('venue_id', storeId).eq('table_number', table_number);
     if (tableId) dupQuery = dupQuery.neq('id', tableId);
     var { data: dupData } = await dupQuery;
     if (dupData && dupData.length > 0) {
@@ -18369,11 +18369,11 @@ async function custSaveStoreTable(storeId) {
   } catch (dupErr) { /* proceed if check fails */ }
   try {
     if (tableId) {
-      const { error } = await sb.from('store_tables').update({ table_number, table_name, capacity, floor, is_active, updated_at: new Date().toISOString() }).eq('id', tableId);
+      const { error } = await sb.from('venue_tables').update({ table_number, table_name, capacity, floor, is_active, updated_at: new Date().toISOString() }).eq('id', tableId);
       if (error) throw error;
       showToast('✅ テーブルを更新しました');
     } else {
-      const { error } = await sb.from('store_tables').insert({ store_id: storeId, table_number, table_name, capacity, floor, is_active });
+      const { error } = await sb.from('venue_tables').insert({ venue_id: storeId, table_number, table_name, capacity, floor, is_active });
       if (error) throw error;
       showToast('✅ テーブルを追加しました');
     }
@@ -18387,7 +18387,7 @@ async function custSaveStoreTable(storeId) {
 async function custDeleteStoreTable(tableId, storeId) {
   if (!confirm('このテーブルを削除しますか？')) return;
   try {
-    const { error } = await sb.from('store_tables').delete().eq('id', tableId);
+    const { error } = await sb.from('venue_tables').delete().eq('id', tableId);
     if (error) throw error;
     showToast('🗑 テーブルを削除しました');
     custLoadStoreTables(storeId);

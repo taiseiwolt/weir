@@ -206,8 +206,8 @@ async function handleCreate(req, res) {
     let stripe_account_id = null;
     if (store_id) {
       const { data: storeRow } = await supabase
-        .from('stores')
-        .select('brands(corp_id)')
+        .from('venues')
+        .select('brands(corp_id:merchant_id)')
         .eq('id', store_id)
         .single();
       if (storeRow?.brands?.corp_id) {
@@ -232,7 +232,7 @@ async function handleCreate(req, res) {
       (guest_address_prefecture ? (guest_address_prefecture + guest_address_city + guest_address_street + (guest_address_building ? ' ' + guest_address_building : '')) : null);
 
     const orderData = {
-      store_id,
+      venue_id: store_id,
       order_type,
       status: 'order_placed',
       total_amount: totalAmount,
@@ -306,7 +306,7 @@ async function handleConfirm(req, res, id) {
     // 注文の存在確認 — 金額・ポイント情報はDBから取得（クライアント値を信頼しない）
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, store_id, order_type, total_amount, payment_intent_id, member_id, aiden_points_used, normal_points_used')
+      .select('id, store_id:venue_id, order_type, total_amount, payment_intent_id, member_id, aiden_points_used, normal_points_used')
       .eq('id', id)
       .single();
 
@@ -350,7 +350,7 @@ async function handleConfirm(req, res, id) {
       const { data: ps } = await supabase
         .from('point_settings')
         .select('*')
-        .eq('store_id', order.store_id)
+        .eq('venue_id', order.store_id)
         .single();
 
       if (ps && ps.enabled) {
@@ -516,7 +516,7 @@ async function handleList(req, res) {
   try {
     let query = supabase
       .from('orders')
-      .select('id, store_id, order_type, status, total_amount, tracking_token, created_at, customer_name, member_id', { count: 'exact' })
+      .select('id, store_id:venue_id, order_type, status, total_amount, tracking_token, created_at, customer_name, member_id', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
 
@@ -526,7 +526,7 @@ async function handleList(req, res) {
       if (!isStaff) {
         return error(res, 'この店舗の注文を閲覧する権限がありません', 403);
       }
-      query = query.eq('store_id', store_id);
+      query = query.eq('venue_id', store_id);
     } else {
       // store_id未指定: 自分の注文のみ
       const { data: member } = await supabase
@@ -565,7 +565,7 @@ async function handleOrderDetail(req, res, id) {
 
     const { data: order, error: dbError } = await supabase
       .from('orders')
-      .select('id, display_id, store_id, brand_id, member_id, order_type, status, total_amount, payment_intent_id, tracking_token, customer_name, customer_email, customer_phone, delivery_address, aiden_points_used, normal_points_used, created_at, updated_at, order_items(id, product_id, size_id, quantity, unit_price, subtotal)')
+      .select('id, display_id, store_id:venue_id, brand_id, member_id, order_type, status, total_amount, payment_intent_id, tracking_token, customer_name, customer_email, customer_phone, delivery_address, aiden_points_used, normal_points_used, created_at, updated_at, order_items(id, product_id, size_id, quantity, unit_price, subtotal)')
       .eq(column, id)
       .single();
 
@@ -609,7 +609,7 @@ async function handleCancel(req, res, id) {
   try {
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, payment_intent_id, store_id')
+      .select('id, status, payment_intent_id, store_id:venue_id')
       .eq('id', id)
       .single();
 
@@ -662,7 +662,7 @@ async function handleCancel(req, res, id) {
         action: 'order_cancelled',
         target_table: 'orders',
         target_id: id,
-        details: { store_id: order.store_id, payment_intent_id: order.payment_intent_id },
+        details: { venue_id: order.store_id, payment_intent_id: order.payment_intent_id },
         user_email: auth.user.email || null,
       });
     } catch (_) { /* non-fatal */ }
@@ -690,7 +690,7 @@ async function handleStatus(req, res, id) {
   try {
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, payment_intent_id, total_amount, store_id')
+      .select('id, status, payment_intent_id, total_amount, store_id:venue_id')
       .eq('id', id)
       .single();
 
@@ -732,7 +732,7 @@ async function handleStatus(req, res, id) {
         action: 'order_status_change',
         target_table: 'orders',
         target_id: id,
-        details: { old_status: order.status, new_status: status, store_id: order.store_id },
+        details: { old_status: order.status, new_status: status, venue_id: order.store_id },
         user_email: auth.user.email || null,
       });
     } catch (_) { /* non-fatal */ }

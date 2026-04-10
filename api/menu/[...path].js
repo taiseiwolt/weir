@@ -33,7 +33,7 @@ async function handleCategories(req, res) {
 
     if (store_id && !brand_id) {
       const { data: store } = await supabase
-        .from('stores')
+        .from('venues')
         .select('brand_id')
         .eq('id', store_id)
         .single();
@@ -78,7 +78,7 @@ async function getProductsByStore(res, storeId) {
   const { data: pattern } = await supabase
     .from('menu_patterns')
     .select('id')
-    .eq('store_id', storeId)
+    .eq('venue_id', storeId)
     .limit(1)
     .single();
 

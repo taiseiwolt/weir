@@ -60,7 +60,7 @@ export async function isStoreStaffMember(authUserId, storeId) {
 
   // Get store's brand_id
   const { data: store } = await adminClient
-    .from('stores')
+    .from('venues')
     .select('brand_id')
     .eq('id', storeId)
     .single();

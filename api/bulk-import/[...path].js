@@ -10,7 +10,7 @@ const PRODUCT_FLAGS = ['おすすめ', '新商品', '期間限定', '人気'];
 
 const TYPE_CONFIG = {
   corporation: {
-    table: 'corporations',
+    table: 'merchants',
     label: '法人',
     requiredFields: ['name'],
     upsertLookup: lookupCorporation,
@@ -26,7 +26,7 @@ const TYPE_CONFIG = {
     exportQuery: exportBrands,
   },
   store: {
-    table: 'stores',
+    table: 'venues',
     label: '店舗',
     requiredFields: ['name', 'brand_slug'],
     upsertLookup: lookupStore,
@@ -522,12 +522,12 @@ async function noopResolve(row) {
 async function resolveBrandRefs(row) {
   const { corp_name, ...rest } = row;
   const { data: corp } = await supabase
-    .from('corporations')
+    .from('merchants')
     .select('id')
     .eq('name', corp_name)
     .maybeSingle();
   if (!corp) return { _error: '法人が見つかりません: ' + corp_name };
-  return { ...rest, corp_id: corp.id };
+  return { ...rest, merchant_id: corp.id };
 }
 
 async function resolveStoreRefs(row) {
@@ -619,7 +619,7 @@ async function resolveBrandSlug(slug) {
 // ---------------------------------------------------------------------------
 async function lookupCorporation(row) {
   const { data } = await supabase
-    .from('corporations')
+    .from('merchants')
     .select('id')
     .eq('name', row.name)
     .maybeSingle();
@@ -639,7 +639,7 @@ async function lookupStore(row) {
   // Prefer slug match; fall back to name match if slug is empty
   if (row.slug) {
     const { data } = await supabase
-      .from('stores')
+      .from('venues')
       .select('id')
       .eq('brand_id', row.brand_id)
       .eq('slug', row.slug)
@@ -647,7 +647,7 @@ async function lookupStore(row) {
     if (data) return data;
   }
   const { data } = await supabase
-    .from('stores')
+    .from('venues')
     .select('id')
     .eq('brand_id', row.brand_id)
     .eq('name', row.name)
@@ -708,7 +708,7 @@ function buildPayload(type, resolved) {
       return pick(cleaned, ['name', 'representative', 'status', 'website_url', 'recruit_url']);
     case 'brand':
       return pick(cleaned, [
-        'corp_id', 'name', 'slug', 'tagline',
+        'merchant_id', 'name', 'slug', 'tagline',
         'main_color', 'secondary_color', 'logo_emoji', 'custom_domain',
       ]);
     case 'store':
@@ -754,7 +754,7 @@ function pick(obj, keys) {
 // ---------------------------------------------------------------------------
 async function exportCorporations() {
   const { data, error: err } = await supabase
-    .from('corporations')
+    .from('merchants')
     .select('id, name, representative, status, website_url, recruit_url')
     .order('name')
     .limit(5000);
@@ -765,7 +765,7 @@ async function exportCorporations() {
 async function exportBrands() {
   const { data, error: err } = await supabase
     .from('brands')
-    .select('id, name, slug, tagline, main_color, secondary_color, logo_emoji, custom_domain, corporations(name)')
+    .select('id, name, slug, tagline, main_color, secondary_color, logo_emoji, custom_domain, corporations:merchants(name)')
     .order('name')
     .limit(5000);
   if (err) throw new Error(err.message);
@@ -783,7 +783,7 @@ async function exportBrands() {
 
 async function exportStores() {
   const { data, error: err } = await supabase
-    .from('stores')
+    .from('venues')
     .select(
       'id, name, slug, address, phone, email, genre, lat, lng, ' +
       'has_takeout, has_delivery, reservation_enabled, min_order_amount, prep_time_minutes, ' +

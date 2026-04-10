@@ -149,7 +149,7 @@ export default async function handler(req, res) {
         if (piId) {
           const { data: order } = await supabase
             .from('orders')
-            .select('id, display_id, store_id')
+            .select('id, display_id, venue_id')
             .eq('payment_intent_id', piId)
             .single();
 

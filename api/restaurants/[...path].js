@@ -51,7 +51,7 @@ async function handleBrandDetail(req, res, id) {
     const [newsResult, mediaResult, storesResult] = await Promise.all([
       supabase.from('brand_news').select('id, brand_id, title, body, cat, published_at, image_url, url, created_at').eq('brand_id', id).order('published_at', { ascending: false }).limit(20),
       supabase.from('media').select('id, entity_type, entity_id, media_type, url, title, description, sort_order').eq('entity_type', 'brand').eq('entity_id', id).order('sort_order'),
-      supabase.from('stores').select('id, name, slug, address, lat, lng, is_active').eq('brand_id', id).eq('is_active', true).order('name'),
+      supabase.from('venues').select('id, name, slug, address, lat, lng, is_active').eq('brand_id', id).eq('is_active', true).order('name'),
     ]);
 
     return ok(res, {
@@ -70,7 +70,7 @@ async function handleStoresList(req, res) {
 
   try {
     let query = supabase
-      .from('stores')
+      .from('venues')
       .select('id, name, slug, brand_id, address, phone, lat, lng, is_active, brands(id, name)', { count: 'exact' })
       .eq('is_active', true)
       .order('name')
@@ -86,7 +86,7 @@ async function handleStoresList(req, res) {
     const storeIds = stores.map(s => s.id);
 
     const [hoursResult, servicesResult] = await Promise.all([
-      supabase.from('store_hours').select('store_id, day_of_week, open_time, close_time').in('store_id', storeIds).order('day_of_week'),
+      supabase.from('venue_hours').select('store_id:venue_id, day_of_week, open_time, close_time').in('venue_id', storeIds).order('day_of_week'),
       supabase.from('service_subscriptions').select('entity_id, service_key').eq('entity_type', 'store').in('entity_id', storeIds).eq('is_active', true),
     ]);
 
@@ -117,7 +117,7 @@ async function handleStoresList(req, res) {
 async function handleStoreDetail(req, res, slug) {
   try {
     let query = supabase
-      .from('stores')
+      .from('venues')
       .select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, description, created_at, updated_at, brands(id, name)')
       .eq('slug', slug);
 
@@ -125,7 +125,7 @@ async function handleStoreDetail(req, res, slug) {
 
     if (dbError && slug.includes('-')) {
       const { data: storeById, error: idError } = await supabase
-        .from('stores')
+        .from('venues')
         .select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, description, created_at, updated_at, brands(id, name)')
         .eq('id', slug)
         .single();
@@ -136,7 +136,7 @@ async function handleStoreDetail(req, res, slug) {
     }
 
     const [hoursResult, mediaResult, servicesResult] = await Promise.all([
-      supabase.from('store_hours').select('id, store_id, day_of_week, open_time, close_time, is_closed').eq('store_id', store.id).order('day_of_week'),
+      supabase.from('venue_hours').select('id, store_id:venue_id, day_of_week, open_time, close_time, is_closed').eq('venue_id', store.id).order('day_of_week'),
       supabase.from('media').select('id, entity_type, entity_id, media_type, url, title, description, sort_order').eq('entity_type', 'store').eq('entity_id', store.id).order('sort_order'),
       supabase.from('service_subscriptions').select('service_key').eq('entity_type', 'store').eq('entity_id', store.id).eq('is_active', true),
     ]);
