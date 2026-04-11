@@ -370,11 +370,37 @@ serve(async (req) => {
         }
       }
 
-      // 4. 手数料計算（割引前の商品小計に対して計算 — CLAUDE.md仕様準拠）
-      const feeRate = corpId
-        ? await getFeeRate(supabase, corpId, channel)
-        : 0.040
-      const applicationFee = Math.round(subtotal * feeRate)
+      // 4. 手数料計算（POC期間中はゼロ / 通常時は割引前の商品小計に対して計算 — S-06 / CLAUDE.md仕様準拠）
+      let applicationFee = 0
+
+      // POC判定: service_subscriptionsのactivated_atが30日以内かチェック
+      // entity_type='corp' は legacy naming（現在はmerchants）
+      let isPoc = false
+      if (corpId) {
+        const pocCutoff = new Date()
+        pocCutoff.setDate(pocCutoff.getDate() - 30)
+
+        const { data: subRow } = await supabase
+          .from('service_subscriptions')
+          .select('activated_at')
+          .eq('entity_id', corpId)
+          .eq('entity_type', 'corp')
+          .not('activated_at', 'is', null)
+          .order('activated_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (subRow?.activated_at && new Date(subRow.activated_at) > pocCutoff) {
+          isPoc = true
+        }
+      }
+
+      if (!isPoc && corpId) {
+        const feeRate = await getFeeRate(supabase, corpId, channel)
+        applicationFee = Math.round(subtotal * feeRate)
+      }
+
+      console.log('Fee calculation:', { corpId, isPoc, applicationFee })
 
       // 5. Stripe PaymentIntent 作成（authorize-on-order → capture-on-delivery）
       const params: Record<string, string> = {
