@@ -89,6 +89,7 @@
   <div class="nav-item" data-page="stores" onclick="goTo('stores')"><span class="icon">🏪</span><span class="label">店舗管理</span></div>
   <div class="nav-item" data-page="menus" onclick="goTo('menus')"><span class="icon">🍽️</span><span class="label">メニュー管理</span></div>
   <div class="nav-item" data-page="users" onclick="goTo('users')"><span class="icon">👤</span><span class="label">ユーザー管理</span></div>
+  <div class="nav-item" data-page="orders" onclick="goTo('orders')"><span class="icon">🛒</span><span class="label">注文管理</span></div>
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
   <div class="nav-item" data-page="ai" onclick="goTo('ai')"><span class="icon">🤖</span><span class="label">AI品質管理</span></div>
   <div class="nav-item" data-page="cost" onclick="goTo('cost')"><span class="icon">💰</span><span class="label">コスト管理</span></div>
@@ -426,7 +427,7 @@ function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=
 function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',orders:'orders',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -452,6 +453,8 @@ function applyDateFilter(){
   renderPage();
 }
 function renderPage(){
+  // orders 以外へ遷移したら realtime をクリーンアップ
+  if(currentView.type!=='orders' && typeof stopOrdersRealtime==='function') stopOrdersRealtime();
   const el=document.getElementById('content');const v=currentView;
   if(v.type==='dashboard'){el.innerHTML=dateFilterHtml()+renderDashboard();initDashboard();}
   else if(v.type==='corps')el.innerHTML=renderCorpsList();
@@ -459,6 +462,7 @@ function renderPage(){
   else if(v.type==='stores')el.innerHTML=renderStoresList();
   else if(v.type==='menus'){el.innerHTML=renderMenusPage();initMenusPage();}
   else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();loadUsersData().then(function(){renderMembersList();renderGuestsList();});}
+  else if(v.type==='orders'){el.innerHTML=renderOrdersPage();initOrdersPage();}
   else if(v.type==='system'){el.innerHTML=renderSystem();initSystemSettings();}
   else if(v.type==='ai')el.innerHTML=renderAI();
   else if(v.type==='cost')el.innerHTML=renderCostManagement();
@@ -4471,6 +4475,467 @@ function renderAuditPager(total){
   }
   if(pages>10)h+='<span style="padding:8px;color:var(--text-light)">... '+pages+'ページ</span>';
   pager.innerHTML=h;
+}
+
+// ===== ORDERS MANAGEMENT SECTION =====
+var ordersState = {
+  filters: {
+    merchantUuid:'all', brandUuid:'all', venueUuid:'all', status:'all',
+    createdFrom:'', createdTo:'', pickupFrom:'', pickupTo:''
+  },
+  rows: [],
+  loading: false,
+  realtimeChannel: null,
+  debounceTimer: null
+};
+
+function renderOrdersPage(){
+  var merchantOpts = '<option value="all">全法人</option>' +
+    MERCHANTS.map(function(m){ return '<option value="'+escHtml(m._uuid)+'">'+escHtml(m.name)+'</option>'; }).join('');
+  var brandOpts = '<option value="all">全ブランド</option>' +
+    BRANDS.map(function(b){ return '<option value="'+escHtml(b._uuid)+'">'+escHtml(b.name)+'</option>'; }).join('');
+  var venueOpts = '<option value="all">全店舗</option>' +
+    VENUES.map(function(v){ return '<option value="'+escHtml(v._uuid)+'">'+escHtml(v.name)+'</option>'; }).join('');
+  var statusOpts = '<option value="all">全ステータス</option>'
+    + '<option value="placed">受付中（placed）</option>'
+    + '<option value="cooking">調理中（cooking）</option>'
+    + '<option value="ready">準備完了（ready）</option>'
+    + '<option value="completed">完了（completed/delivered/picked_up）</option>'
+    + '<option value="cancelled">キャンセル（cancelled）</option>';
+  return ''
+    + '<div class="page-title">注文管理</div>'
+    + '<div class="page-subtitle">プラットフォーム全体の注文横断ビュー（法人／ブランド／店舗で絞り込み）</div>'
+    + '<div class="card" style="padding:16px 20px">'
+    + '<div class="card-title" style="padding-bottom:12px">🔎 絞り込み</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">法人</label>'
+        + '<select id="ordFltMerchant" onchange="ordersOnMerchantChange()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit">'+merchantOpts+'</select></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">ブランド</label>'
+        + '<select id="ordFltBrand" onchange="ordersOnBrandChange()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit">'+brandOpts+'</select></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">店舗</label>'
+        + '<select id="ordFltVenue" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit">'+venueOpts+'</select></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">ステータス</label>'
+        + '<select id="ordFltStatus" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit">'+statusOpts+'</select></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">注文日 From</label>'
+        + '<input type="date" id="ordFltCreatedFrom" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit"></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">注文日 To</label>'
+        + '<input type="date" id="ordFltCreatedTo" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit"></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">受渡日 From</label>'
+        + '<input type="date" id="ordFltPickupFrom" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit"></div>'
+      + '<div><label style="font-size:10px;color:var(--text-light);font-weight:600">受渡日 To</label>'
+        + '<input type="date" id="ordFltPickupTo" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;font-family:inherit"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px">'
+      + '<button class="btn btn-primary btn-sm" onclick="ordersSearch()">🔍 検索</button>'
+      + '<button class="btn btn-secondary btn-sm" onclick="ordersReset()">↻ リセット</button>'
+      + '<div style="margin-left:auto;font-size:10px;color:var(--text-light);align-self:center" id="ordersRealtimeStatus">リアルタイム: 接続待機...</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="card" style="padding:0;overflow:hidden">'
+    + '<div id="ordersTableBody" style="padding:20px;color:#888;text-align:center">読み込み中...</div>'
+    + '</div>';
+}
+
+function initOrdersPage(){
+  ordersState.filters = {
+    merchantUuid:'all', brandUuid:'all', venueUuid:'all', status:'all',
+    createdFrom:'', createdTo:'', pickupFrom:'', pickupTo:''
+  };
+  ordersState.rows = [];
+  loadOrders();
+  startOrdersRealtime();
+}
+
+function ordersOnMerchantChange(){
+  var sel = document.getElementById('ordFltMerchant');
+  var merchantUuid = sel ? sel.value : 'all';
+  ordersState.filters.merchantUuid = merchantUuid;
+  var brands;
+  if(merchantUuid === 'all'){
+    brands = BRANDS;
+  }else{
+    var m = MERCHANTS.find(function(x){return x._uuid===merchantUuid;});
+    brands = m ? getBrandsForMerchant(m) : [];
+  }
+  var brandSel = document.getElementById('ordFltBrand');
+  if(brandSel){
+    brandSel.innerHTML = '<option value="all">全ブランド</option>' +
+      brands.map(function(b){ return '<option value="'+escHtml(b._uuid)+'">'+escHtml(b.name)+'</option>'; }).join('');
+  }
+  ordersState.filters.brandUuid = 'all';
+  ordersOnBrandChange();
+}
+
+function ordersOnBrandChange(){
+  var sel = document.getElementById('ordFltBrand');
+  var brandUuid = sel ? sel.value : 'all';
+  ordersState.filters.brandUuid = brandUuid;
+  var venues;
+  if(brandUuid !== 'all'){
+    var b = BRANDS.find(function(x){return x._uuid===brandUuid;});
+    venues = b ? getVenuesForBrand(b) : [];
+  }else if(ordersState.filters.merchantUuid !== 'all'){
+    var m = MERCHANTS.find(function(x){return x._uuid===ordersState.filters.merchantUuid;});
+    venues = m ? getVenuesForMerchant(m) : [];
+  }else{
+    venues = VENUES;
+  }
+  var venueSel = document.getElementById('ordFltVenue');
+  if(venueSel){
+    venueSel.innerHTML = '<option value="all">全店舗</option>' +
+      venues.map(function(v){ return '<option value="'+escHtml(v._uuid)+'">'+escHtml(v.name)+'</option>'; }).join('');
+  }
+  ordersState.filters.venueUuid = 'all';
+}
+
+async function loadOrders(){
+  var bodyEl = document.getElementById('ordersTableBody');
+  if(!bodyEl) return;
+  if(ordersState.loading) return;
+  ordersState.loading = true;
+  bodyEl.innerHTML = '<div style="padding:40px;text-align:center;color:#888"><div class="spinner" style="margin:0 auto 12px"></div>読み込み中...</div>';
+  try{
+    var f = ordersState.filters;
+    var q = sb.from('orders').select(
+      'id, display_id, venue_id, brand_id, merchant_id, order_type, '
+      + 'tracking_status, payment_status, total_amount, '
+      + 'customer_name, customer_email, customer_phone, '
+      + 'channel, notes, pickup_at, created_at, member_id'
+    ).order('created_at', {ascending: false}).limit(500);
+    if(f.merchantUuid !== 'all') q = q.eq('merchant_id', f.merchantUuid);
+    if(f.brandUuid    !== 'all') q = q.eq('brand_id',    f.brandUuid);
+    if(f.venueUuid    !== 'all') q = q.eq('venue_id',    f.venueUuid);
+    if(f.status !== 'all'){
+      if(f.status === 'completed') q = q.in('tracking_status', ['completed','delivered','picked_up']);
+      else q = q.eq('tracking_status', f.status);
+    }
+    if(f.createdFrom) q = q.gte('created_at', f.createdFrom + 'T00:00:00');
+    if(f.createdTo)   q = q.lte('created_at', f.createdTo   + 'T23:59:59');
+    if(f.pickupFrom)  q = q.gte('pickup_at',  f.pickupFrom  + 'T00:00:00');
+    if(f.pickupTo)    q = q.lte('pickup_at',  f.pickupTo    + 'T23:59:59');
+    var res = await q;
+    if(res.error) throw res.error;
+    ordersState.rows = res.data || [];
+    renderOrdersTable(ordersState.rows);
+  }catch(e){
+    bodyEl.innerHTML = '<div style="padding:24px;color:var(--danger)">読み込みエラー: '+escHtml(e.message||String(e))+'</div>';
+  }finally{
+    ordersState.loading = false;
+  }
+}
+
+function renderOrdersTable(rows){
+  var bodyEl = document.getElementById('ordersTableBody');
+  if(!bodyEl) return;
+  if(!rows || !rows.length){
+    bodyEl.innerHTML = '<div class="empty-state">該当する注文はありません</div>';
+    return;
+  }
+  var venueMap = {}; VENUES.forEach(function(v){ venueMap[v._uuid]=v; });
+  var brandMap = {}; BRANDS.forEach(function(b){ brandMap[b._uuid]=b; });
+  var merchMap = {}; MERCHANTS.forEach(function(m){ merchMap[m._uuid]=m; });
+  var html = '<table class="data-table" style="width:100%">'
+    + '<thead><tr>'
+      + '<th>注文ID</th><th>区分</th><th>顧客名</th><th>法人 / ブランド / 店舗</th>'
+      + '<th class="r">金額</th><th>注文ステータス</th><th>決済</th>'
+      + '<th>注文日時</th><th>受渡日時</th><th style="text-align:right">操作</th>'
+    + '</tr></thead><tbody>';
+  for(var i=0;i<rows.length;i++){
+    var o = rows[i];
+    var v = venueMap[o.venue_id];
+    var b = brandMap[o.brand_id];
+    var m = merchMap[o.merchant_id];
+    var merchantName = m ? m.name : '—';
+    var brandName    = b ? b.name : '—';
+    var venueName    = v ? v.name : '—';
+    var hier = escHtml(merchantName) + ' / ' + escHtml(brandName) + ' / ' + escHtml(venueName);
+    var createdStr = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
+    var pickupStr  = o.pickup_at  ? new Date(o.pickup_at ).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
+    var amount = typeof o.total_amount==='number' ? ('¥' + o.total_amount.toLocaleString()) : '—';
+    var custName = o.customer_name || '—';
+    var typeLabel = ({dinein:'店内', takeout:'テイクアウト', delivery:'デリバリー'})[o.order_type] || escHtml(o.order_type||'—');
+    html += '<tr>'
+      + '<td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(o.display_id||(o.id||'').substring(0,8))+'</code></td>'
+      + '<td>'+typeLabel+'</td>'
+      + '<td>'+escHtml(custName)+'</td>'
+      + '<td style="font-size:11px">'+hier+'</td>'
+      + '<td class="r" style="font-weight:700">'+amount+'</td>'
+      + '<td>'+ordersStatusBadge(o.tracking_status)+'</td>'
+      + '<td>'+ordersPaymentBadge(o.payment_status)+'</td>'
+      + '<td style="font-size:11px;color:var(--text-light);white-space:nowrap">'+escHtml(createdStr)+'</td>'
+      + '<td style="font-size:11px;color:var(--text-light);white-space:nowrap">'+escHtml(pickupStr)+'</td>'
+      + '<td style="text-align:right">'+renderOrderRowActions(o)+'</td>'
+    + '</tr>';
+  }
+  html += '</tbody></table>';
+  bodyEl.innerHTML = html;
+}
+
+function ordersStatusBadge(s){
+  var styles = {
+    placed:    'background:#ffeaa7;color:#d68910',
+    cooking:   'background:#a29bfe33;color:#6c5ce7',
+    ready:     'background:#74b9ff33;color:#0984e3',
+    completed: 'background:#e6f9f0;color:#00b894',
+    delivered: 'background:#e6f9f0;color:#00b894',
+    picked_up: 'background:#e6f9f0;color:#00b894',
+    cancelled: 'background:#fab1a0;color:#d63031'
+  };
+  var labels = {placed:'受付中',cooking:'調理中',ready:'準備完了',completed:'完了',delivered:'配達済',picked_up:'受取済',cancelled:'キャンセル'};
+  var st = styles[s] || 'background:#dfe6e9;color:#636e72';
+  var lb = labels[s] || (s||'—');
+  return '<span class="status" style="'+st+'">'+escHtml(lb)+'</span>';
+}
+
+function ordersPaymentBadge(s){
+  var map = {pending:'保留',authorized:'与信済',captured:'確定',failed:'失敗',refunded:'返金済',partially_refunded:'一部返金',disputed:'係争中',paid:'支払済'};
+  var styles = {
+    captured:'background:#e6f9f0;color:#00b894',
+    paid:'background:#e6f9f0;color:#00b894',
+    authorized:'background:#ffeaa7;color:#d68910',
+    failed:'background:#fab1a0;color:#d63031',
+    refunded:'background:#dfe6e9;color:#636e72'
+  };
+  var st = styles[s] || 'background:#dfe6e9;color:#636e72';
+  return '<span class="status" style="'+st+'">'+escHtml(map[s]||s||'—')+'</span>';
+}
+
+function renderOrderRowActions(o){
+  var oid = escHtml(o.id);
+  var btns = '<button class="btn btn-secondary btn-sm" onclick="openOrderDetailModal(\''+oid+'\')">詳細</button>';
+  if(o.tracking_status==='placed'){
+    btns += ' <button class="btn btn-primary btn-sm" onclick="advanceOrderStatus(\''+oid+'\',\'placed\',\'cooking\')">受注</button>';
+    btns += ' <button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="cancelOrder(\''+oid+'\',\'placed\')">キャンセル</button>';
+  }else if(o.tracking_status==='cooking'){
+    btns += ' <button class="btn btn-primary btn-sm" onclick="advanceOrderStatus(\''+oid+'\',\'cooking\',\'ready\')">準備完了</button>';
+    btns += ' <button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="cancelOrder(\''+oid+'\',\'cooking\')">キャンセル</button>';
+  }else if(o.tracking_status==='ready'){
+    btns += ' <button class="btn btn-primary btn-sm" onclick="advanceOrderStatus(\''+oid+'\',\'ready\',\'completed\')">完了</button>';
+  }
+  return btns;
+}
+
+function ordersSearch(){
+  var f = ordersState.filters;
+  f.merchantUuid = (document.getElementById('ordFltMerchant')||{}).value || 'all';
+  f.brandUuid    = (document.getElementById('ordFltBrand')   ||{}).value || 'all';
+  f.venueUuid    = (document.getElementById('ordFltVenue')   ||{}).value || 'all';
+  f.status       = (document.getElementById('ordFltStatus')  ||{}).value || 'all';
+  f.createdFrom  = (document.getElementById('ordFltCreatedFrom')||{}).value || '';
+  f.createdTo    = (document.getElementById('ordFltCreatedTo')  ||{}).value || '';
+  f.pickupFrom   = (document.getElementById('ordFltPickupFrom') ||{}).value || '';
+  f.pickupTo     = (document.getElementById('ordFltPickupTo')   ||{}).value || '';
+  loadOrders();
+}
+
+function ordersReset(){
+  ordersState.filters = {
+    merchantUuid:'all', brandUuid:'all', venueUuid:'all', status:'all',
+    createdFrom:'', createdTo:'', pickupFrom:'', pickupTo:''
+  };
+  if(currentView.type==='orders'){
+    document.getElementById('content').innerHTML = renderOrdersPage();
+    initOrdersPage();
+  }
+}
+
+async function advanceOrderStatus(orderId, expectedCurrent, newStatus){
+  try{
+    var upd = await sb.from('orders')
+      .update({tracking_status: newStatus})
+      .eq('id', orderId)
+      .eq('tracking_status', expectedCurrent)
+      .select('id, tracking_status')
+      .maybeSingle();
+    if(upd.error) throw upd.error;
+    if(!upd.data){
+      showToast('❌ ステータスが変更されています。画面を更新してください');
+      loadOrders();
+      return;
+    }
+    await logAudit('advance_order_status', 'orders', orderId, {from: expectedCurrent, to: newStatus, operated_by: 'admin_master'});
+    showToast('✅ ステータスを更新しました');
+    loadOrders();
+  }catch(e){
+    showToast('❌ 更新に失敗しました: '+(e.message||String(e)));
+  }
+}
+
+async function cancelOrder(orderId, currentStatus){
+  if(!confirm('この注文をキャンセルしますか？この操作は取り消せません。')) return;
+  try{
+    var upd = await sb.from('orders')
+      .update({tracking_status: 'cancelled'})
+      .eq('id', orderId)
+      .in('tracking_status', ['placed','cooking'])
+      .select('id, tracking_status')
+      .maybeSingle();
+    if(upd.error) throw upd.error;
+    if(!upd.data){
+      showToast('❌ キャンセルできない状態です（既に進行中/完了）');
+      loadOrders();
+      return;
+    }
+    await logAudit('cancel_order', 'orders', orderId, {from: currentStatus, to: 'cancelled', operated_by: 'admin_master'});
+    showToast('✅ 注文をキャンセルしました');
+    openModal(
+      '<h3>Stripe 与信キャンセルが必要です</h3>'
+      + '<button class="modal-close" onclick="closeModal()">✕</button>'
+      + '<p style="font-size:13px;line-height:1.8;color:var(--text);margin-bottom:20px">'
+      + 'DB上のキャンセル処理は完了しました。<br>'
+      + 'ただし<strong>Stripe 与信（Payment Intent）のキャンセルは自動で実行されません。</strong><br>'
+      + 'Stripeダッシュボードから該当の Payment Intent を手動でキャンセル（void）してください。'
+      + '</p>'
+      + '<div style="background:#f5f6fa;padding:12px 16px;border-radius:8px;font-size:12px;margin-bottom:20px">'
+      + '<div style="font-weight:700;margin-bottom:6px">📋 対応手順</div>'
+      + '<ol style="margin-left:18px;line-height:1.8">'
+      + '<li>Stripe ダッシュボード → 支払い</li>'
+      + '<li>該当の注文ID（display_id）で検索</li>'
+      + '<li>「キャンセル」ボタンで与信を解放</li>'
+      + '</ol></div>'
+      + '<div style="text-align:right"><button class="btn btn-primary" onclick="closeModal()">了解しました</button></div>'
+    );
+    loadOrders();
+  }catch(e){
+    showToast('❌ キャンセルに失敗しました: '+(e.message||String(e)));
+  }
+}
+
+async function openOrderDetailModal(orderId){
+  openModal('<div style="padding:40px;text-align:center;color:#888"><div class="spinner" style="margin:0 auto 12px"></div>読み込み中...</div>');
+  try{
+    var res = await sb.from('orders').select(
+      'id, display_id, venue_id, brand_id, merchant_id, order_type, channel, notes, '
+      + 'tracking_status, payment_status, payment_intent_id, '
+      + 'total_amount, delivery_fee, service_fee, surcharge_amount, '
+      + 'customer_name, customer_email, customer_phone, '
+      + 'created_at, pickup_at, member_id, '
+      + 'order_items(id, product_id, size_id, quantity, unit_price, subtotal, product_name)'
+    ).eq('id', orderId).single();
+    if(res.error) throw res.error;
+    var o = res.data;
+    if(!o){
+      openModal('<p>注文が見つかりませんでした</p><div style="text-align:right"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>');
+      return;
+    }
+    var v = VENUES.find(function(x){return x._uuid===o.venue_id;});
+    var b = BRANDS.find(function(x){return x._uuid===o.brand_id;});
+    var m = MERCHANTS.find(function(x){return x._uuid===o.merchant_id;});
+    var items = o.order_items || [];
+    var missingProductIds = items.filter(function(it){return !it.product_name && it.product_id;}).map(function(it){return it.product_id;});
+    var productNameMap = {};
+    if(missingProductIds.length){
+      var pRes = await sb.from('products').select('id,name').in('id', missingProductIds);
+      if(!pRes.error && pRes.data){
+        pRes.data.forEach(function(p){ productNameMap[p.id]=p.name; });
+      }
+    }
+    var typeLabel = ({dinein:'店内', takeout:'テイクアウト', delivery:'デリバリー'})[o.order_type] || escHtml(o.order_type||'—');
+    var createdStr = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
+    var pickupStr  = o.pickup_at  ? new Date(o.pickup_at ).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
+    var itemsHtml = '';
+    if(items.length){
+      itemsHtml += '<table class="data-table" style="width:100%;font-size:12px">'
+        + '<thead><tr><th>商品名</th><th class="r">数量</th><th class="r">単価</th><th class="r">小計</th></tr></thead><tbody>';
+      items.forEach(function(it){
+        var pname = it.product_name || productNameMap[it.product_id] || '商品';
+        itemsHtml += '<tr>'
+          + '<td>'+escHtml(pname)+'</td>'
+          + '<td class="r">'+(it.quantity||0)+'</td>'
+          + '<td class="r">¥'+((it.unit_price||0).toLocaleString())+'</td>'
+          + '<td class="r" style="font-weight:700">¥'+((it.subtotal||0).toLocaleString())+'</td>'
+        + '</tr>';
+      });
+      itemsHtml += '</tbody></table>';
+    }else{
+      itemsHtml = '<div class="empty-state" style="padding:20px">商品明細がありません</div>';
+    }
+    function row(label,value){
+      return '<div style="display:flex;padding:6px 0;border-bottom:1px solid #f0f0f0"><div style="width:120px;font-size:11px;color:var(--text-light);font-weight:600">'+escHtml(label)+'</div><div style="flex:1;font-size:12px">'+value+'</div></div>';
+    }
+    var itemsSum = Math.max(0,(o.total_amount||0)-(o.delivery_fee||0)-(o.service_fee||0)-(o.surcharge_amount||0));
+    var html = ''
+      + '<h3>注文詳細 <code style="font-size:12px;background:#f5f6fa;padding:2px 8px;border-radius:4px;margin-left:8px">'+escHtml(o.display_id||(o.id||'').substring(0,8))+'</code></h3>'
+      + '<button class="modal-close" onclick="closeModal()">✕</button>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px">'
+      + '<div><div class="card-title" style="font-size:12px">📋 注文情報</div>'
+      + row('ステータス', ordersStatusBadge(o.tracking_status))
+      + row('決済', ordersPaymentBadge(o.payment_status))
+      + row('区分', escHtml(typeLabel))
+      + row('チャネル', escHtml(o.channel||'—'))
+      + row('注文日時', escHtml(createdStr))
+      + row('受渡日時', escHtml(pickupStr))
+      + row('備考', escHtml(o.notes||'—'))
+      + row('PaymentIntent', o.payment_intent_id?('<code style="font-size:10px">'+escHtml(o.payment_intent_id)+'</code>'):'—')
+      + '</div>'
+      + '<div><div class="card-title" style="font-size:12px">👤 顧客情報</div>'
+      + row('氏名', escHtml(o.customer_name||'—'))
+      + row('電話', escHtml(o.customer_phone||'—'))
+      + row('メール', escHtml(o.customer_email||'—'))
+      + row('種別', o.member_id?'会員':'ゲスト')
+      + '<div class="card-title" style="font-size:12px;margin-top:16px">🏢 階層</div>'
+      + row('法人', escHtml(m?m.name:'—'))
+      + row('ブランド', escHtml(b?b.name:'—'))
+      + row('店舗', escHtml(v?v.name:'—'))
+      + '</div>'
+      + '</div>'
+      + '<div style="margin-top:24px"><div class="card-title" style="font-size:12px">🍽️ 商品明細</div>'
+      + itemsHtml
+      + '</div>'
+      + '<div style="margin-top:16px;padding:12px 16px;background:#f5f6fa;border-radius:8px;font-size:12px">'
+      + row('商品合計', '¥'+itemsSum.toLocaleString())
+      + (o.delivery_fee ? row('配達料', '¥'+(o.delivery_fee||0).toLocaleString()) : '')
+      + (o.service_fee  ? row('サービス料','¥'+(o.service_fee||0).toLocaleString())  : '')
+      + (o.surcharge_amount ? row('少額注文手数料','¥'+(o.surcharge_amount||0).toLocaleString()) : '')
+      + '<div style="display:flex;padding:10px 0 0;margin-top:6px;border-top:2px solid var(--border)"><div style="width:120px;font-size:12px;color:var(--text);font-weight:700">合計</div><div style="flex:1;font-size:16px;font-weight:800;color:var(--accent)">¥'+(o.total_amount||0).toLocaleString()+'</div></div>'
+      + '</div>'
+      + '<div style="text-align:right;margin-top:20px"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>';
+    openModal(html, true);
+  }catch(e){
+    openModal('<p style="color:var(--danger)">読み込みエラー: '+escHtml(e.message||String(e))+'</p><div style="text-align:right"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>');
+  }
+}
+
+function ordersDebouncedReload(){
+  if(ordersState.debounceTimer) clearTimeout(ordersState.debounceTimer);
+  ordersState.debounceTimer = setTimeout(function(){
+    if(currentView.type==='orders') loadOrders();
+  }, 500);
+}
+
+function startOrdersRealtime(){
+  stopOrdersRealtime();
+  try{
+    var ch = sb.channel('admin-orders-realtime')
+      .on('postgres_changes', {event:'INSERT', schema:'public', table:'orders'}, function(){
+        if(currentView.type!=='orders') return;
+        ordersDebouncedReload();
+      })
+      .on('postgres_changes', {event:'UPDATE', schema:'public', table:'orders'}, function(){
+        if(currentView.type!=='orders') return;
+        ordersDebouncedReload();
+      })
+      .subscribe(function(status){
+        var el = document.getElementById('ordersRealtimeStatus');
+        if(!el) return;
+        if(status==='SUBSCRIBED'){
+          el.innerHTML = '<span style="color:var(--success)">●</span> リアルタイム: 接続中';
+        }else if(status==='CHANNEL_ERROR' || status==='TIMED_OUT' || status==='CLOSED'){
+          el.innerHTML = '<span style="color:var(--danger)">●</span> リアルタイム: 切断';
+        }
+      });
+    ordersState.realtimeChannel = ch;
+  }catch(e){}
+}
+
+function stopOrdersRealtime(){
+  if(ordersState.debounceTimer){ clearTimeout(ordersState.debounceTimer); ordersState.debounceTimer=null; }
+  if(ordersState.realtimeChannel){
+    try{ sb.removeChannel(ordersState.realtimeChannel); }catch(_){}
+    ordersState.realtimeChannel = null;
+  }
 }
 
 function renderBulkStepIndicator(step){
