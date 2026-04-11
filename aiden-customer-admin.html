@@ -566,6 +566,7 @@ const NAV = [
     {id:'store-media', label:'メディア'},
   ]},
   { id:'menu', icon:'📋', label:'メニュー管理', subs:[]},
+  { id:'orders', icon:'📋', label:'注文確認', subs:[]},
   { id:'sales', icon:'📊', label:'売上・分析', subs:[
     {id:'sales-dashboard', label:'売上ダッシュボード'},
     {id:'sales-csv', label:'注文CSVダウンロード'},
@@ -684,6 +685,7 @@ function showPage(pageId, catId){
   currentCat = catId;
   // render hooks
   if(pageId === 'menu' && typeof mlInitPage === 'function') mlInitPage();
+  if(pageId === 'orders' && typeof ordInitPage === 'function') ordInitPage();
   if(pageId === 'member-list' && typeof renderMemberTable === 'function') renderMemberTable();
   if(pageId === 'member-rank' && typeof renderRankTable === 'function') renderRankTable();
   if(pageId === 'review-store' && typeof renderStoreReviews === 'function') renderStoreReviews();
@@ -1545,6 +1547,82 @@ content.innerHTML = `
         <div class="empty-state" style="padding:20px">パターンを選択してください</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- 📋 注文確認（閲覧専用） -->
+<!-- ============================== -->
+<div class="page" id="page-orders">
+  <div class="breadcrumb"><a href="#" onclick="return false">注文確認</a></div>
+  <div class="page-title">注文確認</div>
+  <div class="page-subtitle">店舗に入った注文を閲覧します（閲覧のみ・操作不可）</div>
+
+  <!-- 表示単位切替 -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
+    <button class="btn" id="ordViewBrandBtn" style="border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;border-radius:0;font-weight:700;color:var(--accent);padding:10px 20px" onclick="ordSwitchView('brand')">ブランド全体</button>
+    <button class="btn" id="ordViewVenueBtn" style="border:none;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0;font-weight:600;color:var(--text-light);padding:10px 20px" onclick="ordSwitchView('venue')">店舗別</button>
+  </div>
+
+  <!-- フィルタバー -->
+  <div class="card" style="margin-bottom:12px;padding:16px">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label style="font-size:10px;color:var(--text-light);display:block;margin-bottom:4px">開始日</label>
+        <input type="date" id="ordFltStart" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text-light);display:block;margin-bottom:4px">終了日</label>
+        <input type="date" id="ordFltEnd" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+      </div>
+      <div id="ordFltVenueWrap" style="display:none">
+        <label style="font-size:10px;color:var(--text-light);display:block;margin-bottom:4px">店舗</label>
+        <select id="ordFltVenue" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:160px">
+          <option value="all">全店舗</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text-light);display:block;margin-bottom:4px">注文ステータス</label>
+        <select id="ordFltStatus" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+          <option value="all">全ステータス</option>
+          <option value="placed">受付中 (placed)</option>
+          <option value="confirmed">確認済 (confirmed)</option>
+          <option value="cooking">調理中 (cooking)</option>
+          <option value="ready">準備完了 (ready)</option>
+          <option value="delivered">提供済 (delivered)</option>
+          <option value="cancelled">キャンセル (cancelled)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text-light);display:block;margin-bottom:4px">注文タイプ</label>
+        <select id="ordFltType" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+          <option value="all">全タイプ</option>
+          <option value="pickup">テイクアウト (pickup)</option>
+          <option value="delivery">デリバリー (delivery)</option>
+          <option value="dinein">店内 (dinein)</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="ordApplyFilters()">🔍 絞り込む</button>
+        <button class="btn btn-secondary btn-sm" onclick="ordResetFilters()">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 件数表示 -->
+  <div style="font-size:11px;color:var(--text-light);margin-bottom:8px" id="ordCountInfo">—</div>
+
+  <!-- 注文一覧テーブル -->
+  <div class="card" style="padding:0;overflow:auto">
+    <div id="ordTableBody" style="padding:24px;text-align:center;color:var(--text-light)">読み込み中...</div>
+  </div>
+</div>
+
+<!-- 注文詳細モーダル（閲覧専用） -->
+<div class="modal-overlay" id="ordDetailModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title">注文詳細<button class="modal-close" onclick="ordCloseDetail()">✕</button></div>
+    <div id="ordDetailBody" style="padding:8px 4px">読み込み中...</div>
   </div>
 </div>
 
@@ -11432,6 +11510,282 @@ async function mlDeleteProduct(productId) {
     console.error('mlDeleteProduct error:', e);
     showToast('❌ 削除に失敗しました: ' + (e.message || e));
   }
+}
+// =====================================================
+
+// =====================================================
+// === Order Review page (ord* prefix) — READ ONLY =====
+// =====================================================
+var ordState = {
+  view: 'brand',
+  filters: { startDate: '', endDate: '', venueId: 'all', status: 'all', type: 'all' },
+  rows: [],
+  loading: false
+};
+
+var ORD_TYPE_LABELS = { dinein: '店内', pickup: 'テイクアウト', delivery: 'デリバリー' };
+var ORD_STATUS_LABELS = { placed: '受付中', confirmed: '確認済', cooking: '調理中', ready: '準備完了', delivered: '提供済', picked_up: '受取済', completed: '完了', cancelled: 'キャンセル' };
+var ORD_PAY_LABELS = { paid: '支払済', captured: '確定', authorized: '与信済', unpaid: '未払', failed: '失敗', refunded: '返金済', partially_refunded: '一部返金', disputed: '係争中', pending: '保留' };
+
+function ordTodayRange() {
+  var today = new Date();
+  var weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var fmt = function(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); };
+  return { start: fmt(weekAgo), end: fmt(today) };
+}
+
+async function ordInitPage() {
+  if (!BRAND_ID) {
+    var b0 = document.getElementById('ordTableBody');
+    if (b0) b0.innerHTML = '<div class="empty-state" style="padding:24px">ブランド情報の読込を待っています...</div>';
+    return;
+  }
+  // Default: past 7 days
+  var range = ordTodayRange();
+  ordState.filters = { startDate: range.start, endDate: range.end, venueId: 'all', status: 'all', type: 'all' };
+  var sE = document.getElementById('ordFltStart');
+  var eE = document.getElementById('ordFltEnd');
+  if (sE) sE.value = range.start;
+  if (eE) eE.value = range.end;
+  // Populate venue filter from STORES (brand-scoped)
+  var venueSel = document.getElementById('ordFltVenue');
+  if (venueSel) {
+    var opts = '<option value="all">全店舗</option>' + (STORES || []).map(function(s){ return '<option value="'+escH(s.id)+'">'+escH(s.name||'')+'</option>'; }).join('');
+    venueSel.innerHTML = opts;
+  }
+  // Reset status/type selects to 'all'
+  var stEl = document.getElementById('ordFltStatus');
+  if (stEl) stEl.value = 'all';
+  var tyEl = document.getElementById('ordFltType');
+  if (tyEl) tyEl.value = 'all';
+  await ordLoadData();
+}
+
+async function ordLoadData() {
+  if (ordState.loading) return;
+  var bodyEl = document.getElementById('ordTableBody');
+  if (!bodyEl) return;
+  ordState.loading = true;
+  bodyEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-light)">読み込み中...</div>';
+  try {
+    var venueIds = (STORES || []).map(function(s){ return s.id; }).filter(Boolean);
+    if (!venueIds.length) {
+      bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">紐づく店舗がありません</div>';
+      ordState.rows = [];
+      var cEl = document.getElementById('ordCountInfo'); if (cEl) cEl.textContent = '0件の注文';
+      return;
+    }
+    var f = ordState.filters;
+    // Always filter by venue_ids for the user's brand (defense in depth on top of RLS).
+    var q = sb.from('orders').select(
+      'id,display_id,venue_id,brand_id,order_type,tracking_status,payment_status,total_amount,created_at,member_id'
+    ).in('venue_id', venueIds).order('created_at', { ascending: false }).limit(500);
+    if (f.startDate) q = q.gte('created_at', f.startDate + 'T00:00:00+09:00');
+    if (f.endDate) q = q.lte('created_at', f.endDate + 'T23:59:59+09:00');
+    if (f.status !== 'all') {
+      if (f.status === 'delivered') q = q.in('tracking_status', ['delivered', 'picked_up', 'completed']);
+      else q = q.eq('tracking_status', f.status);
+    }
+    if (f.type !== 'all') q = q.eq('order_type', f.type);
+    // Venue filter is only honored in 'venue' view mode
+    if (ordState.view === 'venue' && f.venueId && f.venueId !== 'all') {
+      q = q.eq('venue_id', f.venueId);
+    }
+    var res = await q;
+    if (res.error) throw res.error;
+    ordState.rows = res.data || [];
+    ordRenderTable();
+  } catch (e) {
+    console.error('ordLoadData error:', e);
+    bodyEl.innerHTML = '<div style="padding:24px;color:var(--danger)">読み込みエラー: ' + escH(e.message || String(e)) + '</div>';
+    var cEl2 = document.getElementById('ordCountInfo'); if (cEl2) cEl2.textContent = '—';
+  } finally {
+    ordState.loading = false;
+  }
+}
+
+function ordRenderTable() {
+  var bodyEl = document.getElementById('ordTableBody');
+  var countEl = document.getElementById('ordCountInfo');
+  if (!bodyEl) return;
+  var rows = ordState.rows || [];
+  if (countEl) countEl.textContent = rows.length + '件の注文';
+  if (!rows.length) {
+    bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">該当する注文はありません</div>';
+    return;
+  }
+  var venueMap = {}; (STORES || []).forEach(function(s){ venueMap[s.id] = s; });
+  var html = '<table class="data-table" style="width:100%;font-size:12px">' +
+    '<thead><tr>' +
+      '<th style="width:110px">注文ID</th>' +
+      '<th>店舗名</th>' +
+      '<th style="width:150px">注文日時</th>' +
+      '<th style="width:100px">注文タイプ</th>' +
+      '<th style="width:100px">ステータス</th>' +
+      '<th style="width:100px;text-align:right">合計金額</th>' +
+      '<th style="width:90px">支払い</th>' +
+    '</tr></thead><tbody>';
+  rows.forEach(function(o) {
+    var venue = venueMap[o.venue_id];
+    var venueName = venue ? (venue.name || '—') : '—';
+    var dt = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '—';
+    var tl = ORD_TYPE_LABELS[o.order_type] || (o.order_type || '—');
+    var sl = ORD_STATUS_LABELS[o.tracking_status] || (o.tracking_status || '—');
+    var pl = ORD_PAY_LABELS[o.payment_status] || (o.payment_status || '—');
+    var amt = typeof o.total_amount === 'number' ? ('¥' + o.total_amount.toLocaleString()) : '—';
+    html += '<tr style="cursor:pointer" onclick="ordOpenDetail(\'' + o.id + '\')">' +
+      '<td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">' + escH(o.display_id || '') + '</code></td>' +
+      '<td>' + escH(venueName) + '</td>' +
+      '<td style="font-size:11px;color:var(--text-light);white-space:nowrap">' + escH(dt) + '</td>' +
+      '<td>' + escH(tl) + '</td>' +
+      '<td>' + escH(sl) + '</td>' +
+      '<td style="text-align:right;font-weight:700">' + amt + '</td>' +
+      '<td>' + escH(pl) + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table>';
+  bodyEl.innerHTML = html;
+}
+
+function ordSwitchView(view) {
+  ordState.view = view;
+  var brandBtn = document.getElementById('ordViewBrandBtn');
+  var venueBtn = document.getElementById('ordViewVenueBtn');
+  var venueWrap = document.getElementById('ordFltVenueWrap');
+  if (brandBtn) {
+    brandBtn.style.borderBottomColor = view === 'brand' ? 'var(--accent)' : 'transparent';
+    brandBtn.style.color = view === 'brand' ? 'var(--accent)' : 'var(--text-light)';
+    brandBtn.style.fontWeight = view === 'brand' ? '700' : '600';
+  }
+  if (venueBtn) {
+    venueBtn.style.borderBottomColor = view === 'venue' ? 'var(--accent)' : 'transparent';
+    venueBtn.style.color = view === 'venue' ? 'var(--accent)' : 'var(--text-light)';
+    venueBtn.style.fontWeight = view === 'venue' ? '700' : '600';
+  }
+  if (venueWrap) venueWrap.style.display = view === 'venue' ? '' : 'none';
+  ordLoadData();
+}
+
+function ordApplyFilters() {
+  var f = ordState.filters;
+  f.startDate = (document.getElementById('ordFltStart') || {}).value || '';
+  f.endDate = (document.getElementById('ordFltEnd') || {}).value || '';
+  f.venueId = (document.getElementById('ordFltVenue') || {}).value || 'all';
+  f.status = (document.getElementById('ordFltStatus') || {}).value || 'all';
+  f.type = (document.getElementById('ordFltType') || {}).value || 'all';
+  ordLoadData();
+}
+
+function ordResetFilters() {
+  var range = ordTodayRange();
+  ordState.filters = { startDate: range.start, endDate: range.end, venueId: 'all', status: 'all', type: 'all' };
+  var sE = document.getElementById('ordFltStart'); if (sE) sE.value = range.start;
+  var eE = document.getElementById('ordFltEnd'); if (eE) eE.value = range.end;
+  var vE = document.getElementById('ordFltVenue'); if (vE) vE.value = 'all';
+  var stE = document.getElementById('ordFltStatus'); if (stE) stE.value = 'all';
+  var tyE = document.getElementById('ordFltType'); if (tyE) tyE.value = 'all';
+  ordLoadData();
+}
+
+async function ordOpenDetail(orderId) {
+  var modal = document.getElementById('ordDetailModal');
+  var body = document.getElementById('ordDetailBody');
+  if (!modal || !body) return;
+  modal.classList.add('show');
+  body.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:24px">読み込み中...</div>';
+  try {
+    var oRes = await sb.from('orders').select(
+      'id,display_id,venue_id,order_type,tracking_status,payment_status,total_amount,delivery_fee,service_fee,surcharge_amount,created_at,customer_name,customer_phone,customer_email,member_id,notes'
+    ).eq('id', orderId).maybeSingle();
+    if (oRes.error) throw oRes.error;
+    var o = oRes.data;
+    if (!o) {
+      body.innerHTML = '<div style="padding:24px;color:var(--danger)">注文が見つかりません</div>';
+      return;
+    }
+    var iRes = await sb.from('order_items').select('id,product_name,quantity,unit_price,subtotal').eq('order_id', orderId);
+    if (iRes.error) throw iRes.error;
+    var items = iRes.data || [];
+
+    var venue = (STORES || []).find(function(s){ return s.id === o.venue_id; });
+    var venueName = venue ? (venue.name || '—') : '—';
+    var dt = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '—';
+    var typeLabel = ORD_TYPE_LABELS[o.order_type] || (o.order_type || '—');
+    var statusLabel = ORD_STATUS_LABELS[o.tracking_status] || (o.tracking_status || '—');
+    var payLabel = ORD_PAY_LABELS[o.payment_status] || (o.payment_status || '—');
+    var amt = typeof o.total_amount === 'number' ? ('¥' + o.total_amount.toLocaleString()) : '—';
+
+    // Guest PII guard: only members get customer info exposed
+    var isMember = !!o.member_id;
+    var customerBlock;
+    if (isMember) {
+      var cName = o.customer_name ? escH(o.customer_name) : '—';
+      var cPhone = o.customer_phone ? escH(o.customer_phone) : '—';
+      customerBlock = '<div style="margin-top:12px;padding:12px 14px;background:#f5f6fa;border-radius:6px">' +
+        '<div style="font-weight:700;font-size:12px;margin-bottom:6px">👤 顧客情報（会員）</div>' +
+        '<div style="font-size:12px;line-height:1.8">名前: ' + cName + '<br>電話: ' + cPhone + '</div>' +
+      '</div>';
+    } else {
+      customerBlock = '<div style="margin-top:12px;padding:12px 14px;background:#fff8e1;border-radius:6px;border-left:3px solid #ffc107">' +
+        '<div style="font-weight:700;font-size:12px;margin-bottom:4px">👤 ゲスト注文</div>' +
+        '<div style="font-size:11px;color:var(--text-light)">ゲスト注文のため顧客情報（名前・電話・メール）は事業者には共有されません</div>' +
+      '</div>';
+    }
+
+    var itemsHtml;
+    if (items.length) {
+      var itemRows = items.map(function(it) {
+        var up = Number(it.unit_price || 0);
+        var qt = Number(it.quantity || 0);
+        var st = Number(it.subtotal || 0);
+        return '<tr>' +
+          '<td>' + escH(it.product_name || '—') + '</td>' +
+          '<td style="text-align:right">¥' + up.toLocaleString() + '</td>' +
+          '<td style="text-align:right">' + qt + '</td>' +
+          '<td style="text-align:right;font-weight:600">¥' + st.toLocaleString() + '</td>' +
+        '</tr>';
+      }).join('');
+      itemsHtml = '<table class="data-table" style="width:100%;font-size:12px;margin-top:6px">' +
+        '<thead><tr><th>商品名</th><th style="width:80px;text-align:right">単価</th><th style="width:50px;text-align:right">数量</th><th style="width:90px;text-align:right">小計</th></tr></thead>' +
+        '<tbody>' + itemRows + '</tbody></table>';
+    } else {
+      itemsHtml = '<div style="padding:12px;color:var(--text-light);font-size:12px;text-align:center">商品情報がありません</div>';
+    }
+
+    body.innerHTML =
+      '<div style="padding:4px 12px">' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">' +
+          '<span><strong>注文ID:</strong> <code style="background:#f5f6fa;padding:2px 6px;border-radius:4px">' + escH(o.display_id || '') + '</code></span>' +
+          '<span><strong>店舗:</strong> ' + escH(venueName) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:4px">' +
+          '<span><strong>注文日時:</strong> ' + escH(dt) + '</span>' +
+          '<span><strong>タイプ:</strong> ' + escH(typeLabel) + '</span>' +
+          '<span><strong>ステータス:</strong> ' + escH(statusLabel) + '</span>' +
+        '</div>' +
+        '<div style="margin-top:14px">' +
+          '<div style="font-weight:700;font-size:12px;margin-bottom:4px">🍽 注文商品</div>' +
+          itemsHtml +
+        '</div>' +
+        '<div style="margin-top:12px;padding:12px 14px;background:#f5f6fa;border-radius:6px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-weight:700;font-size:13px">合計金額</span>' +
+            '<span style="font-size:16px;font-weight:800;color:var(--accent)">' + amt + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--text-light);margin-top:6px">支払いステータス: ' + escH(payLabel) + '</div>' +
+        '</div>' +
+        customerBlock +
+      '</div>';
+  } catch (e) {
+    console.error('ordOpenDetail error:', e);
+    body.innerHTML = '<div style="padding:24px;color:var(--danger)">読込エラー: ' + escH(e.message || String(e)) + '</div>';
+  }
+}
+
+function ordCloseDetail() {
+  var modal = document.getElementById('ordDetailModal');
+  if (modal) modal.classList.remove('show');
 }
 // =====================================================
 
