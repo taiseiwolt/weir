@@ -11520,6 +11520,7 @@ var ordState = {
   view: 'brand',
   filters: { startDate: '', endDate: '', venueId: 'all', status: 'all', type: 'all' },
   rows: [],
+  brandVenues: [], // venues strictly scoped to BRAND_ID
   loading: false
 };
 
@@ -11548,10 +11549,19 @@ async function ordInitPage() {
   var eE = document.getElementById('ordFltEnd');
   if (sE) sE.value = range.start;
   if (eE) eE.value = range.end;
-  // Populate venue filter from STORES (brand-scoped)
+  // Fetch venues strictly scoped to BRAND_ID (task: "自分のBRAND_IDに紐づくvenuesの注文のみ")
+  try {
+    var vRes = await sb.from('venues').select('id,name').eq('brand_id', BRAND_ID).order('name');
+    if (vRes.error) throw vRes.error;
+    ordState.brandVenues = vRes.data || [];
+  } catch (e) {
+    console.error('ordInitPage venues error:', e);
+    ordState.brandVenues = [];
+  }
+  // Populate venue filter from brand-scoped venues
   var venueSel = document.getElementById('ordFltVenue');
   if (venueSel) {
-    var opts = '<option value="all">全店舗</option>' + (STORES || []).map(function(s){ return '<option value="'+escH(s.id)+'">'+escH(s.name||'')+'</option>'; }).join('');
+    var opts = '<option value="all">全店舗</option>' + ordState.brandVenues.map(function(v){ return '<option value="'+escH(v.id)+'">'+escH(v.name||'')+'</option>'; }).join('');
     venueSel.innerHTML = opts;
   }
   // Reset status/type selects to 'all'
@@ -11569,9 +11579,10 @@ async function ordLoadData() {
   ordState.loading = true;
   bodyEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-light)">読み込み中...</div>';
   try {
-    var venueIds = (STORES || []).map(function(s){ return s.id; }).filter(Boolean);
+    // Strict: only venues belonging to the user's BRAND_ID (not the full corp-accessible STORES)
+    var venueIds = (ordState.brandVenues || []).map(function(v){ return v.id; }).filter(Boolean);
     if (!venueIds.length) {
-      bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">紐づく店舗がありません</div>';
+      bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">自分のブランドに紐づく店舗がありません</div>';
       ordState.rows = [];
       var cEl = document.getElementById('ordCountInfo'); if (cEl) cEl.textContent = '0件の注文';
       return;
@@ -11615,7 +11626,7 @@ function ordRenderTable() {
     bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">該当する注文はありません</div>';
     return;
   }
-  var venueMap = {}; (STORES || []).forEach(function(s){ venueMap[s.id] = s; });
+  var venueMap = {}; (ordState.brandVenues || []).forEach(function(v){ venueMap[v.id] = v; });
   var html = '<table class="data-table" style="width:100%;font-size:12px">' +
     '<thead><tr>' +
       '<th style="width:110px">注文ID</th>' +
@@ -11708,7 +11719,7 @@ async function ordOpenDetail(orderId) {
     if (iRes.error) throw iRes.error;
     var items = iRes.data || [];
 
-    var venue = (STORES || []).find(function(s){ return s.id === o.venue_id; });
+    var venue = (ordState.brandVenues || []).find(function(v){ return v.id === o.venue_id; });
     var venueName = venue ? (venue.name || '—') : '—';
     var dt = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : '—';
     var typeLabel = ORD_TYPE_LABELS[o.order_type] || (o.order_type || '—');
