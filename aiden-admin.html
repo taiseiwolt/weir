@@ -112,8 +112,8 @@ let VENUES=[];
 let CBR=[]; // corporation_brand_relations
 let ACCOUNTS=[];
 let BANS=[];
-// COMPENSATION DATA（補填対象の注文リスト。実データ読み込み完了後はここを差し替え予定）
-const ADMIN_ORDERS=[{id:'ORD-1001',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'高橋 翔太',total:5280,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_3kXm9P2abc',date:'2026-03-11',items:[{name:'特選カルビ',qty:2,price:1280},{name:'ハラミ',qty:1,price:980},{name:'石焼ビビンバ',qty:1,price:780}],aidenPointsUsed:0,normalPointsUsed:200},{id:'ORD-1002',storeId:'STR-eG6uZ8p',storeName:'炭火亭 新宿東口店',brandName:'焼肉 炭火亭',customer:'中村 あゆみ',total:3960,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_7jL5wTn6def',date:'2026-03-10',items:[{name:'上ロース',qty:1,price:1480},{name:'牛タン塩',qty:1,price:1180},{name:'冷麺',qty:1,price:880}],aidenPointsUsed:100,normalPointsUsed:300},{id:'ORD-1003',storeId:'STR-nP4aF6v',storeName:'ラーメン風雲 新宿本店',brandName:'ラーメン風雲',customer:'小林 健太',total:1980,status:'done',paymentStatus:'paid',paymentIntentId:'pi_test_9qR5bG7wghi',date:'2026-03-09',items:[{name:'味噌ラーメン',qty:1,price:980},{name:'餃子',qty:1,price:480},{name:'チャーシュー丼',qty:1,price:520}],aidenPointsUsed:0,normalPointsUsed:0},{id:'ORD-1004',storeId:'STR-dF5tY7n',storeName:'炭火亭 渋谷店',brandName:'焼肉 炭火亭',customer:'渡辺 さくら',total:8640,status:'done',paymentStatus:'refunded',paymentIntentId:'pi_test_2pQ9vGk2jkl',date:'2026-03-07',items:[{name:'特選カルビ',qty:3,price:1280},{name:'上ロース',qty:2,price:1480},{name:'生ビール',qty:4,price:550}],aidenPointsUsed:300,normalPointsUsed:0},{id:'ORD-1005',storeId:'STR-qR5bG7w',storeName:'ラーメン風雲 渋谷店',brandName:'ラーメン風雲',customer:'伊藤 大地',total:1460,status:'cancelled',paymentStatus:'paid',paymentIntentId:'pi_test_8nV3sHm8mno',date:'2026-03-06',items:[{name:'醤油ラーメン',qty:1,price:880},{name:'唐揚げ',qty:1,price:580}],aidenPointsUsed:0,normalPointsUsed:0}];
+// COMPENSATION: 注文検索結果キャッシュ（D-83: ハードコード廃止、DB取得結果を保持）
+let compOrdersCache=[];
 let MEMBERS_DATA=[];
 let GUESTS_DATA=[];
 
@@ -2356,17 +2356,69 @@ function renderCompOrderResultsTable(orders){
     }).join('')+'</tbody></table>';
 }
 
-function searchCompOrders(){
-  var q=document.getElementById('compOrderSearch').value.trim().toLowerCase();
+// DB行を補填処理用のUI形式にマップ（venue/brandは global VENUES/BRANDS から解決）
+function mapOrderForCompensation(r){
+  var v=VENUES.find(function(x){return x._uuid===r.venue_id;});
+  var b=BRANDS.find(function(x){return x._uuid===r.brand_id;});
+  var items=(r.order_items||[]).map(function(it){
+    return {name:it.product_name||'商品',qty:it.quantity||0,price:it.unit_price||0};
+  });
+  return {
+    id:r.display_id||r.id,
+    uuid:r.id,
+    storeId:v?v.id:'',
+    storeName:v?v.name:'—',
+    brandName:b?b.name:'—',
+    customer:r.customer_name||'ゲスト',
+    total:r.total_amount||0,
+    status:r.tracking_status||'',
+    paymentStatus:r.payment_status||'',
+    paymentIntentId:r.payment_intent_id||'',
+    date:(r.created_at||'').split('T')[0],
+    items:items,
+    memberId:r.member_id||''
+  };
+}
+
+async function searchCompOrders(){
+  var q=document.getElementById('compOrderSearch').value.trim();
   var box=document.getElementById('compOrderResults');
   if(!q){box.innerHTML='<div class="empty">検索キーワードを入力してください</div>';return;}
-  var results=ADMIN_ORDERS.filter(function(o){
-    return o.id.toLowerCase().includes(q)||o.storeName.toLowerCase().includes(q)||o.customer.toLowerCase().includes(q)||(o.brandName||'').toLowerCase().includes(q);
-  });
-  box.innerHTML=renderCompOrderResultsTable(results);
+  box.innerHTML='<div class="empty">検索中...</div>';
+  try{
+    // PostgRESTのor/ilikeクエリに渡せない文字を除去
+    var safe=q.replace(/[,()\\%_]/g,' ').trim();
+    if(!safe){box.innerHTML='<div class="empty">有効な検索キーワードを入力してください</div>';return;}
+    var res=await sb.from('orders').select(
+      'id, display_id, venue_id, brand_id, customer_name, total_amount, '+
+      'tracking_status, payment_status, payment_intent_id, created_at, member_id, '+
+      'order_items(product_name, quantity, unit_price, subtotal)'
+    )
+    .or('display_id.ilike.%'+safe+'%,customer_name.ilike.%'+safe+'%')
+    .order('created_at',{ascending:false}).limit(100);
+    if(res.error)throw res.error;
+    compOrdersCache=(res.data||[]).map(mapOrderForCompensation);
+    box.innerHTML=renderCompOrderResultsTable(compOrdersCache);
+  }catch(e){
+    box.innerHTML='<div class="empty" style="color:var(--danger)">検索エラー: '+escHtml(e.message||String(e))+'</div>';
+  }
 }
-function showAllCompOrders(){
-  document.getElementById('compOrderResults').innerHTML=renderCompOrderResultsTable(ADMIN_ORDERS);
+
+async function showAllCompOrders(){
+  var box=document.getElementById('compOrderResults');
+  box.innerHTML='<div class="empty">読み込み中...</div>';
+  try{
+    var res=await sb.from('orders').select(
+      'id, display_id, venue_id, brand_id, customer_name, total_amount, '+
+      'tracking_status, payment_status, payment_intent_id, created_at, member_id, '+
+      'order_items(product_name, quantity, unit_price, subtotal)'
+    ).order('created_at',{ascending:false}).limit(100);
+    if(res.error)throw res.error;
+    compOrdersCache=(res.data||[]).map(mapOrderForCompensation);
+    box.innerHTML=renderCompOrderResultsTable(compOrdersCache);
+  }catch(e){
+    box.innerHTML='<div class="empty" style="color:var(--danger)">読み込みエラー: '+escHtml(e.message||String(e))+'</div>';
+  }
 }
 
 function paymentStatusBadge(s){
@@ -2408,7 +2460,7 @@ async function fetchStripePiStatus(o){
 }
 
 async function openCompensationModal(orderId){
-  const o=ADMIN_ORDERS.find(function(x){return x.id===orderId;});
+  const o=compOrdersCache.find(function(x){return x.id===orderId;});
   if(!o)return;
   compModalOrderId=orderId;
   compModalMode='point';
@@ -2545,7 +2597,7 @@ function renderCompensationModal(o){
 
 function setCompModalMode(mode){
   compModalMode=mode;
-  const o=ADMIN_ORDERS.find(function(x){return x.id===compModalOrderId;});
+  const o=compOrdersCache.find(function(x){return x.id===compModalOrderId;});
   if(o)renderCompensationModal(o);
 }
 
@@ -2562,7 +2614,7 @@ function getCurrentExecutorEmail(){
 async function confirmAndExecuteCompensation(){
   if(confirmAndExecuteCompensation._p)return; confirmAndExecuteCompensation._p=true;
   try{
-    const o=ADMIN_ORDERS.find(function(x){return x.id===compModalOrderId;});
+    const o=compOrdersCache.find(function(x){return x.id===compModalOrderId;});
     if(!o){showToast('⚠️ 注文が見つかりません');return;}
     const reason=(document.getElementById('compReason')||{}).value;
     if(!reason||!reason.trim()){showToast('⚠️ 補填理由は必須です');return;}
@@ -5622,15 +5674,6 @@ const COST_CONTENT_TYPES=[
 // Plan cost baselines
 const PLAN_COSTS={STD:307,PRO:821,EXPERT:3297};
 
-// --- 5 brands (add 1 more to existing 4) ---
-const COST_BRANDS=[
-  {id:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'焼肉 炭火亭'},
-  {id:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲'},
-  {id:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極'},
-  {id:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze'},
-  {id:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'焼鳥 鳥匠'}
-];
-
 // --- 15 stores with plans ---
 const COST_VENUES=[
   {id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 渋谷店',plan:'PRO',moRevenue:3680000},
@@ -5772,9 +5815,11 @@ function renderCostManagement(){
 
 // (A) Filter bar
 function renderCostFilterBar(){
-  let corpOpts='<option value="all">全法人</option>'+MERCHANTS.map(c=>'<option value="'+c.id+'"'+(costFilter.corpId===c.id?' selected':'')+'>'+c.name+'</option>').join('');
-  let brandOpts='<option value="all">全ブランド</option>'+COST_BRANDS.map(b=>'<option value="'+b.id+'"'+(costFilter.brandId===b.id?' selected':'')+'>'+b.name+'</option>').join('');
-  let storeOpts='<option value="all">全店舗</option>'+COST_VENUES.map(s=>'<option value="'+s.id+'"'+(costFilter.storeId===s.id?' selected':'')+'>'+s.name+'</option>').join('');
+  let corpOpts='<option value="all">全法人</option>'+MERCHANTS.map(c=>'<option value="'+escHtml(c.id)+'"'+(costFilter.corpId===c.id?' selected':'')+'>'+escHtml(c.name)+'</option>').join('');
+  let brandOpts='<option value="all">全ブランド</option>'+BRANDS.map(b=>'<option value="'+escHtml(b.id)+'"'+(costFilter.brandId===b.id?' selected':'')+'>'+escHtml(b.name)+'</option>').join('');
+  // 店舗はブランド選択時に該当ブランドの店舗のみに絞り込み、全選択時は全店舗表示
+  let storeSource=costFilter.brandId==='all'?VENUES:VENUES.filter(function(v){return v.brandId===costFilter.brandId;});
+  let storeOpts='<option value="all">全店舗</option>'+storeSource.map(s=>'<option value="'+escHtml(s.id)+'"'+(costFilter.storeId===s.id?' selected':'')+'>'+escHtml(s.name)+'</option>').join('');
   const pSel=costFilter.period;
   return '<div class="card" style="padding:14px 20px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
     '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;color:var(--text-light)">期間:</span>'+
@@ -5796,7 +5841,7 @@ function renderCostFilterBar(){
         '<option value="store"'+(costFilter.granularity==='store'?' selected':'')+'>店舗単位</option>'+
       '</select></div>'+
     '<select id="costCorpFilter" onchange="costFilter.corpId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+corpOpts+'</select>'+
-    '<select id="costBrandFilter" onchange="costFilter.brandId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+brandOpts+'</select>'+
+    '<select id="costBrandFilter" onchange="onCostBrandChange(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+brandOpts+'</select>'+
     '<select id="costStoreFilter" onchange="costFilter.storeId=this.value;refreshCostData()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit">'+storeOpts+'</select>'+
     '<button class="btn btn-p btn-sm" onclick="refreshCostData()">適用</button>'+
   '</div></div>';
@@ -5809,6 +5854,19 @@ function onCostPeriodChange(){
   if(v==='custom'){
     costFilter.customFrom=document.getElementById('costFrom').value;
     costFilter.customTo=document.getElementById('costTo').value;
+  }
+  refreshCostData();
+}
+
+// ブランド変更時: 店舗ドロップダウンを該当ブランドの店舗のみに絞り込む（D-83対応）
+function onCostBrandChange(val){
+  costFilter.brandId=val;
+  costFilter.storeId='all';
+  var sel=document.getElementById('costStoreFilter');
+  if(sel){
+    var storeSource=val==='all'?VENUES:VENUES.filter(function(v){return v.brandId===val;});
+    sel.innerHTML='<option value="all">全店舗</option>'+
+      storeSource.map(function(s){return '<option value="'+escHtml(s.id)+'">'+escHtml(s.name)+'</option>';}).join('');
   }
   refreshCostData();
 }
