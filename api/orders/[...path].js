@@ -212,7 +212,7 @@ async function handleCreate(req, res) {
         .single();
       if (storeRow?.brands?.corp_id) {
         const { data: corpRow } = await supabase
-          .from('corps')
+          .from('merchants')
           .select('stripe_account_id')
           .eq('id', storeRow.brands.corp_id)
           .single();

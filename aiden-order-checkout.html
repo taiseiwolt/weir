@@ -931,7 +931,7 @@ async function loadCheckoutData() {
       // 2b. 法人の stripe_account_id を取得（Stripe Connect 決済用）
       const corpId = storeRow.brands?.corp_id;
       if (corpId) {
-        const { data: corpRow } = await sb.from('corps').select('stripe_account_id').eq('id', corpId).single();
+        const { data: corpRow } = await sb.from('merchants').select('stripe_account_id').eq('id', corpId).single();
         if (corpRow && corpRow.stripe_account_id) {
           CHECKOUT_DATA.stripeAccountId = corpRow.stripe_account_id;
         }

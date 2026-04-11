@@ -5812,7 +5812,7 @@ async function loadAdminFromSupabase() {
   const errors = [];
   try {
     // 1. Corp (RLS: filtered by staff corp_id)
-    const {data: corps, error: corpErr} = await sb.from('corps').select('id, name, stripe_account_id').limit(1);
+    const {data: corps, error: corpErr} = await sb.from('merchants').select('id, name, stripe_account_id').limit(1);
     if (corpErr) errors.push('法人情報: ' + corpErr.message);
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
