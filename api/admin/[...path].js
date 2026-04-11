@@ -13,7 +13,7 @@ function generateDisplayId(prefix) {
 // ── Entity config ─────────────────────────────────────────
 const ENTITY_CONFIG = {
   corporations: {
-    table: 'corporations',
+    table: 'merchants',
     displayIdPrefix: 'CRP-',
     selectList: '*',
     selectDetail: '*',
@@ -21,11 +21,11 @@ const ENTITY_CONFIG = {
   brands: {
     table: 'brands',
     displayIdPrefix: 'BRD-',
-    selectList: '*, corporations(name)',
+    selectList: '*, merchants(name)',
     selectDetail: '*',
   },
   stores: {
-    table: 'stores',
+    table: 'venues',
     displayIdPrefix: 'STR-',
     selectList: '*, brands(name, slug)',
     selectDetail: '*',

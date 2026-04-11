@@ -30,9 +30,12 @@ serve(async (req) => {
     const authError = await requireAuthOrServiceRole(req, corsHeaders)
     if (authError) return authError
 
-    const { corp_id, stripe_account_id } = await req.json()
+    const reqBody = await req.json()
+    // merchant_id 優先、後方互換で corp_id も受理
+    const corp_id = reqBody.merchant_id || reqBody.corp_id
+    const { stripe_account_id } = reqBody
 
-    // stripe_account_id が直接指定されていない場合は corp_id から取得
+    // stripe_account_id が直接指定されていない場合は merchant_id から取得
     let accountId = stripe_account_id
     if (!accountId && corp_id) {
       const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -53,7 +56,7 @@ serve(async (req) => {
 
     if (!accountId) {
       return new Response(
-        JSON.stringify({ error: 'stripe_account_id または corp_id が必要です' }),
+        JSON.stringify({ error: 'stripe_account_id または merchant_id が必要です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

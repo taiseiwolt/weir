@@ -6,7 +6,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 interface PushPayload {
   order_id: string
-  store_id: string
+  venue_id?: string
+  store_id?: string  // 後方互換
   display_id: string
   total_amount: number
   order_type: string
@@ -110,11 +111,14 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+  // venue_id 優先、後方互換で store_id も受理
+  const venueId = payload.venue_id || payload.store_id
+
   // venue_id に紐づく FCM トークンを取得
   const { data: tokens, error } = await supabase
     .from('device_tokens')
     .select('token, platform')
-    .eq('venue_id', payload.store_id)
+    .eq('venue_id', venueId)
 
   if (error || !tokens || tokens.length === 0) {
     return new Response(JSON.stringify({ sent: 0 }), {
@@ -157,7 +161,7 @@ serve(async (req) => {
             },
             data: {
               order_id: payload.order_id,
-              store_id: payload.store_id,
+              venue_id: venueId,
               display_id: payload.display_id,
               type: 'new_order',
             },

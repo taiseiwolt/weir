@@ -526,7 +526,7 @@ async function checkConfigConsistency(supabase: ReturnType<typeof createClient>)
     } else {
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/stores?select=id&limit=1`,
+          `${SUPABASE_URL}/rest/v1/venues?select=id&limit=1`,
           {
             headers: {
               'apikey': SUPABASE_ANON_KEY,
@@ -537,10 +537,10 @@ async function checkConfigConsistency(supabase: ReturnType<typeof createClient>)
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length > 0) {
-            value = `正常（storesテーブルからデータ取得成功）`
+            value = `正常（venuesテーブルからデータ取得成功）`
           } else {
             // データが0件でも200が返ればkey自体は有効
-            value = `正常（anon keyは有効、storesデータ0件）`
+            value = `正常（anon keyは有効、venuesデータ0件）`
           }
         } else {
           severity = 'critical'

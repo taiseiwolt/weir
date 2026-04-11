@@ -68,8 +68,10 @@ async function handleCreate(req, res) {
   const auth = await authenticateRequest(req);
   const body = req.body || {};
 
+  // venue_id 優先、後方互換で store_id も受理
+  const store_id = body.venue_id || body.store_id;
   const {
-    store_id, order_type,
+    order_type,
     items,
     member_id,
     brand_id,
@@ -83,7 +85,7 @@ async function handleCreate(req, res) {
   } = body;
 
   if (!store_id || !order_type || !items || items.length === 0) {
-    return error(res, 'store_id, order_type, items は必須です');
+    return error(res, 'venue_id, order_type, items は必須です');
   }
 
   // SEC: 数量バリデーション (03-P1-1)
@@ -506,7 +508,8 @@ async function handleConfirm(req, res, id) {
 
 async function handleList(req, res) {
   const auth = await authenticateRequest(req);
-  const { store_id, status, limit = 50, offset = 0 } = req.query;
+  const store_id = req.query.venue_id || req.query.store_id;
+  const { status, limit = 50, offset = 0 } = req.query;
 
   // SEC-1: 認証必須。store_id指定時はスタッフ権限も必要
   if (!auth) {

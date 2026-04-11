@@ -24,11 +24,14 @@ serve(async (req) => {
     const authError = await requireAuthOrServiceRole(req, corsHeaders)
     if (authError) return authError
 
-    const { store_id, month } = await req.json()
+    const body = await req.json()
+    // venue_id 優先、後方互換で store_id も受理
+    const store_id = body.venue_id || body.store_id
+    const { month } = body
 
     if (!store_id || !month) {
       return new Response(
-        JSON.stringify({ error: 'store_id, month (YYYY-MM) は必須です' }),
+        JSON.stringify({ error: 'venue_id, month (YYYY-MM) は必須です' }),
         { status: 400, headers: jsonHeaders }
       )
     }

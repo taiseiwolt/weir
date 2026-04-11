@@ -12,7 +12,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 interface CreateReservationRequest {
-  store_id: string
+  venue_id?: string
+  store_id?: string  // 後方互換
   date: string           // YYYY-MM-DD
   time: string           // HH:MM
   guest_count: number
@@ -48,11 +49,13 @@ serve(async (req) => {
 
   try {
     const data: CreateReservationRequest = await req.json()
+    // venue_id 優先、後方互換で store_id も受理
+    const venueId = data.venue_id || data.store_id
 
     // バリデーション
-    if (!data.store_id || !data.date || !data.time || !data.guest_count || !data.name || !data.phone) {
+    if (!venueId || !data.date || !data.time || !data.guest_count || !data.name || !data.phone) {
       return new Response(
-        JSON.stringify({ error: 'store_id, date, time, guest_count, name, phone は必須です' }),
+        JSON.stringify({ error: 'venue_id, date, time, guest_count, name, phone は必須です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -88,7 +91,7 @@ serve(async (req) => {
     const { data: store, error: storeError } = await supabase
       .from('venues')
       .select('id, name, reservation_enabled, reservation_confirmation_mode, reservation_require_card')
-      .eq('id', data.store_id)
+      .eq('id', venueId)
       .single()
 
     if (storeError || !store) {
@@ -124,7 +127,7 @@ serve(async (req) => {
 
     // 予約作成
     const insertData: Record<string, unknown> = {
-      venue_id: data.store_id,
+      venue_id: venueId,
       display_id: displayId,
       date: data.date,
       time: data.time,
@@ -162,7 +165,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           type: 'new_reservation_store',
-          store_id: data.store_id,
+          venue_id: venueId,
           store_name: store.name,
           display_id: displayId,
           date: data.date,

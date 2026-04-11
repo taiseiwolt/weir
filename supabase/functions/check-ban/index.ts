@@ -28,7 +28,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { email, phone, member_id, store_id, brand_id, service_type } = body
+    const { email, phone, member_id, brand_id, service_type } = body
+    // venue_id 優先、後方互換で store_id も受理
+    const venue_id = body.venue_id || body.store_id
 
     if (!email && !phone && !member_id) {
       return new Response(
@@ -39,20 +41,20 @@ serve(async (req) => {
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // store_id から corporation_id, brand_id を逆引き（brand_id未指定時）
-    let corporationId: string | null = null
+    // venue_id から merchant_id, brand_id を逆引き（brand_id未指定時）
+    let merchantId: string | null = null
     let resolvedBrandId: string | null = brand_id || null
 
-    if (store_id) {
-      const { data: storeRow } = await sbAdmin
+    if (venue_id) {
+      const { data: venueRow } = await sbAdmin
         .from('venues')
         .select('brand_id, brands!inner(merchant_id)')
-        .eq('id', store_id)
+        .eq('id', venue_id)
         .single()
 
-      if (storeRow) {
-        resolvedBrandId = resolvedBrandId || storeRow.brand_id
-        corporationId = (storeRow.brands as any)?.merchant_id || null
+      if (venueRow) {
+        resolvedBrandId = resolvedBrandId || venueRow.brand_id
+        merchantId = (venueRow.brands as any)?.merchant_id || null
       }
     }
 
@@ -88,9 +90,9 @@ serve(async (req) => {
       // スコープチェック
       const scopeMatch =
         ban.scope_type === 'global' ||
-        (ban.scope_type === 'corporation' && ban.scope_id === corporationId) ||
+        (ban.scope_type === 'corporation' && ban.scope_id === merchantId) ||
         (ban.scope_type === 'brand' && ban.scope_id === resolvedBrandId) ||
-        (ban.scope_type === 'store' && ban.scope_id === store_id)
+        (ban.scope_type === 'store' && ban.scope_id === venue_id)
 
       if (!scopeMatch) return false
 

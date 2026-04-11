@@ -22,24 +22,25 @@ export default async function handler(req, res) {
 }
 
 async function handleCategories(req, res) {
-  const { store_id, brand_id } = req.query;
+  const venue_id = req.query.venue_id || req.query.store_id;
+  const { brand_id } = req.query;
 
-  if (!store_id && !brand_id) {
-    return error(res, 'store_id または brand_id が必要です');
+  if (!venue_id && !brand_id) {
+    return error(res, 'venue_id または brand_id が必要です');
   }
 
   try {
     let targetBrandId = brand_id;
 
-    if (store_id && !brand_id) {
-      const { data: store } = await supabase
+    if (venue_id && !brand_id) {
+      const { data: venue } = await supabase
         .from('venues')
         .select('brand_id')
-        .eq('id', store_id)
+        .eq('id', venue_id)
         .single();
 
-      if (!store) return error(res, '店舗が見つかりません', 404);
-      targetBrandId = store.brand_id;
+      if (!venue) return error(res, '店舗が見つかりません', 404);
+      targetBrandId = venue.brand_id;
     }
 
     const { data: categories, error: dbError } = await supabase
@@ -57,15 +58,16 @@ async function handleCategories(req, res) {
 }
 
 async function handleProducts(req, res) {
-  const { store_id, brand_id } = req.query;
+  const venue_id = req.query.venue_id || req.query.store_id;
+  const { brand_id } = req.query;
 
-  if (!store_id && !brand_id) {
-    return error(res, 'store_id または brand_id が必要です');
+  if (!venue_id && !brand_id) {
+    return error(res, 'venue_id または brand_id が必要です');
   }
 
   try {
-    if (store_id) {
-      return await getProductsByStore(res, store_id);
+    if (venue_id) {
+      return await getProductsByVenue(res, venue_id);
     } else {
       return await getProductsByBrand(res, brand_id);
     }
@@ -74,11 +76,11 @@ async function handleProducts(req, res) {
   }
 }
 
-async function getProductsByStore(res, storeId) {
+async function getProductsByVenue(res, venueId) {
   const { data: pattern } = await supabase
     .from('menu_patterns')
     .select('id')
-    .eq('venue_id', storeId)
+    .eq('venue_id', venueId)
     .limit(1)
     .single();
 

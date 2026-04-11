@@ -28,11 +28,14 @@ serve(async (req) => {
     const authError = await requireAuthOrServiceRole(req, corsHeaders)
     if (authError) return authError
 
-    const { corp_id, business_name, email } = await req.json()
+    const reqBody = await req.json()
+    // merchant_id 優先、後方互換で corp_id も受理
+    const corp_id = reqBody.merchant_id || reqBody.corp_id
+    const { business_name, email } = reqBody
 
     if (!corp_id) {
       return new Response(
-        JSON.stringify({ error: 'corp_id は必須です' }),
+        JSON.stringify({ error: 'merchant_id は必須です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -44,7 +47,7 @@ serve(async (req) => {
       'capabilities[card_payments][requested]': 'true',
       'capabilities[transfers][requested]': 'true',
       'business_type': 'company',
-      'metadata[aiden_corp_id]': corp_id,
+      'metadata[aiden_merchant_id]': corp_id,
     })
     if (email) accountParams.set('email', email)
     if (business_name) accountParams.set('business_profile[name]', business_name)

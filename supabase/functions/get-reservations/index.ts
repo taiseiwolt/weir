@@ -22,14 +22,15 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const storeId = url.searchParams.get('store_id')
+    // venue_id 優先、後方互換で store_id も受理
+    const storeId = url.searchParams.get('venue_id') || url.searchParams.get('store_id')
     const dateFrom = url.searchParams.get('date_from')
     const dateTo = url.searchParams.get('date_to')
     const status = url.searchParams.get('status')
 
     if (!storeId) {
       return new Response(
-        JSON.stringify({ error: 'store_id は必須です' }),
+        JSON.stringify({ error: 'venue_id は必須です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

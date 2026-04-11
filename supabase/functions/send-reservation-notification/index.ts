@@ -17,7 +17,8 @@ const FROM_NAME = 'AIden'
 interface NotificationRequest {
   type: string
   to?: string
-  store_id?: string
+  venue_id?: string
+  store_id?: string  // 後方互換
   store_name?: string
   display_id?: string
   date?: string
@@ -119,6 +120,8 @@ serve(async (req) => {
 
   try {
     const data: NotificationRequest = await req.json()
+    // venue_id 優先、後方互換で store_id も受理
+    const venueId = data.venue_id || data.store_id
 
     if (!data.type) {
       return new Response(
@@ -139,7 +142,7 @@ serve(async (req) => {
         const { data: store } = await supabase
           .from('venues')
           .select('contact_email')
-          .eq('id', data.store_id)
+          .eq('id', venueId)
           .single()
 
         toEmail = store?.contact_email || ''
@@ -191,7 +194,7 @@ serve(async (req) => {
         const { data: store } = await supabase
           .from('venues')
           .select('contact_email')
-          .eq('id', data.store_id)
+          .eq('id', venueId)
           .single()
 
         toEmail = store?.contact_email || ''

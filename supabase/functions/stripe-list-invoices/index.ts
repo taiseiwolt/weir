@@ -36,11 +36,14 @@ serve(async (req) => {
   if (authError) return authError
 
   try {
-    const { corp_id, status, limit } = await req.json()
+    const reqBody = await req.json()
+    // merchant_id 優先、後方互換で corp_id も受理
+    const corp_id = reqBody.merchant_id || reqBody.corp_id
+    const { status, limit } = reqBody
 
     if (!corp_id) {
       return new Response(
-        JSON.stringify({ error: 'corp_id は必須です' }),
+        JSON.stringify({ error: 'merchant_id は必須です' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
