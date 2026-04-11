@@ -36,9 +36,7 @@ HTML / Vanilla JavaScript / CSS によるフロントエンド開発を担当す
 ### Rules
 - ファイル命名: `aiden-{機能名}.html`
 - display_id 形式: prefix + 7桁英数字（例: STR-a1b2c3d）
-- モーダル: backdrop付き、ESCキーで閉じる、既存パターンに合わせる
-- フォームバリデーション: フロント側でも必ず実施
-- 画面遷移: URLパラメータで store_id, brand_id 等を引き渡す
+- 詳細は `.claude/rules/html.md` 参照
 - ユーザー入力値は必ずサニタイズ（XSS対策）
 - innerHTML にDB/APIデータを代入する際は必ず escH() でエスケープ
 - API Key はコードにハードコードしない
@@ -59,9 +57,7 @@ Supabase（PostgreSQL）のDB設計・マイグレーション・RLS・Edge Func
 - Storage バケット・ポリシーの管理
 
 ### Rules
-- テーブル名: 複数形スネークケース（例: `order_items`）
-- 全テーブルに `created_at`, `updated_at` を含める
-- 外部キー: 適切な ON DELETE 設定（CASCADE or SET NULL）
+- 詳細は `.claude/rules/sql.md` 参照
 - RLS: 全テーブルで有効化必須。有効化と同時にポリシーを設定する
 - 管理専用テーブルのRLSボイラープレート:
   ```sql
@@ -69,9 +65,6 @@ Supabase（PostgreSQL）のDB設計・マイグレーション・RLS・Edge Func
   CREATE POLICY "service_role_only" ON tbl TO service_role USING (true) WITH CHECK (true);
   ```
 - pg_cron の http_post header で service_role_key を参照する場合は current_setting() ではなく直接値を記載
-- マイグレーション: `supabase/migrations/` に日付プレフィックス付き（YYYYMMDD形式、作成当日の日付）
-- 本番データに影響するSQL: 実行前に SELECT で影響範囲を確認
-- パラメータ化クエリを必ず使用（SQL Injection対策）
 
 ---
 
@@ -87,9 +80,7 @@ Vercel Serverless Functions および Supabase Edge Functions のAPI開発を担
 - Webhook受信処理（Stripe, LINE）
 
 ### Rules
-- エンドポイント命名: `/api/{resource}`（RESTful）
-- レスポンス形式: `{ success: boolean, data?: any, error?: string }`
-- HTTPステータスコード: 200, 400, 401, 404, 500 を適切に使い分ける
+- 詳細は `.claude/rules/api.md` 参照
 - service_role key: サーバーサイドのみで使用（フロントに露出させない）
 - 認証が必要なAPI: Supabase Auth の JWT を検証する
 - Edge Functions: Deno の標準ライブラリを使用、npm パッケージは esm.sh 経由
@@ -110,9 +101,7 @@ Stripe Connect Express による決済機能の実装・保守を担当するエ
 
 ### Rules
 - 決済フロー: authorize-on-order → capture-on-delivery
-- 手数料率: Dine-in 3.8%, Takeout/Delivery 4.0%
-- Stripe手数料 3.6% はAIden負担
-- 手数料は割引前の合計金額に対して計算
+- 料金・手数料の数値は CLAUDE.md「Mobile Order Commission」参照
 - 返金: プラットフォーム側90日上限
 - Webhook署名検証を必ず実施
 - テスト環境ではStripeのテストキーを使用
