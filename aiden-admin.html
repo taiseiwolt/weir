@@ -712,82 +712,213 @@ function filterStoresList(){
 // ===== MENUS (STANDALONE PAGE) =====
 // 実DBスキーマ: products は price/category/emoji カラム無し。
 // 価格 → product_sizes、カテゴリ → categories(FK)、絵文字は列が存在しないためUI placeholder (🍽) のみ。
-var menusState={selectedBrandUuid:null,selectedBrandDisplayId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
+var menusState={brandId:null,brandDisplayId:null,brandName:null,venues:[],highlightVenueId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
 var menusImageUploadState={file:null,currentUrl:null};
 
 function renderMenusPage(){
-  return '<div class="page-title">メニュー管理</div><div class="page-subtitle">ブランドごとのメニューパターン・商品・サイズを管理</div>'+
-    '<div style="display:grid;grid-template-columns:20% 25% 1fr;gap:16px;align-items:flex-start">'+
-      '<div class="card" style="margin-bottom:0"><div class="card-title">🏷️ ブランド</div><div id="menusBrandList"></div></div>'+
-      '<div class="card" style="margin-bottom:0"><div class="card-title">📋 メニューパターン <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddPattern" onclick="openMenusAddPatternModal()" disabled>＋ 新規作成</button></span></div><div id="menusPatternList"><div class="empty-state">ブランドを選択してください</div></div></div>'+
-      '<div class="card" style="margin-bottom:0"><div class="card-title">🍽️ 商品 <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddProduct" onclick="openMenusAddProductModal()" disabled>＋ 商品追加</button></span></div><div id="menusProductList"><div class="empty-state">パターンを選択してください</div></div></div>'+
-    '</div>';
+  return '<div class="page-title">メニュー管理</div>'+
+    '<div class="page-subtitle">display_id（法人・ブランド・店舗）で検索してメニューを管理</div>'+
+    '<div class="card" style="margin-bottom:12px">'+
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+        '<input type="text" id="menusSearchInput" placeholder="display_id を入力" style="flex:1;min-width:240px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-family:monospace;font-size:13px" onkeydown="if(event.key===\'Enter\')menusSearch()">'+
+        '<button class="btn btn-primary" onclick="menusSearch()">🔍 検索</button>'+
+        '<button class="btn btn-secondary" onclick="menusReset()">リセット</button>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--text-light);margin-top:8px">例: CRP-a1b2c3d（法人）/ BRD-a1b2c3d（ブランド）/ STR-a1b2c3d（店舗）</div>'+
+    '</div>'+
+    '<div id="menusResult" style="display:none"></div>';
 }
 
 function initMenusPage(){
-  menusState={selectedBrandUuid:null,selectedBrandDisplayId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
+  menusState={brandId:null,brandDisplayId:null,brandName:null,venues:[],highlightVenueId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
   menusImageUploadState={file:null,currentUrl:null};
-  menusRenderBrandList();
+  var input=document.getElementById('menusSearchInput');
+  if(input)setTimeout(function(){input.focus();},50);
 }
 
-function menusRenderBrandList(){
-  var el=document.getElementById('menusBrandList');
-  if(!el)return;
-  if(!BRANDS||!BRANDS.length){el.innerHTML='<div class="empty-state">ブランドがありません</div>';return;}
-  el.innerHTML=BRANDS.map(function(b){
-    var isActive=menusState.selectedBrandUuid===b._uuid;
-    var bg=isActive?'#f3efff':'#fff';
-    var border=isActive?'var(--accent)':'var(--border)';
-    return '<div style="padding:10px 12px;border:1px solid '+border+';border-radius:6px;margin-bottom:6px;cursor:pointer;background:'+bg+'" onclick="menusSelectBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')"><div style="font-weight:700;font-size:12px">'+escHtml(b.name)+'</div><div style="font-size:10px;color:var(--text-light);font-family:monospace;margin-top:2px">'+escHtml(b.id)+'</div></div>';
-  }).join('');
+function menusReset(){
+  menusState={brandId:null,brandDisplayId:null,brandName:null,venues:[],highlightVenueId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
+  menusImageUploadState={file:null,currentUrl:null};
+  var input=document.getElementById('menusSearchInput');
+  if(input){input.value='';input.focus();}
+  var result=document.getElementById('menusResult');
+  if(result){result.style.display='none';result.innerHTML='';}
 }
 
-async function menusSelectBrand(brandUuid,brandDisplayId){
-  menusState.selectedBrandUuid=brandUuid;
-  menusState.selectedBrandDisplayId=brandDisplayId;
+async function menusSearch(){
+  var inputEl=document.getElementById('menusSearchInput');
+  var raw=((inputEl&&inputEl.value)||'').trim();
+  if(!raw){showToast('⚠️ display_idを入力してください');return;}
+  var prefix=raw.toUpperCase().split('-')[0];
+  try{
+    if(prefix==='MRC'||prefix==='CRP'){
+      var mRes=await sb.from('merchants').select('id,display_id,name').eq('display_id',raw).maybeSingle();
+      if(mRes.error)throw mRes.error;
+      if(!mRes.data){showToast('⚠️ 該当する法人が見つかりません');return;}
+      var bRes=await sb.from('brands').select('id,display_id,name,merchant_id').eq('merchant_id',mRes.data.id).order('name');
+      if(bRes.error)throw bRes.error;
+      var brands=bRes.data||[];
+      if(brands.length===0){showToast('⚠️ この法人に紐づくブランドがありません');return;}
+      if(brands.length===1){await menusLoadBrand(brands[0].id,brands[0].display_id,brands[0].name,null);return;}
+      menusShowBrandSelect(mRes.data,brands);
+      return;
+    }
+    if(prefix==='BRD'){
+      var brRes=await sb.from('brands').select('id,display_id,name').eq('display_id',raw).maybeSingle();
+      if(brRes.error)throw brRes.error;
+      if(!brRes.data){showToast('⚠️ 該当するブランドが見つかりません');return;}
+      await menusLoadBrand(brRes.data.id,brRes.data.display_id,brRes.data.name,null);
+      return;
+    }
+    if(prefix==='STR'||prefix==='VEN'){
+      var vRes=await sb.from('venues').select('id,display_id,name,brand_id').eq('display_id',raw).maybeSingle();
+      if(vRes.error)throw vRes.error;
+      if(!vRes.data){showToast('⚠️ 該当する店舗が見つかりません');return;}
+      var brRes2=await sb.from('brands').select('id,display_id,name').eq('id',vRes.data.brand_id).maybeSingle();
+      if(brRes2.error)throw brRes2.error;
+      if(!brRes2.data){showToast('⚠️ 店舗のブランド情報が取得できません');return;}
+      await menusLoadBrand(brRes2.data.id,brRes2.data.display_id,brRes2.data.name,vRes.data.id);
+      return;
+    }
+    showToast('⚠️ 有効なdisplay_idを入力してください（CRP- / BRD- / STR-）');
+  }catch(e){
+    showToast('❌ 検索エラー: '+(e.message||e));
+  }
+}
+
+function menusShowBrandSelect(merchant,brands){
+  var result=document.getElementById('menusResult');
+  if(!result)return;
+  var html='<div class="card"><div class="card-title">'+escHtml(merchant.name||'')+' に紐づくブランドを選択</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    brands.map(function(b){
+      var safeName=(b.name||'').replace(/'/g,"\\'");
+      return '<button class="btn-outline" style="text-align:left;padding:12px 14px" onclick="menusLoadBrand(\''+b.id+'\',\''+escHtml(b.display_id||'')+'\',\''+escHtml(safeName)+'\',null)">'+
+        '<div style="font-weight:700">'+escHtml(b.name||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text-light);font-family:monospace">'+escHtml(b.display_id||'')+'</div>'+
+      '</button>';
+    }).join('')+
+    '</div></div>';
+  result.style.display='';
+  result.innerHTML=html;
+}
+
+async function menusLoadBrand(brandId,brandDisplayId,brandName,highlightVenueId){
+  menusState.brandId=brandId;
+  menusState.brandDisplayId=brandDisplayId;
+  menusState.brandName=brandName;
+  menusState.highlightVenueId=highlightVenueId||null;
   menusState.selectedPatternId=null;
-  menusState.patterns=[];
   menusState.products=[];
   menusState.productSizesMap={};
-  menusState.categories=[];
-  menusRenderBrandList();
-  var addPatternBtn=document.getElementById('menusBtnAddPattern');
-  if(addPatternBtn)addPatternBtn.disabled=false;
-  var addProductBtn=document.getElementById('menusBtnAddProduct');
-  if(addProductBtn)addProductBtn.disabled=true;
+  var result=document.getElementById('menusResult');
+  if(result){result.style.display='';result.innerHTML='<div class="card"><div class="empty-state">読み込み中...</div></div>';}
   try{
-    var [pRes,cRes]=await Promise.all([
-      sb.from('menu_patterns').select('*').eq('brand_id',brandUuid).order('code'),
-      sb.from('categories').select('*').eq('brand_id',brandUuid).order('sort_order').order('name')
+    var [vRes,pRes,cRes]=await Promise.all([
+      sb.from('venues').select('id,display_id,name,menu_pattern_id').eq('brand_id',brandId).order('name'),
+      sb.from('menu_patterns').select('*').eq('brand_id',brandId).order('code'),
+      sb.from('categories').select('*').eq('brand_id',brandId).order('sort_order').order('name')
     ]);
+    if(vRes.error)throw vRes.error;
     if(pRes.error)throw pRes.error;
     if(cRes.error)throw cRes.error;
+    menusState.venues=vRes.data||[];
     menusState.patterns=pRes.data||[];
     menusState.categories=cRes.data||[];
   }catch(e){
     showToast('❌ 読み込みエラー: '+(e.message||e));
+    menusState.venues=[];
     menusState.patterns=[];
     menusState.categories=[];
   }
+  menusRenderResultPanes();
+}
+
+function menusRenderResultPanes(){
+  var result=document.getElementById('menusResult');
+  if(!result)return;
+  result.style.display='';
+  result.innerHTML=
+    '<div style="display:grid;grid-template-columns:35% 30% 1fr;gap:16px;align-items:flex-start">'+
+      '<div class="card" style="margin-bottom:0"><div id="menusLeftPane"></div></div>'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title">📋 メニューパターン <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openMenusAddPatternModal()">＋ 新規</button></span></div><div id="menusPatternList"></div></div>'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title" id="menusProductTitle">🍽️ 商品 <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddProduct" onclick="openMenusAddProductModal()" disabled>＋ 商品追加</button></span></div><div id="menusProductList"><div class="empty-state">パターンを選択してください</div></div></div>'+
+    '</div>';
+  menusRenderLeftPane();
   menusRenderPatternList();
   menusRenderProductList();
+}
+
+function menusRenderLeftPane(){
+  var el=document.getElementById('menusLeftPane');
+  if(!el)return;
+  var venuesHtml;
+  if(!menusState.venues.length){
+    venuesHtml='<div class="empty-state" style="padding:16px">紐づく店舗がありません</div>';
+  }else{
+    venuesHtml=menusState.venues.map(function(v){
+      var isHighlight=menusState.highlightVenueId===v.id;
+      var cardBg=isHighlight?'#f3efff':'#fff';
+      var cardBorder=isHighlight?'var(--accent)':'var(--border)';
+      var currentPattern=menusState.patterns.find(function(p){return p.id===v.menu_pattern_id;});
+      var currentLabel=currentPattern?currentPattern.name:'(未設定)';
+      var optionsHtml='<option value=""'+(!v.menu_pattern_id?' selected':'')+'>(未設定)</option>'+
+        menusState.patterns.map(function(p){
+          var sel=(v.menu_pattern_id===p.id)?' selected':'';
+          return '<option value="'+escHtml(p.id)+'"'+sel+'>'+escHtml(p.name||'')+'</option>';
+        }).join('');
+      return '<div style="padding:12px;border:1px solid '+cardBorder+';border-radius:6px;margin-bottom:8px;background:'+cardBg+'">'+
+        '<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+escHtml(v.name||'')+'</div>'+
+        '<div style="font-size:10px;color:var(--text-light);font-family:monospace;margin-bottom:8px">'+escHtml(v.display_id||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px">適用中: '+escHtml(currentLabel)+'</div>'+
+        '<select onchange="menusChangeVenuePattern(\''+v.id+'\',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fff">'+optionsHtml+'</select>'+
+      '</div>';
+    }).join('');
+  }
+  el.innerHTML=
+    '<div style="padding:4px 4px 12px 4px;border-bottom:1px solid var(--border);margin-bottom:12px">'+
+      '<div style="font-weight:800;font-size:16px">'+escHtml(menusState.brandName||'')+'</div>'+
+      '<div style="font-size:11px;color:var(--text-light);font-family:monospace;margin-top:2px">'+escHtml(menusState.brandDisplayId||'')+'</div>'+
+    '</div>'+
+    '<div class="card-title" style="padding:0 0 8px 0;margin-bottom:8px">🏪 紐づく店舗 ('+menusState.venues.length+')</div>'+
+    venuesHtml;
+}
+
+async function menusChangeVenuePattern(venueId,patternId){
+  var payload={menu_pattern_id:patternId||null};
+  try{
+    var r=await sb.from('venues').update(payload).eq('id',venueId).select('id,menu_pattern_id');
+    if(r.error)throw r.error;
+    if(!r.data||!r.data.length)throw new Error('更新権限がないか対象が見つかりません');
+    logAudit('update_venue_menu_pattern','venues',venueId,{menu_pattern_id:patternId||null});
+    var idx=menusState.venues.findIndex(function(v){return v.id===venueId;});
+    if(idx>=0)menusState.venues[idx].menu_pattern_id=patternId||null;
+    showToast('✅ 適用パターンを更新しました');
+    menusRenderLeftPane();
+    menusRenderPatternList();
+  }catch(e){
+    showToast('❌ 更新に失敗しました: '+(e.message||e));
+    menusRenderLeftPane();
+  }
 }
 
 function menusRenderPatternList(){
   var el=document.getElementById('menusPatternList');
   if(!el)return;
-  if(!menusState.selectedBrandUuid){el.innerHTML='<div class="empty-state">ブランドを選択してください</div>';return;}
-  if(!menusState.patterns.length){el.innerHTML='<div class="empty-state">パターンがありません<br><span style="font-size:11px">右上の「＋新規作成」から追加</span></div>';return;}
+  if(!menusState.brandId){el.innerHTML='<div class="empty-state">ブランドを検索してください</div>';return;}
+  if(!menusState.patterns.length){el.innerHTML='<div class="empty-state">パターンがありません<br><span style="font-size:11px">右上の「＋新規」から追加</span></div>';return;}
   el.innerHTML=menusState.patterns.map(function(p){
     var isActive=menusState.selectedPatternId===p.id;
     var bg=isActive?'#f3efff':'#fff';
     var border=isActive?'var(--accent)':'var(--border)';
     var dimmed=p.is_active===false?'opacity:0.55;':'';
     var inactiveTag=p.is_active===false?' <span style="font-size:9px;background:#dfe6e9;color:#636e72;padding:1px 6px;border-radius:4px">無効</span>':'';
+    var applyCount=menusState.venues.filter(function(v){return v.menu_pattern_id===p.id;}).length;
     return '<div style="padding:10px 12px;border:1px solid '+border+';border-radius:6px;margin-bottom:6px;background:'+bg+';'+dimmed+'display:flex;align-items:center;gap:8px">'+
       '<div style="flex:1;min-width:0;cursor:pointer" onclick="menusSelectPattern(\''+p.id+'\')">'+
         '<div style="font-weight:700;font-size:12px">'+escHtml(p.name||'')+inactiveTag+'</div>'+
         '<div style="font-size:10px;color:var(--text-light);font-family:monospace;margin-top:2px">'+escHtml(p.code||'')+'</div>'+
+        '<div style="font-size:10px;color:var(--accent);margin-top:4px;font-weight:600">🏪 適用店舗: '+applyCount+'件</div>'+
       '</div>'+
       '<button class="btn-outline btn-sm" title="編集" onclick="openMenusEditPatternModal(\''+p.id+'\')">✏️</button>'+
       '<button class="btn-outline btn-sm" title="削除" onclick="deleteMenusPattern(\''+p.id+'\')">🗑️</button>'+
@@ -877,10 +1008,10 @@ function menusRenderProductList(){
 
 // ----- Pattern CRUD -----
 async function openMenusAddPatternModal(){
-  if(!menusState.selectedBrandUuid){showToast('⚠️ ブランドを選択してください');return;}
+  if(!menusState.brandId){showToast('⚠️ ブランドを選択してください');return;}
   var nextCode='MP-001';
   try{
-    var d=await sb.from('menu_patterns').select('code').eq('brand_id',menusState.selectedBrandUuid).order('code',{ascending:false}).limit(1);
+    var d=await sb.from('menu_patterns').select('code').eq('brand_id',menusState.brandId).order('code',{ascending:false}).limit(1);
     if(d.data&&d.data.length){
       var m=/MP-(\d+)/.exec(d.data[0].code||'');
       if(m){var num=parseInt(m[1],10)||0;nextCode='MP-'+String(num+1).padStart(3,'0');}
@@ -902,18 +1033,19 @@ async function openMenusAddPatternModal(){
 }
 
 async function saveMenusNewPattern(){
-  if(!menusState.selectedBrandUuid){showToast('⚠️ ブランドが選択されていません');return;}
+  if(!menusState.brandId){showToast('⚠️ ブランドが選択されていません');return;}
   var name=((document.getElementById('menusNewPatternName')||{}).value||'').trim();
   var code=((document.getElementById('menusNewPatternCode')||{}).value||'').trim();
   if(!name){showToast('⚠️ パターン名は必須です');return;}
   try{
-    var r=await sb.from('menu_patterns').insert({brand_id:menusState.selectedBrandUuid,code:code,name:name,is_active:true}).select().single();
+    var r=await sb.from('menu_patterns').insert({brand_id:menusState.brandId,code:code,name:name,is_active:true}).select().single();
     if(r.error)throw r.error;
-    logAudit('create_menu_pattern','menu_patterns',r.data?r.data.id:null,{code:code,name:name,brand_id:menusState.selectedBrandUuid});
+    logAudit('create_menu_pattern','menu_patterns',r.data?r.data.id:null,{code:code,name:name,brand_id:menusState.brandId});
     closeModal();
     showToast('✅ メニューパターンを追加しました');
-    var p=await sb.from('menu_patterns').select('*').eq('brand_id',menusState.selectedBrandUuid).order('code');
+    var p=await sb.from('menu_patterns').select('*').eq('brand_id',menusState.brandId).order('code');
     menusState.patterns=p.data||[];
+    menusRenderLeftPane();
     menusRenderPatternList();
   }catch(e){
     showToast('❌ 保存に失敗しました: '+(e.message||e));
@@ -951,6 +1083,7 @@ async function saveMenusEditPattern(patternId){
     showToast('✅ メニューパターンを更新しました');
     var idx=menusState.patterns.findIndex(function(x){return x.id===patternId;});
     if(idx>=0)menusState.patterns[idx]=Object.assign({},menusState.patterns[idx],r.data[0]);
+    menusRenderLeftPane();
     menusRenderPatternList();
   }catch(e){
     showToast('❌ 更新に失敗しました: '+(e.message||e));
@@ -977,6 +1110,7 @@ async function deleteMenusPattern(patternId){
     logAudit('delete_menu_pattern','menu_patterns',patternId,{products_deleted:pids.length});
     showToast('✅ メニューパターンを削除しました');
     menusState.patterns=menusState.patterns.filter(function(x){return x.id!==patternId;});
+    menusState.venues.forEach(function(v){if(v.menu_pattern_id===patternId)v.menu_pattern_id=null;});
     if(menusState.selectedPatternId===patternId){
       menusState.selectedPatternId=null;
       menusState.products=[];
@@ -984,6 +1118,7 @@ async function deleteMenusPattern(patternId){
       var btn=document.getElementById('menusBtnAddProduct');
       if(btn)btn.disabled=true;
     }
+    menusRenderLeftPane();
     menusRenderPatternList();
     menusRenderProductList();
   }catch(e){
@@ -1134,7 +1269,7 @@ async function menusGetOrCreateCategory(catName,brandUuid){
 }
 
 async function menusSaveProduct(productId){
-  if(!menusState.selectedBrandUuid||!menusState.selectedPatternId){
+  if(!menusState.brandId||!menusState.selectedPatternId){
     showToast('⚠️ ブランドとパターンを選択してください');
     return;
   }
@@ -1163,16 +1298,16 @@ async function menusSaveProduct(productId){
   try{
     var imageUrl=null;
     if(menusImageUploadState.file){
-      imageUrl=await menusUploadProductImage(menusImageUploadState.file,menusState.selectedBrandUuid);
+      imageUrl=await menusUploadProductImage(menusImageUploadState.file,menusState.brandId);
     }else if(menusImageUploadState.currentUrl){
       imageUrl=menusImageUploadState.currentUrl;
     }
-    var categoryId=await menusGetOrCreateCategory(catName,menusState.selectedBrandUuid);
+    var categoryId=await menusGetOrCreateCategory(catName,menusState.brandId);
     var payload={
       name:name,
       description:desc||null,
       category_id:categoryId,
-      brand_id:menusState.selectedBrandUuid,
+      brand_id:menusState.brandId,
       menu_pattern_id:menusState.selectedPatternId
     };
     if(imageUrl!==null)payload.image_url=imageUrl;
