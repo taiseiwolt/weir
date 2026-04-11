@@ -4849,7 +4849,7 @@ content.innerHTML = `
         <div style="margin-top:12px">
           <label style="font-weight:600;font-size:12px">販売状態</label>
           <div style="display:flex;gap:12px;margin-top:6px">
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="available" checked> <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px">販売中</span></label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="on_sale" checked> <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px">販売中</span></label>
             <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="sold_out_today"> <span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:11px">本日売り切れ</span></label>
             <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="saleStatus" value="discontinued"> <span style="background:#ffebee;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px">終売</span></label>
           </div>
@@ -11321,8 +11321,9 @@ function mlPopulateProductModal(product) {
     try { flags = typeof product.product_flags === 'string' ? JSON.parse(product.product_flags) : product.product_flags; } catch(e) { flags = []; }
   }
   document.querySelectorAll('#menuItemTags .tag').forEach(function(t){ t.classList.toggle('selected', flags.indexOf(t.textContent) >= 0); });
-  // Sale status
-  var ss = (isEdit && product.sale_status) ? product.sale_status : 'available';
+  // Sale status (map legacy 'available' → 'on_sale' for DB compat)
+  var ss = (isEdit && product.sale_status) ? product.sale_status : 'on_sale';
+  if (ss === 'available') ss = 'on_sale';
   var ssRadio = document.querySelector('input[name="saleStatus"][value="'+ss+'"]');
   if (ssRadio) ssRadio.checked = true;
   // Image preview
@@ -11371,7 +11372,8 @@ async function mlSaveProduct() {
     if (!saleStart || !saleEnd) { alert('「期間限定」を選択した場合は販売開始日・終了日の入力が必須です'); return; }
   }
   var saleStatusEl = document.querySelector('input[name="saleStatus"]:checked');
-  var saleStatus = saleStatusEl ? saleStatusEl.value : 'available';
+  var saleStatus = saleStatusEl ? saleStatusEl.value : 'on_sale';
+  if (saleStatus === 'available') saleStatus = 'on_sale';
   var productFlags = JSON.stringify(tags);
   var imageUrl = window._menuItemImgData || mlImageData || null;
   var payload = {
