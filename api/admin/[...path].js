@@ -42,6 +42,15 @@ const ENTITY_CONFIG = {
     selectList: '*',
     selectDetail: '*',
   },
+  'menu-patterns': {
+    table: 'menu_patterns',
+    displayIdPrefix: null,
+    selectList: '*',
+    selectDetail: '*',
+    listFilters: ['brand_id'],
+    orderBy: { column: 'code', ascending: true },
+    writableFields: ['name', 'is_active'],
+  },
 };
 
 // ── Admin check ───────────────────────────────────────────
@@ -95,13 +104,13 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        return await handleGet(res, config, id);
+        return await handleGet(req, res, config, id);
       case 'POST':
         return await handlePost(req, res, config, entity);
       case 'PUT':
         return await handlePut(req, res, config, id);
       case 'DELETE':
-        return await handleDelete(res, config, id);
+        return await handleDelete(res, config, id, entity);
       default:
         return error(res, 'Method not allowed', 405);
     }
@@ -111,7 +120,7 @@ export default async function handler(req, res) {
 }
 
 // ── GET ───────────────────────────────────────────────────
-async function handleGet(res, config, id) {
+async function handleGet(req, res, config, id) {
   if (id) {
     const { data, error: dbErr } = await supabase
       .from(config.table)
@@ -123,11 +132,24 @@ async function handleGet(res, config, id) {
     return ok(res, { success: true, data });
   }
 
-  const { data, error: dbErr } = await supabase
-    .from(config.table)
-    .select(config.selectList)
-    .order('created_at', { ascending: false });
+  let query = supabase.from(config.table).select(config.selectList);
 
+  // Apply list filters from query params (whitelisted per entity)
+  if (config.listFilters) {
+    for (const filter of config.listFilters) {
+      const val = req.query && req.query[filter];
+      if (val) query = query.eq(filter, val);
+    }
+  }
+
+  // Order
+  if (config.orderBy) {
+    query = query.order(config.orderBy.column, { ascending: !!config.orderBy.ascending });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data, error: dbErr } = await query;
   if (dbErr) return error(res, dbErr.message, 500);
   return ok(res, { success: true, data });
 }
@@ -167,10 +189,19 @@ async function handlePost(req, res, config, entity) {
 async function handlePut(req, res, config, id) {
   if (!id) return error(res, 'IDが必要です', 400);
 
-  const body = req.body || {};
+  const raw = req.body || {};
   // Don't allow overwriting id or display_id
-  delete body.id;
-  delete body.display_id;
+  delete raw.id;
+  delete raw.display_id;
+
+  // Per-entity writable field whitelist
+  let body = raw;
+  if (config.writableFields) {
+    body = {};
+    for (const f of config.writableFields) {
+      if (f in raw) body[f] = raw[f];
+    }
+  }
 
   const { data, error: dbErr } = await supabase
     .from(config.table)
@@ -184,8 +215,34 @@ async function handlePut(req, res, config, id) {
 }
 
 // ── DELETE ────────────────────────────────────────────────
-async function handleDelete(res, config, id) {
+async function handleDelete(res, config, id, entity) {
   if (!id) return error(res, 'IDが必要です', 400);
+
+  // Special cascade: menu-patterns must also delete related products and product_sizes.
+  // products.menu_pattern_id uses ON DELETE SET NULL, and admin master operates
+  // across merchants via service_role, so we must do the cascade here.
+  if (entity === 'menu-patterns') {
+    const { data: products, error: pSelErr } = await supabase
+      .from('products')
+      .select('id')
+      .eq('menu_pattern_id', id);
+    if (pSelErr) return error(res, pSelErr.message, 500);
+
+    const productIds = (products || []).map((p) => p.id);
+    if (productIds.length > 0) {
+      const { error: psErr } = await supabase
+        .from('product_sizes')
+        .delete()
+        .in('product_id', productIds);
+      if (psErr) return error(res, psErr.message, 500);
+
+      const { error: pDelErr } = await supabase
+        .from('products')
+        .delete()
+        .in('id', productIds);
+      if (pDelErr) return error(res, pDelErr.message, 500);
+    }
+  }
 
   const { error: dbErr } = await supabase
     .from(config.table)

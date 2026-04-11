@@ -1038,13 +1038,24 @@ async function saveMenusNewPattern(){
   var code=((document.getElementById('menusNewPatternCode')||{}).value||'').trim();
   if(!name){showToast('⚠️ パターン名は必須です');return;}
   try{
-    var r=await sb.from('menu_patterns').insert({brand_id:menusState.brandId,code:code,name:name,is_active:true}).select().single();
-    if(r.error)throw r.error;
-    logAudit('create_menu_pattern','menu_patterns',r.data?r.data.id:null,{code:code,name:name,brand_id:menusState.brandId});
+    var token=await getToken();
+    var ir=await fetch('/api/admin/menu-patterns',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({brand_id:menusState.brandId,code:code,name:name,is_active:true})
+    });
+    var ij=await ir.json().catch(function(){return{};});
+    if(!ir.ok)throw new Error(ij.error||('HTTP '+ir.status));
+    var created=ij.data;
+    logAudit('create_menu_pattern','menu_patterns',created?created.id:null,{code:code,name:name,brand_id:menusState.brandId});
     closeModal();
     showToast('✅ メニューパターンを追加しました');
-    var p=await sb.from('menu_patterns').select('*').eq('brand_id',menusState.brandId).order('code');
-    menusState.patterns=p.data||[];
+    var lr=await fetch('/api/admin/menu-patterns?brand_id='+encodeURIComponent(menusState.brandId),{
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var lj=await lr.json().catch(function(){return{};});
+    if(!lr.ok)throw new Error(lj.error||('HTTP '+lr.status));
+    menusState.patterns=lj.data||[];
     menusRenderLeftPane();
     menusRenderPatternList();
   }catch(e){
@@ -1075,14 +1086,20 @@ async function saveMenusEditPattern(patternId){
   if(!name){showToast('⚠️ パターン名は必須です');return;}
   var isActive=document.getElementById('menusEditPatternActive')?document.getElementById('menusEditPatternActive').checked:true;
   try{
-    var r=await sb.from('menu_patterns').update({name:name,is_active:isActive}).eq('id',patternId).select();
-    if(r.error)throw r.error;
-    if(!r.data||!r.data.length)throw new Error('更新権限がないか対象が見つかりません');
+    var token=await getToken();
+    var r=await fetch('/api/admin/menu-patterns/'+encodeURIComponent(patternId),{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({name:name,is_active:isActive})
+    });
+    var j=await r.json().catch(function(){return{};});
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    var updated=j.data;
     logAudit('update_menu_pattern','menu_patterns',patternId,{name:name,is_active:isActive});
     closeModal();
     showToast('✅ メニューパターンを更新しました');
     var idx=menusState.patterns.findIndex(function(x){return x.id===patternId;});
-    if(idx>=0)menusState.patterns[idx]=Object.assign({},menusState.patterns[idx],r.data[0]);
+    if(idx>=0&&updated)menusState.patterns[idx]=Object.assign({},menusState.patterns[idx],updated);
     menusRenderLeftPane();
     menusRenderPatternList();
   }catch(e){
@@ -1095,19 +1112,14 @@ async function deleteMenusPattern(patternId){
   if(!p){showToast('⚠️ パターンが見つかりません');return;}
   if(!confirm('パターン「'+p.name+'」を削除します。\nこのパターンと紐づく商品をすべて削除します。よろしいですか？'))return;
   try{
-    var pr=await sb.from('products').select('id').eq('menu_pattern_id',patternId);
-    if(pr.error)throw pr.error;
-    var pids=(pr.data||[]).map(function(x){return x.id;});
-    if(pids.length){
-      var sDel=await sb.from('product_sizes').delete().in('product_id',pids);
-      if(sDel.error)throw sDel.error;
-      var pDel=await sb.from('products').delete().in('id',pids);
-      if(pDel.error)throw pDel.error;
-    }
-    var mpDel=await sb.from('menu_patterns').delete().eq('id',patternId).select();
-    if(mpDel.error)throw mpDel.error;
-    if(!mpDel.data||!mpDel.data.length)throw new Error('削除権限がないか対象が見つかりません');
-    logAudit('delete_menu_pattern','menu_patterns',patternId,{products_deleted:pids.length});
+    var token=await getToken();
+    var r=await fetch('/api/admin/menu-patterns/'+encodeURIComponent(patternId),{
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var j=await r.json().catch(function(){return{};});
+    if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+    logAudit('delete_menu_pattern','menu_patterns',patternId,{});
     showToast('✅ メニューパターンを削除しました');
     menusState.patterns=menusState.patterns.filter(function(x){return x.id!==patternId;});
     menusState.venues.forEach(function(v){if(v.menu_pattern_id===patternId)v.menu_pattern_id=null;});
