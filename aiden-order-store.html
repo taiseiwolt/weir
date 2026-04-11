@@ -928,7 +928,9 @@ img { max-width:100%; display:block; }
 // ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const STORE_SLUG   = 'sumibite-shibuya';
+// STORE_SLUG: URLパラメータから動的取得（ハードコード禁止 D-83）
+const _slugParams = new URLSearchParams(window.location.search);
+const STORE_SLUG   = _slugParams.get('slug') || _slugParams.get('store_slug') || '';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Use shared escH from aiden-common.js
@@ -1028,212 +1030,13 @@ let userLng = _addrData.lng || _storedData.userLng || null;
 let isOutOfDeliveryArea = false;
 let isStoreClosed = false; // true if outside business hours
 
-let CATEGORIES = [
-  { id:'popular', name:'人気の商品', emoji:'🔥', desc:'' },
-  { id:'takeout', name:'テイクアウト限定商品', emoji:'', desc:'【期間限定】テイクアウト特価。※配達でのご注文は出来ません。' },
-  { id:'limited', name:'期間限定商品', emoji:'✨', desc:'' },
-  { id:'lunch', name:'ランチメニュー', emoji:'🍱', desc:'11時から14時までの時間限定メニュー' },
-  { id:'single', name:'1人前', emoji:'🍣', desc:'' },
-  { id:'party2', name:'2〜3人前', emoji:'🍽', desc:'' },
-  { id:'party4', name:'4〜5人前', emoji:'🎉', desc:'' },
-  { id:'nigiri', name:'お好みにぎり', emoji:'🍣', desc:'' },
-  { id:'don', name:'海鮮丼', emoji:'🍚', desc:'海の幸を楽しむ丼はこちらからどうぞ\n追加トッピング始めました！お好みにカスタマイズしてお楽しみ下さい' },
-  { id:'set', name:'セットメニュー', emoji:'🎁', desc:'' },
-  { id:'side', name:'サイドメニュー', emoji:'🥗', desc:'' },
-  { id:'soup', name:'汁物', emoji:'🍵', desc:'' },
-  { id:'dessert', name:'デザート', emoji:'🍰', desc:'' },
-  { id:'drink', name:'ドリンク', emoji:'🥤', desc:'' },
-];
+// CATEGORIES: DBから動的取得（ハードコード禁止 D-83）
+let CATEGORIES = [];
 
 const MAX_VISIBLE_TABS = 9;
 
-let ITEMS = [
-  // =============================================
-  // Popular - オプションなし（シンプル確認用）
-  // =============================================
-  { id:'1', cat:'popular', name:'花（はな）ちらし', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=400&fit=crop', tags:['popular'] },
-  { id:'2', cat:'popular', name:'マグトロ丼', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop', tags:[] },
-  { id:'3', cat:'popular', name:'ネバトロ丼', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400&h=400&fit=crop', tags:[] },
-
-  // =============================================
-  // Takeout - オプションなし
-  // =============================================
-  { id:'4', cat:'takeout', name:'花（はな）ちらし', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=400&fit=crop', tags:['popular'] },
-  { id:'5', cat:'takeout', name:'マグトロ丼', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop', tags:[] },
-  { id:'6', cat:'takeout', name:'ネバトロ丼', desc:'ワンコインで、お腹も心も大満足。※配達でのご注文は出来ません。', price:556, img:'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400&h=400&fit=crop', tags:[] },
-
-  // =============================================
-  // Limited - 期間限定（オプションなし）
-  // =============================================
-  { id:'7', cat:'limited', name:'海賓ひなちらし', desc:'期間限定商品🌸 つきじ海賓が、春らしい「ひなちらし」をご用意。トロたく巻2本、サーモン、ちらし部分（かんぴょう・しいたけ…', price:5000, img:'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&h=400&fit=crop', tags:['limited'] },
-
-  // =============================================
-  // パターンA: ラジオ（必須）×1 ＋ 金額差あり
-  // サイズ選択で価格が変わるパターン
-  // =============================================
-  { id:'8', cat:'lunch', name:'海鮮ちらしセット', desc:'新鮮な海鮮をふんだんに盛り付けた当店人気No.1のちらし寿司セット。味噌汁・小鉢付き。', price:1134, img:'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=400&h=400&fit=crop', tags:['popular'],
-    options:[
-      { id:'op1', title:'サイズ', type:'radio', required:true, choices:[
-        { name:'並盛', price:0, default:true },
-        { name:'大盛（+¥150）', price:150 },
-        { name:'特盛（+¥300）', price:300 }
-      ]},
-    ]
-  },
-
-  // =============================================
-  // パターンB: ラジオ（必須）×2 ＋ 金額差あり
-  // サイズ＋ご飯の種類で両方に価格設定
-  // =============================================
-  { id:'9', cat:'don', name:'特上ちらし重', desc:'サーモン、真鯛、中トロ、イカ、まぐろ、ぶり、ほたて、大生エビ、イクラ、ウニ、厚焼玉子、錦糸玉子、大葉 ※写真は盛り付けイメージ…', price:2959, img:'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=400&fit=crop', tags:['recommend'],
-    options:[
-      { id:'op2a', title:'ご飯の種類', type:'radio', required:true, choices:[
-        { name:'白米', price:0, default:true },
-        { name:'酢飯（+¥50）', price:50 },
-        { name:'玄米（+¥100）', price:100 }
-      ]},
-      { id:'op2b', title:'ご飯の量', type:'radio', required:true, choices:[
-        { name:'少なめ（−¥100）', price:-100 },
-        { name:'普通', price:0, default:true },
-        { name:'大盛（+¥150）', price:150 },
-        { name:'特盛（+¥300）', price:300 }
-      ]},
-    ]
-  },
-
-  // =============================================
-  // パターンC: カウンター（任意） ＋ 各アイテムに単価
-  // トッピング個数選択
-  // =============================================
-  { id:'10', cat:'don', name:'熟成醤油の漬けチラシ丼', desc:'中トロ、まぐろ、ブリ、サーモン、イカ、ヒラメ、ホタテ、生えび、厚焼玉子、錦糸玉子、大葉 ※写真は盛り付けイメージです。', price:2181, img:'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&h=400&fit=crop', tags:[],
-    options:[
-      { id:'op3', title:'追加トッピング', type:'counter', required:false, min:0, max:5, choices:[
-        { name:'いくら', price:220 },
-        { name:'うに', price:330 },
-        { name:'サーモン', price:165 },
-        { name:'中トロ', price:275 },
-        { name:'玉子', price:55 }
-      ]}
-    ]
-  },
-  { id:'11', cat:'don', name:'上ちらし丼', desc:'コハダ、タコ、まぐろ、イカ、サーモン、ぶり、穴子、寿司エビ、ネギトロ、厚焼玉子、錦糸玉子 ※写真は盛り付けイメージ…', price:1771, img:'https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=400&fit=crop', tags:[] },
-
-  // =============================================
-  // パターンD: ラジオ（必須）＋チェックボックス（任意・金額あり・最大3つ）
-  // わさび選択＋有料薬味トッピング
-  // =============================================
-  { id:'12', cat:'single', name:'寿（ことぶき）【8貫】', desc:'中トロ、サーモン、生えび、加ウニ軍艦、イクラ軍艦、ほたて ※使用するネタは仕入れにより変わります。', price:2559, img:'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=400&h=400&fit=crop', tags:['recommend'],
-    options:[
-      { id:'op4a', title:'わさび', type:'radio', required:true, choices:[
-        { name:'あり', price:0, default:true },
-        { name:'なし', price:0 }
-      ]},
-      { id:'op4b', title:'薬味トッピング（最大3つ）', type:'checkbox', required:false, min:0, max:3, choices:[
-        { name:'大葉（+¥30）', price:30 },
-        { name:'みょうが（+¥50）', price:50 },
-        { name:'ねぎ（+¥30）', price:30 },
-        { name:'生姜（+¥30）', price:30 },
-        { name:'ゆず皮（+¥80）', price:80 }
-      ]}
-    ]
-  },
-
-  // =============================================
-  // パターンE: チェックボックス（必須・最低1つ・金額あり）＋ラジオ
-  // ソース必須選択＋サイドメニュー選択
-  // =============================================
-  { id:'13', cat:'single', name:'彩（いろどり）握りセット', desc:'店長厳選の旬ネタ10貫。ソースを最低1つお選びください。', price:1980, img:'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400&h=400&fit=crop', tags:[],
-    options:[
-      { id:'op5a', title:'つけダレ（最低1つ選択）', type:'checkbox', required:true, min:1, max:3, choices:[
-        { name:'特製醤油', price:0 },
-        { name:'ポン酢', price:0 },
-        { name:'藻塩', price:0 },
-        { name:'トリュフ塩（+¥120）', price:120 }
-      ]},
-      { id:'op5b', title:'サイドメニュー追加', type:'radio', required:false, choices:[
-        { name:'追加なし', price:0, default:true },
-        { name:'味噌汁（+¥180）', price:180 },
-        { name:'茶碗蒸し（+¥280）', price:280 },
-        { name:'サラダ（+¥350）', price:350 }
-      ]}
-    ]
-  },
-
-  // =============================================
-  // パターンF: ラジオ＋チェックボックス＋カウンター（3種全部載せ）
-  // フルオプション検証用
-  // =============================================
-  { id:'19', cat:'party2', name:'華やぎ（2〜3人前）', desc:'人気ネタを詰め合わせた華やかなセット。パーティーやお祝いに最適。', price:3980, img:'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=400&fit=crop', tags:['recommend'],
-    options:[
-      { id:'op6a', title:'盛り付けスタイル', type:'radio', required:true, choices:[
-        { name:'桶盛り', price:0, default:true },
-        { name:'舟盛り（+¥500）', price:500 },
-        { name:'重箱（+¥300）', price:300 }
-      ]},
-      { id:'op6b', title:'無料サービス（最大2つ）', type:'checkbox', required:false, min:0, max:2, choices:[
-        { name:'ガリ増量', price:0 },
-        { name:'醤油ボトル', price:0 },
-        { name:'割り箸追加', price:0 }
-      ]},
-      { id:'op6c', title:'追加ネタ（1個ずつ追加可）', type:'counter', required:false, min:0, max:3, choices:[
-        { name:'中トロ（+¥550）', price:550 },
-        { name:'ウニ（+¥680）', price:680 },
-        { name:'いくら（+¥440）', price:440 },
-        { name:'ボタンエビ（+¥380）', price:380 }
-      ]}
-    ]
-  },
-
-  // =============================================
-  // パターンG: カウンター（必須・最低1つ以上）＋金額あり
-  // 単品にぎり個数選択
-  // =============================================
-  { id:'21', cat:'nigiri', name:'おまかせにぎり（単品）', desc:'お好きなネタを1貫ずつお選びください。最低1貫からご注文いただけます。', price:0, img:'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400&h=400&fit=crop', tags:['popular'],
-    options:[
-      { id:'op7', title:'ネタを選択（各1貫単位・最低1つ）', type:'counter', required:true, min:0, max:10, choices:[
-        { name:'サーモン', price:165 },
-        { name:'まぐろ赤身', price:198 },
-        { name:'中トロ', price:330 },
-        { name:'大トロ', price:550 },
-        { name:'えび', price:143 },
-        { name:'いか', price:132 },
-        { name:'たまご', price:88 }
-      ]}
-    ]
-  },
-  { id:'22', cat:'nigiri', name:'まぐろ（2貫）', desc:'赤身の旨味が凝縮', price:220, img:'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=400&fit=crop', tags:[] },
-
-  // =============================================
-  // パターンH: 割引商品＋ラジオ（金額差あり）
-  // 割引表示とオプション加算の組み合わせ
-  // =============================================
-  { id:'23', cat:'set', name:'海賓ファミリーセット', desc:'ご家族で楽しめるお得なセット。にぎり・巻物・サイド付き。', price:4500, img:'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&h=400&fit=crop', tags:['discount'], originalPrice:5200,
-    options:[
-      { id:'op8a', title:'ドリンクセット', type:'radio', required:true, choices:[
-        { name:'ドリンクなし', price:0, default:true },
-        { name:'ソフトドリンク×4（+¥600）', price:600 },
-        { name:'ビール×4（+¥1200）', price:1200 }
-      ]},
-      { id:'op8b', title:'デザート追加', type:'checkbox', required:false, min:0, max:4, choices:[
-        { name:'抹茶アイス（+¥220）', price:220 },
-        { name:'わらび餅（+¥180）', price:180 },
-        { name:'黒蜜きなこプリン（+¥250）', price:250 },
-        { name:'フルーツ盛り（+¥350）', price:350 }
-      ]}
-    ]
-  },
-
-  { id:'20', cat:'party4', name:'祝い膳（4〜5人前）', desc:'豪華絢爛。特別な日のためのプレミアムセット。', price:7980, img:'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=400&h=400&fit=crop', tags:[] },
-
-  // =============================================
-  // サイド・汁物・デザート・ドリンク（オプションなし・レコメンド用）
-  // =============================================
-  { id:'14', cat:'side', name:'お味噌汁 あおさ', desc:'風味豊かなあおさの味噌汁', price:135, img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=400&fit=crop', tags:[] },
-  { id:'15', cat:'side', name:'コハダ', desc:'新鮮なコハダの握り', price:178, img:'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=400&fit=crop', tags:[] },
-  { id:'16', cat:'soup', name:'海鮮味噌汁', desc:'えび、あさり、わかめが入った贅沢味噌汁', price:280, img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=400&fit=crop', tags:[] },
-  { id:'17', cat:'dessert', name:'抹茶アイス', desc:'濃厚な宇治抹茶を使用', price:220, img:'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=400&fit=crop', tags:[] },
-  { id:'18', cat:'drink', name:'緑茶', desc:'静岡産深蒸し緑茶', price:110, img:'https://images.unsplash.com/photo-1556881286-fc6915169721?w=400&h=400&fit=crop', tags:[] },
-];
+// ITEMS: DBから動的取得（ハードコード禁止 D-83）
+let ITEMS = [];
 
 // ===================================================================
 // STATE
@@ -1255,7 +1058,7 @@ async function loadFromSupabase() {
     // 1. 店舗情報取得（URLのvenue_id/store_idパラメータがあればIDで検索、なければslugで検索）
     var urlParams = new URLSearchParams(window.location.search);
     var storeIdParam = urlParams.get('venue_id') || urlParams.get('store_id') || urlParams.get('sid');
-    var query = sb.from('venues').select('*, brands(id, name)');
+    var query = sb.from('venues').select('*, brands(id, name), menu_pattern_id');
     if (storeIdParam) {
       // display_id (STR-xxx) or UUID
       var col = storeIdParam.startsWith('STR-') ? 'display_id' : 'id';
@@ -1311,16 +1114,24 @@ async function loadFromSupabase() {
       storeRequestEnabled:   storeRows.store_request_enabled  ?? STORE_DATA.storeRequestEnabled,
     };
 
-    // 4. アクティブなメニューパターン取得（menu_patterns は brand_id で紐づく）
-    const { data: patternRows } = await sb
-      .from('menu_patterns')
-      .select('id')
-      .eq('brand_id', storeRows.brand_id)
-      .eq('is_active', true)
-      .limit(1)
-      .single();
-
-    if (!patternRows) return;
+    // 4. アクティブなメニューパターン取得
+    //    優先順位: venues.menu_pattern_id > brand_id 検索
+    let patternId = storeRows.menu_pattern_id;
+    if (!patternId) {
+      const { data: patternRows } = await sb
+        .from('menu_patterns')
+        .select('id')
+        .eq('brand_id', storeRows.brand_id)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      patternId = patternRows?.id;
+    }
+    if (!patternId) {
+      // パターン未設定の場合は ITEMS を空のまま（ハードコードフォールバックなし）
+      console.warn('[AIden MO] No menu pattern found for this venue');
+      return;
+    }
 
     // 5. パターンに紐づく商品・カテゴリ・オプション一括取得
     const { data: itemRows } = await sb
@@ -1340,11 +1151,14 @@ async function loadFromSupabase() {
           )
         )
       `)
-      .eq('pattern_id', patternRows.id)
+      .eq('pattern_id', patternId)
       .eq('status', 'active')
       .order('sort_order');
 
-    if (!itemRows || itemRows.length === 0) return;
+    if (!itemRows || itemRows.length === 0) {
+      console.warn('[AIden MO] No menu items found for pattern:', patternId);
+      return; // ITEMS=[] のまま（ハードコードフォールバックなし）
+    }
 
     // 6. CATEGORIES を再構築（重複排除・順番保持）
     const catMap = new Map();
