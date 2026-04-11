@@ -576,8 +576,8 @@ async function loadFromSupabase() {
       if (campSection) campSection.style.display = 'none';
     }
 
-    // 3. Load stores for reservation dropdown
-    var storesRes = await sb.from('stores').select('id,name').eq('brand_id', brandId).order('name');
+    // 3. Load venues for reservation dropdown
+    var storesRes = await sb.from('venues').select('id,name').eq('brand_id', brandId).order('name');
     if (storesRes.data && storesRes.data.length > 0) {
       var sel = document.getElementById('rm-store');
       if (sel) {

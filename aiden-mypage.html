@@ -384,7 +384,7 @@ function fmtDate(d) {
     }
 
     // Load brand color
-    const { data: stores } = await sb.from('stores').select('brand_id, brands!inner(primary_color,primary_dark,primary_light)').eq('brand_id', brandId).limit(1);
+    const { data: stores } = await sb.from('venues').select('brand_id, brands!inner(primary_color,primary_dark,primary_light)').eq('brand_id', brandId).limit(1);
     if (stores && stores[0] && stores[0].brands) {
       var b = stores[0].brands;
       if (b.primary_color) {

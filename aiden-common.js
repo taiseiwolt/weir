@@ -71,12 +71,12 @@
       var client = getSb();
       if (client) {
         try {
-          // Try store slug prefix match
+          // Try venue slug prefix match
           var prefix = brandSlug.split('-')[0];
-          var res = await client.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+          var res = await client.from('venues').select('brand_id').ilike('slug', prefix + '-%').limit(1);
           if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].brand_id };
-          // Try exact store slug match
-          var exact = await client.from('stores').select('brand_id').eq('slug', brandSlug).limit(1);
+          // Try exact venue slug match
+          var exact = await client.from('venues').select('brand_id').eq('slug', brandSlug).limit(1);
           if (exact.data && exact.data.length > 0) return { type: 'id', value: exact.data[0].brand_id };
         } catch (e) { /* fall through to default */ }
       }

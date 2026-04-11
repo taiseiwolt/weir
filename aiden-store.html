@@ -1030,7 +1030,8 @@ var GENRES = {
    ===================================================== */
 // ===== API CONFIG =====
 const API_BASE = 'https://aiden-jp.net'; // Production domain
-const STORE_SLUG = 'sumibite-shibuya';
+// URLパラメータ ?store=xxx からslugを取得（例: aiden-store.html?store=sumibite-shibuya）
+const STORE_SLUG = new URLSearchParams(window.location.search).get('store');
 
 async function apiFetch(path) {
   const token = localStorage.getItem('aiden_token');
@@ -1047,8 +1048,9 @@ const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoreFromSupabase() {
-  // Direct Supabase
-  var {data: storeData} = await sb.from('stores').select('id, name, slug, brand_id, address, phone, lat, lng, is_active, hero_image_url, logo_image_url, description, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
+  if (!STORE_SLUG) return; // URLパラメータ未指定時は何もしない
+  // Direct Supabase（D-89: stores→venues rename済み。is_active/hero_image_url/logo_image_url/description は venues に存在しないため削除）
+  var {data: storeData} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, lat, lng, status, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
   STORE.storeId = storeData.id;
   STORE.name = storeData.name;

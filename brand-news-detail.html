@@ -158,7 +158,7 @@ async function resolveBrandId() {
   var { data: brandBySlug } = await sb.from('brands').select('id').eq('slug', _brandParam).limit(1);
   if (brandBySlug && brandBySlug.length > 0) return brandBySlug[0].id;
   var prefix = _brandParam.split('-')[0];
-  var { data } = await sb.from('stores').select('brand_id').ilike('slug', prefix + '-%').limit(1);
+  var { data } = await sb.from('venues').select('brand_id').ilike('slug', prefix + '-%').limit(1);
   if (data && data.length > 0) return data[0].brand_id;
   return DEFAULT_BRAND_ID;
 }
