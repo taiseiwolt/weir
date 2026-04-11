@@ -842,7 +842,7 @@ function menusRenderResultPanes(){
     '<div style="display:grid;grid-template-columns:35% 30% 1fr;gap:16px;align-items:flex-start">'+
       '<div class="card" style="margin-bottom:0"><div id="menusLeftPane"></div></div>'+
       '<div class="card" style="margin-bottom:0"><div class="card-title">📋 メニューパターン <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openMenusAddPatternModal()">＋ 新規</button></span></div><div id="menusPatternList"></div></div>'+
-      '<div class="card" style="margin-bottom:0"><div class="card-title" id="menusProductTitle">🍽️ 商品 <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddProduct" onclick="openMenusAddProductModal()" disabled>＋ 商品追加</button></span></div><div id="menusProductList"><div class="empty-state">パターンを選択してください</div></div></div>'+
+      '<div class="card" style="margin-bottom:0"><div class="card-title" id="menusProductTitle">🍽️ 商品 <span class="ct-right"><button class="btn btn-primary btn-sm" id="menusBtnAddProduct" onclick="openMenusAddProductModal()">＋ 商品追加</button></span></div><div id="menusProductList"><div class="empty-state">パターンを選択してください</div></div></div>'+
     '</div>';
   menusRenderLeftPane();
   menusRenderPatternList();
@@ -1127,8 +1127,6 @@ async function deleteMenusPattern(patternId){
       menusState.selectedPatternId=null;
       menusState.products=[];
       menusState.productSizesMap={};
-      var btn=document.getElementById('menusBtnAddProduct');
-      if(btn)btn.disabled=true;
     }
     menusRenderLeftPane();
     menusRenderPatternList();
@@ -1140,7 +1138,7 @@ async function deleteMenusPattern(patternId){
 
 // ----- Product CRUD (with sizes + image upload) -----
 function openMenusAddProductModal(){
-  if(!menusState.selectedPatternId){showToast('⚠️ パターンを選択してください');return;}
+  if(!menusState.brandId){showToast('⚠️ ブランドを選択してください');return;}
   menusImageUploadState={file:null,currentUrl:null};
   _renderMenusProductModal(null);
 }
@@ -1166,6 +1164,11 @@ function _renderMenusProductModal(product){
   var currentImageUrl=isEdit?(product.image_url||''):'';
   var hasSize=sizes.length>0;
   var catOptions=menusState.categories.map(function(c){return '<option value="'+escHtml(c.name)+'">';}).join('');
+  var currentPatternId=isEdit?(product.menu_pattern_id||''):(menusState.selectedPatternId||'');
+  var patternOptions=(menusState.patterns||[]).map(function(p){
+    var sel=(currentPatternId===p.id)?' selected':'';
+    return '<option value="'+escHtml(p.id)+'"'+sel+'>'+escHtml(p.name||'')+'</option>';
+  }).join('');
   var previewStyle='width:100px;height:100px;border:1px solid var(--border);border-radius:8px;background-color:#f5f5f5;';
   if(currentImageUrl){
     previewStyle+='background-image:url('+JSON.stringify(currentImageUrl)+');background-size:cover;background-position:center';
@@ -1178,6 +1181,7 @@ function _renderMenusProductModal(product){
     '<div class="form-grid">'+
       '<div class="form-group full"><label>商品名 <span style="color:var(--danger)">*</span></label><input type="text" id="menusProdName" value="'+escHtml(pname)+'" placeholder="例: 特選カルビ"></div>'+
       '<div class="form-group"><label>カテゴリ</label><input type="text" id="menusProdCategory" list="menusProdCatList" value="'+escHtml(catName)+'" placeholder="例: 焼肉（新規入力可）"><datalist id="menusProdCatList">'+catOptions+'</datalist></div>'+
+      '<div class="form-group full"><label>メニューパターン <span style="font-size:10px;color:var(--text-light);font-weight:400">（任意。設定するとMO画面に表示されます）</span></label><select id="menusProdPatternId" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="">-- 未設定（MO画面に表示しない）--</option>'+patternOptions+'</select></div>'+
       '<div class="form-group" id="menusProdPriceGroup"'+(hasSize?' style="display:none"':'')+'><label>価格 (サイズなし時) <span style="color:var(--danger)">*</span></label><input type="number" id="menusProdPrice" value="" placeholder="例: 1280" min="0"></div>'+
       '<div class="form-group full"><label>説明</label><textarea id="menusProdDesc" rows="2" placeholder="商品の説明...">'+escHtml(pdesc)+'</textarea></div>'+
       '<div class="form-group full"><label>商品画像</label>'+
@@ -1281,13 +1285,15 @@ async function menusGetOrCreateCategory(catName,brandUuid){
 }
 
 async function menusSaveProduct(productId){
-  if(!menusState.brandId||!menusState.selectedPatternId){
-    showToast('⚠️ ブランドとパターンを選択してください');
+  if(!menusState.brandId){
+    showToast('⚠️ ブランドを選択してください');
     return;
   }
   var name=((document.getElementById('menusProdName')||{}).value||'').trim();
   var catName=((document.getElementById('menusProdCategory')||{}).value||'').trim();
   var desc=((document.getElementById('menusProdDesc')||{}).value||'').trim();
+  var patternIdEl=document.getElementById('menusProdPatternId');
+  var productPatternId=(patternIdEl&&patternIdEl.value)?patternIdEl.value:null;
   if(!name){showToast('⚠️ 商品名は必須です');return;}
   var container=document.getElementById('menusProdSizes');
   var sizeRows=container?container.querySelectorAll('.menus-size-row'):[];
@@ -1320,7 +1326,7 @@ async function menusSaveProduct(productId){
       description:desc||null,
       category_id:categoryId,
       brand_id:menusState.brandId,
-      menu_pattern_id:menusState.selectedPatternId
+      menu_pattern_id:productPatternId
     };
     if(imageUrl!==null)payload.image_url=imageUrl;
     var savedProductId;
@@ -1342,7 +1348,9 @@ async function menusSaveProduct(productId){
     if(si.error)throw si.error;
     closeModal();
     showToast(productId?'✅ 商品を更新しました':'✅ 商品を追加しました');
-    await menusSelectPattern(menusState.selectedPatternId);
+    if(menusState.selectedPatternId){
+      await menusSelectPattern(menusState.selectedPatternId);
+    }
   }catch(e){
     showToast('❌ '+(productId?'更新':'保存')+'に失敗しました: '+(e.message||e));
   }
