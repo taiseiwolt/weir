@@ -1252,10 +1252,10 @@ let prodOptionState = {};
 // ===================================================================
 async function loadFromSupabase() {
   try {
-    // 1. 店舗情報取得（URLのstore_idパラメータがあればIDで検索、なければslugで検索）
+    // 1. 店舗情報取得（URLのvenue_id/store_idパラメータがあればIDで検索、なければslugで検索）
     var urlParams = new URLSearchParams(window.location.search);
-    var storeIdParam = urlParams.get('store_id') || urlParams.get('sid');
-    var query = sb.from('stores').select('*, brands(id, name)');
+    var storeIdParam = urlParams.get('venue_id') || urlParams.get('store_id') || urlParams.get('sid');
+    var query = sb.from('venues').select('*, brands(id, name)');
     if (storeIdParam) {
       // display_id (STR-xxx) or UUID
       var col = storeIdParam.startsWith('STR-') ? 'display_id' : 'id';
@@ -1274,9 +1274,9 @@ async function loadFromSupabase() {
 
     // 2. 営業時間取得
     const { data: hoursRows } = await sb
-      .from('store_hours')
-      .select('id, store_id, day_of_week, open_time, close_time, is_closed')
-      .eq('store_id', storeRows.id)
+      .from('venue_hours')
+      .select('id, venue_id, day_of_week, open_time, close_time, is_closed')
+      .eq('venue_id', storeRows.id)
       .order('day_of_week');
 
     const DAYS = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
@@ -1311,11 +1311,12 @@ async function loadFromSupabase() {
       storeRequestEnabled:   storeRows.store_request_enabled  ?? STORE_DATA.storeRequestEnabled,
     };
 
-    // 4. アクティブなメニューパターン取得
+    // 4. アクティブなメニューパターン取得（menu_patterns は brand_id で紐づく）
     const { data: patternRows } = await sb
       .from('menu_patterns')
       .select('id')
-      .eq('store_id', storeRows.id)
+      .eq('brand_id', storeRows.brand_id)
+      .eq('is_active', true)
       .limit(1)
       .single();
 
@@ -1425,9 +1426,9 @@ async function loadFromSupabase() {
 // INIT
 // ===================================================================
 document.addEventListener('DOMContentLoaded', async () => {
-  // store_id パラメータまたは sessionStorage がない場合はリダイレクト
+  // venue_id / store_id パラメータまたは sessionStorage がない場合はリダイレクト
   var urlParams = new URLSearchParams(window.location.search);
-  var hasStoreParam = urlParams.has('store_id') || urlParams.has('sid');
+  var hasStoreParam = urlParams.has('venue_id') || urlParams.has('store_id') || urlParams.has('sid');
   var hasSessionStore = false;
   try { hasSessionStore = !!sessionStorage.getItem('aiden_selected_store'); } catch(e) {}
   if (!hasStoreParam && !hasSessionStore) {
@@ -2762,7 +2763,7 @@ function updateVoiceStatus(text) {
   const params = new URLSearchParams(location.search);
   window._aidenChat = new AidenChatWidget({
     contextType: 'enduser',
-    storeId: params.get('store_id') || params.get('sid') || null,
+    storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
     apiBase: 'https://aiden-jp.net',
   });
@@ -2784,16 +2785,18 @@ async function showTokushoho() {
   modal.style.alignItems = 'flex-start';
 
   const params = new URLSearchParams(window.location.search);
-  const storeId = params.get('store_id');
+  const storeId = params.get('venue_id') || params.get('store_id') || params.get('sid');
   if (!storeId) {
     content.innerHTML = '<p>店舗情報が見つかりません。</p>';
     return;
   }
 
+  // display_id (STR-xxx) か UUID か自動判別
+  const storeCol = typeof storeId === 'string' && storeId.startsWith('STR-') ? 'display_id' : 'id';
   const { data: store, error } = await sb
-    .from('stores')
+    .from('venues')
     .select('id, name, address, phone, brand_id')
-    .eq('id', storeId)
+    .eq(storeCol, storeId)
     .single();
 
   if (error || !store) {

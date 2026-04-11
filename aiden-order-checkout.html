@@ -751,7 +751,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const _urlParams = new URLSearchParams(window.location.search);
-const STORE_ID     = _urlParams.get('store_id') || sessionStorage.getItem('aiden_store_id') || '';
+const STORE_ID     = _urlParams.get('venue_id') || _urlParams.get('store_id') || sessionStorage.getItem('aiden_store_id') || '';
 const STORE_SLUG   = _urlParams.get('store_slug') || 'sumibite-shibuya';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -907,9 +907,11 @@ async function loadCheckoutData() {
 
   // 2. Supabaseから店舗設定を取得して上書き
   try {
-    let storeQuery = sb.from('stores').select('*, brands(id, name, corp_id)');
+    let storeQuery = sb.from('venues').select('*, brands(id, name, merchant_id)');
     if (STORE_ID) {
-      storeQuery = storeQuery.eq('id', STORE_ID);
+      // display_id (STR-xxx) か UUID か自動判別
+      const storeCol = typeof STORE_ID === 'string' && STORE_ID.startsWith('STR-') ? 'display_id' : 'id';
+      storeQuery = storeQuery.eq(storeCol, STORE_ID);
     } else {
       storeQuery = storeQuery.eq('slug', STORE_SLUG);
     }
@@ -929,7 +931,7 @@ async function loadCheckoutData() {
       CHECKOUT_DATA.serviceChargeRate = parseFloat(storeRow.service_charge_rate) || 0;
 
       // 2b. 法人の stripe_account_id を取得（Stripe Connect 決済用）
-      const corpId = storeRow.brands?.corp_id;
+      const corpId = storeRow.brands?.merchant_id;
       if (corpId) {
         const { data: corpRow } = await sb.from('merchants').select('stripe_account_id').eq('id', corpId).single();
         if (corpRow && corpRow.stripe_account_id) {
@@ -1536,9 +1538,10 @@ function goBackToMenu() {
     sessionStorage.setItem('aiden_cart_restore', JSON.stringify(storeCart));
   } catch(e) { /* ignored */ }
   let menuUrl = CHECKOUT_DATA.menuPageUrl || './aiden-order-store.html';
-  const sid = CHECKOUT_DATA.storeId || new URLSearchParams(window.location.search).get('store_id');
-  if (sid && !menuUrl.includes('store_id=')) {
-    menuUrl += (menuUrl.includes('?') ? '&' : '?') + 'store_id=' + encodeURIComponent(sid);
+  const _params = new URLSearchParams(window.location.search);
+  const sid = CHECKOUT_DATA.storeId || _params.get('venue_id') || _params.get('store_id');
+  if (sid && !menuUrl.includes('venue_id=') && !menuUrl.includes('store_id=')) {
+    menuUrl += (menuUrl.includes('?') ? '&' : '?') + 'venue_id=' + encodeURIComponent(sid);
   }
   window.location.href = menuUrl;
 }
@@ -2250,7 +2253,7 @@ async function placeOrder() {
       try { addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}'); } catch(e) {}
 
       const orderPayload = {
-        store_id: CHECKOUT_DATA.storeId || null,
+        venue_id: CHECKOUT_DATA.storeId || null,
         order_type: channel,
         tracking_status: 'placed',
         total_amount: totalAmount,
@@ -2468,16 +2471,18 @@ async function showTokushoho() {
   modal.style.alignItems = 'flex-start';
 
   const params = new URLSearchParams(window.location.search);
-  const storeId = params.get('store_id');
+  const storeId = params.get('venue_id') || params.get('store_id') || params.get('sid');
   if (!storeId) {
     content.innerHTML = '<p>店舗情報が見つかりません。</p>';
     return;
   }
 
+  // display_id (STR-xxx) か UUID か自動判別
+  const storeCol = typeof storeId === 'string' && storeId.startsWith('STR-') ? 'display_id' : 'id';
   const { data: store, error } = await sb
-    .from('stores')
+    .from('venues')
     .select('id, name, address, phone, brand_id')
-    .eq('id', storeId)
+    .eq(storeCol, storeId)
     .single();
 
   if (error || !store) {
@@ -2572,7 +2577,7 @@ document.addEventListener('keydown', function(e) {
   if (typeof AidenChatWidget !== 'undefined') {
     window._aidenChat = new AidenChatWidget({
       contextType: 'enduser',
-      storeId: params.get('store_id') || params.get('sid') || null,
+      storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
       apiBase: 'https://aiden-jp.net',
     });
