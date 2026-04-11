@@ -565,9 +565,7 @@ const NAV = [
     {id:'store-cancel', label:'キャンセルポリシー'},
     {id:'store-media', label:'メディア'},
   ]},
-  { id:'menu', icon:'📋', label:'メニュー管理', subs:[
-    {id:'menu-list', label:'メニュー一覧'},
-  ]},
+  { id:'menu', icon:'📋', label:'メニュー管理', subs:[]},
   { id:'sales', icon:'📊', label:'売上・分析', subs:[
     {id:'sales-dashboard', label:'売上ダッシュボード'},
     {id:'sales-csv', label:'注文CSVダウンロード'},
@@ -685,6 +683,7 @@ function showPage(pageId, catId){
   }
   currentCat = catId;
   // render hooks
+  if(pageId === 'menu' && typeof mlInitPage === 'function') mlInitPage();
   if(pageId === 'member-list' && typeof renderMemberTable === 'function') renderMemberTable();
   if(pageId === 'member-rank' && typeof renderRankTable === 'function') renderRankTable();
   if(pageId === 'review-store' && typeof renderStoreReviews === 'function') renderStoreReviews();
@@ -1517,86 +1516,34 @@ content.innerHTML = `
 </div>
 
 <!-- ============================== -->
-<!-- 📋 メニュー管理 -->
+<!-- 📋 メニュー管理（2ペイン構成） -->
 <!-- ============================== -->
-<div class="page" id="page-menu-list">
-  <div class="breadcrumb"><a href="#" onclick="return false">メニュー管理</a> ＞ メニュー一覧</div>
+<div class="page" id="page-menu">
+  <div class="breadcrumb"><a href="#" onclick="return false">メニュー管理</a></div>
   <div class="page-title">メニュー管理</div>
-  <div class="page-subtitle">メニューパターンの管理・商品の登録・編集を行います</div>
+  <div class="page-subtitle">メニューパターンを作成し、商品を登録します</div>
 
-  <!-- サブタブ -->
-  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px" id="menuSubTabs">
-    <button class="btn" style="border:none;border-bottom:2px solid var(--accent);margin-bottom:-2px;border-radius:0;font-weight:700;color:var(--accent);padding:10px 20px" onclick="switchMenuSubTab('pattern')" id="menuSubTabPattern">メニューパターン</button>
-    <button class="btn" style="border:none;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0;font-weight:600;color:var(--text-light);padding:10px 20px" onclick="switchMenuSubTab('products')" id="menuSubTabProducts">商品一覧</button>
-  </div>
-
-  <!-- ===== サブタブ：メニューパターン ===== -->
-  <div id="menuSubPattern">
-    <!-- パターン一覧 -->
-    <div id="menuPatternList">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:12px;color:var(--text-light)" id="menuPatternCount"></div>
-        <button class="btn btn-primary" onclick="createMenuPattern()">＋ パターン追加</button>
+  <div id="mlTwoPane" style="display:grid;grid-template-columns:35% 1fr;gap:16px;align-items:flex-start;margin-top:8px">
+    <!-- 左ペイン: パターン一覧 -->
+    <div class="card" style="margin-bottom:0;padding:0">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);margin:0">
+        <span>📋 メニューパターン <span id="mlPatternCount" style="font-size:11px;color:var(--text-light);font-weight:400;margin-left:4px"></span></span>
+        <button class="btn btn-primary btn-sm" id="mlBtnAddPattern" onclick="mlOpenAddPatternModal()">＋ 新規作成</button>
       </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="data-table" id="menuPatternTable">
-          <thead><tr>
-            <th>メニューID</th><th>パターン名</th><th>紐づく店舗</th><th>商品数</th><th style="white-space:nowrap">販売期間</th><th>作成日時</th><th>最終更新</th><th>操作</th>
-          </tr></thead>
-          <tbody id="menuPatternBody"></tbody>
-        </table>
+      <div id="mlPatternList" style="padding:12px 14px;max-height:calc(100vh - 240px);overflow-y:auto">
+        <div class="empty-state" style="padding:20px">読み込み中...</div>
       </div>
     </div>
 
-    <!-- パターン内商品一覧（パターン選択後に表示） -->
-    <div id="menuItemView" style="display:none">
-      <div class="breadcrumb" style="margin-bottom:12px">
-        <a href="#" onclick="closeMenuItemView();return false" style="color:var(--accent)">← メニューパターン一覧に戻る</a>
+    <!-- 右ペイン: 商品一覧 -->
+    <div class="card" style="margin-bottom:0;padding:0">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);margin:0">
+        <span id="mlProductTitle">🍽️ 商品</span>
+        <button class="btn btn-primary btn-sm" id="mlBtnAddProduct" onclick="mlOpenAddProductModal()">＋ 商品追加</button>
       </div>
-
-      <div class="card" style="display:flex;align-items:center;gap:16px;padding:14px 18px;margin-bottom:16px" id="menuPatternBanner"></div>
-
-      <div class="search-bar" style="margin-bottom:14px">
-        <input type="text" placeholder="🔍 商品名・商品IDで検索" id="menuItemSearch" oninput="filterMenuItems()" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-        <select id="menuItemCatFilter" onchange="filterMenuItems()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-          <option value="">全カテゴリ</option>
-        </select>
-        <button class="btn btn-primary" onclick="openMenuItemModal()">＋ 商品追加</button>
+      <div id="mlProductList" style="padding:12px 14px;max-height:calc(100vh - 240px);overflow-y:auto">
+        <div class="empty-state" style="padding:20px">パターンを選択してください</div>
       </div>
-
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="data-table" id="menuItemTable">
-          <thead><tr>
-            <th style="width:8%">商品ID</th><th style="width:50px">画像</th><th style="width:18%">商品名</th><th style="width:10%">カテゴリ</th><th style="width:8%">価格</th><th style="width:10%">タグ</th><th style="width:7%">店内注文</th><th style="width:7%">持ち帰り</th><th style="width:7%">デリバリー</th><th style="width:10%">販売期間</th><th style="width:6%">操作</th>
-          </tr></thead>
-          <tbody id="menuItemBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== サブタブ：商品一覧（ブランド共通プール） ===== -->
-  <div id="menuSubProducts" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div style="font-size:12px;color:var(--text-light)" id="productPoolCount"></div>
-      <button class="btn btn-primary" onclick="openProductPoolModal()">＋ 商品を新規登録</button>
-    </div>
-
-    <div class="search-bar" style="margin-bottom:14px">
-      <input type="text" placeholder="🔍 商品名・商品IDで検索" id="productPoolSearch" oninput="renderProductPool()" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-      <select id="productPoolCatFilter" onchange="renderProductPool()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-        <option value="">全カテゴリ</option>
-      </select>
-      <button class="btn btn-secondary btn-sm" onclick="openCategoryReorderModal()" style="margin-left:4px">並び替え</button>
-    </div>
-
-    <div class="card" style="padding:0;overflow-x:auto">
-      <table class="data-table" style="font-size:11px">
-        <thead><tr style="white-space:nowrap">
-          <th>商品ID</th><th>商品名</th><th>カテゴリ</th><th>価格</th><th>タグ</th><th>店内</th><th>持帰</th><th>配達</th><th>販売期間</th><th>パターン</th><th>販売状態</th><th>操作</th>
-        </tr></thead>
-        <tbody id="productPoolBody"></tbody>
-      </table>
     </div>
   </div>
 </div>
@@ -2425,7 +2372,7 @@ content.innerHTML = `
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="card-title" style="margin:0">現在の期間限定メニュー</div>
-      <button class="btn btn-secondary btn-sm" onclick="showPage('menu-list','menu')">→ メニュー管理</button>
+      <button class="btn btn-secondary btn-sm" onclick="showPage('menu','menu')">→ メニュー管理</button>
     </div>
     <table class="data-table" style="font-size:11px">
       <thead><tr><th>商品名</th><th>カテゴリ</th><th>価格</th><th>販売期間</th><th>注文数</th><th>紐づきキャンペーン</th></tr></thead>
@@ -4878,8 +4825,7 @@ content.innerHTML = `
   <div class="modal">
     <div class="modal-title">商品追加<button class="modal-close" onclick="closeMenuItemModal()">✕</button></div>
     <div class="form-grid">
-      <div class="form-group"><label>商品ID<span class="req">*</span></label><input type="text" id="menuItemIdInput" placeholder="半角英数3桁（例：A01）" maxlength="3" style="font-family:Poppins,monospace"></div>
-      <div class="form-group"><label>商品名<span class="req">*</span></label><input type="text" id="menuItemNameInput" placeholder="商品名を入力"></div>
+      <div class="form-group full"><label>商品名<span class="req">*</span></label><input type="text" id="menuItemNameInput" placeholder="商品名を入力"></div>
       <div class="form-group"><label>カテゴリ<span class="req">*</span></label><select id="menuItemCatInput"><option>握り</option><option>軍艦</option><option>サイドメニュー</option><option>ドリンク</option><option>デザート</option><option>おすすめ</option></select></div>
       <div class="form-group"><label>価格（税込）<span class="req">*</span></label><input type="number" id="menuItemPriceInput" placeholder="¥"></div>
       <div class="form-group full"><label>商品画像</label>
@@ -4922,17 +4868,9 @@ content.innerHTML = `
           <option value="">未割当</option>
         </select>
       </div>
-      <div class="form-group full" id="menuSalePeriodSection" style="margin-top:12px">
-        <label style="font-weight:600;font-size:12px">販売期間</label>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-          <input type="date" id="menuSaleStart" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-          <span style="font-size:12px;color:#888">〜</span>
-          <input type="date" id="menuSaleEnd" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
-        </div>
-        <div style="font-size:10px;color:var(--text-light);margin-top:4px">※「期間限定」フラグ選択時は販売期間の入力が必須です</div>
-      </div>
       <div class="form-group"><label>販売開始日</label><input type="date" id="menuItemDisplayStart"></div>
       <div class="form-group"><label>販売終了日</label><input type="date" id="menuItemDisplayEnd"></div>
+      <div class="form-group full" style="font-size:10px;color:var(--text-light);margin-top:-4px">※「期間限定」フラグ選択時は販売開始日・終了日の入力が必須です</div>
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px">💰 価格・チャネル設定</div>
@@ -4973,7 +4911,7 @@ content.innerHTML = `
         <button class="btn btn-secondary btn-sm" style="margin-top:8px;opacity:0.5" disabled>🔄 外部サービスに同期 (Coming Soon)</button>
       </div>
     </div>
-    <div class="btn-group"><button class="btn btn-primary" onclick="saveMenuItem()">追加</button><button class="btn btn-secondary" onclick="closeMenuItemModal()">キャンセル</button></div>
+    <div class="btn-group"><button class="btn btn-primary" onclick="mlSaveProduct()">追加</button><button class="btn btn-secondary" onclick="closeMenuItemModal()">キャンセル</button></div>
   </div>
 </div>
 
@@ -5817,7 +5755,7 @@ async function loadAdminFromSupabase() {
     if (corps && corps[0]) { CORP.id = corps[0].id; CORP.name = corps[0].name; CORP.stripe_account_id = corps[0].stripe_account_id || null; }
 
     // 2. Stores (RLS: filtered by brand)
-    const {data: stores, error: storeErr} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, genres, regular_holiday, price_range_lunch, price_range_dinner, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, created_at, updated_at').order('name');
+    const {data: stores, error: storeErr} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, email, lat, lng, genre, genres, regular_holiday, price_range_lunch, price_range_dinner, status, has_delivery, has_takeout, delivery_radius_km, delivery_fee, min_order_amount, min_order_policy, small_order_surcharge_max, min_order_apply_types, prep_time_minutes, google_place_id, seats, smoking_policy, children_policy, reservation_enabled, menu_pattern_id, created_at, updated_at').order('name');
     if (storeErr) errors.push('店舗: ' + storeErr.message);
     if (stores && stores.length > 0) {
       STORES = stores.map(s => ({
@@ -5834,7 +5772,7 @@ async function loadAdminFromSupabase() {
         smallOrderSurchargeMax: s.small_order_surcharge_max != null ? s.small_order_surcharge_max : 1500,
         minOrderApplyTypes: s.min_order_apply_types || { dinein: false, takeout: true, delivery: true },
         cookTime: (s.prep_time_minutes || 20) + '分', delTime: '15〜40分',
-        headerImg: 3, thumbImg: 1, galleryImg: 8, heroImg: 1, staffImg: 2, menuPatternId: 'mp1'
+        headerImg: 3, thumbImg: 1, galleryImg: 8, heroImg: 1, staffImg: 2, menuPatternId: s.menu_pattern_id || null
       }));
     }
 
@@ -5880,7 +5818,7 @@ async function loadAdminFromSupabase() {
     }
 
     // 6. Menu Patterns
-    const {data: mps} = await sb.from('menu_patterns').select('id, brand_id, code, name, display_start, display_end, created_at');
+    const {data: mps} = await sb.from('menu_patterns').select('id, brand_id, code, name, is_active, created_at, updated_at');
     const {data: mpis} = await sb.from('menu_pattern_items').select('id, pattern_id, product_id, category_id, status, sort_order');
     if (mps && mps.length > 0) {
       MENU_PATTERNS = mps.map(mp => {
@@ -5890,7 +5828,7 @@ async function loadAdminFromSupabase() {
         return {
           id: mp.id, menuId: mp.id.substring(0,5), code: mp.code || '', name: mp.name,
           createdAt: mp.created_at ? new Date(mp.created_at).toLocaleString('ja-JP') : '',
-          updatedAt: '', displayStart: mp.display_start || '', displayEnd: mp.display_end || '',
+          updatedAt: mp.updated_at ? new Date(mp.updated_at).toLocaleString('ja-JP') : '', displayStart: '', displayEnd: '',
           categories: Object.keys(catGroups).map((catId, idx) => ({
             catId, sortOrder: idx + 1,
             items: catGroups[catId].sort((a,b) => a.sort_order - b.sort_order).map((it, si) => ({
@@ -11018,12 +10956,482 @@ function openMenuItemView(mpId) {
 function closeMenuItemView() {
   if(_isDirty) { if(!confirm('変更が保存されていません。保存せずに戻りますか？')) return; clearDirty(); }
   currentMenuPatternId = null;
-  document.getElementById('menuPatternList').style.display = '';
-  document.getElementById('menuItemView').style.display = 'none';
-  document.getElementById('menuSubTabs').style.display = '';
-  document.getElementById('menuItemSearch').value = '';
-  renderMenuPatternList();
+  var _mpl = document.getElementById('menuPatternList');
+  if(_mpl) _mpl.style.display = '';
+  var _miv = document.getElementById('menuItemView');
+  if(_miv) _miv.style.display = 'none';
+  var _mst = document.getElementById('menuSubTabs');
+  if(_mst) _mst.style.display = '';
+  var _mis = document.getElementById('menuItemSearch');
+  if(_mis) _mis.value = '';
+  if(typeof renderMenuPatternList === 'function' && document.getElementById('menuPatternBody')) renderMenuPatternList();
 }
+
+// =====================================================
+// === New 2-pane menu management (ml* prefix) =========
+// =====================================================
+var mlState = {
+  brandId: null,
+  patterns: [],
+  venues: [],
+  categories: [],
+  selectedPatternId: null,
+  products: [],
+  productSizesMap: {},
+  editingProductId: null
+};
+var mlImageData = null;
+
+async function mlInitPage() {
+  if (!BRAND_ID) { return; }
+  mlState.brandId = BRAND_ID;
+  mlState.selectedPatternId = null;
+  mlState.products = [];
+  mlState.productSizesMap = {};
+  mlState.editingProductId = null;
+  await mlLoadData();
+  mlRenderPatterns();
+  mlRenderProducts();
+}
+
+async function mlLoadData() {
+  try {
+    var [pRes, vRes, cRes] = await Promise.all([
+      sb.from('menu_patterns').select('id,brand_id,code,name,is_active,created_at').eq('brand_id', BRAND_ID).order('code'),
+      sb.from('venues').select('id,name,menu_pattern_id').eq('brand_id', BRAND_ID),
+      sb.from('categories').select('id,brand_id,name,sort_order').eq('brand_id', BRAND_ID).order('sort_order')
+    ]);
+    if (pRes.error) throw pRes.error;
+    if (vRes.error) throw vRes.error;
+    if (cRes.error) throw cRes.error;
+    mlState.patterns = pRes.data || [];
+    mlState.venues = vRes.data || [];
+    mlState.categories = cRes.data || [];
+  } catch (e) {
+    console.error('mlLoadData error:', e);
+    showToast('❌ メニュー管理データの読込に失敗しました: ' + (e.message || e));
+    mlState.patterns = [];
+    mlState.venues = [];
+    mlState.categories = [];
+  }
+}
+
+function mlRenderPatterns() {
+  var el = document.getElementById('mlPatternList');
+  if (!el) return;
+  var count = document.getElementById('mlPatternCount');
+  if (count) count.textContent = '(' + mlState.patterns.length + '件)';
+  if (!mlState.patterns.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px">メニューパターンがありません<br><span style="font-size:11px">右上の「＋新規作成」から追加してください</span></div>';
+    return;
+  }
+  var html = '';
+  mlState.patterns.forEach(function(p) {
+    var venueCount = mlState.venues.filter(function(v){ return v.menu_pattern_id === p.id; }).length;
+    var isActive = mlState.selectedPatternId === p.id;
+    var bg = isActive ? '#f3efff' : '#fff';
+    var border = isActive ? 'var(--accent)' : 'var(--border)';
+    var dimmed = p.is_active === false ? 'opacity:0.55;' : '';
+    var inactiveTag = p.is_active === false ? ' <span style="font-size:9px;background:#dfe6e9;color:#636e72;padding:1px 6px;border-radius:4px;margin-left:4px">無効</span>' : '';
+    html += '<div style="padding:12px 14px;border:1px solid '+border+';border-radius:8px;margin-bottom:8px;background:'+bg+';'+dimmed+'display:flex;align-items:center;gap:8px">'+
+      '<div style="flex:1;min-width:0;cursor:pointer" onclick="mlSelectPattern(\''+p.id+'\')">'+
+        '<div style="font-weight:700;font-size:13px">'+escH(p.name||'')+inactiveTag+'</div>'+
+        '<div style="font-size:10px;color:var(--text-light);font-family:Poppins,monospace;margin-top:2px">'+escH(p.code||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:600">🏪 適用店舗: '+venueCount+'件</div>'+
+      '</div>'+
+      '<button class="btn-outline btn-sm" title="編集" style="padding:4px 8px" onclick="mlOpenEditPatternModal(\''+p.id+'\')">✏️</button>'+
+      '<button class="btn-outline btn-sm" title="削除" style="padding:4px 8px" onclick="mlDeletePattern(\''+p.id+'\')">🗑️</button>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function mlSelectPattern(patternId) {
+  mlState.selectedPatternId = patternId;
+  mlState.products = [];
+  mlState.productSizesMap = {};
+  mlRenderPatterns();
+  var titleEl = document.getElementById('mlProductTitle');
+  var p = mlState.patterns.find(function(x){ return x.id === patternId; });
+  if (titleEl && p) titleEl.innerHTML = '🍽️ 商品 <span style="font-size:11px;color:var(--text-light);font-weight:400">/ '+escH(p.name||'')+'</span>';
+  var el = document.getElementById('mlProductList');
+  if (el) el.innerHTML = '<div class="empty-state" style="padding:20px">商品を読み込み中...</div>';
+  try {
+    var pRes = await sb.from('products').select('id,display_id,name,description,image_url,category_id,menu_pattern_id,brand_id,dine_in,takeout,delivery,sale_status,product_flags,display_start,display_end').eq('menu_pattern_id', patternId).order('name');
+    if (pRes.error) throw pRes.error;
+    mlState.products = pRes.data || [];
+    if (mlState.products.length) {
+      var prodIds = mlState.products.map(function(x){ return x.id; });
+      var sRes = await sb.from('product_sizes').select('id,product_id,name,price,sort_order').in('product_id', prodIds).order('sort_order');
+      if (sRes.error) throw sRes.error;
+      var map = {};
+      (sRes.data || []).forEach(function(s){ if (!map[s.product_id]) map[s.product_id] = []; map[s.product_id].push(s); });
+      mlState.productSizesMap = map;
+    }
+  } catch (e) {
+    console.error('mlSelectPattern error:', e);
+    showToast('❌ 商品読込に失敗しました: ' + (e.message || e));
+    mlState.products = [];
+    mlState.productSizesMap = {};
+  }
+  mlRenderProducts();
+}
+
+function mlRenderProducts() {
+  var el = document.getElementById('mlProductList');
+  if (!el) return;
+  if (!mlState.selectedPatternId) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px">パターンを選択してください</div>';
+    var t0 = document.getElementById('mlProductTitle');
+    if (t0) t0.textContent = '🍽️ 商品';
+    return;
+  }
+  if (!mlState.products.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px">商品がありません<br><span style="font-size:11px">右上の「＋商品追加」から追加してください</span></div>';
+    return;
+  }
+  var html = '<table class="data-table" style="font-size:11px;white-space:nowrap">'+
+    '<thead><tr>'+
+      '<th style="width:110px">商品ID</th>'+
+      '<th style="width:50px">画像</th>'+
+      '<th>商品名</th>'+
+      '<th style="width:110px">カテゴリ</th>'+
+      '<th style="width:90px">価格</th>'+
+      '<th style="width:90px">操作</th>'+
+    '</tr></thead><tbody>';
+  mlState.products.forEach(function(p){
+    var sizes = mlState.productSizesMap[p.id] || [];
+    var cat = mlState.categories.find(function(c){ return c.id === p.category_id; });
+    var catName = cat ? cat.name : '—';
+    var imgHtml;
+    if (p.image_url) {
+      imgHtml = '<div style="width:36px;height:36px;border-radius:6px;background-color:#f5f5f5;background-image:url('+JSON.stringify(p.image_url)+');background-size:cover;background-position:center"></div>';
+    } else {
+      imgHtml = '<div style="width:36px;height:36px;border-radius:6px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:16px">🍽</div>';
+    }
+    var priceHtml;
+    if (sizes.length === 0) {
+      priceHtml = '<span style="font-size:10px;color:var(--danger)">未設定</span>';
+    } else if (sizes.length === 1) {
+      priceHtml = '¥' + Number(sizes[0].price||0).toLocaleString();
+    } else {
+      priceHtml = '<span style="font-size:10px;color:var(--text-light)">' + sizes.length + 'サイズ</span>';
+    }
+    html += '<tr>'+
+      '<td><span style="font-family:Poppins,monospace;font-size:10px;color:#666;background:#f5f5f5;padding:1px 6px;border-radius:3px">'+escH(p.display_id||'')+'</span></td>'+
+      '<td>'+imgHtml+'</td>'+
+      '<td style="font-weight:600">'+escH(p.name||'')+'</td>'+
+      '<td>'+escH(catName)+'</td>'+
+      '<td>'+priceHtml+'</td>'+
+      '<td>'+
+        '<button class="btn btn-secondary btn-sm" style="font-size:10px;padding:3px 8px" onclick="mlOpenEditProductModal(\''+p.id+'\')">編集</button> '+
+        '<button class="btn btn-sm" style="background:#ffebee;color:var(--accent);font-size:10px;padding:3px 8px" onclick="mlDeleteProduct(\''+p.id+'\')">削除</button>'+
+      '</td>'+
+    '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ===== Pattern CRUD =====
+async function mlOpenAddPatternModal() {
+  if (!BRAND_ID) { showToast('⚠️ ブランド情報が取得できていません'); return; }
+  var nextCode = 'MP-001';
+  var maxNum = 0;
+  (mlState.patterns || []).forEach(function(p){
+    var m = /MP-(\d+)/.exec(p.code || '');
+    if (m) { var n = parseInt(m[1], 10) || 0; if (n > maxNum) maxNum = n; }
+  });
+  nextCode = 'MP-' + String(maxNum + 1).padStart(3, '0');
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3 style="font-size:16px;font-weight:700;margin-bottom:14px">メニューパターン追加</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>コード</label><input type="text" id="mlNewPatternCode" value="'+escH(nextCode)+'" readonly style="background:#f5f6fa"></div>'+
+      '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="mlNewPatternName" placeholder="例: ランチメニュー"></div>'+
+    '</div>'+
+    '<div class="btn-group" style="margin-top:16px">'+
+      '<button class="btn btn-primary" onclick="mlSaveNewPattern()">追加</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+  setTimeout(function(){ var el = document.getElementById('mlNewPatternName'); if (el) el.focus(); }, 50);
+}
+
+async function mlSaveNewPattern() {
+  var name = ((document.getElementById('mlNewPatternName') || {}).value || '').trim();
+  var code = ((document.getElementById('mlNewPatternCode') || {}).value || '').trim();
+  if (!name) { showToast('⚠️ パターン名は必須です'); return; }
+  try {
+    var { data, error } = await sb.from('menu_patterns').insert({ brand_id: BRAND_ID, code: code, name: name, is_active: true }).select().single();
+    if (error) throw error;
+    logAudit('create_menu_pattern', 'menu_patterns', data ? data.id : null, { code: code, name: name });
+    closeModal();
+    showToast('✅ メニューパターンを追加しました');
+    await mlLoadData();
+    mlRenderPatterns();
+  } catch (e) {
+    console.error('mlSaveNewPattern error:', e);
+    showToast('❌ 追加に失敗しました: ' + (e.message || e));
+  }
+}
+
+function mlOpenEditPatternModal(patternId) {
+  var p = (mlState.patterns || []).find(function(x){ return x.id === patternId; });
+  if (!p) { showToast('⚠️ パターンが見つかりません'); return; }
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3 style="font-size:16px;font-weight:700;margin-bottom:14px">メニューパターン編集</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group"><label>コード</label><input type="text" value="'+escH(p.code||'')+'" readonly style="background:#f5f6fa"></div>'+
+      '<div class="form-group"><label>パターン名 <span style="color:var(--danger)">*</span></label><input type="text" id="mlEditPatternName" value="'+escH(p.name||'')+'"></div>'+
+      '<div class="form-group full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="mlEditPatternActive"'+(p.is_active!==false?' checked':'')+'><span>有効（チェックを外すと無効化）</span></label></div>'+
+    '</div>'+
+    '<div class="btn-group" style="margin-top:16px">'+
+      '<button class="btn btn-primary" onclick="mlSaveEditPattern(\''+patternId+'\')">保存</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+}
+
+async function mlSaveEditPattern(patternId) {
+  var name = ((document.getElementById('mlEditPatternName') || {}).value || '').trim();
+  if (!name) { showToast('⚠️ パターン名は必須です'); return; }
+  var isActive = document.getElementById('mlEditPatternActive') ? document.getElementById('mlEditPatternActive').checked : true;
+  try {
+    var { data, error } = await sb.from('menu_patterns').update({ name: name, is_active: isActive }).eq('id', patternId).select().single();
+    if (error) throw error;
+    if (!data) throw new Error('更新権限がないか対象が見つかりません');
+    logAudit('update_menu_pattern', 'menu_patterns', patternId, { name: name, is_active: isActive });
+    closeModal();
+    showToast('✅ メニューパターンを更新しました');
+    var idx = mlState.patterns.findIndex(function(x){ return x.id === patternId; });
+    if (idx >= 0) mlState.patterns[idx] = Object.assign({}, mlState.patterns[idx], data);
+    mlRenderPatterns();
+  } catch (e) {
+    console.error('mlSaveEditPattern error:', e);
+    showToast('❌ 更新に失敗しました: ' + (e.message || e));
+  }
+}
+
+async function mlDeletePattern(patternId) {
+  var p = (mlState.patterns || []).find(function(x){ return x.id === patternId; });
+  if (!p) { showToast('⚠️ パターンが見つかりません'); return; }
+  var prodCount = 0;
+  try {
+    var { count } = await sb.from('products').select('id', { count: 'exact', head: true }).eq('menu_pattern_id', patternId);
+    prodCount = count || 0;
+  } catch (e) {}
+  var msg = 'パターン「' + p.name + '」を削除します。';
+  if (prodCount > 0) msg += '\n紐づく商品 ' + prodCount + ' 件も削除されます。';
+  msg += '\nよろしいですか？';
+  if (!confirm(msg)) return;
+  try {
+    if (prodCount > 0) {
+      var { data: prods } = await sb.from('products').select('id').eq('menu_pattern_id', patternId);
+      var prodIds = (prods || []).map(function(x){ return x.id; });
+      if (prodIds.length) {
+        await sb.from('product_sizes').delete().in('product_id', prodIds);
+        await sb.from('products').delete().in('id', prodIds);
+      }
+    }
+    await sb.from('venues').update({ menu_pattern_id: null }).eq('menu_pattern_id', patternId);
+    var { error } = await sb.from('menu_patterns').delete().eq('id', patternId);
+    if (error) throw error;
+    logAudit('delete_menu_pattern', 'menu_patterns', patternId, {});
+    showToast('✅ メニューパターンを削除しました');
+    if (mlState.selectedPatternId === patternId) {
+      mlState.selectedPatternId = null;
+      mlState.products = [];
+      mlState.productSizesMap = {};
+    }
+    await mlLoadData();
+    mlRenderPatterns();
+    mlRenderProducts();
+  } catch (e) {
+    console.error('mlDeletePattern error:', e);
+    showToast('❌ 削除に失敗しました: ' + (e.message || e));
+  }
+}
+
+// ===== Product CRUD (uses menuModal) =====
+function mlOpenAddProductModal() {
+  if (!BRAND_ID) { showToast('⚠️ ブランド情報が取得できていません'); return; }
+  mlState.editingProductId = null;
+  mlImageData = null;
+  mlPopulateProductModal(null);
+  document.getElementById('menuModal').classList.add('show');
+}
+
+function mlOpenEditProductModal(productId) {
+  var p = (mlState.products || []).find(function(x){ return x.id === productId; });
+  if (!p) { showToast('⚠️ 商品が見つかりません'); return; }
+  mlState.editingProductId = productId;
+  mlImageData = p.image_url || null;
+  mlPopulateProductModal(p);
+  document.getElementById('menuModal').classList.add('show');
+}
+
+function mlPopulateProductModal(product) {
+  var isEdit = !!product;
+  // Title and button
+  var titleNode = document.querySelector('#menuModal .modal-title');
+  if (titleNode && titleNode.childNodes && titleNode.childNodes.length) titleNode.childNodes[0].textContent = isEdit ? '商品編集' : '商品追加';
+  var primaryBtn = document.querySelector('#menuModal .btn-primary');
+  if (primaryBtn) primaryBtn.textContent = isEdit ? '保存' : '追加';
+  // Basic fields
+  var nameEl = document.getElementById('menuItemNameInput');
+  if (nameEl) nameEl.value = isEdit ? (product.name || '') : '';
+  var catEl = document.getElementById('menuItemCatInput');
+  // Rebuild category options from mlState.categories
+  if (catEl) {
+    var catOptsHtml = '<option value="">（選択）</option>' + (mlState.categories || []).map(function(c){ return '<option value="'+escH(c.id)+'">'+escH(c.name||'')+'</option>'; }).join('');
+    catEl.innerHTML = catOptsHtml;
+    catEl.value = isEdit ? (product.category_id || '') : '';
+  }
+  var priceEl = document.getElementById('menuItemPriceInput');
+  // Price: use first size price if exists
+  var pSizes = isEdit ? (mlState.productSizesMap[product.id] || []) : [];
+  if (priceEl) priceEl.value = pSizes.length ? (pSizes[0].price || '') : '';
+  var descShort = document.getElementById('menuItemDescShort');
+  if (descShort) descShort.value = '';
+  var descLong = document.getElementById('menuItemDescLong');
+  if (descLong) descLong.value = isEdit ? (product.description || '') : '';
+  var dine = document.getElementById('menuChDineIn');
+  if (dine) dine.checked = isEdit ? (product.dine_in !== false) : true;
+  var take = document.getElementById('menuChTakeout');
+  if (take) take.checked = isEdit ? (product.takeout !== false) : true;
+  var deli = document.getElementById('menuChDelivery');
+  if (deli) deli.checked = isEdit ? (product.delivery !== false) : true;
+  // Pattern dropdown (pre-select current pattern)
+  var patternSelect = document.getElementById('menuItemPattern');
+  if (patternSelect) {
+    patternSelect.innerHTML = '<option value="">未割当</option>' + (mlState.patterns || []).map(function(mp){ return '<option value="'+escH(mp.id)+'">'+escH((mp.code||'')+' - '+(mp.name||''))+'</option>'; }).join('');
+    var preselect = isEdit ? (product.menu_pattern_id || '') : (mlState.selectedPatternId || '');
+    patternSelect.value = preselect;
+  }
+  // Sale start/end
+  var sS = document.getElementById('menuItemDisplayStart');
+  var sE = document.getElementById('menuItemDisplayEnd');
+  if (sS) sS.value = isEdit && product.display_start ? String(product.display_start).slice(0, 10) : '';
+  if (sE) sE.value = isEdit && product.display_end ? String(product.display_end).slice(0, 10) : '';
+  // Tags
+  var flags = [];
+  if (isEdit && product.product_flags) {
+    try { flags = typeof product.product_flags === 'string' ? JSON.parse(product.product_flags) : product.product_flags; } catch(e) { flags = []; }
+  }
+  document.querySelectorAll('#menuItemTags .tag').forEach(function(t){ t.classList.toggle('selected', flags.indexOf(t.textContent) >= 0); });
+  // Sale status
+  var ss = (isEdit && product.sale_status) ? product.sale_status : 'available';
+  var ssRadio = document.querySelector('input[name="saleStatus"][value="'+ss+'"]');
+  if (ssRadio) ssRadio.checked = true;
+  // Image preview
+  var preview = document.getElementById('menuItemImgPreview');
+  var dropLabel = document.getElementById('menuItemDropLabel');
+  if (preview) {
+    preview.innerHTML = '';
+    if (mlImageData) {
+      var img = document.createElement('img');
+      img.src = mlImageData;
+      img.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block';
+      preview.appendChild(img);
+      preview.style.display = '';
+      if (dropLabel) dropLabel.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      if (dropLabel) dropLabel.style.display = '';
+    }
+  }
+  window._menuItemImgData = mlImageData;
+}
+
+async function mlSaveProduct() {
+  var nameEl = document.getElementById('menuItemNameInput');
+  var name = (nameEl ? nameEl.value : '').trim();
+  if (!name) { alert('商品名は必須です'); return; }
+  var priceEl = document.getElementById('menuItemPriceInput');
+  var price = parseInt(priceEl ? priceEl.value : '0', 10) || 0;
+  if (price < 0) price = 0;
+  var catEl = document.getElementById('menuItemCatInput');
+  var categoryId = catEl ? catEl.value || null : null;
+  var descLongEl = document.getElementById('menuItemDescLong');
+  var description = descLongEl ? descLongEl.value : '';
+  var dineIn = document.getElementById('menuChDineIn') ? document.getElementById('menuChDineIn').checked : true;
+  var takeout = document.getElementById('menuChTakeout') ? document.getElementById('menuChTakeout').checked : true;
+  var delivery = document.getElementById('menuChDelivery') ? document.getElementById('menuChDelivery').checked : true;
+  var patternEl = document.getElementById('menuItemPattern');
+  var menuPatternId = patternEl ? (patternEl.value || null) : null;
+  var saleStartEl = document.getElementById('menuItemDisplayStart');
+  var saleEndEl = document.getElementById('menuItemDisplayEnd');
+  var saleStart = saleStartEl ? saleStartEl.value : '';
+  var saleEnd = saleEndEl ? saleEndEl.value : '';
+  var tags = [];
+  document.querySelectorAll('#menuItemTags .tag.selected').forEach(function(t){ tags.push(t.textContent); });
+  if (tags.indexOf('期間限定') >= 0) {
+    if (!saleStart || !saleEnd) { alert('「期間限定」を選択した場合は販売開始日・終了日の入力が必須です'); return; }
+  }
+  var saleStatusEl = document.querySelector('input[name="saleStatus"]:checked');
+  var saleStatus = saleStatusEl ? saleStatusEl.value : 'available';
+  var productFlags = JSON.stringify(tags);
+  var imageUrl = window._menuItemImgData || mlImageData || null;
+  var payload = {
+    name: name,
+    description: description,
+    category_id: categoryId || null,
+    dine_in: dineIn,
+    takeout: takeout,
+    delivery: delivery,
+    product_flags: productFlags,
+    sale_status: saleStatus,
+    updated_by: 'merchant',
+    menu_pattern_id: menuPatternId,
+    display_start: saleStart ? (saleStart + 'T00:00:00+09:00') : null,
+    display_end: saleEnd ? (saleEnd + 'T23:59:59+09:00') : null
+  };
+  if (imageUrl) payload.image_url = imageUrl;
+  try {
+    if (mlState.editingProductId) {
+      var { data: upd, error: updErr } = await sb.from('products').update(payload).eq('id', mlState.editingProductId).select().single();
+      if (updErr) throw updErr;
+      var { error: sizeErr } = await sb.from('product_sizes').update({ price: price }).eq('product_id', mlState.editingProductId);
+      if (sizeErr) console.warn('size update:', sizeErr);
+      logAudit('update_product', 'products', mlState.editingProductId, { name: name, price: price });
+      showToast('✅ 商品を更新しました');
+    } else {
+      payload.brand_id = BRAND_ID;
+      var { data: created, error: insErr } = await sb.from('products').insert(payload).select().single();
+      if (insErr) throw insErr;
+      await sb.from('product_sizes').insert({ product_id: created.id, name: 'default', price: price, sort_order: 1 });
+      logAudit('create_product', 'products', created.id, { name: name, price: price });
+      showToast('✅ 商品を登録しました');
+    }
+    closeMenuItemModal();
+    // Refresh products (if selected pattern matches or if product now belongs to it)
+    if (mlState.selectedPatternId) await mlSelectPattern(mlState.selectedPatternId);
+    else mlRenderProducts();
+  } catch (e) {
+    console.error('mlSaveProduct error:', e);
+    showToast('❌ 保存に失敗しました: ' + (e.message || e));
+  }
+}
+
+async function mlDeleteProduct(productId) {
+  var p = (mlState.products || []).find(function(x){ return x.id === productId; });
+  if (!p) { showToast('⚠️ 商品が見つかりません'); return; }
+  if (!confirm('商品「' + (p.name || '') + '」を削除しますか？')) return;
+  try {
+    await sb.from('product_sizes').delete().eq('product_id', productId);
+    var { error } = await sb.from('products').delete().eq('id', productId);
+    if (error) throw error;
+    logAudit('delete_product', 'products', productId, { name: p.name });
+    showToast('✅ 商品を削除しました');
+    if (mlState.selectedPatternId) await mlSelectPattern(mlState.selectedPatternId);
+  } catch (e) {
+    console.error('mlDeleteProduct error:', e);
+    showToast('❌ 削除に失敗しました: ' + (e.message || e));
+  }
+}
+// =====================================================
 
 function renderMenuItems() {
   const mp = MENU_PATTERNS.find(m => m.id === currentMenuPatternId);
@@ -11309,7 +11717,7 @@ function previewMenuItemImage(file) {
   reader.readAsDataURL(file);
 }
 
-function closeMenuItemModal() { document.getElementById('menuModal').classList.remove('show'); editingItemIdx = -1; document.getElementById('menuItemIdInput').disabled = false; window._editingFromPool = false; window._editingPoolItemId = null; }
+function closeMenuItemModal() { document.getElementById('menuModal').classList.remove('show'); editingItemIdx = -1; var _idEl = document.getElementById('menuItemIdInput'); if (_idEl) _idEl.disabled = false; window._editingFromPool = false; window._editingPoolItemId = null; if (typeof mlState !== 'undefined') mlState.editingProductId = null; }
 
 async function saveMenuItem() {
   const itemId = document.getElementById('menuItemIdInput').value.trim();

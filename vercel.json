@@ -11,6 +11,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/admin/:path*", "destination": "/api/admin/__root?path=:path*" },
     { "source": "/api/orders", "destination": "/api/orders/__root" },
     { "source": "/api/orders/:id/:action", "destination": "/api/orders/__root?id=:id&action=:action" },
     { "source": "/api/orders/:id", "destination": "/api/orders/__root?id=:id" },

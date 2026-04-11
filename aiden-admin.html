@@ -814,16 +814,17 @@ async function menusLoadBrand(brandId,brandDisplayId,brandName,highlightVenueId)
   var result=document.getElementById('menusResult');
   if(result){result.style.display='';result.innerHTML='<div class="card"><div class="empty-state">読み込み中...</div></div>';}
   try{
-    var [vRes,pRes,cRes]=await Promise.all([
+    var token=await getToken();
+    var [vRes,cRes,mpRes]=await Promise.all([
       sb.from('venues').select('id,display_id,name,menu_pattern_id').eq('brand_id',brandId).order('name'),
-      sb.from('menu_patterns').select('*').eq('brand_id',brandId).order('code'),
-      sb.from('categories').select('*').eq('brand_id',brandId).order('sort_order').order('name')
+      sb.from('categories').select('*').eq('brand_id',brandId).order('sort_order').order('name'),
+      fetch('/api/admin/menu-patterns?brand_id='+encodeURIComponent(brandId),{headers:{'Authorization':'Bearer '+token}})
+        .then(async function(r){var j=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return{data:j.data||[]};})
     ]);
     if(vRes.error)throw vRes.error;
-    if(pRes.error)throw pRes.error;
     if(cRes.error)throw cRes.error;
     menusState.venues=vRes.data||[];
-    menusState.patterns=pRes.data||[];
+    menusState.patterns=mpRes.data||[];
     menusState.categories=cRes.data||[];
   }catch(e){
     showToast('❌ 読み込みエラー: '+(e.message||e));
@@ -1011,10 +1012,18 @@ async function openMenusAddPatternModal(){
   if(!menusState.brandId){showToast('⚠️ ブランドを選択してください');return;}
   var nextCode='MP-001';
   try{
-    var d=await sb.from('menu_patterns').select('code').eq('brand_id',menusState.brandId).order('code',{ascending:false}).limit(1);
-    if(d.data&&d.data.length){
-      var m=/MP-(\d+)/.exec(d.data[0].code||'');
-      if(m){var num=parseInt(m[1],10)||0;nextCode='MP-'+String(num+1).padStart(3,'0');}
+    var token=await getToken();
+    var lr=await fetch('/api/admin/menu-patterns?brand_id='+encodeURIComponent(menusState.brandId),{
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var lj=await lr.json().catch(function(){return{};});
+    if(lr.ok&&lj.data&&lj.data.length){
+      var maxNum=0;
+      lj.data.forEach(function(p){
+        var m=/MP-(\d+)/.exec(p.code||'');
+        if(m){var num=parseInt(m[1],10)||0;if(num>maxNum)maxNum=num;}
+      });
+      nextCode='MP-'+String(maxNum+1).padStart(3,'0');
     }
   }catch(e){}
   openModal(
