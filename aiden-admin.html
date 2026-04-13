@@ -7339,6 +7339,7 @@ function openCorpWizard(){
           var bj=await br.json();if(br.ok){
             var permRole=d.brandType==='fc'?'viewer':'owner';
             BRANDS.push({_uuid:bj.data.id,id:bj.data.display_id,corpId:corpDisplayId,name:d.brandName,slug:d.brandSlug,status:'suspended',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
+            try{const {error:cbrErr}=await sb.from('merchant_brand_relations').insert({merchant_id:corpUuid,brand_id:bj.data.id,role:permRole});if(!cbrErr)CBR.push({corp_id:corpUuid,brand_id:bj.data.id,role:permRole});}catch(cbrE){}
             logAudit('wizard_create_brand','brands',bj.data.id,{name:d.brandName,slug:d.brandSlug,role:permRole});
           }
         }catch(e){}
