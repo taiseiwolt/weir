@@ -429,14 +429,7 @@ img,video{max-width:100%;display:block}
         <div class="store-intro-headline" id="intro-headline">厳選した和牛による、唯一無二の新しい焼肉店</div>
         <div class="store-intro-text collapsed" id="intro-text"></div>
         <button class="read-more-btn" id="read-more-btn" onclick="toggleIntro()">続きをみる</button>
-        <div class="chef-card" id="chef-card">
-          <div class="chef-card-img-inner">🧑‍🍳</div>
-          <div class="chef-card-body">
-            <div class="chef-card-title">また一つ、焼肉の可能性を表現</div>
-            店主近重泰輔は、もともとは和食の技法を学ぶ料理人だったが、〔西麻布けんしろう〕にて、質の高いサービスとおもてなしの心を学びました。お肉をカットした後の状態や、お肉の表情を見る...
-            <button class="read-more-btn" style="font-size:12px">続きをみる</button>
-          </div>
-        </div>
+        <div class="chef-card" id="chef-card" style="display:none"></div>
       </div>
       <!-- 写真サムネイル -->
       <div class="photo-thumb-section">
@@ -1082,6 +1075,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         + '<div class="chef-card-body"><div class="chef-card-title"></div><div class="chef-card-desc"></div></div>';
       chefEl.querySelector('.chef-card-title').textContent = s.title || '';
       chefEl.querySelector('.chef-card-desc').textContent = s.description || '';
+      chefEl.style.display = '';
     }
   }
 

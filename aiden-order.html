@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>モバイルオーダー | 炭火亭</title>
+<title id="page-title">モバイルオーダー | AIden</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -2445,7 +2445,8 @@ function downloadReceipt(){
     var now=new Date();
     var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
     var orderNum=document.getElementById('tr-order-num').textContent;
-    var lines=['','　　　　　　　 領　収　書','','発行日時: '+dateStr,'注文番号: '+orderNum,'店舗名: '+(selectedStore?selectedStore.name:'炭火亭'),'','─────────────────────────',''];
+    var brandName=(AidenCommon&&AidenCommon.brand&&AidenCommon.brand.name)?AidenCommon.brand.name:'';
+    var lines=['','　　　　　　　 領　収　書','','発行日時: '+dateStr,'注文番号: '+orderNum,'店舗名: '+(selectedStore?selectedStore.name:''),'','─────────────────────────',''];
     cart.forEach(function(ci){
       lines.push(ci.item.emoji+' '+ci.item.name+' × '+ci.qty+'　　¥'+calcItemTotal(ci.item,ci.opts,ci.qty).toLocaleString());
     });
@@ -2457,7 +2458,7 @@ function downloadReceipt(){
     lines.push('消費税込合計　　¥'+total.toLocaleString());
     lines.push('');
     lines.push('ご利用ありがとうございました。');
-    lines.push('炭火亭');
+    if(brandName) lines.push(brandName);
     var blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
