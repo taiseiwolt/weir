@@ -1112,6 +1112,8 @@ async function loadFromSupabase() {
       freeDeliveryThreshold: storeRows.free_delivery_threshold ?? STORE_DATA.freeDeliveryThreshold,
       // Flags
       storeRequestEnabled:   storeRows.store_request_enabled  ?? STORE_DATA.storeRequestEnabled,
+      hasTakeout:            !!storeRows.has_takeout,
+      hasDelivery:           !!storeRows.has_delivery,
     };
 
     // 4. アクティブなメニューパターン取得
@@ -1282,13 +1284,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Service subscription check: verify this store supports the current order mode
-  // Only block if _enabledServices has entries (empty = no restrictions)
+  // D-83: service_subscriptionsが空の場合はvenues.has_takeout/has_deliveryでfallback判定
+  function showUnavailablePage(modeName) {
+    document.title = STORE_DATA.storeName + ' | AIden モバイルオーダー';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' では現在「' + escH(modeName) + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+  }
+  var modeNameMap = { delivery: 'デリバリー', takeout: 'テイクアウト', dinein: '店内注文', dine: '店内注文' };
   if (STORE_DATA._enabledServices && STORE_DATA._enabledServices.length > 0) {
     const modeMap = { delivery: 'mo_delivery', takeout: 'mo_takeout', dinein: 'mo_dinein', dine: 'mo_dinein' };
     const requiredKey = modeMap[orderMode];
     if (requiredKey && !STORE_DATA._enabledServices.includes(requiredKey)) {
-      document.title = STORE_DATA.storeName + ' | AIden モバイルオーダー';
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + STORE_DATA.storeName + ' では現在「' + (orderMode === 'delivery' ? 'デリバリー' : orderMode === 'takeout' ? 'テイクアウト' : '店内注文') + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+      showUnavailablePage(modeNameMap[orderMode] || orderMode);
+      return;
+    }
+  } else {
+    // service_subscriptionsが空: venues.has_takeout/has_deliveryでfallback
+    if (orderMode === 'takeout' && STORE_DATA.hasTakeout === false) {
+      showUnavailablePage('テイクアウト');
+      return;
+    }
+    if (orderMode === 'delivery' && STORE_DATA.hasDelivery === false) {
+      showUnavailablePage('デリバリー');
       return;
     }
   }

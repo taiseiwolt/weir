@@ -940,23 +940,58 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
 var escH = AidenCommon.escH;
 
 /* ============================================================
-   STORES — aiden-brand-stores.html と同期
+   STORES — venues テーブルから動的取得（D-83: ハードコード禁止）
    avail: "ok"|"few" = 注文可, "full" = 受付停止
    ============================================================ */
-var STORES = [
-  {id:'shibuya',   name:'炭火亭 渋谷店',     addr:'東京都渋谷区恵比寿1-2-3',        station:'渋谷駅 徒歩5分',  hours:'17:00～23:00', avail:'ok',   hasTakeout:true,  hasDelivery:true,  lat:35.6484, lng:139.7100},
-  {id:'shinjuku',  name:'炭火亭 新宿東口店',  addr:'東京都新宿区新宿3-1-1',          station:'新宿駅 徒歩3分',  hours:'17:00～24:00', avail:'few',  hasTakeout:true,  hasDelivery:true,  lat:35.6938, lng:139.7036},
-  {id:'ikebukuro', name:'炭火亭 池袋店',      addr:'東京都豊島区南池袋1-1-1',        station:'池袋駅 徒歩4分',  hours:'17:00～23:00', avail:'ok',   hasTakeout:true,  hasDelivery:false, lat:35.7293, lng:139.7109},
-  {id:'ebisu',     name:'炭火亭 恵比寿店',    addr:'東京都渋谷区恵比寿4-5-6',        station:'恵比寿駅 徒歩2分',hours:'18:00～23:00', avail:'full', hasTakeout:true,  hasDelivery:false, lat:35.6469, lng:139.7101},
-  {id:'yokohama',  name:'炭火亭 横浜店',      addr:'神奈川県横浜市西区南幸1-1',      station:'横浜駅 徒歩6分',  hours:'17:00～23:00', avail:'ok',   hasTakeout:true,  hasDelivery:true,  lat:35.4660, lng:139.6220},
-  {id:'kawasaki',  name:'炭火亭 川崎店',      addr:'神奈川県川崎市川崎区駅前本町1',  station:'川崎駅 徒歩3分',  hours:'17:00～23:00', avail:'few',  hasTakeout:true,  hasDelivery:true,  lat:35.5310, lng:139.6990},
-  {id:'umeda',     name:'炭火亭 梅田店',      addr:'大阪府大阪市北区梅田1-1-1',      station:'梅田駅 徒歩4分',  hours:'17:00～24:00', avail:'ok',   hasTakeout:true,  hasDelivery:true,  lat:34.7025, lng:135.4983},
-  {id:'namba',     name:'炭火亭 難波店',      addr:'大阪府大阪市中央区難波3-1',      station:'難波駅 徒歩2分',  hours:'17:00～24:00', avail:'ok',   hasTakeout:true,  hasDelivery:true,  lat:34.6687, lng:135.5013},
-  {id:'nagoya',    name:'炭火亭 名古屋栄店',  addr:'愛知県名古屋市中区栄3-1',        station:'栄駅 徒歩4分',    hours:'17:00～23:00', avail:'few',  hasTakeout:true,  hasDelivery:false, lat:35.1706, lng:136.9070},
-  {id:'fukuoka',   name:'炭火亭 天神店',      addr:'福岡県福岡市中央区天神2-1',      station:'天神駅 徒歩3分',  hours:'17:00～23:00', avail:'ok',   hasTakeout:true,  hasDelivery:false, lat:33.5898, lng:130.3992},
-  {id:'sapporo',   name:'炭火亭 札幌大通店',  addr:'北海道札幌市中央区大通西4',      station:'大通駅 徒歩2分',  hours:'17:00～23:00', avail:'ok',   hasTakeout:true,  hasDelivery:false, lat:43.0622, lng:141.3533},
-  {id:'sendai',    name:'炭火亭 仙台店',      addr:'宮城県仙台市青葉区中央1-1',      station:'仙台駅 徒歩5分',  hours:'17:00～23:00', avail:'few',  hasTakeout:true,  hasDelivery:false, lat:38.2688, lng:140.8721}
-];
+var STORES = [];
+
+async function loadStores(){
+  try {
+    var client = AidenCommon.getSb && AidenCommon.getSb();
+    if (!client) return;
+    var brandId = (AidenCommon.brand && AidenCommon.brand.id) || null;
+    var q = client.from('venues')
+      .select('id, display_id, name, slug, address, lat, lng, status, is_paused, has_takeout, has_delivery, brand_id');
+    if (brandId) q = q.eq('brand_id', brandId);
+    var { data: venueRows } = await q;
+    if (!venueRows || !venueRows.length) return;
+
+    var venueIds = venueRows.map(function(v){ return v.id; });
+    var { data: hoursRows } = await client.from('venue_hours')
+      .select('venue_id, day_of_week, open_time, close_time, is_closed')
+      .in('venue_id', venueIds);
+    var today = new Date().getDay();
+    var hoursMap = {};
+    (hoursRows || []).forEach(function(h){
+      if (h.is_closed) return;
+      if (h.day_of_week !== today) return;
+      if (!hoursMap[h.venue_id]) hoursMap[h.venue_id] = [];
+      hoursMap[h.venue_id].push(h);
+    });
+    function formatToday(vid){
+      var list = hoursMap[vid];
+      if (!list || !list.length) return '';
+      return list.map(function(h){ return h.open_time.slice(0,5) + '～' + h.close_time.slice(0,5); }).join(' / ');
+    }
+
+    STORES = venueRows.map(function(v){
+      return {
+        id: v.display_id || v.slug || v.id,
+        _uuid: v.id,
+        name: v.name || '',
+        slug: v.slug || '',
+        addr: v.address || '',
+        station: '',
+        hours: formatToday(v.id),
+        avail: v.is_paused ? 'full' : (v.status === 'closed' ? 'full' : 'ok'),
+        hasTakeout: !!v.has_takeout,
+        hasDelivery: !!v.has_delivery,
+        lat: (v.lat != null) ? Number(v.lat) : null,
+        lng: (v.lng != null) ? Number(v.lng) : null
+      };
+    });
+  } catch(e) { /* silent: D-83 nullの方がマシ */ }
+}
 
 /* ============================================================
    I18N — page-specific translations (merged into AidenCommon)
@@ -1234,6 +1269,9 @@ window.addEventListener('load', async function(){
   var langSel = document.getElementById('lang-select');
   if (langSel) langSel.onchange = function() { changeLang(this.value); };
 
+  /* D-83: venues から店舗一覧を動的取得 */
+  await loadStores();
+
   /* Map */
   var el = document.getElementById('main-map');
   if(el){
@@ -1243,6 +1281,7 @@ window.addEventListener('load', async function(){
     }).addTo(mainMap);
     L.control.zoom({position:'topright'}).addTo(mainMap);
     STORES.forEach(function(s){
+      if (s.lat == null || s.lng == null) return;
       var m = L.marker([s.lat, s.lng], {icon: makeStoreIcon(s, false)})
         .addTo(mainMap)
         .bindTooltip(s.name, {permanent:false, direction:'top', offset:[0,-8]});
@@ -1681,7 +1720,7 @@ function isOrderable(s){
 
 function renderStoreList(){
   var list = STORES.map(function(s){
-    var distM = (userLat !== null) ? haversine(userLat, userLng, s.lat, s.lng) : null;
+    var distM = (userLat !== null && s.lat != null && s.lng != null) ? haversine(userLat, userLng, s.lat, s.lng) : null;
     return {
       id:s.id, name:s.name, addr:s.addr, station:s.station,
       avail:s.avail, hasTakeout:s.hasTakeout, hasDelivery:s.hasDelivery,
@@ -1766,7 +1805,7 @@ function onCardClick(el){
   var m = storeMarkers[sid];
   var s = STORES.filter(function(x){ return x.id === sid; })[0];
   if(m && s) m.setIcon(makeStoreIcon(s, true));
-  if(mainMap) mainMap.flyTo([lat, lng], 15, {duration:0.8});
+  if(mainMap && !isNaN(lat) && !isNaN(lng)) mainMap.flyTo([lat, lng], 15, {duration:0.8});
 }
 
 function onOrderBtnClick(btn){

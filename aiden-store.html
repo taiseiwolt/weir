@@ -961,9 +961,9 @@ let STORE = {
     {emoji:'🍷', bg:'linear-gradient(135deg,#1a0a2d,#4a1a7a)', isVideo:false}
   ],
 
-  /* フラグ */
-  hasTakeout:  true,
-  hasDelivery: true,
+  /* フラグ（D-83: DBのvenues.has_takeout/has_deliveryから上書きされる。未設定ならfalse） */
+  hasTakeout:  false,
+  hasDelivery: false,
 
   /* 予約モード設定（管理画面でON/OFF切り替え可） */
   /* コース予約：MENUにisCourse:trueのカテゴリがある場合に自動表示 */
@@ -1088,8 +1088,9 @@ async function loadStoreFromSupabase() {
     if (staff.length > 0) STORE._staffFromDB = staff;
   }
 
+  // D-83: service_subscriptionsが空の場合はvenues.has_takeout/has_deliveryをそのまま使う
   var {data: svcRows} = await sb.from('service_subscriptions').select('service_key').eq('entity_type', 'store').eq('entity_id', storeData.id).eq('is_active', true);
-  if (svcRows) {
+  if (svcRows && svcRows.length > 0) {
     var svcKeys = svcRows.map(function(r){ return r.service_key; });
     STORE.hasTakeout = svcKeys.indexOf('mo_takeout') >= 0;
     STORE.hasDelivery = svcKeys.indexOf('mo_delivery') >= 0;
