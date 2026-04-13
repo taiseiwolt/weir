@@ -516,10 +516,8 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
       <button type="submit" class="login-btn" id="loginBtn">ログイン</button>
     </form>
     <div class="demo-info">
-      <strong>デモアカウント:</strong><br>
-      炭火亭: admin@sumibite.jp<br>
-      焼肉キング: admin@yakiniku-king.jp<br>
-      パスワード: Aiden2026Pass
+      <strong>サポート:</strong><br>
+      <a href="mailto:support@aiden-jp.net">support@aiden-jp.net</a>
     </div>
   </div>
 </div>
@@ -3529,7 +3527,7 @@ content.innerHTML = `
           <option value="menu">新メニュー告知（コンテンツ管理連動）</option>
         </select>
       </div>
-      <div class="form-group" style="margin-bottom:12px"><label>件名 <span class="req">*</span></label><input type="text" id="crmSubject" placeholder="例：【炭火亭】春の特別クーポンをお届け！"></div>
+      <div class="form-group" style="margin-bottom:12px"><label>件名 <span class="req">*</span></label><input type="text" id="crmSubject" placeholder="例：春の特別クーポンをお届け！"></div>
       <div class="form-group" style="margin-bottom:12px"><label>本文 <span class="req">*</span></label>
         <div style="display:flex;gap:4px;padding:6px 8px;background:#f8f9fa;border:1px solid #e0e0e0;border-bottom:none;border-radius:6px 6px 0 0">
           <button type="button" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;cursor:pointer;font-size:13px;color:#666" onclick="document.execCommand('bold')"><b>B</b></button>
@@ -14633,18 +14631,9 @@ setTimeout(async function(){
 
 <script>
 // ===== CRM DELIVERY MANAGEMENT =====
-var CRM_AUTO_RULES = [
-  {name:'誕生日クーポン配信', trigger:'birthday', content:'birthday_coupon', channel:'email', active:true},
-  {name:'ランクアップ通知', trigger:'rankup', content:'rankup_notify', channel:'email', active:true},
-  {name:'ポイント消失リマインド', trigger:'point_expire', content:'point_remind', channel:'email', active:true},
-  {name:'30日未利用リマインド', trigger:'inactive_30', content:'comeback_coupon', channel:'email', active:false},
-];
+var CRM_AUTO_RULES = [];
 
-var CRM_TEMPLATES = [
-  {name:'春のキャンペーン告知', type:'自由記入', date:'2026/02/20', body:'{{name}} 様<br><br>いつもご利用ありがとうございます。<br>春の特別キャンペーンのご案内です。'},
-  {name:'ゴールド会員限定クーポン', type:'クーポン付き', date:'2026/02/15', body:'{{name}} 様<br><br>ゴールド会員限定のクーポンをお届けします。'},
-  {name:'新メニューのご案内', type:'新メニュー', date:'2026/01/30', body:'{{name}} 様<br><br>新メニューが登場しました。ぜひご来店ください。'},
-];
+var CRM_TEMPLATES = [];
 
 var TRIGGER_LABELS = {birthday:'誕生日の3日前',rankup:'ランクアップ時',point_expire:'ポイント消失30日前',inactive_30:'30日間未利用',inactive_90:'90日間未利用'};
 var CONTENT_LABELS = {birthday_coupon:'誕生日クーポン',rankup_notify:'ランクアップお祝い',point_remind:'ポイント消失リマインド',comeback_coupon:'カムバッククーポン',custom:'カスタム'};
@@ -14653,274 +14642,7 @@ var CONTENT_LABELS = {birthday_coupon:'誕生日クーポン',rankup_notify:'ラ
 // ===== AI CRM ANALYSIS =====
 var _aicrmChannel = 'all';
 
-var AICRM_DATA = {
-  all: {
-    kpi: {risk:23, repeat:'28.3%', arpu:'¥3,840', bestTime:'金 18時'},
-    time: {
-      labels:['10','11','12','13','14','15','16','17','18','19','20','21'],
-      data:  [  42,  88, 210, 145,  62,  58,  75, 135, 198, 172, 130,  68]
-    },
-    age: {labels:['10代','20代','30代','40代','50代','60代以上'], data:[4,22,31,25,13,5]},
-    gender: {labels:['女性','男性','未回答'], data:[54,39,7], colors:['#ff6b9d','#4e9af1','#bbb']},
-    region: {
-      labels:['渋谷区','新宿区','目黒区','世田谷区','港区','品川区','豊島区','中野区','杉並区','その他'],
-      data:  [  340,   290,   260,    220,  190,   175,   155,   140,   130,   947]
-    },
-    freq: {labels:['月1回未満','月1〜2回','月3〜5回','週2回以上'], data:[28,38,24,10], colors:['#e0e0e0','#90caf9','#42a5f5','#1565c0']},
-    job:  {labels:['会社員','学生','主婦・主夫','自営業','パート・アルバイト','その他'], data:[42,18,15,10,9,6]},
-    insights: {
-      time: {
-        insight: '昼12時（210件）と夜18時（198件）に2つのピークが存在し、特に昼ピークが全時間帯で突出している。土日の昼ピークは平日比+35%と大幅に増加し、金曜夜は開封率・注文転換率が週で最高水準を記録している。',
-        issue: '14〜16時のアイドルタイムは注文数58〜62件で全体の約6%にとどまり、人件費・光熱費に対して売上が見合っていない時間帯となっている。またピーク集中が高まるほどキッチン負荷も増大し、待ち時間の長期化や品質低下につながるリスクがある。',
-        actions: [
-          {text:'金曜18時に合わせてCRM配信をスケジュール設定し、最高CVRタイムゾーンを確実に活用する', page:'member-crm', label:'CRM配信'},
-          {text:'14〜16時限定クーポンを作成し、アイドルタイムの来店動機を生成する', page:'member-crm', label:'CRM配信'},
-          {text:'ランクアップ特典に「平日昼ポイント2倍」を追加し、曜日・時間帯の分散を促進する', page:'member-rank', label:'ランク設定'}
-        ]
-      },
-      age: {
-        insight: '30代が最多（31%）、次いで40代（25%）、20代（22%）の順で、30〜40代のコア層が全体の56%を占める。コア層は客単価が他世代比+18%高く、リピート率も34%と全体平均を大きく上回る優良層である。',
-        issue: '20代は新規獲得率が高いものの、2回目利用への転換率が他世代比-22%と低く、取り込んでも定着しにくいという課題がある。10代・60代以上の合計はわずか9%で、将来的な顧客層の幅を広げる施策が不足している。',
-        actions: [
-          {text:'20代向けに「初回登録後72時間以内クーポン」をCRM配信で自動送信し、2回目転換率を改善する', page:'member-crm', label:'CRM配信'},
-          {text:'30〜40代コア層向けにポイント還元率を高めた「ロイヤル特典」をポイント設定に追加する', page:'member-point', label:'ポイント設定'},
-          {text:'SNSで20代の目に触れやすいビジュアルコンテンツを強化し、新規認知を広げる', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      gender: {
-        insight: '女性が過半数（54%）を占め、テイクアウト利用では63%まで上昇する。男性は店内利用比率が高く、平均単価も女性より¥420高い傾向にある。',
-        issue: '男女で利用チャネル・目的が異なるにもかかわらず、現状のCRM配信は性別を考慮していない。女性のテイクアウト需要に合わせた商品・告知が不足しており、男性の高単価購買をさらに伸ばす施策も未整備である。また属性未回答（7%）が存在し、セグメント精度の向上余地がある。',
-        actions: [
-          {text:'女性向けに「テイクアウト限定ギフトセット」を訴求するCRM配信を設定する', page:'member-crm', label:'CRM配信'},
-          {text:'男性の高単価層に向けてプレミアムランク特典（高単価メニュー優待等）を設計する', page:'member-rank', label:'ランク設定'},
-          {text:'女性が反応しやすいビジュアル投稿をInstagram中心に強化する', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      region: {
-        insight: '渋谷区・新宿区・目黒区の上位3エリアが全体の38%を占め、主要商圏への集中が高い。一方、世田谷区は人口規模に対して注文率が低く、エリアターゲティングの伸び代が大きい。',
-        issue: 'デリバリー圏外に近い豊島区・中野区からもアクセスがあるにもかかわらず、配達範囲が対応できていない。配達圏を拡大することで月次数十万円規模の売上増が見込める試算もあるが、未着手の状態が続いている。',
-        actions: [
-          {text:'世田谷区ユーザー向けにエリア限定クーポンをCRM配信で送付し、潜在需要を掘り起こす', page:'member-crm', label:'CRM配信'},
-          {text:'デリバリー配達範囲を拡大し、豊島区・中野区をカバー圏内に加える', page:'store-delivery', label:'配達設定'},
-          {text:'告知コンテンツで「新エリア配達開始」を一斉配信し、新規エリアの認知を高める', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      },
-      freq: {
-        insight: 'ライト層（月1〜2回）が最多の38%、月3回以上のアクティブ層が34%。アクティブ層の離脱率は2.1%と低く、固定客化が進んでいる良好な構造である。',
-        issue: '月1回未満の休眠予備軍が28%存在しており、全体の約4分の1が離脱予備軍となっている。ライト層（38%）からアクティブ層へ引き上げる施策が不足しており、現状では放置している状態。リピート率28.3%は業界平均35%を下回っており、構造的な改善が必要である。',
-        actions: [
-          {text:'月1回未満の休眠層に向けて「久しぶりクーポン（¥300OFF）」をCRM配信で送付する', page:'member-crm', label:'CRM配信'},
-          {text:'月3回以上利用でランクアップする条件を設定し、ライト層のアクティブ化を促進する', page:'member-rank', label:'ランク設定'},
-          {text:'アクティブ層向けに「来月も3回利用でボーナスポイント」キャンペーンを設定する', page:'member-point', label:'ポイント設定'}
-        ]
-      },
-      job: {
-        insight: '会社員が42%と最多で、学生（18%）・主婦主夫（15%）が続く。学生はデリバリー利用率が高く、主婦主夫層は平日昼に集中。会社員はランチ・夜ディナーの両ピークに分布している。',
-        issue: '職業別に最適な訴求時間帯・チャネルが異なるにもかかわらず、現状のCRM配信は一律送付で機会損失が生じている。主婦主夫層（15%）への平日昼訴求や、学生層へのデリバリー限定キャンペーンなど属性別施策が未整備である。',
-        actions: [
-          {text:'主婦主夫層に「平日ランチ限定クーポン」を火〜木の11時に配信するCRMフローを設定する', page:'member-crm', label:'CRM配信'},
-          {text:'学生層に「デリバリー送料無料クーポン」を夕方16〜18時に配信し夜注文を促進する', page:'member-crm', label:'CRM配信'},
-          {text:'職業別訴求に合わせた告知コンテンツ（ランチ向け・夜向け）を生成・配信する', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      }
-    }
-  },
-  dine: {
-    kpi: {risk:10, repeat:'34.2%', arpu:'¥4,520', bestTime:'土 12時'},
-    time: {labels:['10','11','12','13','14','15','16','17','18','19','20','21'],data:[12,42,130,95,28,22,35,68,115,98,82,40]},
-    age: {labels:['10代','20代','30代','40代','50代','60代以上'], data:[5,18,28,28,16,5]},
-    gender: {labels:['女性','男性','未回答'], data:[49,44,7], colors:['#ff6b9d','#4e9af1','#bbb']},
-    region: {labels:['渋谷区','新宿区','目黒区','世田谷区','港区','品川区','豊島区','中野区','杉並区','その他'],data:[280,240,220,190,170,155,130,115,100,750]},
-    freq: {labels:['月1回未満','月1〜2回','月3〜5回','週2回以上'], data:[20,35,30,15], colors:['#e0e0e0','#90caf9','#42a5f5','#1565c0']},
-    job: {labels:['会社員','学生','主婦・主夫','自営業','パート・アルバイト','その他'], data:[45,15,14,12,8,6]},
-    insights: {
-      time: {
-        insight: '店内注文は昼（130件）と夜（115件）の2ピーク構造で、週末の昼ピークはさらに+42%増加。夜18時以降のグループ来店は客単価が昼の1.6倍となり、売上を大きく牽引している。',
-        issue: '14〜16時のアイドルタイムは22〜28件と最低水準で、座席稼働率が推定15%程度にとどまる。平日ランチの回転率が低く、人件費・設備コストに対して売上が見合っていない時間帯となっている。',
-        actions: [
-          {text:'平日14〜16時限定の「アフタヌーンセット」をメニューに追加し、カフェ利用層を取り込む', page:'member-crm', label:'CRM配信'},
-          {text:'ランチタイム来店者に「次回ディナー¥200OFF」クーポンを自動配信し、ディナー利用へ誘導する', page:'member-crm', label:'CRM配信'},
-          {text:'SNSで週末グループ来店の写真を積極的に投稿し、グループ利用のイメージを醸成する', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      age: {
-        insight: '30〜40代が店内利用の中心（56%）を占め、グループ来店での40代の同伴率が高い。宴会・会食利用が高単価売上を牽引しており、コア層の定着度が高い。',
-        issue: '10代・20代の店内利用は少なく、若年層への認知・来店動機が不足している。60代以上も平日昼利用が中心で、将来の顧客層として育てる施策が乏しい。単価の高い30〜40代の離脱が起きると売上への影響が大きいため、ロイヤル化施策が急務である。',
-        actions: [
-          {text:'30〜40代向けにコース料理・宴会プランの案内をCRM配信で優先的に送付する', page:'member-crm', label:'CRM配信'},
-          {text:'20代グループ向けにSNS映えメニューをInstagramで訴求し、来店動機を生成する', page:'ai-sns', label:'SNS管理'},
-          {text:'コア層向けランクアップ特典（宴会割引・個室優先予約権）をランク設定に追加する', page:'member-rank', label:'ランク設定'}
-        ]
-      },
-      gender: {
-        insight: '店内では男女比がほぼ均等（49:44）。女性主導のグループ予約が多く、コース料理・記念日メニューへの反応が高い。男性単身利用はランチに集中している。',
-        issue: 'カップル・ファミリー層の来店比率が低く、特別な場面での利用（記念日・誕生日等）に特化した訴求が不足している。インスタ映えを意識したメニュー・内装への投資が競合比で遅れており、女性グループの選択肢から外れるリスクがある。',
-        actions: [
-          {text:'記念日・誕生日月の会員に「記念日コース優待クーポン」をCRM配信で自動送付する', page:'member-crm', label:'CRM配信'},
-          {text:'Instagram向けに記念日シーン・テーブルコーディネートのビジュアル投稿を強化する', page:'ai-sns', label:'SNS管理'},
-          {text:'女性向けランク特典にグループ来店ボーナスポイントを追加し、紹介・同伴来店を促進する', page:'member-rank', label:'ランク設定'}
-        ]
-      },
-      region: {
-        insight: '近隣エリア（渋谷・新宿・目黒）上位3区が全体の46%を占め、徒歩・近距離圏の来店が中心。世田谷区は来店数が少ないが、一度来店すると高リピート率（39%）を示す優良エリアである。',
-        issue: '遠方エリアからの来店者はリピート率が低く、1回限りの来店で終わるケースが多い。世田谷区のポテンシャルが高いにもかかわらず、同エリアへの認知拡大施策がほぼ行われていない状態である。',
-        actions: [
-          {text:'世田谷区在住会員に「来店¥500OFF」クーポンをCRM配信し、初回来店のハードルを下げる', page:'member-crm', label:'CRM配信'},
-          {text:'遠方来店者に「次回来店¥200OFF」クーポンを即時配信し、リピート転換率を高める', page:'member-crm', label:'CRM配信'},
-          {text:'世田谷区向けにエリアターゲットの告知コンテンツを配信し、認知拡大を図る', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      },
-      freq: {
-        insight: 'アクティブ層（月3回以上）が45%と全チャネル中最高で、固定客化が最も進んでいるチャネル。月1回未満層への追加来店クーポンは過去CVR18%を記録しており、施策の費用対効果が高い。',
-        issue: '月1回未満の層（20%）が放置されており、早期フォローがなければ離脱が確定的になる。ヘビーユーザー（週2回以上・15%）は高ランク特典への期待が高く、特典が不十分だと競合流出のリスクがある。',
-        actions: [
-          {text:'月1回未満の休眠予備軍に来店から14日後に自動クーポンを配信するCRMフローを設定する', page:'member-crm', label:'CRM配信'},
-          {text:'ヘビーユーザー向けにプラチナランク維持特典（毎月ボーナスポイント等）を設計する', page:'member-rank', label:'ランク設定'},
-          {text:'月3回達成時に「今月もありがとう」感謝クーポンを自動配信し、継続利用を強化する', page:'member-point', label:'ポイント設定'}
-        ]
-      },
-      job: {
-        insight: '会社員が45%で最多、ランチの法人需要が高い。自営業者は接待利用が多く、高単価コース・個室ニーズが存在する。学生は週末ディナーでのグループ利用が中心となっている。',
-        issue: '法人・接待利用（会社員・自営業）の需要に応えるプランが不足しており、個室・コース料理での競合比較で負けているケースが多い。法人顧客の固定化ができれば安定した高単価売上を見込めるが、現状は対応が遅れている。',
-        actions: [
-          {text:'会社員向けに「ランチセット来店でポイント2倍」施策をCRMで告知し法人需要を取り込む', page:'member-crm', label:'CRM配信'},
-          {text:'接待・会食向けの「プレミアムコースご案内」CRM配信を自営業・高単価層に送付する', page:'member-crm', label:'CRM配信'},
-          {text:'法人・接待利用を訴求する告知コンテンツをビジネス層に向けて配信する', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      }
-    }
-  },
-  take: {
-    kpi: {risk:8, repeat:'24.1%', arpu:'¥2,980', bestTime:'日 12時'},
-    time: {labels:['10','11','12','13','14','15','16','17','18','19','20','21'],data:[8,32,98,62,22,20,28,48,72,58,42,22]},
-    age: {labels:['10代','20代','30代','40代','50代','60代以上'], data:[3,24,33,22,13,5]},
-    gender: {labels:['女性','男性','未回答'], data:[63,31,6], colors:['#ff6b9d','#4e9af1','#bbb']},
-    region: {labels:['渋谷区','新宿区','目黒区','世田谷区','港区','品川区','豊島区','中野区','杉並区','その他'],data:[220,180,150,160,110,120,100,90,85,540]},
-    freq: {labels:['月1回未満','月1〜2回','月3〜5回','週2回以上'], data:[35,40,18,7], colors:['#e0e0e0','#90caf9','#42a5f5','#1565c0']},
-    job: {labels:['会社員','学生','主婦・主夫','自営業','パート・アルバイト','その他'], data:[38,20,22,8,8,4]},
-    insights: {
-      time: {
-        insight: 'テイクアウトは昼ピーク（98件）が突出しており、土日昼は平日比+55%と最大需要を記録。夜（72件）との差が大きく、昼需要への特化が全体売上を左右する構造になっている。',
-        issue: '夕方16〜17時の注文数が極端に少なく、夜の事前注文への転換機会を逃している。土日昼のピークに対応するための事前予約受付・受渡スピード改善が追いついておらず、混雑時の機会損失が発生している可能性がある。',
-        actions: [
-          {text:'16〜17時に「夕食テイクアウト予約受付中」プッシュ通知をCRM配信で送付し、夜注文に転換する', page:'member-crm', label:'CRM配信'},
-          {text:'週末ランチ限定の事前予約テイクアウト割引クーポンを設定し、早期注文を促進する', page:'member-crm', label:'CRM配信'},
-          {text:'SNSで「土日ランチは事前予約でスムーズ受け取り」を告知し、混雑前予約を促す', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      age: {
-        insight: '30代が最多（33%）、20代（24%）が続く。40代は世帯購入が多く客単価が高い。30代は時短・利便性ニーズが強く、事前予約テイクアウトへの親和性が高い。',
-        issue: '20代はSNS映えを意識した商品への反応は高いが、リピート率が低く1回限りで終わるケースが多い。40代の高単価購買を伸ばす施策（まとめ買い促進・ファミリー向け大容量メニュー等）が不足している。',
-        actions: [
-          {text:'30代向けに「事前予約テイクアウトで+50pt」キャンペーンをCRM配信し利便性訴求を強化する', page:'member-crm', label:'CRM配信'},
-          {text:'20代向けにSNS投稿でのビジュアル商品紹介を強化し、インスタ映えを訴求して新規獲得する', page:'ai-sns', label:'SNS管理'},
-          {text:'40代向けにファミリー向けまとめ買いセットの告知コンテンツを配信する', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      },
-      gender: {
-        insight: 'テイクアウトは女性が63%と全チャネル中最高の女性比率。ギフト・家族向けのまとめ買いニーズが強く、パッケージの品質がSNS口コミ・紹介率に直結している。',
-        issue: '女性向けのギフト・季節限定商品の展開が不足しており、高い女性比率を活かし切れていない。男性ビジネス層はスピード提供へのニーズが高いが、混雑時の受渡遅延が満足度を下げているリスクがある。',
-        actions: [
-          {text:'女性会員に「季節限定ギフトセット」の新商品情報をCRM配信で優先告知する', page:'member-crm', label:'CRM配信'},
-          {text:'Instagramで女性目線のパッケージ・テイクアウトシーン写真を積極的に投稿する', page:'ai-sns', label:'SNS管理'},
-          {text:'男性ビジネス層に「ランチ事前予約でスピード受渡」クーポンをCRM配信で送付する', page:'member-crm', label:'CRM配信'}
-        ]
-      },
-      region: {
-        insight: '世田谷区はテイクアウト特化で店内より相対的に高い比率。港区は全エリア中最高単価（¥3,420）を記録しており、高単価商品への需要が旺盛なエリアである。',
-        issue: 'オフィス密集エリア（新宿・渋谷）の平日昼テイクアウト需要を取り込む法人向けプランが存在せず、大口需要を見逃している。港区の高単価需要に応える商品ラインナップが不足しており、ポテンシャルを活かせていない。',
-        actions: [
-          {text:'新宿・渋谷エリアの会社員向けに「ランチテイクアウト法人割クーポン」をCRM配信で展開する', page:'member-crm', label:'CRM配信'},
-          {text:'港区向けに高単価ギフトセット・プレミアム商品の告知コンテンツを配信する', page:'ai-sns', label:'告知コンテンツ生成'},
-          {text:'世田谷区向けにテイクアウト特化クーポンを送付し、同エリアでの需要をさらに拡大する', page:'member-crm', label:'CRM配信'}
-        ]
-      },
-      freq: {
-        insight: '初回購入後7日以内にクーポンを送ったユーザーのリピート率は42%で、未送付比の2.1倍という高い効果が確認されている。即時フォローアップの有効性が実証済みである。',
-        issue: 'ライト層（月1〜2回・40%）が最多で、リピート率（24.1%）は店内より10ポイント低い。現状では初回購入後のフォローアップが自動化されておらず、リピート転換の機会を逃しているケースが多い。',
-        actions: [
-          {text:'初回テイクアウト後7日以内に「次回¥200OFF」クーポンを自動配信するCRMフローを構築する', page:'member-crm', label:'CRM配信'},
-          {text:'月2回達成時に「次の1回でランクアップ」通知を送付し、3回目利用を促進する', page:'member-rank', label:'ランク設定'},
-          {text:'30日未利用のテイクアウト休眠層に「おかえりクーポン」を自動配信する', page:'member-crm', label:'CRM配信'}
-        ]
-      },
-      job: {
-        insight: '主婦主夫（22%）の比率が店内より高く、家族用まとめ買いが多い。学生（20%）は放課後16〜18時の利用が目立つ。会社員はランチテイクアウト中心でモバイル注文の利便性へのニーズが高い。',
-        issue: '学生の放課後需要（16〜18時）に対応する時間帯限定キャンペーンが設定されておらず、利用頻度の引き上げができていない。主婦主夫層のまとめ買いを促進する大容量メニュー・セット商品も不足している。',
-        actions: [
-          {text:'学生向けに「放課後テイクアウト16〜18時限定クーポン」をCRM配信で送付する', page:'member-crm', label:'CRM配信'},
-          {text:'主婦主夫層向けに「ファミリーテイクアウトセット」の告知コンテンツを平日昼に配信する', page:'ai-sns', label:'告知コンテンツ生成'},
-          {text:'会社員向けにモバイル事前注文の利便性を訴求するSNS投稿を強化する', page:'ai-sns', label:'SNS管理'}
-        ]
-      }
-    }
-  },
-  deli: {
-    kpi: {risk:5, repeat:'19.8%', arpu:'¥3,240', bestTime:'金 19時'},
-    time: {labels:['10','11','12','13','14','15','16','17','18','19','20','21'],data:[2,12,52,38,12,16,12,18,68,82,56,22]},
-    age: {labels:['10代','20代','30代','40代','50代','60代以上'], data:[6,28,32,20,10,4]},
-    gender: {labels:['女性','男性','未回答'], data:[48,44,8], colors:['#ff6b9d','#4e9af1','#bbb']},
-    region: {labels:['渋谷区','新宿区','目黒区','世田谷区','港区','品川区','豊島区','中野区','杉並区','その他'],data:[180,160,140,120,130,115,105,95,75,540]},
-    freq: {labels:['月1回未満','月1〜2回','月3〜5回','週2回以上'], data:[38,36,18,8], colors:['#e0e0e0','#90caf9','#42a5f5','#1565c0']},
-    job: {labels:['会社員','学生','主婦・主夫','自営業','パート・アルバイト','その他'], data:[40,22,14,10,9,5]},
-    insights: {
-      time: {
-        insight: '18〜20時の3時間で全体の51%が集中するという強い夜型需要。金曜夜は週で最大の注文数を記録しており、週末前夜の特需が毎週発生している。昼（52件）は伸び代があり、昼需要の開拓余地が大きい。',
-        issue: '夜のピーク集中により配達キャパシティが上限に達し、新規注文を取りこぼしている可能性がある。また昼の需要が低い原因として「デリバリー＝夜」というイメージが定着しており、昼注文の訴求が不足している。金曜夜の繁忙に対応する体制整備も遅れている。',
-        actions: [
-          {text:'ランチタイムに「昼デリバリー送料無料キャンペーン」をCRM配信で告知し、昼需要を開拓する', page:'member-crm', label:'CRM配信'},
-          {text:'金曜16〜17時に「今夜のデリバリー早めに注文で¥100OFF」クーポンを送付し、ピーク分散を図る', page:'member-crm', label:'CRM配信'},
-          {text:'SNSで「お昼もデリバリー対応中」を週3回投稿し、ランチ利用の認知を高める', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      age: {
-        insight: '20〜30代で60%を占め、一人食・共同注文ともに対応。30代の客単価は¥3,680と全世代中最高。20代はクーポン感度が高く、初回割引の反応率が他世代の1.8倍という高い施策効果がある。',
-        issue: '20代のリピート率が低く、クーポン依存で定着しにくい構造になっている。初回クーポン後のフォロー施策が不足しており、2回目注文への転換ができていないケースが多い。30代の高単価購買をさらに伸ばす施策（セット訴求・ファミリー向け大容量メニュー）も未整備。',
-        actions: [
-          {text:'20代向けに初回注文後7日以内に「2回目クーポン」を自動配信するCRMフローを設定する', page:'member-crm', label:'CRM配信'},
-          {text:'30代向けに家族向けデリバリーセットをCRMで優先告知し、高単価注文を促進する', page:'member-crm', label:'CRM配信'},
-          {text:'20代に刺さるビジュアルコンテンツをSNSで強化し、クーポン以外での来店動機を生成する', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      gender: {
-        insight: '男女比がほぼ均等（48:44）で、男性は高単価単品注文、女性は複数品セット注文の傾向がある。雨天時は男女ともに注文数が+28%増加するというデータが取れている。',
-        issue: '雨天連動のプッシュ通知施策が未設定で、自然に需要が増える雨天時の機会を活かせていない。女性のセット注文比率が高いのに、デリバリー向けセットメニューの訴求が不十分で客単価の引き上げができていない。',
-        actions: [
-          {text:'雨天検知時に「雨の日デリバリー¥100OFF」クーポンを自動配信するCRMフローを設定する', page:'member-crm', label:'CRM配信'},
-          {text:'女性向けにデリバリー限定セットメニューをCRM配信で告知し、セット注文率を高める', page:'member-crm', label:'CRM配信'},
-          {text:'「雨の日はおうちで」訴求のSNSコンテンツを雨天前日に予約投稿する設定を行う', page:'ai-sns', label:'SNS管理'}
-        ]
-      },
-      region: {
-        insight: '港区・渋谷区は高単価エリアでデリバリーARPUが¥3,800以上。豊島区への配達圏拡大は月次+¥280,000の売上増試算が出ており、拡大効果が数値で見込める状況にある。',
-        issue: '杉並区・中野区は配達圏外に近くドロップオフ率が高い。配達料設定の見直しや配達範囲拡大を行えば改善できるにもかかわらず、意思決定が遅れている。高単価エリア（港区）への特化したプレミアム商品訴求も未実施。',
-        actions: [
-          {text:'豊島区への配達圏拡大を設定し、月次+¥280,000の売上増を実現する', page:'store-delivery', label:'配達設定'},
-          {text:'港区・渋谷区の高単価ユーザーにプレミアムデリバリーセットをCRM配信で優先告知する', page:'member-crm', label:'CRM配信'},
-          {text:'新配達エリア開始を告知するコンテンツをSNS・CRM一斉配信で拡散する', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      },
-      freq: {
-        insight: '2回目注文時の送料無料クーポンは過去CVR31%を記録しており、ライト層のリピート転換施策として高い効果が実証されている。',
-        issue: 'リピート率（19.8%）は全チャネル中最低で、ライト〜ミドル層（74%）へのフォロー施策が現状ほぼ未設定。初回注文後の即時フォローアップが行われておらず、最もリピート効果が高い初回後7日間を活かせていない。',
-        actions: [
-          {text:'初回デリバリー注文後7日以内に「2回目送料無料クーポン」を自動配信するフローを設定する', page:'member-crm', label:'CRM配信'},
-          {text:'30日以上未注文のデリバリー休眠層に「おかえり¥300OFF」クーポンを定期配信する', page:'member-crm', label:'CRM配信'},
-          {text:'月2回達成で「次回送料無料」となるポイント特典を設定し、利用頻度を引き上げる', page:'member-point', label:'ポイント設定'}
-        ]
-      },
-      job: {
-        insight: '会社員（40%）・学生（22%）がメイン。テレワーク自営業者（10%）は昼デリバリー頻度が高く、ランチ定期配送ニーズがある。学生は夜間帯の注文も多い。',
-        issue: '自営業テレワーク層への昼デリバリー定期プランが存在せず、高頻度ニーズを取り込めていない。学生の夜間帯注文は伸び代があるが、深夜帯の配達対応時間に制約があり機会損失が発生している。',
-        actions: [
-          {text:'テレワーク・自営業層に「平日ランチ定期デリバリー優待クーポン」をCRM配信で送付する', page:'member-crm', label:'CRM配信'},
-          {text:'学生会員に「夜間デリバリー限定クーポン（18〜21時）」をCRM配信で送付し夜の注文を促進する', page:'member-crm', label:'CRM配信'},
-          {text:'テレワーク・在宅ワーク層向けの「おうちランチ」訴求コンテンツをSNSで配信する', page:'ai-sns', label:'告知コンテンツ生成'}
-        ]
-      }
-    }
-  }
-};
+var AICRM_DATA = {all:{}, dine:{}, take:{}, deli:{}};
 
 function setAicrmChannel(ch) {
   _aicrmChannel = ch;
@@ -14938,8 +14660,16 @@ function setAicrmChannel(ch) {
 
 function renderAicrmAll() {
   var d = AICRM_DATA[_aicrmChannel];
-  if(!d) return;
-  // KPI
+  if(!d || !d.kpi) {
+    ['aicrmKpi1','aicrmKpi2','aicrmKpi3','aicrmKpi4'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.textContent = '—';
+    });
+    ['aicrmTimeChart','aicrmAgeChart','aicrmGenderChart','aicrmRegionChart','aicrmFreqChart','aicrmJobChart'].forEach(function(id){
+      var c = document.getElementById(id);
+      if(c && c.getContext) { var ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }
+    });
+    return;
+  }
   document.getElementById('aicrmKpi1').textContent = d.kpi.risk + '名';
   document.getElementById('aicrmKpi2').textContent = d.kpi.repeat;
   document.getElementById('aicrmKpi3').textContent = d.kpi.arpu;
@@ -15185,6 +14915,7 @@ function aicrmResetInsightBtns() {
 }
 
 function renderAicrmInsights(d) {
+  if(!d || !d.insights) return;
   var ins = d.insights;
   var keyTitleMap = {
     Time:   '⏰ 時間帯別注文数',
@@ -15260,18 +14991,7 @@ function switchMemberDashTab(tab) {
 }
 
 // ===== SNS管理 ボタン関数 =====
-var SNS_HISTORY = [
-  {
-    datetime: '2026/02/28 18:00', media: 'Instagram, X', status: '投稿済',
-    content: '🍣 本日のおすすめ！サーモン三昧フェア開催中🎉\n\n新鮮なサーモンを贅沢に使った期間限定フェアがスタートしました！\n\n✨ サーモン握り2貫 ¥280\n✨ サーモンアボカド ¥320\n✨ 炙りサーモン ¥350\n\n3月5日（金）まで！ぜひお早めに🍣\n\n#サーモン #スシロー #期間限定 #回転寿司',
-    mediaDetail: 'Instagram: 写真4枚\nX: テキスト+写真1枚'
-  },
-  {
-    datetime: '2026/03/01 12:00', media: 'Instagram', status: '予約中',
-    content: '🌸 春の大感謝祭スタート！\n\n3月1日より「春の大感謝祭」を開催いたします🌸\n\n期間中はお得なキャンペーンが盛りだくさん！\n\n🎁 ポイント2倍デー（毎週土曜）\n🎁 春限定メニュー登場\n🎁 友だち紹介で500ptプレゼント\n\n詳しくはプロフィールリンクから📱\n\n#春の大感謝祭 #スシロー #キャンペーン',
-    mediaDetail: 'Instagram: 写真3枚'
-  }
-];
+var SNS_HISTORY = [];
 
 function openSnsModal(html) {
   var el = document.getElementById('snsModal');
@@ -15960,7 +15680,7 @@ function crmInsertVar() {
 function crmPreview() {
   var subject = document.getElementById('crmSubject').value || '（件名未入力）';
   var body = document.getElementById('crmBodyEditor').innerHTML || '（本文未入力）';
-  var preview = body.replace(/\{\{name\}\}/g,'<b>佐藤花子</b>').replace(/\{\{rank\}\}/g,'<b>ゴールド</b>').replace(/\{\{points\}\}/g,'<b>1,240pt</b>');
+  var preview = body.replace(/\{\{name\}\}/g,'<b>お客様</b>').replace(/\{\{rank\}\}/g,'<b>ゴールド</b>').replace(/\{\{points\}\}/g,'<b>1,240pt</b>');
   alert('📧 プレビュー\n\n件名: ' + subject + '\n\n※ 実際の配信では差し込み変数が各会員の値に置換されます');
 }
 
@@ -16196,52 +15916,7 @@ function openTemplatePicker() {
 
 <script>
 // ===== PAGE ACCESS & CVR FUNNEL =====
-var ACCESS_SERVICES = {
-  mo: {
-    label: 'モバイルオーダー',
-    cvDef: 'CV定義：決済完了',
-    funnel: [
-      {step:'HP閲覧', value:12840, color:'#74b9ff'},
-      {step:'店舗ページ', value:6420, color:'#0984e3'},
-      {step:'メニュー閲覧', value:3850, color:'#6c5ce7'},
-      {step:'カート追加', value:1280, color:'#e17055'},
-      {step:'決済完了(CV)', value:342, color:'#e94560'},
-    ],
-    trend: [1680,1520,1890,2010,1740,1950,2050]
-  },
-  hp: {
-    label: 'ホームページのみ',
-    cvDef: 'CV定義：電話タップ or 地図タップ',
-    funnel: [
-      {step:'HP閲覧', value:12840, color:'#74b9ff'},
-      {step:'店舗ページ', value:6420, color:'#0984e3'},
-      {step:'電話/地図タップ(CV)', value:890, color:'#e94560'},
-    ],
-    trend: [1680,1520,1890,2010,1740,1950,2050]
-  },
-  reserve: {
-    label: 'HP＋来店予約',
-    cvDef: 'CV定義：予約完了',
-    funnel: [
-      {step:'HP閲覧', value:12840, color:'#74b9ff'},
-      {step:'店舗ページ', value:6420, color:'#0984e3'},
-      {step:'予約フォーム', value:1540, color:'#6c5ce7'},
-      {step:'予約完了(CV)', value:412, color:'#e94560'},
-    ],
-    trend: [1680,1520,1890,2010,1740,1950,2050]
-  },
-  delivery: {
-    label: 'デリバリー一元受注',
-    cvDef: 'CV定義：注文完了（各プラットフォーム合算）',
-    funnel: [
-      {step:'出前館', value:128, color:'#e94560'},
-      {step:'Uber Eats', value:95, color:'#27ae60'},
-      {step:'Wolt', value:42, color:'#0984e3'},
-      {step:'menu', value:18, color:'#f39c12'},
-    ],
-    trend: [38,42,35,48,52,41,46]
-  }
-};
+var ACCESS_SERVICES = {};
 
 function updateAccessChart() {
   // Check if access data exists in DB
@@ -16641,11 +16316,7 @@ function renderSubscriptionKpis() {
 // ─── サブスクリプション 加入者一覧 ────────────────
 var _subMemberPrivacy = true;
 
-var SUB_MEMBERS = [
-  {id:'M001', name:'\u4f50\u85e4\u82b1\u5b50', tel:'090-1234-5678', plan:'\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1', rank:'\u30b4\u30fc\u30eb\u30c9', joinDate:'2025/10/15', status:'active', count:28, totalPaid:9800},
-  {id:'M002', name:'\u9234\u6728\u4e00\u90ce', tel:'090-2345-6789', plan:'\u30b9\u30bf\u30f3\u30c0\u30fc\u30c9\u4f1a\u54e1', rank:'\u30b7\u30eb\u30d0\u30fc', joinDate:'2025/12/01', status:'active', count:12, totalPaid:1440},
-  {id:'M003', name:'\u9ad8\u6a4b\u6b21\u90ce', tel:'080-3456-7890', plan:'\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1', rank:'\u30d7\u30e9\u30c1\u30ca', joinDate:'2025/08/20', status:'cancelled', count:18, totalPaid:5880},
-];
+var SUB_MEMBERS = [];
 
 function maskSubName(name) { return typeof maskName === 'function' ? maskName(name) : name.charAt(0) + '\uff0a'.repeat(name.length-1); }
 function maskSubTel(tel) { return typeof maskTel === 'function' ? maskTel(tel) : '***-****-****'; }
@@ -16776,74 +16447,7 @@ document.addEventListener('DOMContentLoaded', function(){ renderSubMemberTable()
 
 
 // ─── サブスク 売上レポート AI分析 ────────────────
-var SUB_REPORT_INSIGHTS = {
-  Revenue: {
-    title: '📈 月額サブスク収益推移 AI分析',
-    insight: '直近12ヶ月で収益は¥112,000から¥198,460へと約77%増加しており、月平均で約8%の安定成長を続けています。特に直近3ヶ月（1〜3月）の伸びが顕著で、月次増加額が¥15,000〜¥26,000と加速しています。',
-    issue: '成長率は高いものの、加入者数の増加ペースに比べてプレミアム会員比率が横ばいであるため、単価向上の余地が残っています。解約者による収益損失（チャーンによるMRR減少）が月次で約¥8,000〜¥12,000程度と推定されます。',
-    actions: [
-      {text: 'プレミアム会員への移行を促すアップセル特典を設計する', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  Churn: {
-    title: '📉 解約率推移 AI分析',
-    insight: '解約率は12ヶ月で4.2%から2.8%へと1.4pt改善されており、特に直近6ヶ月は3.0〜3.1%台で安定推移しています。業界平均（飲食サブスク：約3.5%）を下回っており、現状は良好な水準です。',
-    issue: '3〜6ヶ月目に解約が集中する傾向が継続月数分布にも表れており、この時期に会員のエンゲージメントが低下しやすい構造的な課題が存在します。解約理由のデータ収集も現状では不十分です。',
-    actions: [
-      {text: '3ヶ月目の会員に特典付きリテンション施策を打つ', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  PlanTrend: {
-    title: '👥 プラン別加入者数推移 AI分析',
-    insight: 'プレミアム・スタンダード両プランとも右肩上がりで成長しており、直近12ヶ月でプレミアムは42名→115名（＋174%）、スタンダードは28名→80名（＋186%）と、スタンダードの伸び率がやや高い状態です。',
-    issue: 'スタンダード加入者が増えている一方で、プレミアムへのアップグレードが起きにくい構造の可能性があります。プレミアム特典の訴求が加入時点で十分に伝わっていない可能性があります。',
-    actions: [
-      {text: 'スタンダード会員向けにプレミアム特典の体験訴求を追加する', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  AvgSpend: {
-    title: '💰 平均客単価比較 AI分析',
-    insight: 'サブスク会員の客単価は非会員比で店内＋31%（¥5,100 vs ¥3,900）、テイクアウト＋29%（¥3,600 vs ¥2,800）、デリバリー＋35%（¥4,200 vs ¥3,100）と全チャネルで大きく上回っています。サブスク加入がより高単価な注文行動を促していると考えられます。',
-    issue: 'テイクアウト・デリバリーでの客単価差（約¥800〜¥1,100）は店内ほど大きくなく、これらチャネルでの特典活用が十分に浸透していない可能性があります。',
-    actions: [
-      {text: 'テイクアウト・デリバリー向けサブスク特典を追加・強化する', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  VisitFreq: {
-    title: '🔄 来店頻度比較 AI分析',
-    insight: 'プレミアム会員の月平均来店回数は5.8回と非会員（1.6回）の3.6倍、スタンダード会員（3.4回）の1.7倍に達しています。サブスク加入が来店頻度を大幅に引き上げる効果を示しています。',
-    issue: 'スタンダード会員（3.4回）とプレミアム会員（5.8回）の間に大きな差があり、スタンダード会員の来店頻度をいかに引き上げるかが収益最大化の鍵となります。',
-    actions: [
-      {text: 'スタンダード会員向けの来店インセンティブを追加する', page: 'page-subscription', label: 'プラン設計'},
-      {text: 'CRM配信でスタンダード会員の来店を促進する', page: 'page-crm-delivery', label: 'CRM配信'}
-    ]
-  },
-  ChannelTrend: {
-    title: '🛵 チャネル別平均注文金額推移 AI分析',
-    insight: '全チャネルでサブスク会員と非会員の単価差は12ヶ月を通じて安定して拡大しており、店内注文では¥1,300→¥1,550、テイクアウトでは¥800→¥950の差に広がっています。サブスク特典が注文単価に持続的なプラス効果をもたらしています。',
-    issue: '非会員の単価も緩やかに上昇しているため、サブスク会員と非会員の差別化が薄まるリスクがあります。継続的な特典の見直しと、会員限定メニューの充実が求められます。',
-    actions: [
-      {text: '会員限定メニュー・特典を追加してサブスク価値を高める', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  PlanLtv: {
-    title: '💎 プラン別LTV比較 AI分析',
-    insight: 'プレミアム会員のLTV（¥12,400）はスタンダード会員（¥5,800）の2.1倍となっており、長期的な収益貢献度は大きく異なります。プレミアム会員1人あたりの獲得・維持コストをスタンダードの2倍程度まで許容できる計算です。',
-    issue: 'スタンダード会員のLTV¥5,800は月額¥480のプランに対して約12ヶ月分相当であり、12ヶ月以内に解約する会員が多い場合は採算が悪化します。初期の定着施策が重要です。',
-    actions: [
-      {text: 'プレミアム会員の優先獲得施策（紹介特典等）を設計する', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  },
-  Duration: {
-    title: '📅 継続月数分布 AI分析',
-    insight: '1〜3ヶ月での合計離脱は57名（全体の29%）と最も多く、初期離脱がボトルネックになっています。一方で4ヶ月以上継続する会員は全体の71%を占め、4ヶ月の壁を越えると長期定着に移行する傾向があります。13ヶ月以上の長期会員も35名おり、コアファン層の形成が進んでいます。',
-    issue: '1〜3ヶ月目の早期解約は、サブスク加入直後の体験品質（特典の使いやすさ・価値実感）が不十分である可能性を示しています。オンボーディング施策の充実が急務です。',
-    actions: [
-      {text: '加入初月に特典使い方ガイドをCRMで自動配信する', page: 'page-crm-delivery', label: 'CRM配信'},
-      {text: '3ヶ月継続会員にボーナスポイントを付与する特典を追加する', page: 'page-subscription', label: 'プラン設計'}
-    ]
-  }
-};
+var SUB_REPORT_INSIGHTS = {};
 
 function subReportToggleInsight(key, btnEl) {
   var insEl = document.getElementById('subInsight' + key);
@@ -18371,7 +17975,6 @@ function grRenderDemoData() {
   var alertBody = document.getElementById('grAlertBody');
   var demoAlerts = [
     {d:'2026-03-16',a:'田中太郎',r:1,t:'料理が冷めていた。配達が遅く30分以上かかった。',read:false},
-    {d:'2026-03-14',a:'佐藤花子',r:2,t:'注文と違う商品が入っていた。連絡しても対応が遅かった。',read:false},
     {d:'2026-03-10',a:'山田一郎',r:2,t:'量が少なすぎる。写真と実物が全然違う。',read:true},
   ];
   alertBody.innerHTML = demoAlerts.map(function(a) {
@@ -18419,7 +18022,6 @@ function grRenderDemoAllReviews() {
     {d:'2026-03-17',a:'鈴木美咲',r:5,t:'最高のお寿司でした！ネタが新鮮で大満足です。配達も早くて助かりました。'},
     {d:'2026-03-16',a:'田中太郎',r:1,t:'料理が冷めていた。配達が遅く30分以上かかった。'},
     {d:'2026-03-15',a:'高橋健二',r:4,t:'コスパが良い。ランチセットがお得でした。'},
-    {d:'2026-03-14',a:'佐藤花子',r:2,t:'注文と違う商品が入っていた。連絡しても対応が遅かった。'},
     {d:'2026-03-13',a:'渡辺翔太',r:5,t:'いつも利用しています。安定の美味しさ。'},
     {d:'2026-03-12',a:'小林さくら',r:4,t:'サーモンが美味しかった。少し待ちましたが許容範囲。'},
     {d:'2026-03-11',a:'伊藤大輔',r:3,t:'普通でした。特に印象に残るものはなかった。'},
@@ -18796,9 +18398,9 @@ var PLAN_INFO = {
 
 var PLAN_FEATURES = [
   { name: 'AI売上分析レポート',      std: '月8回',   pro: '月30回',  expert: '無制限' },
-  { name: '口コミ返信AI下書き',      std: '月20件',  pro: '月100件', expert: '無制限' },
-  { name: 'SNSコンテンツ生成',       std: '月20件',  pro: '月100件', expert: '無制限' },
-  { name: 'POP画像生成',             std: '月3枚',   pro: '月20枚',  expert: '無制限' },
+  { name: '口コミ返信AI下書き',      std: '月10件',  pro: '月100件', expert: '無制限' },
+  { name: 'SNSコンテンツ生成',       std: '月10件',  pro: '月100件', expert: '無制限' },
+  { name: 'POP画像生成',             std: '月1枚',   pro: '月20枚',  expert: '無制限' },
   { name: 'CRM自動配信',             std: null,      pro: true,      expert: true },
   { name: '競合分析ダッシュボード',   std: null,      pro: true,      expert: true },
   { name: '専任サポート',             std: null,      pro: null,      expert: true },
