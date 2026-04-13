@@ -425,10 +425,11 @@ function getUrlParam(key) {
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const BRAND_ID = new URLSearchParams(location.search).get('brand_id') || sessionStorage.getItem('aiden_brand_id');
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStoresFromSupabase() {
+  if (!BRAND_ID) return;
   var {data: stores} = await sb.from('stores').select('*').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
   var bgs = ['linear-gradient(135deg,#1a0000,#5a1a1a)','linear-gradient(135deg,#1a1a00,#5a5a00)','linear-gradient(135deg,#001a00,#005a00)','linear-gradient(135deg,#001a1a,#005a5a)','linear-gradient(135deg,#1a001a,#5a005a)','linear-gradient(135deg,#001a2a,#005a7a)','linear-gradient(135deg,#2a1a00,#7a5000)'];

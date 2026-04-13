@@ -219,10 +219,11 @@ function applyBrand() {
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const BRAND_ID = new URLSearchParams(location.search).get('brand_id') || sessionStorage.getItem('aiden_brand_id');
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadNewsFromSupabase() {
+  if (!BRAND_ID) return;
   var {data: news} = await sb.from('brand_news').select('*').eq('brand_id', BRAND_ID).order('published_at', {ascending: false});
   if (!news || news.length === 0) return;
   NEWS_DATA = news.map(function(n, i) {

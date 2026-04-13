@@ -143,8 +143,8 @@ const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const _urlParams = new URLSearchParams(window.location.search);
 const _brandParam = _urlParams.get('brand');
+const _brandIdParam = _urlParams.get('brand_id');
 const _newsId = _urlParams.get('news_id');
-const DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
 
 var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュー', info:'お知らせ'};
 
@@ -154,13 +154,14 @@ async function resolveBrandId() {
     var { data: domainMatch } = await sb.from('brands').select('id').eq('custom_domain', hostname).limit(1);
     if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
   }
-  if (!_brandParam) return DEFAULT_BRAND_ID;
+  if (_brandIdParam) return _brandIdParam;
+  if (!_brandParam) return sessionStorage.getItem('aiden_brand_id');
   var { data: brandBySlug } = await sb.from('brands').select('id').eq('slug', _brandParam).limit(1);
   if (brandBySlug && brandBySlug.length > 0) return brandBySlug[0].id;
   var prefix = _brandParam.split('-')[0];
   var { data } = await sb.from('venues').select('brand_id').ilike('slug', prefix + '-%').limit(1);
   if (data && data.length > 0) return data[0].brand_id;
-  return DEFAULT_BRAND_ID;
+  return sessionStorage.getItem('aiden_brand_id');
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -176,6 +177,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   try {
     var brandId = await resolveBrandId();
+    if (!brandId) return;
 
     // Load brand config for styling
     var { data: brand } = await sb.from('brands').select('name, primary_color, primary_dark, primary_light, header_bg, header_text_color, font_color, logo_text_type, logo_text_value').eq('id', brandId).single();

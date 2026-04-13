@@ -945,10 +945,11 @@ function toggleNav() {
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-const BRAND_ID = '22222222-0000-0000-0000-000000000001';
+const BRAND_ID = new URLSearchParams(location.search).get('brand_id') || sessionStorage.getItem('aiden_brand_id');
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadMenuFromSupabase() {
+  if (!BRAND_ID) return;
   var {data: cats} = await sb.from('categories').select('*').eq('brand_id', BRAND_ID).order('sort_order');
   var {data: products} = await sb.from('products').select('*').eq('brand_id', BRAND_ID);
   var {data: sizes} = await sb.from('product_sizes').select('*');

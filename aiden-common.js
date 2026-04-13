@@ -12,7 +12,6 @@
      ============================================================= */
   var SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
-  var DEFAULT_BRAND_ID = '22222222-0000-0000-0000-000000000001';
   var TIMEOUT_MS = 3000;
 
   var BRAND_COLUMNS = 'id,name,display_id,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain';
@@ -87,8 +86,8 @@
     var stored = sessionStorage.getItem('aiden_brand_id');
     if (stored) return { type: 'id', value: stored };
 
-    // 4. Default
-    return { type: 'id', value: DEFAULT_BRAND_ID };
+    // D-83: no hardcoded default. Caller must handle null.
+    return { type: 'none', value: null };
   }
 
   /* =============================================================
@@ -98,7 +97,8 @@
     var client = getSb();
     if (!client) return Promise.reject(new Error('Supabase not loaded'));
 
-    // resolveBrandId always resolves to an ID now
+    if (!resolved || !resolved.value) return Promise.resolve(null);
+
     var query = client.from('brands').select(BRAND_COLUMNS).eq('id', resolved.value);
 
     return query.single().then(function(res) {
