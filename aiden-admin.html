@@ -4304,7 +4304,7 @@ async function saveStoreBasic(storeDisplayId){
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
-  corp:{filename:'aiden_corp_template.csv',format:'csv',
+  corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',
     headers:[
       '法人名*','代表者名*','代表メールアドレス*','会社HP','採用ページ',
       '法人番号','銀行名*','支店番号*','口座番号*','本部住所*','本部電話番号*','代表メール*','担当者氏名*','担当者メールアドレス*',
@@ -4316,6 +4316,7 @@ const TEMPLATES={
       '日曜_開始','日曜_終了','定休日（曜日をカンマ区切りで記入）',
       'アカウント氏名*','アカウントメール*'
     ],
+    dvDefs:[{col:18,list:'"ON,OFF"'},{col:19,list:'"ON,OFF"'},{col:20,list:'"ON,OFF"'}],
     keys:[
       'name','rep','corpEmail','hp','recruit',
       'corpNumber','bankName','bankBranch','bankAccount','hqAddress','hqPhone','repEmail','contactName','contactEmail',
@@ -4397,9 +4398,9 @@ function downloadXlsxTemplate(t){
   var ws2=XLSX.utils.aoa_to_sheet(s2Data);
   ws2['!cols']=[{wch:14},{wch:20},{wch:8},{wch:14},{wch:10},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws2,'選択肢一覧');
-  // Add data validations to Sheet 1
+  // Add data validations to Sheet 1 (use t.dvDefs if template provides them, else store-specific defaults)
   if(!ws1['!dataValidation'])ws1['!dataValidation']=[];
-  var dvDefs=[{col:14,list:'"通し営業,中休みあり"'},{col:20,list:'"'+PRICE_RANGES.join(',')+'"'},{col:21,list:'"'+PRICE_RANGES.join(',')+'"'},{col:22,list:'"ON,OFF"'},{col:23,list:'"ON,OFF"'},{col:24,list:'"ON,OFF"'},{col:25,list:'"'+_SMOKING_OPTS.join(',')+'"'},{col:28,list:'"Owner,Admin,Staff"'}];
+  var dvDefs=t.dvDefs||[{col:14,list:'"通し営業,中休みあり"'},{col:20,list:'"'+PRICE_RANGES.join(',')+'"'},{col:21,list:'"'+PRICE_RANGES.join(',')+'"'},{col:22,list:'"ON,OFF"'},{col:23,list:'"ON,OFF"'},{col:24,list:'"ON,OFF"'},{col:25,list:'"'+_SMOKING_OPTS.join(',')+'"'},{col:28,list:'"Owner,Admin,Staff"'}];
   dvDefs.forEach(function(dv){ws1['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});});
   XLSX.writeFile(wb,t.filename);
   showToast('📋 Excelテンプレートをダウンロードしました');
@@ -4633,9 +4634,10 @@ async function confirmBulkImport(){
             const brandUuid=bData.data.id;
             const brandDisplayId=bData.data.display_id;
             BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:d.data.display_id,name:item.brandName,slug:item.brandSlug,status:'active',mainColor:item.mainColor||'#6c5ce7',secondaryColor:item.subColor||'#1A1A1A',fontFamilies:['Noto Sans JP'],socialLinks:{},serviceSettings:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
+            try{const {error:cbrErr}=await sb.from('merchant_brand_relations').insert({merchant_id:d.data.id,brand_id:brandUuid,role:'owner'});if(cbrErr)throw cbrErr;CBR.push({corp_id:d.data.id,brand_id:brandUuid,role:'owner'});}catch(cbrE){chainWarnings.push('法人ブランド紐づけ失敗: '+cbrE.message);}
             if(item.hasVenue){
               try{
-                const vRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.venueName,brand_id:brandUuid,address:item.venueAddr||undefined,phone:item.venueTel||undefined,email:item.venueEmail||undefined,reservation_enabled:item.reserv==='ON',takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON'})});
+                const vRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.venueName,brand_id:brandUuid,merchant_id:d.data.id,address:item.venueAddr||undefined,phone:item.venueTel||undefined,email:item.venueEmail||undefined,reservation_enabled:item.reserv==='ON',takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON'})});
                 const vData=await vRes.json();
                 if(!vRes.ok)throw new Error(vData.error||'店舗保存失敗');
                 const venueUuid=vData.data.id;
@@ -4656,7 +4658,7 @@ async function confirmBulkImport(){
                   };
                 });
                 await sb.from('venue_hours').insert(hoursRows);
-                VENUES.push({_uuid:venueUuid,id:vData.data.display_id,brandId:brandDisplayId,name:item.venueName,status:'active',addr:item.venueAddr||'',tel:item.venueTel||'',orders:0,revenue:0});
+                VENUES.push({_uuid:venueUuid,corpUuid:d.data.id,id:vData.data.display_id,brandId:brandDisplayId,name:item.venueName,status:'active',addr:item.venueAddr||'',tel:item.venueTel||'',orders:0,revenue:0});
               }catch(vErr){chainWarnings.push('店舗作成失敗: '+vErr.message);}
             }
           }catch(bErr){chainWarnings.push('ブランド作成失敗: '+bErr.message);}
@@ -4664,7 +4666,9 @@ async function confirmBulkImport(){
         if(item.hasAccount&&item.accountEmail){
           try{
             const aRes=await fetch('/api/admin/staff-accounts',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({display_name:item.accountName||item.contactName||item.rep||'担当者',email:item.accountEmail,role:'owner',merchant_id:d.data.id,status:'active'})});
-            if(!aRes.ok){const aErr=await aRes.json();chainWarnings.push('アカウント作成失敗: '+(aErr.error||'不明なエラー'));}
+            const aData=await aRes.json();
+            if(!aRes.ok){chainWarnings.push('アカウント作成失敗: '+(aData.error||'不明なエラー'));}
+            else{var accName=item.accountName||item.contactName||item.rep||'担当者';ACCOUNTS.push({_uuid:aData.data.id,id:aData.data.display_id||aData.data.id.substring(0,8),name:accName,email:item.accountEmail,role:'owner',corpId:d.data.display_id,status:'active',lastLogin:'—'});}
           }catch(aErr){chainWarnings.push('アカウント作成失敗: '+aErr.message);}
         }
         if(chainWarnings.length)showToast('⚠️ '+item.name+': '+chainWarnings.join(' / '));
@@ -4681,8 +4685,10 @@ async function confirmBulkImport(){
       try{
         var token=await getToken();
         var sBrand=BRANDS.find(function(b){return b.id===item.brandId;});
+        var sCorp=MERCHANTS.find(function(m){return m.id===sBrand?.corpId;});
+        var sCorpUuid=sCorp?._uuid||null;
         var sSmokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','喫煙可':'allowed','分煙':'separated'};
-        var sStoreRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,brand_id:sBrand?._uuid,address:item.addr||undefined,phone:item.tel||undefined,email:item.email||undefined,nearest_station:item.station||undefined,price_range_lunch:item.priceLunch||undefined,price_range_dinner:item.priceDinner||undefined,seats:item.seats?parseInt(item.seats):undefined,smoking_policy:sSmokingMap[item.smoking]||'no_smoking',children_policy:item.children==='同伴可'?'allowed':item.children==='要相談'?'consultation':'not_allowed',regular_holiday:item.holiday||undefined,takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON',reservation_enabled:item.reserv==='ON',is_active:true})});
+        var sStoreRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,brand_id:sBrand?._uuid,merchant_id:sCorpUuid||undefined,address:item.addr||undefined,phone:item.tel||undefined,email:item.email||undefined,nearest_station:item.station||undefined,price_range_lunch:item.priceLunch||undefined,price_range_dinner:item.priceDinner||undefined,seats:item.seats?parseInt(item.seats):undefined,smoking_policy:sSmokingMap[item.smoking]||'no_smoking',children_policy:item.children==='同伴可'?'allowed':item.children==='要相談'?'consultation':'not_allowed',regular_holiday:item.holiday||undefined,takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON',reservation_enabled:item.reserv==='ON',is_active:true})});
         var sStoreD=await sStoreRes.json();if(!sStoreRes.ok)throw new Error(sStoreD.error||'店舗保存失敗');
         var sStoreUuid=sStoreD.data.id;
         var allDows=[0,1,2,3,4,5,6];var sHoursRows=[];
@@ -4692,7 +4698,7 @@ async function confirmBulkImport(){
           else if(item.lunchOpen){sHoursRows.push({venue_id:sStoreUuid,day_of_week:dow,open_time:item.lunchOpen+':00',close_time:item.lunchClose+':00',hours_type:'through',is_closed:false});}
         });
         if(sHoursRows.length)await sb.from('venue_hours').insert(sHoursRows);
-        VENUES.push({_uuid:sStoreUuid,id:sStoreD.data.display_id,brandId:item.brandId,name:item.name,status:'active',addr:item.addr||'',tel:item.tel||'',orders:0,revenue:0});
+        VENUES.push({_uuid:sStoreUuid,corpUuid:sCorpUuid||'',id:sStoreD.data.display_id,brandId:item.brandId,name:item.name,status:'active',addr:item.addr||'',tel:item.tel||'',orders:0,revenue:0});
         added++;
       }catch(e){var sMsg=item.name+': '+e.message;showToast('⚠️ '+sMsg);var sPv=document.getElementById('bulkPreview');if(sPv)sPv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(sMsg)+'</div>';continue;}
     }else if(_bulkType==='account'){
