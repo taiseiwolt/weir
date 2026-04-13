@@ -99,7 +99,6 @@
   <div class="sb-div"></div>
   <div class="nav-item" data-page="compensation" onclick="goTo('compensation')"><span class="icon">🎁</span><span class="label">補償管理</span></div>
   <div class="nav-item" data-page="auditlog" onclick="goTo('auditlog')"><span class="icon">📋</span><span class="label">操作ログ</span></div>
-  <div class="nav-item" data-page="bulk" onclick="goTo('bulk')"><span class="icon">📥</span><span class="label">データ一括管理</span></div>
 </nav>
 <main class="content" id="content"></main>
 <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBody"></div></div>
@@ -435,14 +434,14 @@ document.addEventListener('click',e=>{if(!e.target.closest('.header-search'))doc
 
 // NAVIGATION
 let currentView={type:'dashboard',id:null};
-function goTo(p){currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
+function goTo(p){_bulkEmbedded=false;currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
 function openMerchantModal(id){history.replaceState(null,'','#merchants/'+id);currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
 function goToBrand(id){openBrandModal(id);}
 function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=BRANDS.find(x=>x.id===id);if(!b)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderBrandPage(b);openModal(html,true);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}
 function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
-  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',orders:'orders',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',bulk:'bulk',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
+  const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',orders:'orders',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
   document.querySelectorAll('.sidebar .nav-item[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===sidebarPage);});
 }
 function switchTab(prefix,el,tabId){
@@ -681,7 +680,7 @@ function renderCorpsList(){
 // ===== BRANDS LIST =====
 function renderBrandsList(){
   return '<div class="page-title">ブランド管理</div><div class="page-subtitle">全ブランドの一覧</div>'+
-  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="goTo(\'bulk\');onBulkTypeChange_brand()">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
+  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'brand\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
   '<table class="data-table" style="table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:12%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:20%"></colgroup><thead><tr><th>ID</th><th>法人</th><th>ブランド名</th><th>スラッグ</th><th>店舗数</th><th>ステータス</th><th>ページ</th><th></th></tr></thead><tbody>'+
   BRANDS.map(b=>{const cp=getMerchantForBrand(b),ss=getVenuesForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td>'+ss+'</td><td>'+statusBadge(b.status)+'</td><td>'+(b.slug?'<a href="https://aiden-jp.net/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🌐 HP</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
@@ -738,6 +737,7 @@ function renderMenusPage(){
         '<input type="text" id="menusSearchInput" placeholder="display_id を入力" style="flex:1;min-width:240px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-family:monospace;font-size:13px" onkeydown="if(event.key===\'Enter\')menusSearch()">'+
         '<button class="btn btn-primary" onclick="menusSearch()">🔍 検索</button>'+
         '<button class="btn btn-secondary" onclick="menusReset()">リセット</button>'+
+        '<button class="btn btn-secondary" onclick="goToMenuBulk()">📥 一括インポート</button>'+
       '</div>'+
       '<div style="font-size:11px;color:var(--text-light);margin-top:8px">例: CRP-a1b2c3d（法人）/ BRD-a1b2c3d（ブランド）/ STR-a1b2c3d（店舗）</div>'+
     '</div>'+
@@ -4843,6 +4843,7 @@ let _bulkDbErrors=[];          // preview errors
 let _bulkDbOriginalObjects=null; // raw parsed rows (for "before→after" diff)
 let _bulkDbDeleteSelected=null;  // Set of selected row indices for delete mode
 let _bulkDbFuzzyWarnings=[];     // brand fuzzy match warnings
+let _bulkEmbedded=false;         // true = embedded in menu management (filters to menu_* types)
 
 // ===== AUDIT LOG =====
 let auditLogPage=1;
@@ -5408,9 +5409,17 @@ function renderBulkStepIndicator(step){
 
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
-  Object.keys(BULK_TEMPLATES).forEach(function(k){opts+='<option value="'+k+'"'+(_bulkDbType===k?' selected':'')+'>'+esc(BULK_TYPE_LABELS[k])+'</option>';});
-  return '<div class="page-title">データ一括管理</div>'+
-    '<div class="page-subtitle">CSV/Excelで法人・ブランド・店舗・メニューを一括登録・修正・削除（DB連携）</div>'+
+  Object.keys(BULK_TEMPLATES).forEach(function(k){
+    if(_bulkEmbedded && k.indexOf('menu_')!==0)return;
+    opts+='<option value="'+k+'"'+(_bulkDbType===k?' selected':'')+'>'+esc(BULK_TYPE_LABELS[k])+'</option>';
+  });
+  var header=_bulkEmbedded
+    ? '<div style="margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="goToMenusFromBulk()">← メニュー管理に戻る</button></div>'+
+      '<div class="page-title">📥 メニュー一括インポート</div>'+
+      '<div class="page-subtitle">CSV/Excelでメニュー（カテゴリ/商品/サイズ）を一括登録・修正・削除</div>'
+    : '<div class="page-title">データ一括管理</div>'+
+      '<div class="page-subtitle">CSV/Excelで法人・ブランド・店舗・メニューを一括登録・修正・削除（DB連携）</div>';
+  return header+
     renderBulkStepIndicator(_bulkDbStep)+
     '<div class="card" id="bulkStep1Card"'+(_bulkDbStep===1?'':' style="display:none"')+'>'+
       '<div class="card-title">📥 Step 1: 種別・モード・ファイル選択</div>'+
@@ -5476,6 +5485,21 @@ function resetBulkWizard(){
   _bulkDbImageFiles=[];
   var el=document.getElementById('content');
   if(el)el.innerHTML=renderBulkPage();
+}
+
+function goToMenuBulk(){
+  _bulkDbType=null;_bulkDbMode='upsert';_bulkDbStep=1;
+  _bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;
+  _bulkDbDeleteSelected=null;_bulkDbFuzzyWarnings=[];
+  if(typeof _bulkDbImageFiles!=='undefined')_bulkDbImageFiles=[];
+  _bulkEmbedded=true;
+  var el=document.getElementById('content');
+  if(el)el.innerHTML=renderBulkPage();
+}
+
+function goToMenusFromBulk(){
+  _bulkEmbedded=false;
+  goTo('menus');
 }
 
 function onBulkModeChange(mode){
