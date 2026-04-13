@@ -434,7 +434,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.header-search'))doc
 
 // NAVIGATION
 let currentView={type:'dashboard',id:null};
-function goTo(p){_bulkEmbedded=false;currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
+function goTo(p){currentView={type:p,id:null};clearSearch();updateSidebar();renderPage();}
 function openMerchantModal(id){history.replaceState(null,'','#merchants/'+id);currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
 function goToBrand(id){openBrandModal(id);}
 function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=BRANDS.find(x=>x.id===id);if(!b)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderBrandPage(b);openModal(html,true);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}
@@ -4712,7 +4712,7 @@ async function confirmBulkImport(){
   renderPage();
 }
 
-// ===== DB-BACKED BULK IMPORT (データ一括管理) =====
+// ===== DB-BACKED BULK IMPORT (menu bulk wizard) =====
 // 許可される商品フラグ（D-47）— API側 PRODUCT_FLAGS と一致させる
 const BULK_PRODUCT_FLAGS=['おすすめ','新商品','期間限定','人気'];
 
@@ -4843,7 +4843,6 @@ let _bulkDbErrors=[];          // preview errors
 let _bulkDbOriginalObjects=null; // raw parsed rows (for "before→after" diff)
 let _bulkDbDeleteSelected=null;  // Set of selected row indices for delete mode
 let _bulkDbFuzzyWarnings=[];     // brand fuzzy match warnings
-let _bulkEmbedded=false;         // true = embedded in menu management (filters to menu_* types)
 
 // ===== AUDIT LOG =====
 let auditLogPage=1;
@@ -5410,15 +5409,12 @@ function renderBulkStepIndicator(step){
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
   Object.keys(BULK_TEMPLATES).forEach(function(k){
-    if(_bulkEmbedded && k.indexOf('menu_')!==0)return;
+    if(k.indexOf('menu_')!==0)return;
     opts+='<option value="'+k+'"'+(_bulkDbType===k?' selected':'')+'>'+esc(BULK_TYPE_LABELS[k])+'</option>';
   });
-  var header=_bulkEmbedded
-    ? '<div style="margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="goToMenusFromBulk()">← メニュー管理に戻る</button></div>'+
-      '<div class="page-title">📥 メニュー一括インポート</div>'+
-      '<div class="page-subtitle">CSV/Excelでメニュー（カテゴリ/商品/サイズ）を一括登録・修正・削除</div>'
-    : '<div class="page-title">データ一括管理</div>'+
-      '<div class="page-subtitle">CSV/Excelで法人・ブランド・店舗・メニューを一括登録・修正・削除（DB連携）</div>';
+  var header='<div style="margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="goTo(\'menus\')">← メニュー管理に戻る</button></div>'+
+    '<div class="page-title">📥 メニュー一括インポート</div>'+
+    '<div class="page-subtitle">CSV/Excelでメニュー（カテゴリ/商品/サイズ）を一括登録・修正・削除</div>';
   return header+
     renderBulkStepIndicator(_bulkDbStep)+
     '<div class="card" id="bulkStep1Card"'+(_bulkDbStep===1?'':' style="display:none"')+'>'+
@@ -5492,14 +5488,8 @@ function goToMenuBulk(){
   _bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;
   _bulkDbDeleteSelected=null;_bulkDbFuzzyWarnings=[];
   if(typeof _bulkDbImageFiles!=='undefined')_bulkDbImageFiles=[];
-  _bulkEmbedded=true;
   var el=document.getElementById('content');
   if(el)el.innerHTML=renderBulkPage();
-}
-
-function goToMenusFromBulk(){
-  _bulkEmbedded=false;
-  goTo('menus');
 }
 
 function onBulkModeChange(mode){
