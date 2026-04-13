@@ -8,7 +8,9 @@
       "has": [{ "type": "host", "value": "www.aiden-jp.net" }],
       "destination": "https://aiden-jp.net/:path",
       "permanent": true
-    }
+    },
+    { "source": "/aiden-brand-stores-v1.4.html", "destination": "/aiden-brand-stores.html", "permanent": true },
+    { "source": "/aiden-store-v5.4.html", "destination": "/aiden-store.html", "permanent": true }
   ],
   "rewrites": [
     { "source": "/api/admin/:path*", "destination": "/api/admin/__root?path=:path*" },
@@ -21,8 +23,6 @@
     { "source": "/legal/", "destination": "/legal/index.html" },
     { "source": "/legal/:path", "destination": "/legal/:path" },
     { "source": "/aiden-brand-sushiro.html", "destination": "/brand.html" },
-    { "source": "/aiden-brand-stores-v1.4.html", "destination": "/aiden-brand-stores.html" },
-    { "source": "/aiden-store-v5.4.html", "destination": "/aiden-store.html" },
     { "source": "/:slug((?!api|legal|aiden-|brand|404|index|test-|e2e-|playwright|seed-|qa-|docs).*)", "destination": "/brand.html?brand=:slug" },
     { "source": "/((?!api/|legal/).*)", "destination": "/404.html" }
   ],
