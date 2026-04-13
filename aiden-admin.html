@@ -4728,26 +4728,70 @@ const BULK_TEMPLATES={
     filename:'aiden_menu_category_template.xlsx',format:'xlsx',
     headers:['ブランドスラッグ*','カテゴリ名*','表示順'],
     keys:['brand_slug','name','sort_order'],
-    sample:[['sumibite','焼肉','1']],
+    sample:[
+      ['sample-brand','おすすめ','1'],
+      ['sample-brand','定番メニュー','2'],
+      ['sample-brand','ドリンク','3'],
+    ],
   },
   menu_product:{
     filename:'aiden_menu_product_template.xlsx',format:'xlsx',
     headers:[
-      'ブランドスラッグ*','カテゴリ名*','商品名*','説明','価格','画像URL','表示順','利用可能(ON/OFF)',
-      'メニューパターンコード(MP-xxx)','商品フラグ(おすすめ|新商品|期間限定|人気、複数は|区切り)'
+      'ブランドスラッグ*','カテゴリ名*','商品名*','説明','価格(税込)','画像URL','表示順','利用可能(ON/OFF)',
+      'メニューパターンコード(MP-xxx)','商品フラグ(複数は|区切り)'
     ],
     keys:['brand_slug','category_name','name','description','price','image_url','sort_order','is_available','menu_pattern_code','tags'],
-    sample:[['sumibite','焼肉','特選カルビ','厳選A5ランク黒毛和牛','1280','https://example.com/img.jpg','1','ON','MP-001','おすすめ|人気']],
+    sample:[
+      ['sample-brand','おすすめ','看板商品A','お店自慢の一品','1200','','1','ON','','おすすめ|人気'],
+      ['sample-brand','定番メニュー','定番商品B','','980','','1','ON','',''],
+      ['sample-brand','ドリンク','生ビール','','600','','1','ON','','人気'],
+    ],
   },
   menu_size:{
     filename:'aiden_menu_size_template.xlsx',format:'xlsx',
-    headers:['ブランドスラッグ*','商品名*','サイズラベル*','価格*','表示順'],
+    headers:['ブランドスラッグ*','商品名*','サイズラベル*','価格(税込)*','表示順'],
     keys:['brand_slug','product_name','label','price','sort_order'],
-    sample:[['sumibite','特選カルビ','150g','1280','1']],
+    sample:[
+      ['sample-brand','看板商品A','S（150g）','980','1'],
+      ['sample-brand','看板商品A','M（200g）','1200','2'],
+      ['sample-brand','看板商品A','L（300g）','1600','3'],
+    ],
+  },
+  menu_full:{
+    filename:'aiden_menu_full_template.xlsx',format:'xlsx',
+    _isMultiSheet:true,
+    _downloadOnly:true,
+    sheets:[
+      {
+        name:'1_カテゴリ',
+        headers:['ブランドスラッグ*','カテゴリ名*','表示順'],
+        sample:[
+          ['sample-brand','おすすめ','1'],
+          ['sample-brand','定番メニュー','2'],
+          ['sample-brand','ドリンク','3'],
+        ],
+      },
+      {
+        name:'2_メニュー商品',
+        headers:[
+          'ブランドスラッグ*','カテゴリ名*','商品名*','説明','価格(税込)',
+          '画像URL','表示順','利用可能(ON/OFF)','商品フラグ(複数は|区切り)'
+        ],
+        sample:[
+          ['sample-brand','おすすめ','看板商品A','お店自慢の一品','1200','','1','ON','おすすめ|人気'],
+          ['sample-brand','定番メニュー','定番商品B','','980','','1','ON',''],
+          ['sample-brand','ドリンク','生ビール','','600','','1','ON','人気'],
+        ],
+        dvDefs:[
+          {col:7,list:'"ON,OFF"'},
+        ],
+        flagCommentCol:8,
+      }
+    ],
   },
 };
 
-const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ'};
+const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ',menu_full:'メニュー一括（カテゴリ＋商品）'};
 // State for the 3-step wizard
 let _bulkDbType=null;          // selected entity type
 let _bulkDbMode='upsert';      // 'upsert' (新規+修正) or 'delete'
@@ -5352,10 +5396,15 @@ function renderBulkPage(){
         '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px">テンプレートをダウンロードして編集してください</div>'+
         '<div class="btn-group">'+
           '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(false)">📋 空テンプレート</button>'+
-          '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(true)">📥 既存データ付き</button>'+
+          (_bulkDbType&&BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly?'':
+            '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(true)">📥 既存データ付き</button>')+
         '</div>'+
+        (_bulkDbType&&BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly?
+          '<div style="font-size:11px;color:#8a5a00;background:#fff7e6;border:1px solid #f59f00;border-radius:6px;padding:8px;margin-top:10px">'+
+          '📄 このテンプレートはダウンロード専用です。<br>顧客から記入済みファイルを受け取ったら、<strong>「メニューカテゴリ」→ シート1</strong>、<strong>「メニュー商品」→ シート2</strong> に分けて個別にアップロードしてください（シート名は自動判別されます）。'+
+          '</div>':'')+
       '</div>'+
-      '<div id="bulkDbUploadArea" style="display:'+(_bulkDbType?'':'none')+'">'+
+      '<div id="bulkDbUploadArea" style="display:'+(_bulkDbType&&!(BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly)?'':'none')+'">'+
         '<div class="upload-zone" id="bulkDbDropZone" onclick="document.getElementById(\'bulkDbFileInput\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="event.preventDefault();this.classList.remove(\'drag\');handleBulkFile(event.dataTransfer.files[0])">'+
           '<div class="uz-icon">📎</div><p>クリックまたはドラッグ&ドロップ<br><span style="font-size:10px">CSV (.csv) / Excel (.xlsx)</span></p>'+
         '</div>'+
@@ -5400,11 +5449,8 @@ function onBulkModeChange(mode){
 function onBulkTypeChange(){
   var sel=document.getElementById('bulkDbType').value;
   _bulkDbType=sel||null;_bulkDbItems=null;_bulkDbErrors=[];_bulkDbOriginalObjects=null;_bulkDbFuzzyWarnings=[];
-  var tArea=document.getElementById('bulkTemplateArea');
-  var uArea=document.getElementById('bulkDbUploadArea');
-  if(tArea)tArea.style.display=sel?'':'none';
-  if(uArea)uArea.style.display=sel?'':'none';
-  var fi=document.getElementById('bulkDbFileInput');if(fi)fi.value='';
+  // Re-render to reflect _downloadOnly note and upload area visibility (also updates product image zone)
+  var el=document.getElementById('content');if(el)el.innerHTML=renderBulkPage();
 }
 
 function onBulkTypeChange_brand(){
@@ -5417,7 +5463,36 @@ function onBulkTypeChange_brand(){
 function downloadBulkTemplate(includeData){
   var type=_bulkDbType;if(!type)return;
   var tmpl=BULK_TEMPLATES[type];
-  if(includeData){downloadTemplateWithData(type,tmpl);return;}
+  if(includeData){
+    if(tmpl._downloadOnly){showToast('ℹ️ このテンプレートはダウンロード専用です。既存データ付きには対応していません');return;}
+    downloadTemplateWithData(type,tmpl);return;
+  }
+  if(tmpl._isMultiSheet){
+    var wbM=XLSX.utils.book_new();
+    tmpl.sheets.forEach(function(sheet){
+      var mwsData=[sheet.headers].concat(sheet.sample);
+      var mws=XLSX.utils.aoa_to_sheet(mwsData);
+      mws['!cols']=sheet.headers.map(function(h,i){var s0=sheet.sample[0]&&sheet.sample[0][i]?String(sheet.sample[0][i]).length:0;return {wch:Math.max(h.length+4,s0+4,12)};});
+      if(sheet.dvDefs&&sheet.dvDefs.length){
+        if(!mws['!dataValidation'])mws['!dataValidation']=[];
+        sheet.dvDefs.forEach(function(dv){
+          mws['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});
+        });
+      }
+      if(sheet.flagCommentCol!=null){
+        var fc=XLSX.utils.encode_cell({r:0,c:sheet.flagCommentCol});
+        if(mws[fc])mws[fc].c=[{a:'AIden',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
+      }
+      XLSX.utils.book_append_sheet(wbM,mws,sheet.name);
+    });
+    var flagSheetDataM=[['商品フラグ一覧']].concat(BULK_PRODUCT_FLAGS.map(function(f){return [f];}));
+    var flagSheetM=XLSX.utils.aoa_to_sheet(flagSheetDataM);
+    flagSheetM['!cols']=[{wch:16}];
+    XLSX.utils.book_append_sheet(wbM,flagSheetM,'商品フラグ一覧');
+    XLSX.writeFile(wbM,tmpl.filename);
+    showToast('📋 テンプレートをダウンロードしました');
+    return;
+  }
   if(tmpl.format==='xlsx'){
     var wb=XLSX.utils.book_new();
     var wsData=[tmpl.headers].concat(tmpl.sample);
@@ -5444,6 +5519,14 @@ function downloadBulkTemplate(includeData){
           }
         });
       }
+    }else if(type==='menu_product'){
+      if(!ws['!dataValidation'])ws['!dataValidation']=[];
+      var menuProductDvDefs=[{col:7,list:'"ON,OFF"'}];
+      menuProductDvDefs.forEach(function(dv){
+        ws['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});
+      });
+      var flagHeaderCell=XLSX.utils.encode_cell({r:0,c:9});
+      if(ws[flagHeaderCell])ws[flagHeaderCell].c=[{a:'AIden',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
     }
     XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
     if(type==='brand'){
@@ -5451,6 +5534,11 @@ function downloadBulkTemplate(includeData){
       var genreSheet=XLSX.utils.aoa_to_sheet(genreSheetData);
       genreSheet['!cols']=[{wch:16}];
       XLSX.utils.book_append_sheet(wb,genreSheet,'ジャンル一覧');
+    }else if(type==='menu_product'){
+      var flagSheetData=[['商品フラグ一覧']].concat(BULK_PRODUCT_FLAGS.map(function(f){return [f];}));
+      var flagSheet=XLSX.utils.aoa_to_sheet(flagSheetData);
+      flagSheet['!cols']=[{wch:16}];
+      XLSX.utils.book_append_sheet(wb,flagSheet,'商品フラグ一覧');
     }
     XLSX.writeFile(wb,tmpl.filename);
   }else{
@@ -5489,6 +5577,7 @@ async function downloadTemplateWithData(type,tmpl){
 function handleBulkFile(file){
   if(!file||!_bulkDbType)return;
   var type=_bulkDbType;var tmpl=BULK_TEMPLATES[type];
+  if(tmpl._downloadOnly){showToast('ℹ️ このテンプレートはダウンロード専用です。シート1→「メニューカテゴリ」、シート2→「メニュー商品」で個別にアップロードしてください');return;}
   var ext=file.name.split('.').pop().toLowerCase();
   // Move to step 2 with loading state
   _bulkDbStep=2;
@@ -5508,7 +5597,16 @@ function handleBulkFile(file){
   }else if(ext==='xlsx'||ext==='xls'){
     var reader2=new FileReader();
     reader2.onload=function(e){
-      try{var wb=XLSX.read(e.target.result,{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var rawRows=XLSX.utils.sheet_to_json(ws,{header:1});parsedToPreview(type,tmpl,rawRows);}
+      try{
+        var wb=XLSX.read(e.target.result,{type:'array'});
+        var sheetName=wb.SheetNames[0];
+        // Auto-detect sheet from combined menu_full template (2-sheet xlsx)
+        if(type==='menu_product'&&wb.SheetNames.indexOf('2_メニュー商品')>=0){sheetName='2_メニュー商品';}
+        else if(type==='menu_category'&&wb.SheetNames.indexOf('1_カテゴリ')>=0){sheetName='1_カテゴリ';}
+        var ws=wb.Sheets[sheetName];
+        var rawRows=XLSX.utils.sheet_to_json(ws,{header:1});
+        parsedToPreview(type,tmpl,rawRows);
+      }
       catch(err){var s=document.getElementById('bulkStep2Card');if(s)s.innerHTML='<div class="upload-result err">❌ Excel読み込み失敗: '+esc(err.message)+'</div>';}
     };
     reader2.readAsArrayBuffer(file);
