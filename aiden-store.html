@@ -426,7 +426,7 @@ img,video{max-width:100%;display:block}
       <div class="rating-bar" id="rating-bar"></div>
       <!-- 店舗紹介 -->
       <div class="store-intro">
-        <div class="store-intro-headline" id="intro-headline">厳選した和牛による、唯一無二の新しい焼肉店</div>
+        <div class="store-intro-headline" id="intro-headline"></div>
         <div class="store-intro-text collapsed" id="intro-text"></div>
         <button class="read-more-btn" id="read-more-btn" onclick="toggleIntro()">続きをみる</button>
         <div class="chef-card" id="chef-card" style="display:none"></div>
@@ -1051,6 +1051,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('id-genre-tag').textContent = STORE.genreParent + ' - ' + STORE.genreChild;
   document.getElementById('intro-headline').textContent = STORE.introHeadline;
   document.getElementById('intro-text').textContent = STORE.introText;
+  if (!STORE.introHeadline) document.getElementById('intro-headline').style.display = 'none';
+  if (!STORE.introText) {
+    document.getElementById('intro-text').style.display = 'none';
+    document.getElementById('read-more-btn').style.display = 'none';
+  }
 
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('m-date').value = today;
