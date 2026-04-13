@@ -54,7 +54,7 @@
 
 ---
 
-## 開発・運用ルール（D-01〜D-19）
+## 開発・運用ルール（D-01〜D-19、D-77〜D-104）
 → 詳細: decisions/dev-rules.md
 - D-01 [feedback] CC依頼: 本番URL確認必須。スキップ時は「未確認」と明記
 - D-02 [feedback] CC依頼・方針決定時のエージェント横断レビュー必須
@@ -75,6 +75,14 @@
 - D-17 [reference] crontabスケジュール: 6:00台（旧9:00台から変更）。リトライ機構あり
 - D-18 [project] Flutter受注アプリ: 5画面+テスト36項目。POC前に完全動作必須
 - D-19 [feedback] CC完了報告フォーマット: status/summary/changes/verification/manual_actions
+- D-97 [feedback] CC修正後は毎回「このタスクで発見した問題・回避策があればCLAUDE.mdのGotchasセクションに追記して報告せよ」と指示する
+- D-98 [feedback] DB削除のSQL生成はinformation_schemaで全FK制約を取得してからトポロジカル順に生成させる。推測生成は禁止（2026-04-13: 手戻り6回の教訓）
+- D-99 [feedback] 大規模DB削除はCCに依頼する（ChatのブラウザスキャンはFK網羅に限界がある。CCはSupabase Management API経由で実DBスキャン可能）
+- D-100 [feedback] BULK_TEMPLATESとTEMPLATESは別システム。混同するとブランド一括登録0件バグが発生する（cc-brand-bulk-import-fix 2026-04-13）
+- D-101 [feedback] MERCHANTS.push後にCBR.push・VENUES.pushにcorpUuidが必要。ないとブランド/店舗一覧が法人詳細タブに表示されない（cc-corp-template-xlsx-fix 2026-04-13）
+- D-102 [project] ハードコード全件調査完了（2026-04-13）: HIGH 25件・MEDIUM 11件。api/・supabase/functions/はゼロ件。HIGH対応CC依頼済み（cc-hardcode-fix-high）
+- D-103 [project] 来店予約ON/OFFをservice_subscriptions（key=reservation）で管理する方式に変更（commit 60c8e40 2026-04-13）
+- D-104 [reference] CC Best Practice導入（2026-04-13）: CLAUDE.md Gotchasセクション必須・CCに検証手段（curl+grep）を与える・繰り返しCC依頼は.claude/commands/に登録する
 
 ---
 
