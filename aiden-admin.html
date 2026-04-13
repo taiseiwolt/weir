@@ -73,6 +73,8 @@
 @media(max-width:1200px){.stat-row{grid-template-columns:repeat(2,1fr)}.menu-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.stat-row{grid-template-columns:1fr 1fr}}
 .spinner{width:28px;height:28px;border:3px solid #e0e0e0;border-top:3px solid #6c5ce7;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.bulk-warn-tip::after{content:attr(data-tip);display:none;position:absolute;left:0;top:100%;background:#2d3436;color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:6px;white-space:pre-line;min-width:200px;max-width:320px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1.6}
+.bulk-warn-tip:hover::after{display:block}
 </style>
 </head>
 <body>
@@ -674,7 +676,7 @@ function renderCorpsList(){
 // ===== BRANDS LIST =====
 function renderBrandsList(){
   return '<div class="page-title">ブランド管理</div><div class="page-subtitle">全ブランドの一覧</div>'+
-  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'brand\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
+  '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="goTo(\'bulk\');onBulkTypeChange_brand()">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
   '<table class="data-table" style="table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:12%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:20%"></colgroup><thead><tr><th>ID</th><th>法人</th><th>ブランド名</th><th>スラッグ</th><th>店舗数</th><th>ステータス</th><th>ページ</th><th></th></tr></thead><tbody>'+
   BRANDS.map(b=>{const cp=getMerchantForBrand(b),ss=getVenuesForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td>'+ss+'</td><td>'+statusBadge(b.status)+'</td><td>'+(b.slug?'<a href="https://aiden-jp.net/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🌐 HP</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
@@ -4431,7 +4433,7 @@ function showBulkPreview(rows){
     const dispCols=getDisplayColumns(_bulkType);
     h+='<div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"><table class="data-table" style="font-size:11px"><thead><tr><th>#</th>'+dispCols.map(c=>'<th>'+c.label+'</th>').join('')+'<th>状態</th></tr></thead><tbody>';
     validated.valid.forEach((item,i)=>{
-      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+(c.render?c.render(item):esc(item[c.key]||'—'))+'</td>').join('')+'<td>'+(item._warnings&&item._warnings.length?'<span style="color:#e17055;font-weight:700;font-size:10px" title="'+esc(item._warnings.join('\n'))+'">⚠️ '+item._warnings.length+'件補正</span>':'<span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span>')+'</td></tr>';
+      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+(c.render?c.render(item):esc(item[c.key]||'—'))+'</td>').join('')+'<td>'+(item._warnings&&item._warnings.length?'<span style="color:#e17055;font-weight:700;font-size:10px;position:relative;cursor:help" class="bulk-warn-tip" data-tip="'+item._warnings.map(esc).join('&#10;')+'">⚠️ '+item._warnings.length+'件補正</span>':'<span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span>')+'</td></tr>';
     });
     h+='</tbody></table></div>';
     h+='<div style="font-size:12px;margin-top:12px;color:var(--success);font-weight:700">✅ '+validated.valid.length+'件が登録可能です</div>';
@@ -4652,10 +4654,28 @@ const BULK_TEMPLATES={
     sample:[['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
   },
   brand:{
-    filename:'aiden_brand_template.csv',format:'csv',
-    headers:['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','サブカラー(hex)','ロゴ絵文字','カスタムドメイン'],
-    keys:['corp_name','name','slug','tagline','main_color','secondary_color','logo_emoji','custom_domain'],
-    sample:[['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','#F5A623','🥩','www.example.com']],
+    filename:'aiden_brand_template.xlsx',format:'xlsx',
+    headers:[
+      '法人名*','ブランド名*','スラッグ*','キャッチコピー',
+      'メインカラー(hex)','サブカラー(hex)','ロゴ絵文字','カスタムドメイン',
+      'テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)',
+      'ジャンル（カンマ区切り）','フォント'
+    ],
+    keys:[
+      'corp_name','name','slug','tagline',
+      'main_color','secondary_color','logo_emoji','custom_domain',
+      'takeout','delivery','reservation',
+      'genres','font'
+    ],
+    sample:[['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品',
+      '#DC3232','#F5A623','🥩','www.example.com',
+      'ON','OFF','ON','焼肉,居酒屋','Noto Sans JP']],
+    categories:[
+      {cols:[0,3],color:'e8f4fd',label:'基本情報'},
+      {cols:[4,7],color:'f0ecff',label:'デザイン（任意）'},
+      {cols:[8,10],color:'e6f9f0',label:'サービス設定'},
+      {cols:[11,12],color:'fff8e1',label:'その他'}
+    ]
   },
   store:{
     filename:'aiden_store_template.xlsx',format:'xlsx',
@@ -5359,6 +5379,13 @@ function onBulkTypeChange(){
   var fi=document.getElementById('bulkDbFileInput');if(fi)fi.value='';
 }
 
+function onBulkTypeChange_brand(){
+  setTimeout(function(){
+    var sel=document.getElementById('bulkDbType');
+    if(sel){sel.value='brand';onBulkTypeChange();}
+  },100);
+}
+
 function downloadBulkTemplate(includeData){
   var type=_bulkDbType;if(!type)return;
   var tmpl=BULK_TEMPLATES[type];
@@ -5367,7 +5394,36 @@ function downloadBulkTemplate(includeData){
     var wb=XLSX.utils.book_new();
     var wsData=[tmpl.headers].concat(tmpl.sample);
     var ws=XLSX.utils.aoa_to_sheet(wsData);
+    if(type==='brand'){
+      if(!ws['!dataValidation'])ws['!dataValidation']=[];
+      var brandFonts=['Noto Sans JP','Noto Serif JP','M PLUS Rounded 1c','Zen Maru Gothic','Kosugi Maru'];
+      var brandDvDefs=[
+        {col:8,list:'"ON,OFF"'},
+        {col:9,list:'"ON,OFF"'},
+        {col:10,list:'"ON,OFF"'},
+        {col:12,list:'"'+brandFonts.join(',')+'"'}
+      ];
+      brandDvDefs.forEach(function(dv){
+        ws['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});
+      });
+      var genreHeaderCell=XLSX.utils.encode_cell({r:0,c:11});
+      if(ws[genreHeaderCell])ws[genreHeaderCell].c=[{a:'AIden',t:'例: 焼肉,居酒屋（カンマ区切りで複数指定可）'}];
+      if(tmpl.categories&&tmpl.sample.length>0){
+        tmpl.categories.forEach(function(cat){
+          for(var ci=cat.cols[0];ci<=cat.cols[1];ci++){
+            var cell=XLSX.utils.encode_cell({r:1,c:ci});
+            if(ws[cell])ws[cell].s={fill:{fgColor:{rgb:cat.color.toUpperCase()}}};
+          }
+        });
+      }
+    }
     XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+    if(type==='brand'){
+      var genreSheetData=[['ジャンル一覧']].concat(GENRE_LIST.map(function(g){return [g];}));
+      var genreSheet=XLSX.utils.aoa_to_sheet(genreSheetData);
+      genreSheet['!cols']=[{wch:16}];
+      XLSX.utils.book_append_sheet(wb,genreSheet,'ジャンル一覧');
+    }
     XLSX.writeFile(wb,tmpl.filename);
   }else{
     var bom='\uFEFF';var csv=bom+tmpl.headers.join(',')+'\n'+tmpl.sample.map(function(r){return r.join(',');}).join('\n');
