@@ -4304,7 +4304,7 @@ async function saveStoreBasic(storeDisplayId){
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
-  corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',
+  corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',sheetName:'法人登録',
     headers:[
       '法人名*','代表者名*','代表メールアドレス*','会社HP','採用ページ',
       '法人番号','銀行名*','支店番号*','口座番号*','本部住所*','本部電話番号*','代表メール*','担当者氏名*','担当者メールアドレス*',
@@ -4346,12 +4346,13 @@ const TEMPLATES={
       {cols:[26,40],color:'fff0e0',label:'営業時間・定休日'},
       {cols:[41,42],color:'fff8e1',label:'アカウント情報'}
     ]},
-  brand:{filename:'aiden_brand_template.xlsx',format:'xlsx',
+  brand:{filename:'aiden_brand_template.xlsx',format:'xlsx',sheetName:'ブランド登録',
     headers:['ブランド名*','スラッグ*','所属法人ID*','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙','ジャンル（カンマ区切り）','ブランドホームページURL','ブランド担当者氏名','ブランド担当者メール'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','','','','','','Noto Sans JP','ON','OFF','OFF','全席禁煙','焼肉,和食','https://example.co.jp','担当太郎','tanto@example.co.jp']],
     comment:'※カラー欄は空白でもOK。登録後に管理画面で自動取得できます。',
+    dvDefs:[{col:9,list:'"ON,OFF"'},{col:10,list:'"ON,OFF"'},{col:11,list:'"ON,OFF"'},{col:12,list:'"'+_SMOKING_OPTS.join(',')+'"'}],
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'f0ecff',label:'デザイン（任意）'},{cols:[9,13],color:'e6f9f0',label:'サービス設定'},{cols:[14,16],color:'fff8e1',label:'担当者'}]},
-  store:{filename:'aiden_store_template.xlsx',format:'xlsx',
+  store:{filename:'aiden_store_template.xlsx',format:'xlsx',sheetName:'店舗登録',
     headers:['店舗名*','所属法人ID','所属ブランドID*','住所','電話番号','メール','最寄り駅','価格帯','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','店舗担当者メール','店舗担当者電話','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙'],
     sample:[['渋谷店','CRP-xxxxxxx','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','¥3,000~¥3,999','40','全席禁煙','同伴不可','同伴不可','なし','tanto@example.com','090-1234-5678','40','中休みあり','11:00','14:00','17:00','22:00','日曜日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','ON','全席禁煙']],
     comment:'※営業時間は全日共通で入力してください。曜日別設定は登録後に管理画面で行えます。',
@@ -4390,7 +4391,7 @@ function downloadXlsxTemplate(t){
       }
     });
   }
-  XLSX.utils.book_append_sheet(wb,ws1,'店舗登録');
+  XLSX.utils.book_append_sheet(wb,ws1,t.sheetName||'登録データ');
   // Sheet 2: dropdown source data
   var s2Data=[['営業形態','価格帯','ON/OFF','喫煙','権限','ジャンル一覧']];
   var maxRows=Math.max(2,PRICE_RANGES.length,GENRE_LIST.length);
