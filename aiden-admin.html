@@ -4270,38 +4270,44 @@ async function saveStoreBasic(storeDisplayId){
 const TEMPLATES={
   corp:{filename:'aiden_corp_template.csv',format:'csv',
     headers:[
-      '法人名*','代表者名','代表メールアドレス','会社HP','採用ページ',
-      '法人番号','銀行名','支店番号','口座番号','本部住所','本部電話番号','代表メール','担当者氏名','担当者メールアドレス',
-      'ブランド名','ブランドスラッグ','メインカラー(hex)','サブカラー(hex)','ロゴ絵文字',
-      'テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)',
-      '店舗名','店舗住所','店舗電話番号','店舗メール','ジャンル',
-      '営業時間_平日開始','営業時間_平日終了','定休日',
-      'アカウント氏名','アカウントメール'
+      '法人名*','代表者名*','代表メールアドレス*','会社HP','採用ページ',
+      '法人番号','銀行名*','支店番号*','口座番号*','本部住所*','本部電話番号*','代表メール*','担当者氏名*','担当者メールアドレス*',
+      'ブランド名*','ブランドスラッグ*','メインカラー(hex)','サブカラー(hex)',
+      'テイクアウト(ON/OFF)*','デリバリー(ON/OFF)*','来店予約(ON/OFF)*',
+      '店舗名*','店舗住所*','店舗電話番号*','店舗メール','ジャンル*',
+      '月曜_開始','月曜_終了','火曜_開始','火曜_終了','水曜_開始','水曜_終了',
+      '木曜_開始','木曜_終了','金曜_開始','金曜_終了','土曜_開始','土曜_終了',
+      '日曜_開始','日曜_終了','定休日（曜日をカンマ区切りで記入）',
+      'アカウント氏名*','アカウントメール*'
     ],
     keys:[
       'name','rep','corpEmail','hp','recruit',
       'corpNumber','bankName','bankBranch','bankAccount','hqAddress','hqPhone','repEmail','contactName','contactEmail',
-      'brandName','brandSlug','mainColor','subColor','logoEmoji',
+      'brandName','brandSlug','mainColor','subColor',
       'takeout','delivery','reserv',
       'venueName','venueAddr','venueTel','venueEmail','venueGenre',
-      'hoursOpen','hoursClose','holiday',
+      'monOpen','monClose','tueOpen','tueClose','wedOpen','wedClose',
+      'thuOpen','thuClose','friOpen','friClose','satOpen','satClose',
+      'sunOpen','sunClose','holiday',
       'accountName','accountEmail'
     ],
     sample:[[
-      '居酒屋 潮','前田大生','taisei@example.com','https://meguro-ushio.owst.jp','',
-      '','','','','東京都目黒区上目黒3-8-3','03-6303-0383','info@ushio.com','前田大生','taisei@example.com',
-      '居酒屋 潮','izakaya-ushio','#688945','#577635','🌊',
-      'OFF','OFF','ON',
-      '居酒屋 潮','東京都目黒区上目黒3-8-3 千陽中目黒ビル アネックス2F','03-6303-0383','','居酒屋',
-      '17:00','00:00','日曜日',
-      '前田大生','taisei@example.com'
+      '株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','',
+      '1234567890123','○○銀行','001','1234567','東京都渋谷区○○1-2-3','03-XXXX-XXXX','rep@example.co.jp','担当花子','tanto@example.co.jp',
+      'サンプルブランド','sample-brand','#DC3232','#F5A623',
+      'ON','OFF','ON',
+      'サンプル店','東京都渋谷区○○1-2-3','03-XXXX-XXXX','','居酒屋',
+      '17:00','23:00','17:00','23:00','17:00','23:00',
+      '17:00','23:00','17:00','23:00','17:00','23:00',
+      '','','日曜',
+      '担当花子','tanto@example.co.jp'
     ]],
-    comment:'# 法人名のみ必須。ブランド名+スラッグで同時作成、店舗名でブランド配下に店舗作成、アカウントメールでowner権限アカウント作成',
     categories:[
       {cols:[0,13],color:'f0ecff',label:'法人情報'},
-      {cols:[14,21],color:'e8f4fd',label:'ブランド情報（任意）'},
-      {cols:[22,29],color:'e6f9f0',label:'店舗情報（任意）'},
-      {cols:[30,31],color:'fff8e1',label:'アカウント情報（任意）'}
+      {cols:[14,20],color:'e8f4fd',label:'ブランド・サービス'},
+      {cols:[21,25],color:'e6f9f0',label:'店舗情報'},
+      {cols:[26,40],color:'fff0e0',label:'営業時間・定休日'},
+      {cols:[41,42],color:'fff8e1',label:'アカウント情報'}
     ]},
   brand:{filename:'aiden_brand_template.xlsx',format:'xlsx',
     headers:['ブランド名*','スラッグ*','所属法人ID*','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙','ジャンル（カンマ区切り）','ブランドホームページURL','ブランド担当者氏名','ブランド担当者メール'],
@@ -4486,11 +4492,11 @@ function validateBulkRows(dataRows,type){
         const hasBrand=!!(brandName&&brandSlug);
         if(brandName&&!brandSlug)warnings.push('ブランドスラッグが空のためブランドはスキップ');
         if(brandSlug&&!brandName)warnings.push('ブランド名が空のためブランドはスキップ');
-        const venueName=nr.g(22);
+        const venueName=nr.g(21);
         const hasVenue=hasBrand&&!!venueName;
         if(venueName&&!hasBrand)warnings.push('ブランド情報が未入力のため店舗はスキップ');
-        const accountName=nr.g(30);
-        const accountEmail=nr.g(31);
+        const accountName=nr.g(41);
+        const accountEmail=nr.g(42);
         const hasAccount=!!accountEmail;
         valid.push({
           name,rep:nr.g(1),corpEmail:nr.g(2),hp,recruit,
@@ -4498,13 +4504,22 @@ function validateBulkRows(dataRows,type){
           hqAddress:nr.g(9),hqPhone:nr.g(10),repEmail:nr.g(11),
           contactName:nr.g(12),contactEmail:nr.g(13),
           brandName,brandSlug,mainColor:nr.g(16)||'#6c5ce7',subColor:nr.g(17)||'',
-          logoEmoji:nr.g(18)||'',
-          takeout:nr.normalizeOnOff(nr.g(19))||'OFF',
-          delivery:nr.normalizeOnOff(nr.g(20))||'OFF',
-          reserv:nr.normalizeOnOff(nr.g(21))||'ON',
+          takeout:nr.normalizeOnOff(nr.g(18))||'OFF',
+          delivery:nr.normalizeOnOff(nr.g(19))||'OFF',
+          reserv:nr.normalizeOnOff(nr.g(20))||'ON',
           hasBrand,
-          venueName,venueAddr:nr.g(23),venueTel:nr.g(24),venueEmail:nr.g(25),
-          venueGenre:nr.g(26),hoursOpen:nr.g(27),hoursClose:nr.g(28),holiday:nr.g(29),
+          venueName,venueAddr:nr.g(22),venueTel:nr.g(23),venueEmail:nr.g(24),
+          venueGenre:nr.g(25),
+          hours:{
+            月:{open:nr.g(26),close:nr.g(27)},
+            火:{open:nr.g(28),close:nr.g(29)},
+            水:{open:nr.g(30),close:nr.g(31)},
+            木:{open:nr.g(32),close:nr.g(33)},
+            金:{open:nr.g(34),close:nr.g(35)},
+            土:{open:nr.g(36),close:nr.g(37)},
+            日:{open:nr.g(38),close:nr.g(39)}
+          },
+          holiday:nr.g(40),
           hasVenue,
           accountName:accountName||nr.g(12),accountEmail:accountEmail||nr.g(13)||nr.g(2),
           hasAccount,
@@ -4588,10 +4603,23 @@ async function confirmBulkImport(){
                 const vData=await vRes.json();
                 if(!vRes.ok)throw new Error(vData.error||'店舗保存失敗');
                 const venueUuid=vData.data.id;
-                if(item.hoursOpen&&item.hoursClose){
-                  const hoursRows=[0,1,2,3,4,5,6].map(dow=>({venue_id:venueUuid,day_of_week:dow,open_time:item.hoursOpen.includes(':')?item.hoursOpen+':00':item.hoursOpen,close_time:item.hoursClose.includes(':')?item.hoursClose+':00':item.hoursClose,is_closed:false}));
-                  await sb.from('venue_hours').insert(hoursRows);
-                }
+                const DOW_LABELS=['月','火','水','木','金','土','日'];
+                const DOW_MAP={月:1,火:2,水:3,木:4,金:5,土:6,日:0};
+                const closedDays=(item.holiday||'').split(/[,、・\s]+/).map(s=>s.trim()).filter(Boolean);
+                const hoursRows=DOW_LABELS.map(label=>{
+                  const dayHours=(item.hours||{})[label]||{};
+                  const openTime=dayHours.open||'';
+                  const closeTime=dayHours.close||'';
+                  const isClosed=closedDays.some(d=>d.includes(label))||!openTime||!closeTime;
+                  return {
+                    venue_id:venueUuid,
+                    day_of_week:DOW_MAP[label],
+                    open_time:isClosed?null:(openTime.includes(':')?openTime+':00':openTime),
+                    close_time:isClosed?null:(closeTime.includes(':')?closeTime+':00':closeTime),
+                    is_closed:isClosed
+                  };
+                });
+                await sb.from('venue_hours').insert(hoursRows);
                 VENUES.push({_uuid:venueUuid,id:vData.data.display_id,brandId:brandDisplayId,name:item.venueName,status:'active',addr:item.venueAddr||'',tel:item.venueTel||'',orders:0,revenue:0});
               }catch(vErr){chainWarnings.push('店舗作成失敗: '+vErr.message);}
             }
