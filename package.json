@@ -12,7 +12,7 @@
     "embeddings": "node scripts/generate-embeddings.js",
     "test": "npx playwright test --config=playwright.config.cjs",
     "test:headed": "npx playwright test --config=playwright.config.cjs --headed",
-    "lint": "grep -rn 'console\\.log' --include='*.html' --include='*.js' api/ supabase/functions/ *.html 2>/dev/null; if [ $? -eq 0 ]; then echo '\\n❌ console.log found — remove before commit' && exit 1; else echo '✅ No console.log found' && exit 0; fi",
+    "lint": "A=0; B=0; grep -rn 'console\\.log' --include='*.html' --include='*.js' api/ supabase/functions/ *.html 2>/dev/null && A=1; grep -rnE '炭火亭|sumibite|Sumibite|スミビ|山田太郎|また一つ、焼肉|近重泰輔|佐藤花子|鈴木一郎|高橋次郎' --include='*.html' --include='*.js' --exclude='aiden-privacy*.html' --exclude='aiden-terms*.html' --exclude='aiden-sitemap*.html' --exclude-dir='.claude' --exclude-dir='node_modules' . 2>/dev/null && B=1; [ $A = 1 ] && echo '❌ console.log found — remove before commit'; [ $B = 1 ] && echo '❌ D-83 violation: brand-specific hardcoded strings found'; [ $A = 0 ] && [ $B = 0 ] && echo '✅ No lint issues found' && exit 0; exit 1",
     "build": "echo 'done'"
   },
   "type": "module",
