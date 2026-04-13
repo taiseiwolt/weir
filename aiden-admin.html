@@ -3354,8 +3354,8 @@ function renderCorpWizStep(){
     btns.innerHTML='<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===2){
     body.innerHTML='<div class="form-grid">'+
-    '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwBrandName" placeholder="例: 焼肉 炭火亭"></div>'+
-    '<div class="form-group"><label>ブランドスラッグ</label><input type="text" id="cwBrandSlug" placeholder="例: sumibite（英数字+ハイフン）" pattern="[a-z0-9\\-]+"></div>'+
+    '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="cwBrandName" placeholder="例: 焼肉 〇〇店"></div>'+
+    '<div class="form-group"><label>ブランドスラッグ</label><input type="text" id="cwBrandSlug" placeholder="例: my-brand（英数字+ハイフン）" pattern="[a-z0-9\\-]+"></div>'+
     '</div>';
     btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===3){
@@ -3577,8 +3577,8 @@ async function saveCorpWizard(){
 function openAddBrandModal(){
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>🏷️ ブランド追加</h3>'+
   '<div class="form-grid">'+
-  '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandName" placeholder="例: 焼肉 炭火亭"></div>'+
-  '<div class="form-group"><label>スラッグ <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandSlug" placeholder="例: sumibite"></div>'+
+  '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandName" placeholder="例: 焼肉 〇〇店"></div>'+
+  '<div class="form-group"><label>スラッグ <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandSlug" placeholder="例: my-brand"></div>'+
   '<div class="form-group"><label>所属法人 <span style="color:var(--danger)">*</span></label><select id="addBrandCorp">'+MERCHANTS.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')+'</select></div>'+
   '<div class="form-group"><label>メインカラー</label><input type="color" id="addBrandColor" value="#6c5ce7" style="width:60px;height:36px;border:none;cursor:pointer"></div>'+
   '<div class="form-group"><label>ブランド種別</label><select id="addBrandType"><option value="own">自社ブランド（owner権限）</option><option value="fc">FC加盟（viewer権限）</option></select></div>'+
@@ -4329,7 +4329,7 @@ const TEMPLATES={
       'accountName','accountEmail'
     ],
     sample:[[
-      '株式会社サンプル','山田太郎','rep@example.co.jp','https://example.co.jp','',
+      '株式会社サンプル','代表者名','rep@example.co.jp','https://example.co.jp','',
       '1234567890123','○○銀行','001','1234567','東京都渋谷区○○1-2-3','03-XXXX-XXXX','rep@example.co.jp','担当花子','tanto@example.co.jp',
       'サンプルブランド','sample-brand','#DC3232','#F5A623',
       'ON','OFF','ON',
@@ -4358,7 +4358,7 @@ const TEMPLATES={
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'e6f9f0',label:'店舗情報'},{cols:[9,12],color:'fff8e1',label:'施設情報'},{cols:[13,14],color:'f0ecff',label:'担当者'},{cols:[15,21],color:'fff0e0',label:'営業時間'},{cols:[22,27],color:'fce4ec',label:'サービス設定'}]},
   account:{filename:'aiden_account_template.csv',
     headers:['氏名*','メールアドレス*','権限(owner/admin/staff)*','所属法人ID*','電話番号'],
-    sample:[['山田太郎','yamada@example.com','staff','CRP-xxxxxxx','090-1234-5678']]}
+    sample:[['代表者名','yamada@example.com','staff','CRP-xxxxxxx','090-1234-5678']]}
 };
 function downloadTemplate(type){
   const t=TEMPLATES[type];if(!t)return;
@@ -4721,7 +4721,7 @@ const BULK_TEMPLATES={
     filename:'aiden_corp_template.csv',format:'csv',
     headers:['法人名*','代表者','ステータス(active/trial)','会社HP URL','採用ページURL'],
     keys:['name','representative','status','website_url','recruit_url'],
-    sample:[['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
+    sample:[['株式会社サンプル','代表者名','active','https://example.co.jp','https://example.co.jp/recruit']],
   },
   brand:{
     filename:'aiden_brand_template.xlsx',format:'xlsx',
@@ -4763,7 +4763,7 @@ const BULK_TEMPLATES={
       'reservation_confirmation_mode','reservation_require_card','reservation_cancellation_fee',
       'reservation_cancel_deadline_hours','is_paused'
     ],
-    sample:[['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005',
+    sample:[['my-brand','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005',
       'ON','OFF','ON','1500','30','24','no_smoking','not_allowed','percent','10','manual','OFF','0','72','OFF']],
   },
   menu_category:{
@@ -6028,24 +6028,8 @@ const COST_CONTENT_TYPES=[
 // Plan cost baselines
 const PLAN_COSTS={STD:307,PRO:821,EXPERT:3297};
 
-// --- 15 stores with plans ---
-const COST_VENUES=[
-  {id:'STR-dF5tY7n',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 渋谷店',plan:'PRO',moRevenue:3680000},
-  {id:'STR-eG6uZ8p',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 新宿東口店',plan:'EXPERT',moRevenue:4150000},
-  {id:'STR-fH7vA9q',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 池袋店',plan:'STD',moRevenue:2980000},
-  {id:'STR-gJ8wB2r',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 恵比寿店',plan:'PRO',moRevenue:2450000},
-  {id:'STR-hK9xC3s',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 六本木店',plan:'EXPERT',moRevenue:5120000},
-  {id:'STR-jL2yD4t',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 銀座店',plan:'PRO',moRevenue:3900000},
-  {id:'STR-kM3zE5u',brandId:'BRD-aB3kX9m',corpId:'CRP-Xk9mPr2',name:'炭火亭 表参道店',plan:'STD',moRevenue:2780000},
-  {id:'STR-nP4aF6v',brandId:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲 新宿本店',plan:'PRO',moRevenue:3120000},
-  {id:'STR-qR5bG7w',brandId:'BRD-Tn6jL5w',corpId:'CRP-Pq7mN2k',name:'ラーメン風雲 渋谷店',plan:'STD',moRevenue:2460000},
-  {id:'STR-rU8xD5v',brandId:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極 新宿店',plan:'PRO',moRevenue:1890000},
-  {id:'STR-sV9yE6w',brandId:'BRD-Gk2pQ9v',corpId:'CRP-Pq7mN2k',name:'つけ麺 極 池袋店',plan:'STD',moRevenue:1420000},
-  {id:'STR-sT6cH8x',brandId:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze 代官山店',plan:'STD',moRevenue:340000},
-  {id:'STR-tW2zF7y',brandId:'BRD-Hm8nV3s',corpId:'CRP-Wy4cR8j',name:'Cafe Breeze 表参道店',plan:'PRO',moRevenue:520000},
-  {id:'STR-uX3aG8z',brandId:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'鳥匠 恵比寿店',plan:'PRO',moRevenue:1850000},
-  {id:'STR-vY4bH9a',brandId:'BRD-Rz1wK4p',corpId:'CRP-Xk9mPr2',name:'鳥匠 中目黒店',plan:'STD',moRevenue:1240000}
-];
+// D-83: hardcoded demo venues removed. Real data loaded from ai_usage_logs via loadRealCostLogs().
+const COST_VENUES=[];
 
 // --- Generate 3 months of demo cost logs ---
 function generateCostDemoData(){
@@ -6449,6 +6433,23 @@ function updateCostChart(){
   const scaleEl=document.getElementById('costChartScale');
   const scale=scaleEl?scaleEl.value:'monthly';
   const logs=getFilteredCostLogs();
+
+  // D-83: empty state when no data
+  const emptyEl=document.getElementById('costChartEmpty');
+  if(logs.length===0){
+    canvas.style.display='none';
+    if(!emptyEl){
+      const wrap=canvas.parentElement;
+      const div=document.createElement('div');
+      div.id='costChartEmpty';
+      div.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:13px';
+      div.textContent='データがありません';
+      wrap.appendChild(div);
+    }
+    return;
+  }
+  canvas.style.display='';
+  if(emptyEl)emptyEl.remove();
 
   let labels=[],datasets=[];
 
@@ -7261,7 +7262,7 @@ function openCorpWizard(){
       {label:'基本情報',help:'法人の基本情報を入力してください',render:function(d){
         return '<div class="form-grid">'+
           '<div class="form-group full"><label>法人名 <span style="color:var(--danger)">*</span></label><input type="text" id="wCorpName" value="'+esc(d.name||'')+'" placeholder="株式会社〇〇"></div>'+
-          '<div class="form-group"><label>代表者名 <span style="color:var(--danger)">*</span></label><input type="text" id="wCorpRep" value="'+esc(d.rep||'')+'" placeholder="山田太郎"></div>'+
+          '<div class="form-group"><label>代表者名 <span style="color:var(--danger)">*</span></label><input type="text" id="wCorpRep" value="'+esc(d.rep||'')+'" placeholder="代表者名"></div>'+
           '<div class="form-group"><label>代表電話 <span style="color:var(--danger)">*</span></label><input type="tel" id="wCorpTel" value="'+esc(d.tel||'')+'" placeholder="03-XXXX-XXXX"></div>'+
           '<div class="form-group"><label>代表メール <span style="color:var(--danger)">*</span></label><input type="email" id="wCorpEmail" value="'+esc(d.email||'')+'" placeholder="info@example.co.jp"></div>'+
           '<div class="form-group full"><label>本社住所 <span style="color:var(--danger)">*</span></label><input type="text" id="wCorpAddr" value="'+esc(d.addr||'')+'" placeholder="東京都〇〇区..."></div>'+
@@ -7295,8 +7296,8 @@ function openCorpWizard(){
       }},
       {label:'ブランド追加',help:'自社ブランド=owner権限、FC加盟=viewer権限が自動設定されます（D-38）',render:function(d){
         return '<div class="form-grid">'+
-          '<div class="form-group"><label>最初のブランド名</label><input type="text" id="wCorpBrandName" value="'+esc(d.brandName||'')+'" placeholder="（任意）焼肉 炭火亭"></div>'+
-          '<div class="form-group"><label>スラッグ</label><input type="text" id="wCorpBrandSlug" value="'+esc(d.brandSlug||'')+'" placeholder="sumibite"></div>'+
+          '<div class="form-group"><label>最初のブランド名</label><input type="text" id="wCorpBrandName" value="'+esc(d.brandName||'')+'" placeholder="（任意）焼肉 〇〇店"></div>'+
+          '<div class="form-group"><label>スラッグ</label><input type="text" id="wCorpBrandSlug" value="'+esc(d.brandSlug||'')+'" placeholder="my-brand"></div>'+
           '<div class="form-group full"><label>ブランド種別</label><select id="wCorpBrandType"><option value="own"'+(d.brandType==='own'||!d.brandType?' selected':'')+'>自社ブランド（owner権限）</option><option value="fc"'+(d.brandType==='fc'?' selected':'')+'>FC加盟（viewer権限）</option></select></div>'+
         '</div><div style="font-size:10px;color:var(--text-light);margin-top:4px">※ブランド名が空欄の場合、法人のみ登録され、ブランドは後から追加できます。</div>';
       },collect:function(d){
@@ -7366,8 +7367,8 @@ function openBrandWizard(){
       {label:'基本情報',help:'ブランド名・スラッグ・所属法人を入力',render:function(d){
         var opts=MERCHANTS.map(function(c){return '<option value="'+esc(c.id)+'"'+(d.corpId===c.id?' selected':'')+'>'+esc(c.name)+'</option>';}).join('');
         return '<div class="form-grid">'+
-          '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="wBrName" value="'+esc(d.name||'')+'" placeholder="焼肉 炭火亭"></div>'+
-          '<div class="form-group"><label>スラッグ <span style="color:var(--danger)">*</span></label><input type="text" id="wBrSlug" value="'+esc(d.slug||'')+'" placeholder="sumibite"></div>'+
+          '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="wBrName" value="'+esc(d.name||'')+'" placeholder="焼肉 〇〇店"></div>'+
+          '<div class="form-group"><label>スラッグ <span style="color:var(--danger)">*</span></label><input type="text" id="wBrSlug" value="'+esc(d.slug||'')+'" placeholder="my-brand"></div>'+
           '<div class="form-group full"><label>所属法人 <span style="color:var(--danger)">*</span></label><select id="wBrCorp">'+opts+'</select></div>'+
           '<div class="form-group full"><label>キャッチコピー</label><input type="text" id="wBrTagline" value="'+esc(d.tagline||'')+'" placeholder="最高の一品をあなたに"></div>'+
         '</div>';

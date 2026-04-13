@@ -452,7 +452,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
   <img class="hero-img" id="heroImg" src="https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=300&fit=crop" alt="">
   <div class="hero-overlay">
     <h1 class="hero-title">注文の最終確認</h1>
-    <p class="hero-subtitle" id="heroStoreName">焼肉 炭火亭 渋谷店</p>
+    <p class="hero-subtitle" id="heroStoreName"></p>
   </div>
 </section>
 
@@ -728,7 +728,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
       </div>
 
       <div class="price-privacy">
-        この注文で提供された個人情報は、AIdenと<span id="privacyBrandName">炭火亭</span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./aiden-privacy.html">AIdenのプライバシーポリシー</a>をご覧ください。
+        この注文で提供された個人情報は、AIdenと<span id="privacyBrandName"></span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./aiden-privacy.html">AIdenのプライバシーポリシー</a>をご覧ください。
       </div>
 
       <button class="btn-order incomplete" id="btnOrder" onclick="placeOrder()">
@@ -752,7 +752,7 @@ const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const _urlParams = new URLSearchParams(window.location.search);
 const STORE_ID     = _urlParams.get('venue_id') || _urlParams.get('store_id') || sessionStorage.getItem('aiden_store_id') || '';
-const STORE_SLUG   = _urlParams.get('store_slug') || 'sumibite-shibuya';
+const STORE_SLUG   = _urlParams.get('store_slug') || '';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================================================================
@@ -859,10 +859,10 @@ function translateApiError(msg) {
 // CHECKOUT_DATA - sessionStorage（カート）＋Supabase（店舗設定）で構築
 // ===================================================================
 let CHECKOUT_DATA = {
-  brandName: '炭火亭',
-  brandLogoText: '炭',
-  brandColor: '#D32F2F',
-  storeName: '焼肉 炭火亭 渋谷店',
+  brandName: '',
+  brandLogoText: '',
+  brandColor: '',
+  storeName: '',
   storePageUrl: 'aiden-store.html',
   menuPageUrl: 'aiden-order-store.html',
   heroImg: 'https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=300&fit=crop',

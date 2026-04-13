@@ -334,7 +334,7 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
 <!-- MAIN -->
 <div class="main">
   <div class="header" id="hdr">
-    <span class="store-name">焼肉 炭火亭 渋谷店</span>
+    <span class="store-name"></span>
     <span class="pause-ind" id="pauseInd">受付休止中</span>
     <div class="hspacer"></div>
     <button class="h-btn"><div class="dot on" id="pd"></div><span id="pt">接続中</span></button>
@@ -634,7 +634,7 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
 <script>
 // ===== API CONFIG =====
 const API_BASE = 'https://aiden-jp.net'; // Production domain
-const STORE_SLUG = 'sumibite-shibuya';
+const STORE_SLUG = new URLSearchParams(location.search).get('store_slug') || '';
 let STORE_ID = null; // Set after initial load
 
 async function apiFetch(path, options = {}) {
@@ -802,7 +802,7 @@ async function loadFromSupabase() {
 
 // ===== GENERATE ORDERS =====
 function genOrders(){
-  const now=new Date(),names=['田中太郎','佐藤花子','鈴木一郎','高橋美咲','渡辺健太','伊藤さくら','山本大輔','中村優子','小林誠','加藤真理','吉田翔','山田恵','松本隆','井上麻衣'];
+  const now=new Date(),names=['ゲスト'];
   const chs=["AIden","AIden","AIden QR","AIden QR","AIden QR","AIden QR","AIden QR","出前館","出前館","Uber Eats","Uber Eats","Wolt","menu"];
   // Today: 20+ orders with varied statuses
   const todayS=['new','new','new','new','new','new','cooking','cooking','cooking','cooking','cooking','cooking','cooking','cooking','ready','ready','ready','ready','ready','done','done','done','done','done','done','done','done','done','done','done','done','done','done','done','done','done','done','cancelled','cancelled','cancelled','cancelled','cancelled'];
