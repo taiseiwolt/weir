@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>店舗を探す | 炭火亭</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="店舗を探す | 炭火亭">
-    <meta property="og:description" content="炭火亭の店舗一覧。お近くの店舗をお探しいただけます。">
+<title id="page-title">店舗を探す | AIden</title>
+    <!-- OGP / SNS Meta Tags (brand-specific values are set in onBrandLoaded) -->
+    <meta property="og:title" content="店舗を探す | AIden">
+    <meta property="og:description" content="">
     <meta property="og:image" content="https://aiden-jp.net/ogp.png">
     <meta property="og:url" content="https://aiden-jp.net/aiden-brand-stores.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AIden">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="店舗を探す | 炭火亭">
-    <meta name="twitter:description" content="炭火亭の店舗一覧。お近くの店舗をお探しいただけます。">
+    <meta name="twitter:title" content="店舗を探す | AIden">
+    <meta name="twitter:description" content="">
     <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="炭火亭の店舗一覧。お近くの店舗をお探しいただけます。">
+    <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="./aiden-common.css">
 <script src="./aiden-common.js"></script>
@@ -418,7 +418,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     header: 'brand',
     footer: true,
     onBrandLoaded: async function(brand) {
-      document.title = brand.name + ' | 店舗一覧';
+      var bname = brand.name || 'AIden';
+      document.title = '店舗を探す | ' + bname;
+      var ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', '店舗を探す | ' + bname);
+      var twTitle = document.querySelector('meta[name="twitter:title"]');
+      if (twTitle) twTitle.setAttribute('content', '店舗を探す | ' + bname);
+      if (brand.name) {
+        var ogSite = document.querySelector('meta[property="og:site_name"]');
+        if (ogSite) ogSite.setAttribute('content', bname);
+        var desc = bname + 'の店舗一覧。お近くの店舗をお探しいただけます。';
+        var ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.setAttribute('content', desc);
+        var twDesc = document.querySelector('meta[name="twitter:description"]');
+        if (twDesc) twDesc.setAttribute('content', desc);
+        var metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', desc);
+      }
       var sub = document.getElementById('stores-subtitle');
       if (sub) sub.textContent = (brand.name || '') + 'の全店舗一覧';
       BRAND_ID = brand.id;
