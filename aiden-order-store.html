@@ -941,19 +941,19 @@ var escH = AidenCommon.escH;
 // ===================================================================
 
 let STORE_DATA = {
-  // Brand info
+  // Brand info (loaded from DB: brands table)
   brandName: '',
   brandLogoText: '',
   brandColor: '#D32F2F',
 
-  // Store info (loaded from DB)
+  // Store info (loaded from DB: venues table)
   storeName: '',
   storeDescription: '',
   storeHeroImg: '',
 
-  // Location (default: Tokyo center)
-  lat: 35.6762,
-  lng: 139.6503,
+  // Location (loaded from DB: venues.lat/lng)
+  lat: null,
+  lng: null,
   address: '',
   zip: '',
   phone: '',
@@ -961,44 +961,27 @@ let STORE_DATA = {
   // Store page URL (aiden-store.html)
   storePageUrl: 'aiden-store.html',
 
-  // Hours
-  hours: [
-    { day:'月曜日', time:'11:00–23:00' },
-    { day:'火曜日', time:'11:00–23:00' },
-    { day:'水曜日', time:'11:00–23:00' },
-    { day:'木曜日', time:'11:00–23:00' },
-    { day:'金曜日', time:'11:00–23:00' },
-    { day:'土曜日', time:'11:00–23:00' },
-    { day:'日曜日', time:'11:00–22:00' },
-  ],
-  deliveryHours: [
-    { day:'月曜日', time:'11:30–22:00' },
-    { day:'火曜日', time:'11:30–22:00' },
-    { day:'水曜日', time:'11:30–22:00' },
-    { day:'木曜日', time:'11:30–22:00' },
-    { day:'金曜日', time:'11:30–22:00' },
-    { day:'土曜日', time:'11:30–22:00' },
-    { day:'日曜日', time:'11:30–21:00' },
-  ],
+  // Hours (loaded from DB: store_hours テーブル。D-83: DB未取得時は空配列)
+  hours: [],
+  deliveryHours: [],
 
-  // Delivery settings (TODO: detailed logic to be defined later)
-  deliveryRadiusKm: 5, // delivery zone radius in km
-  deliveryFee: 770, // delivery fee (brand-level setting)
-  deliveryTimeMin: 60, // min delivery time
-  deliveryTimeMax: 70, // max delivery time
-  smallOrderSurchargeMax: 1500,
+  // Delivery settings (loaded from DB: venues テーブル。D-83: ハードコード禁止、nullの方がマシ)
+  deliveryRadiusKm: null,
+  deliveryFee: null,
+  deliveryTimeMin: null,
+  deliveryTimeMax: null,
+  smallOrderSurchargeMax: null,
 
-  // Minimum order amount (brand-level setting, managed in admin dashboard)
-  minOrderAmount: 1500, // ¥1,500 minimum
-  // 'block' = cannot order below minimum
-  // 'surcharge' = pay difference as service fee
+  // Minimum order amount (loaded from DB: venues.min_order_amount)
+  minOrderAmount: null,
+  // 'block' = cannot order below minimum, 'surcharge' = pay difference as service fee
   minOrderPolicy: 'surcharge',
 
   // Brand-level settings
-  storeRequestEnabled: true, // ON/OFF for store request text field
+  storeRequestEnabled: true,
 
-  // キャンペーン: 送料無料プログレスバー
-  freeDeliveryThreshold: 3000, // ¥3,000以上で送料無料（0で無効）
+  // キャンペーン: 送料無料プログレスバー（0で無効、DBから上書き）
+  freeDeliveryThreshold: 0,
   freeDeliveryLabel: '送料無料',
 };
 

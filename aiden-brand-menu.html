@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>メニュー | 炭火亭</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="メニュー | 炭火亭">
-    <meta property="og:description" content="炭火亭のメニュー一覧。こだわりの炭火焼きをお楽しみください。">
+<title id="page-title">メニュー | AIden</title>
+    <!-- OGP / SNS Meta Tags (brand-specific values are set in onBrandLoaded) -->
+    <meta property="og:title" content="メニュー | AIden">
+    <meta property="og:description" content="">
     <meta property="og:image" content="https://aiden-jp.net/ogp.png">
     <meta property="og:url" content="https://aiden-jp.net/aiden-brand-menu.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AIden">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="メニュー | 炭火亭">
-    <meta name="twitter:description" content="炭火亭のメニュー一覧。こだわりの炭火焼きをお楽しみください。">
+    <meta name="twitter:title" content="メニュー | AIden">
+    <meta name="twitter:description" content="">
     <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="炭火亭のメニュー一覧。こだわりの炭火焼きをお楽しみください。">
+    <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="./aiden-common.css">
 <script src="./aiden-common.js"></script>
@@ -200,7 +200,7 @@ AidenCommon.addTranslations({
     item_tanshio:'タン塩', item_negitanshio:'ネギタン塩', item_karubi:'カルビ',
     item_jokarubi:'上カルビ', item_rosu:'ロース', item_atsugiri:'厚切り牛タン',
     item_horumon:'ホルモン', item_mino:'ミノ', item_harami:'ハラミ',
-    item_course1:'焼肉 炭火亭 〜近重前〜', item_course2:'【炭火コース】旨味極まる厳選焼肉 全6品',
+    item_course1:'フラッグシップコース', item_course2:'【炭火コース】旨味極まる厳選焼肉 全6品',
     item_bibimba:'石焼ビビンバ', item_reimen:'冷麺', item_kuppa:'クッパ', item_gohan:'白ご飯',
     item_salad:'おまかせサラダ', item_kimchi:'キムチ盛り合わせ', item_namuru:'ナムル盛り合わせ',
     item_tail:'テールスープ', item_wakame:'わかめスープ',
@@ -244,14 +244,14 @@ AidenCommon.addTranslations({
     det_mino:'牛の第一胃。独特のコリコリ食感が人気の部位です。さっぱりした塩ダレで素材本来の旨みをお楽しみください。',
     det_harami:'牛の横隔膜部位。赤身肉の旨みを持ちながら、非常に柔らかい食感が特徴です。タレとも塩とも相性抜群で、リピーターの多い人気部位です。',
     det_course1:'当店が誇るフラッグシップコース。A5ランク黒毛和牛を8品構成でご提供します。前菜・焼肉・サイド・〆・デザートまで全て含まれた贅沢な一夜をお楽しみください。',
-    det_course2:'国産牛を中心に厳選した6品コース。120分飲み放題付きで、宴会・接待にも最適です。前菜からデザートまで炭火亭の味を存分にお楽しみください。',
+    det_course2:'国産牛を中心に厳選した6品コース。120分飲み放題付きで、宴会・接待にも最適です。前菜からデザートまで当店自慢の味を存分にお楽しみください。',
     det_bibimba:'熱々の石鍋でご提供するビビンバ。底のおこげがたまらない一品です。色とりどりのナムルと旨辛コチュジャンを混ぜてお召し上がりください。',
     det_reimen:'自家製麺を使用した本格冷麺。さっぱりとしたスープに、コシのある麺が絡みます。焼肉の後の〆に最適な一品です。',
     det_kuppa:'有名料理人監修の特製スープで作るクッパ。深みのある牛骨スープがご飯に染み渡ります。',
     det_gohan:'新潟産コシヒカリを使用した白ご飯。炊きたてのご飯は焼肉との相性は言うまでもありません。',
     det_salad:'その日に仕入れた新鮮野菜をたっぷり使ったサラダ。特製ドレッシングでお召し上がりください。',
     det_kimchi:'白菜・きゅうり・大根の3種盛り合わせ。自家製ヤンニョムで漬け込んだ本格派キムチです。',
-    det_namuru:'ほうれん草・もやし・にんじんを炭火亭の秘伝のタレで和えたナムル三種盛り。さっぱりとした味わいで、焼肉の合間に最適です。',
+    det_namuru:'ほうれん草・もやし・にんじんを秘伝のタレで和えたナムル三種盛り。さっぱりとした味わいで、焼肉の合間に最適です。',
     det_tail:'牛テールを数時間かけてじっくり煮込んだ本格スープ。コラーゲンたっぷりで美容にも嬉しい一品。',
     det_wakame:'三陸産わかめを使用したあっさりスープ。磯の風味がほんのり香り、焼肉の合間にほっとできる一杯です。',
     det_beer:'サッポロ黒ラベルを使用した生ビール。きめ細かな泡とキレのある味わいが焼肉との相性は抜群です。',
@@ -277,7 +277,7 @@ AidenCommon.addTranslations({
     item_tanshio:'Salted Beef Tongue', item_negitanshio:'Scallion Beef Tongue', item_karubi:'Kalbi',
     item_jokarubi:'Premium Kalbi', item_rosu:'Loin', item_atsugiri:'Thick-cut Beef Tongue',
     item_horumon:'Offal', item_mino:'Beef Tripe', item_harami:'Skirt Steak',
-    item_course1:'Sumibite Flagship Course', item_course2:'Charcoal BBQ Course – 6 Items',
+    item_course1:'Flagship Course', item_course2:'Charcoal BBQ Course – 6 Items',
     item_bibimba:'Stone Pot Bibimbap', item_reimen:'Cold Noodles', item_kuppa:'Beef Soup Rice', item_gohan:'Steamed Rice',
     item_salad:'Chef\'s Salad', item_kimchi:'Kimchi Platter', item_namuru:'Namul Platter',
     item_tail:'Oxtail Soup', item_wakame:'Seaweed Soup',
@@ -339,7 +339,7 @@ AidenCommon.addTranslations({
   zh:{
     nav_top:'首页', nav_menu:'菜单', nav_stores:'查找门店',
     nav_reserve:'📅 预约', nav_order:'🥡 外带·外送',
-    page_title:'菜单', page_sub:'炭火亭菜单',
+    page_title:'菜单', page_sub:'本店菜单',
     cat_label:'分类', tax_note:'含税价格 / 价格可能变动',
     tag_recommend:'推荐', tag_limited:'限时', tag_season:'季节限定',
     tag_sale:'折扣中', tag_rank1:'人气第一', tag_rank2:'人气第二', tag_rank3:'人气第三',
@@ -350,7 +350,7 @@ AidenCommon.addTranslations({
     item_tanshio:'盐烤牛舌', item_negitanshio:'葱盐牛舌', item_karubi:'牛肋排',
     item_jokarubi:'上等牛肋排', item_rosu:'牛里脊', item_atsugiri:'厚切牛舌',
     item_horumon:'牛内脏', item_mino:'牛肚', item_harami:'牛横膈膜',
-    item_course1:'炭火亭旗舰套餐', item_course2:'炭火套餐 全6品',
+    item_course1:'旗舰套餐', item_course2:'炭火套餐 全6品',
     item_bibimba:'石锅拌饭', item_reimen:'冷面', item_kuppa:'牛骨汤饭', item_gohan:'白米饭',
     item_salad:'主厨沙拉', item_kimchi:'泡菜拼盘', item_namuru:'凉拌菜拼盘',
     item_tail:'牛尾汤', item_wakame:'海带汤',
@@ -386,7 +386,7 @@ AidenCommon.addTranslations({
     det_gohan:'使用新潟越光米的白米饭。与烤肉的搭配不言而喻。',
     det_salad:'大量使用当日采购新鲜蔬菜的沙拉。配特制酱汁享用。',
     det_kimchi:'大白菜·黄瓜·白萝卜三种拼盘。用自家制辣酱腌制的正宗泡菜。',
-    det_namuru:'用炭火亭秘制酱汁拌制的菠菜·豆芽·胡萝卜三拼凉拌菜。清爽口味，烤肉间隙的最佳选择。',
+    det_namuru:'用秘制酱汁拌制的菠菜·豆芽·胡萝卜三拼凉拌菜。清爽口味，烤肉间隙的最佳选择。',
     det_tail:'牛尾慢炖数小时的正宗汤品。富含胶原蛋白，对美容也有益。',
     det_wakame:'使用三陆产海带的清淡汤品。淡淡的海洋香气，烤肉间隙的休息良伴。',
     det_beer:'使用Sapporo黑标的生啤。细腻泡沫与爽快口感，与烤肉绝配。',
@@ -399,7 +399,7 @@ AidenCommon.addTranslations({
   ko:{
     nav_top:'홈', nav_menu:'메뉴', nav_stores:'매장 찾기',
     nav_reserve:'📅 예약', nav_order:'🥡 포장·배달',
-    page_title:'메뉴', page_sub:'탄화정 메뉴',
+    page_title:'메뉴', page_sub:'그랜드 메뉴',
     cat_label:'카테고리', tax_note:'세금 포함 / 가격은 변경될 수 있습니다',
     tag_recommend:'추천', tag_limited:'기간 한정', tag_season:'계절 한정',
     tag_sale:'할인 중', tag_rank1:'1위 인기', tag_rank2:'2위 인기', tag_rank3:'3위 인기',
@@ -411,7 +411,7 @@ AidenCommon.addTranslations({
     item_tanshio:'소금 소혀', item_negitanshio:'파 소금 소혀', item_karubi:'갈비',
     item_jokarubi:'상갈비', item_rosu:'로스', item_atsugiri:'두툼 소혀',
     item_horumon:'호르몬', item_mino:'미노', item_harami:'하라미',
-    item_course1:'탄화정 플래그십 코스', item_course2:'숯불 코스 전6품',
+    item_course1:'플래그십 코스', item_course2:'숯불 코스 전6품',
     item_bibimba:'돌솥 비빔밥', item_reimen:'냉면', item_kuppa:'국밥', item_gohan:'흰쌀밥',
     item_salad:'셰프 샐러드', item_kimchi:'김치 모둠', item_namuru:'나물 모둠',
     item_tail:'꼬리곰탕', item_wakame:'미역국',
@@ -460,7 +460,7 @@ AidenCommon.addTranslations({
     det_gohan:'니가타산 고시히카리를 사용한 흰쌀밥. 갓 지은 밥은 야키니쿠와 최고.',
     det_salad:'당일 구매한 신선한 채소를 듬뿍 사용한 샐러드. 특제 드레싱으로 드세요.',
     det_kimchi:'배추·오이·무 3종 모둠. 자가제 양념으로 담근 정통 김치.',
-    det_namuru:'탄화정의 비법 소스로 무친 시금치·콩나물·당근 나물 세 가지 모둠. 야키니쿠 사이에 최적.',
+    det_namuru:'비법 소스로 무친 시금치·콩나물·당근 나물 세 가지 모둠. 야키니쿠 사이에 최적.',
     det_tail:'소 꼬리를 수시간 천천히 끓인 정통 국물. 콜라겐 풍부.',
     det_wakame:'삼륙산 미역을 사용한 담백한 국물. 은은한 바다 향이 야키니쿠 사이의 쉬는 시간에 딱.',
     det_beer:'Sapporo 흑라벨을 사용한 생맥주. 섬세한 거품과 상쾌한 맛이 야키니쿠와 찰떡궁합.',
@@ -485,7 +485,7 @@ AidenCommon.addTranslations({
     item_tanshio:'Langue de bœuf salée', item_negitanshio:'Langue de bœuf à la ciboulette',
     item_karubi:'Kalbi', item_jokarubi:'Kalbi premium', item_rosu:'Faux-filet', item_atsugiri:'Langue épaisse',
     item_horumon:'Abats', item_mino:'Tripes', item_harami:'Hampe',
-    item_course1:'Menu Prestige Sumibite', item_course2:'Menu Charbon – 6 plats',
+    item_course1:'Menu Prestige', item_course2:'Menu Charbon – 6 plats',
     item_bibimba:'Bibimbap en pierre', item_reimen:'Nouilles froides', item_kuppa:'Soupe riz bœuf', item_gohan:'Riz vapeur',
     item_salad:'Salade du chef', item_kimchi:'Assortiment kimchi', item_namuru:'Assortiment namul',
     item_tail:'Soupe queue de bœuf', item_wakame:'Soupe wakamé',
@@ -559,7 +559,7 @@ AidenCommon.addTranslations({
     item_tanshio:'Lingua di manzo salata', item_negitanshio:'Lingua con cipollotti',
     item_karubi:'Kalbi', item_jokarubi:'Kalbi premium', item_rosu:'Lombo', item_atsugiri:'Lingua spessa',
     item_horumon:'Frattaglie', item_mino:'Trippa', item_harami:'Diaframma',
-    item_course1:'Menu Prestige Sumibite', item_course2:'Menu Carbone – 6 piatti',
+    item_course1:'Menu Prestige', item_course2:'Menu Carbone – 6 piatti',
     item_bibimba:'Bibimbap in pietra', item_reimen:'Noodle freddi', item_kuppa:'Zuppa di riso', item_gohan:'Riso bianco',
     item_salad:'Insalata dello chef', item_kimchi:'Selezione kimchi', item_namuru:'Selezione namul',
     item_tail:'Zuppa di coda', item_wakame:'Zuppa di wakame',
@@ -633,7 +633,7 @@ AidenCommon.addTranslations({
     item_tanshio:'Lidah Sapi Garam', item_negitanshio:'Lidah Sapi Daun Bawang',
     item_karubi:'Kalbi', item_jokarubi:'Kalbi Premium', item_rosu:'Loin', item_atsugiri:'Lidah Tebal',
     item_horumon:'Jeroan', item_mino:'Babat', item_harami:'Harami',
-    item_course1:'Kursus Unggulan Sumibite', item_course2:'Kursus Arang – 6 Hidangan',
+    item_course1:'Kursus Unggulan', item_course2:'Kursus Arang – 6 Hidangan',
     item_bibimba:'Bibimbap Batu', item_reimen:'Mie Dingin', item_kuppa:'Sup Nasi Sapi', item_gohan:'Nasi Putih',
     item_salad:'Salad Chef', item_kimchi:'Kimchi Assorted', item_namuru:'Namul Assorted',
     item_tail:'Sup Buntut', item_wakame:'Sup Rumput Laut',
@@ -695,76 +695,10 @@ AidenCommon.addTranslations({
 });
 
 /* =====================================================
-   MENU_DATA — 商品データ（テキストはi18nキーで参照）
+   MENU_DATA — 商品データ（Supabase categories/productsから取得）
+   D-83: ハードコード禁止。DB取得失敗時は空配列
    ===================================================== */
-let MENU_DATA = [
-  {
-    id:'yakiniku', labelKey:'cat_yakiniku', icon:'🥩', order:1,
-    items:[
-      {nameKey:'item_tanshio', outlineKey:'out_tanshio', detailKey:'det_tanshio', price:220, tags:['recommend'], allergens:['牛肉','小麦（タレ）'], emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-      {nameKey:'item_negitanshio', outlineKey:'out_negitanshio', detailKey:'det_negitanshio', price:220, tags:[], allergens:['牛肉','小麦（タレ）'], emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-      {nameKey:'item_karubi', outlineKey:'out_karubi', detailKey:'det_karubi', price:198, tags:[], allergens:['牛肉','小麦','大豆'], emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'},
-      {nameKey:'item_jokarubi', outlineKey:'out_jokarubi', detailKey:'det_jokarubi', price:385, tags:['recommend'], discount:{type:'percent',rate:10}, allergens:['牛肉','小麦','大豆','りんご'], emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'},
-      {nameKey:'item_rosu', outlineKey:'out_rosu', detailKey:'det_rosu', price:198, tags:[], allergens:['牛肉','小麦','大豆'], emoji:'🥩', bg:'linear-gradient(135deg,#3d2010,#9b7120)'},
-      {nameKey:'item_atsugiri', outlineKey:'out_atsugiri', detailKey:'det_atsugiri', price:550, tags:['season'], allergens:['牛肉'], emoji:'🥩', bg:'linear-gradient(135deg,#2d0a0a,#7a2020)'},
-    ]
-  },
-  {
-    id:'horumon', labelKey:'cat_horumon', icon:'🫀', order:2,
-    items:[
-      {nameKey:'item_horumon', outlineKey:'out_horumon', detailKey:'det_horumon', price:198, tags:[], allergens:['牛肉','大豆','小麦'], emoji:'🫀', bg:'linear-gradient(135deg,#2d0a0a,#7a2020)'},
-      {nameKey:'item_mino', outlineKey:'out_mino', detailKey:'det_mino', price:275, tags:[], allergens:['牛肉','小麦'], emoji:'🫀', bg:'linear-gradient(135deg,#1a0a00,#5a2a00)'},
-      {nameKey:'item_harami', outlineKey:'out_harami', detailKey:'det_harami', price:330, tags:['recommend','rank1'], allergens:['牛肉','小麦','大豆'], emoji:'🥩', bg:'linear-gradient(135deg,#2a0a0a,#6a1a1a)'},
-    ]
-  },
-  {
-    id:'set', labelKey:'cat_set', icon:'🍽️', order:3,
-    items:[
-      {nameKey:'item_course1', outlineKey:'out_course1', detailKey:'det_course1', price:48400, priceUnit:'/ 人（税・サ込）', tags:['recommend'], isCourse:true, allergens:['牛肉','小麦','大豆','乳','卵','えび'], emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-      {nameKey:'item_course2', outlineKey:'out_course2', detailKey:'det_course2', price:28600, priceUnit:'/ 人（税・サ込）', tags:[], isCourse:true, allergens:['牛肉','小麦','大豆','乳'], emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'},
-    ]
-  },
-  {
-    id:'rice', labelKey:'cat_rice', icon:'🍚', order:4,
-    items:[
-      {nameKey:'item_bibimba', outlineKey:'out_bibimba', detailKey:'det_bibimba', price:990, tags:['recommend'], allergens:['小麦','大豆','卵','ごま'], emoji:'🍚', bg:'linear-gradient(135deg,#2d2d0a,#7a7a1a)'},
-      {nameKey:'item_reimen', outlineKey:'out_reimen', detailKey:'det_reimen', price:880, tags:[], allergens:['小麦','そば','牛肉','卵'], emoji:'🍜', bg:'linear-gradient(135deg,#0a1a2d,#1a5a7a)'},
-      {nameKey:'item_kuppa', outlineKey:'out_kuppa', detailKey:'det_kuppa', price:880, tags:['limited'], allergens:['牛肉','小麦','大豆','卵'], emoji:'🍲', bg:'linear-gradient(135deg,#1a0a00,#5a3000)'},
-      {nameKey:'item_gohan', outlineKey:'out_gohan', detailKey:'det_gohan', price:220, tags:[], allergens:[], emoji:'🍚', bg:'linear-gradient(135deg,#2d2a1a,#8b7a4a)'},
-    ]
-  },
-  {
-    id:'salad', labelKey:'cat_salad', icon:'🥗', order:5,
-    items:[
-      {nameKey:'item_salad', outlineKey:'out_salad', detailKey:'det_salad', price:550, tags:[], allergens:['卵','乳','大豆'], emoji:'🥗', bg:'linear-gradient(135deg,#0a2d0a,#1a7a1a)'},
-      {nameKey:'item_kimchi', outlineKey:'out_kimchi', detailKey:'det_kimchi', price:440, tags:[], allergens:['小麦','魚介','ごま'], emoji:'🌶️', bg:'linear-gradient(135deg,#2d0a00,#8b2000)'},
-      {nameKey:'item_namuru', outlineKey:'out_namuru', detailKey:'det_namuru', price:330, tags:[], allergens:['大豆','ごま'], emoji:'🥬', bg:'linear-gradient(135deg,#0a2d00,#2a8b00)'},
-    ]
-  },
-  {
-    id:'soup', labelKey:'cat_soup', icon:'🍵', order:6,
-    items:[
-      {nameKey:'item_tail', outlineKey:'out_tail', detailKey:'det_tail', price:660, tags:['recommend'], allergens:['牛肉','小麦','大豆'], emoji:'🍵', bg:'linear-gradient(135deg,#1a0a00,#5a3000)'},
-      {nameKey:'item_wakame', outlineKey:'out_wakame', detailKey:'det_wakame', price:330, tags:[], allergens:['大豆','小麦'], emoji:'🍵', bg:'linear-gradient(135deg,#0a1a0a,#1a5a1a)'},
-    ]
-  },
-  {
-    id:'drink', labelKey:'cat_drink', icon:'🍺', order:7,
-    items:[
-      {nameKey:'item_beer', outlineKey:'out_beer', detailKey:'det_beer', price:770, tags:[], allergens:['小麦'], emoji:'🍺', bg:'linear-gradient(135deg,#2d2000,#8b6000)'},
-      {nameKey:'item_hiball', outlineKey:'out_hiball', detailKey:'det_hiball', price:660, tags:[], allergens:[], emoji:'🥃', bg:'linear-gradient(135deg,#1a1a1a,#5a5a5a)'},
-      {nameKey:'item_wine', outlineKey:'out_wine', detailKey:'det_wine', price:1100, tags:[], allergens:['亜硫酸塩'], emoji:'🍷', bg:'linear-gradient(135deg,#1a0a2d,#4a1a7a)'},
-      {nameKey:'item_soft', outlineKey:'out_soft', detailKey:'det_soft', price:330, tags:[], discount:{type:'fixed',amount:100}, allergens:[], emoji:'🥤', bg:'linear-gradient(135deg,#0a0a2d,#1a1a7a)'},
-    ]
-  },
-  {
-    id:'dessert', labelKey:'cat_dessert', icon:'🍨', order:8,
-    items:[
-      {nameKey:'item_icecream', outlineKey:'out_icecream', detailKey:'det_icecream', price:330, tags:[], allergens:['乳','卵'], emoji:'🍨', bg:'linear-gradient(135deg,#2d2a20,#8b7a6a)'},
-      {nameKey:'item_annin', outlineKey:'out_annin', detailKey:'det_annin', price:385, tags:['season'], allergens:['乳'], emoji:'🍮', bg:'linear-gradient(135deg,#2a2a00,#7a7a00)'},
-    ]
-  }
-];
+let MENU_DATA = [];
 
 function t(key){ return AidenCommon.t(key); }
 
@@ -979,9 +913,6 @@ document.addEventListener('DOMContentLoaded', async function(){
           <div class="rf-label">予約店舗 <span class="rf-req">*</span></div>
           <select id="rm-store" class="rf-input" onchange="rmOnStoreChange()">
             <option value="">店舗を選択してください</option>
-            <option value="渋谷店">焼肉 炭火亭 渋谷店</option>
-            <option value="新宿店">焼肉 炭火亭 新宿店</option>
-            <option value="池袋店">焼肉 炭火亭 池袋店</option>
           </select>
           <div class="rf-error" id="err-rm-store">店舗を選択してください</div>
         </div>
@@ -1101,7 +1032,7 @@ function openResModal(storeValue) {
   if (rmPresetStore) {
     dropdown.style.display = 'none';
     preset.style.display   = 'block';
-    document.getElementById('rm-store-preset-text').textContent = '焼肉 炭火亭 ' + rmPresetStore;
+    document.getElementById('rm-store-preset-text').textContent = rmPresetStore;
   } else {
     dropdown.style.display = 'block';
     preset.style.display   = 'none';
@@ -1176,7 +1107,7 @@ function rmGoStep(n) {
   });
   if (n === 3) {
     var storeName = rmPresetStore
-      ? '焼肉 炭火亭 ' + rmPresetStore
+      ? rmPresetStore
       : (document.getElementById('rm-store').options[document.getElementById('rm-store').selectedIndex].text || '—');
     var rows = [
       ['店舗',  storeName],

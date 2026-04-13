@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">焼肉 炭火亭 渋谷店</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="焼肉 炭火亭 渋谷店">
-    <meta property="og:description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
+<title id="page-title">店舗情報 | AIden</title>
+    <!-- OGP / SNS Meta Tags (brand-specific values are set via JS after store load) -->
+    <meta property="og:title" content="店舗情報 | AIden">
+    <meta property="og:description" content="">
     <meta property="og:image" content="https://aiden-jp.net/ogp.png">
     <meta property="og:url" content="https://aiden-jp.net/aiden-store.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AIden">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="焼肉 炭火亭 渋谷店">
-    <meta name="twitter:description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
+    <meta name="twitter:title" content="店舗情報 | AIden">
+    <meta name="twitter:description" content="">
     <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="焼肉 炭火亭 渋谷店の店舗情報。営業時間・アクセス・メニューをご確認いただけます。">
+    <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -387,13 +387,13 @@ img,video{max-width:100%;display:block}
 <div class="identity">
   <div class="identity-inner">
     <div>
-      <h1 class="identity-name" id="id-name">焼肉 炭火亭 渋谷店</h1>
+      <h1 class="identity-name" id="id-name"></h1>
       <div class="identity-sub">
         <span class="identity-station" onclick="switchTab('info',document.querySelector('[data-tab=info]'))">
-          🚉 <span id="id-station">渋谷駅 徒歩5分</span> ›
+          🚉 <span id="id-station"></span> ›
         </span>
-        <span>🌙 <span id="id-price">¥8,000〜¥14,999</span></span>
-        <span class="identity-genre-tag" id="id-genre-tag">焼肉・肉料理 - 焼肉</span>
+        <span>🌙 <span id="id-price"></span></span>
+        <span class="identity-genre-tag" id="id-genre-tag"></span>
       </div>
     </div>
     <div class="identity-actions">
@@ -886,39 +886,40 @@ img,video{max-width:100%;display:block}
 <script>
 function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* =====================================================
-   STORE CONFIG（管理画面 / Supabase から取得）
+   STORE CONFIG（Supabase venues テーブルから取得）
+   D-83: ハードコード禁止。DB未取得時は空文字/null表示
    ===================================================== */
 let STORE = {
-  /* 基本情報 */
-  name:        '焼肉 炭火亭 渋谷店',
-  nameKana:    'ヤキニク スミビテイ シブヤテン',
-  genreParent: '焼肉・肉料理',
-  genreChild:  '焼肉',
-  station:     '渋谷駅 徒歩5分',
-  price:       '¥8,000〜¥14,999',
-  introHeadline: '厳選した和牛による、唯一無二の新しい焼肉店',
-  introText:   '新しい焼肉の文化をここから始める。最上級に厳選を重ねた「黒毛和牛」を一番新鮮に、一番美味しく。焼肉の全てが凝縮されたエンターテイメントと新しい正道焼肉の始まりをぜひご体感ください。',
-  introTextFull: '新しい焼肉の文化をここから始める。最上級に厳選を重ねた「黒毛和牛」を一番新鮮に、一番美味しく。焼肉の全てが凝縮されたエンターテイメントと新しい正道焼肉の始まりをぜひご体感ください。牛肉に精通した近重泰輔が繋ぐ意志と更なる進化を歴史を作る「炭火焼肉」。料理長の目利きで厳選した和牛はもちろん、食材一つ一つに拘り、唯一無二の新しい焼肉を創り上げました。また、日本人の「おもてなしの心」をテーマにしたきめ細かいサービスで、お客様をおもてなし致します。',
+  /* 基本情報（venuesテーブルから上書き） */
+  name:        '',
+  nameKana:    '',
+  genreParent: '',
+  genreChild:  '',
+  station:     '',
+  price:       '',
+  introHeadline: '',
+  introText:   '',
+  introTextFull: '',
 
   /* 店舗情報 */
-  address:       '東京都渋谷区恵比寿1-2-3 サンプルビル 4F',
-  access:        '東京メトロ日比谷線 東銀座駅 徒歩5分',
-  phone:         '0312345678',
-  hours:         '営業時間：月〜日 17:00〜24:00（L.O. 22:30）',
-  holiday:       '不定休',
-  paymentCards:  'VISA / Master / JCB / Amex / Diners',
-  paymentQR:     'PayPay対応',
-  serviceCharge: 10,   /* % */
-  tableCharge:   0,    /* 0=なし */
-  dress:         'なし',
-  seats:         '6席',
-  smoking:       '全席禁煙',
-  children:      '同伴不可',
-  pets:          '同伴不可',
-  parking:       '駐車場なし\n近隣の駐車場をご利用下さい。',
-  hygiene:       '・従業員のマスク着用\n・消毒液の設置\nなど基本的なことは全て遵守しております。',
+  address:       '',
+  access:        '',
+  phone:         '',
+  hours:         '',
+  holiday:       '',
+  paymentCards:  '',
+  paymentQR:     '',
+  serviceCharge: null,
+  tableCharge:   null,
+  dress:         '',
+  seats:         '',
+  smoking:       '',
+  children:      '',
+  pets:          '',
+  parking:       '',
+  hygiene:       '',
 
-  /* キャンセルポリシー（%のみ管理画面で10%単位変更可） */
+  /* キャンセルポリシー（%のみ管理画面で10%単位変更可。DB未取得時のデフォルト） */
   cancel: {
     cancelNoShow:   100,
     cancelSameDay:  100,
@@ -929,83 +930,34 @@ let STORE = {
   },
 
   /* 評価（Google Places API自動取得） */
-  googleRating:      4.3,
-  googleRatingCount: 128,
+  googleRating:      null,
+  googleRatingCount: null,
 
   /* Google連携（管理画面で設定） */
-  googlePlaceId: 'PLACE_ID_HERE',
-  googleMapsQ:   '東京都渋谷区恵比寿1-2-3 焼肉炭火亭',
+  googlePlaceId: '',
+  googleMapsQ:   '',
 
   /* 外部URL（管理画面で設定） */
   takeoutUrl:  './aiden-order.html?mode=takeout',
   deliveryUrl: './aiden-order.html?mode=delivery',
 
-  /* ギャラリー上部（最大10件） */
-  galleryMedia: [
-    {type:'image', emoji:'🪑', bg:'linear-gradient(135deg,#c87533,#f5a623)', isVideo:false},
-    {type:'video', emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)',  isVideo:true},
-    {type:'image', emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)', isVideo:false},
-    {type:'image', emoji:'🥂', bg:'linear-gradient(135deg,#2a1600,#7a3800)', isVideo:false},
-    {type:'image', emoji:'🥗', bg:'linear-gradient(135deg,#0a2d0a,#1a7a1a)', isVideo:false}
-  ],
-
-  /* 写真タブ（最大100件） */
-  photoMedia: [
-    {emoji:'🪑', bg:'linear-gradient(135deg,#c87533,#f5a623)', isVideo:false},
-    {emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)', isVideo:true},
-    {emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)', isVideo:false},
-    {emoji:'🥂', bg:'linear-gradient(135deg,#2a1600,#7a3800)', isVideo:false},
-    {emoji:'🥗', bg:'linear-gradient(135deg,#0a2d0a,#1a7a1a)', isVideo:false},
-    {emoji:'🍲', bg:'linear-gradient(135deg,#0a0a2d,#1a1a7a)', isVideo:true},
-    {emoji:'🍚', bg:'linear-gradient(135deg,#2d2d0a,#7a7a1a)', isVideo:false},
-    {emoji:'🍷', bg:'linear-gradient(135deg,#1a0a2d,#4a1a7a)', isVideo:false}
-  ],
+  /* ギャラリー（Supabase mediaテーブルから上書き） */
+  galleryMedia: [],
+  photoMedia: [],
 
   /* フラグ（D-83: DBのvenues.has_takeout/has_deliveryから上書きされる。未設定ならfalse） */
   hasTakeout:  false,
   hasDelivery: false,
 
   /* 予約モード設定（管理画面でON/OFF切り替え可） */
-  /* コース予約：MENUにisCourse:trueのカテゴリがある場合に自動表示 */
-  /* 席のみ予約：trueにするとコース予約の下に「席のみ予約」カードを追加表示 */
-  seatOnlyReservation: true
+  seatOnlyReservation: false
 };
 
 
-/* メニュー（管理画面から設定・顧客管理画面とリンク）
+/* メニュー（Supabase categories/products テーブルから取得）
+   D-83: ハードコード禁止。DB未取得時は空配列
    isCourse:true のカテゴリが概要タブの「レストラン予約（コース予約）」に自動表示される */
-let MENU = [
-  {category:'コース', isCourse:true, items:[
-    {name:'焼肉 炭火亭 〜近重前〜 5月1日〜',
-     price:48400, priceUnit:'お一人様（税・サービス料込）',
-     outline:'コースのみ。厳選A5黒毛和牛を全8品でご堪能いただけるフラッグシップコース。',
-     orderableHours:'17:00〜21:00（L.O. 20:30）',
-     recommended:true, emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-    {name:'【炭火コース】旨味極まる厳選焼肉 全6品',
-     price:28600, priceUnit:'お一人様（税・サービス料込）',
-     outline:'飲み放題 120分付き。国産牛を中心に炭火焼きの醍醐味を存分に味わえるスタンダードコース。',
-     orderableHours:'17:00〜22:00（L.O. 21:30）',
-     recommended:false, emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'}
-  ]},
-  {category:'当店一番おすすめ', isCourse:false, items:[
-    {name:'おまかせ', price:8000, priceUnit:'', outline:'※アレルギー、苦手なものがございましたらお申し付けください。', recommended:true, emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'}
-  ]},
-  {category:'焼肉', isCourse:false, items:[
-    {name:'タン塩',   price:2000, priceUnit:'', outline:'', recommended:false, emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-    {name:'ネギタン塩', price:2000, priceUnit:'', outline:'', recommended:false, emoji:'🥩', bg:'linear-gradient(135deg,#2d1f0a,#8b6914)'},
-    {name:'カルビ',   price:1400, priceUnit:'', outline:'', recommended:false, emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'},
-    {name:'上カルビ',  price:2800, priceUnit:'', outline:'', recommended:true,  emoji:'🔥', bg:'linear-gradient(135deg,#1a0800,#5c2000)'},
-    {name:'ロース',   price:1400, priceUnit:'', outline:'', recommended:false, emoji:'🥩', bg:'linear-gradient(135deg,#3d2010,#9b7120)'}
-  ]},
-  {category:'ご飯・麺', isCourse:false, items:[
-    {name:'石焼ビビンバ', price:900,  priceUnit:'', outline:'', recommended:true,  emoji:'🍚', bg:'linear-gradient(135deg,#2d2d0a,#7a7a1a)'},
-    {name:'冷麺',         price:880,  priceUnit:'', outline:'', recommended:false, emoji:'🍜', bg:'linear-gradient(135deg,#0a1a2d,#1a5a7a)'}
-  ]},
-  {category:'ドリンク', isCourse:false, items:[
-    {name:'生ビール',          price:700,  priceUnit:'', outline:'', recommended:false, emoji:'🍺', bg:'linear-gradient(135deg,#2d2000,#8b6000)'},
-    {name:'ワイン（グラス）', price:1000, priceUnit:'', outline:'赤・白・スパークリング', recommended:false, emoji:'🍷', bg:'linear-gradient(135deg,#1a0a2d,#4a1a7a)'}
-  ]}
-];
+let MENU = [];
 
 /* ジャンル一覧（管理画面プルダウン用） */
 var GENRES = {
@@ -1030,7 +982,7 @@ var GENRES = {
    ===================================================== */
 // ===== API CONFIG =====
 const API_BASE = 'https://aiden-jp.net'; // Production domain
-// URLパラメータ ?store=xxx からslugを取得（例: aiden-store.html?store=sumibite-shibuya）
+// URLパラメータ ?store=xxx からslugを取得（例: aiden-store.html?store=<slug>）
 const STORE_SLUG = new URLSearchParams(window.location.search).get('store');
 
 async function apiFetch(path) {
@@ -1840,7 +1792,7 @@ document.getElementById('vacancy-modal').addEventListener('click', function(e){ 
 <!--
 === 【予約確定メール テンプレート】===
 
-件名: 【焼肉 炭火亭 渋谷店】ご予約確認 RES-XXXXXX
+件名: 【{{store_name}}】ご予約確認 RES-XXXXXX
 
 ─────────────────────────────
 {{customer_name}} 様
@@ -1874,7 +1826,7 @@ document.getElementById('vacancy-modal').addEventListener('click', function(e){ 
 
 === 【空席通知メール テンプレート】===
 
-件名: 【焼肉 炭火亭 渋谷店】空席のお知らせ
+件名: 【{{store_name}}】空席のお知らせ
 
 ─────────────────────────────
 {{customer_email}} 様

@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ニュース・キャンペーン | 炭火亭</title>
-    <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="ニュース・キャンペーン | 炭火亭">
-    <meta property="og:description" content="炭火亭の最新ニュースやキャンペーン情報をお届けします。">
+<title id="page-title">ニュース・キャンペーン | AIden</title>
+    <!-- OGP / SNS Meta Tags (brand-specific values are set via JS after brand load) -->
+    <meta property="og:title" content="ニュース・キャンペーン | AIden">
+    <meta property="og:description" content="">
     <meta property="og:image" content="https://aiden-jp.net/ogp.png">
     <meta property="og:url" content="https://aiden-jp.net/aiden-brand-news.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AIden">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="ニュース・キャンペーン | 炭火亭">
-    <meta name="twitter:description" content="炭火亭の最新ニュースやキャンペーン情報をお届けします。">
+    <meta name="twitter:title" content="ニュース・キャンペーン | AIden">
+    <meta name="twitter:description" content="">
     <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="炭火亭の最新ニュースやキャンペーン情報をお届けします。">
+    <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -77,7 +77,7 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
 <body>
 <header class="header">
   <div class="header-main">
-    <div class="header-logo"><a href="./brand.html"><span class="header-logo-mark" id="logo-mark">🔥</span><span class="header-logo-text" id="logo-text">炭火亭</span></a></div>
+    <div class="header-logo"><a href="./brand.html"><span class="header-logo-mark" id="logo-mark"></span><span class="header-logo-text" id="logo-text"></span></a></div>
     <nav class="header-nav">
       <a href="./aiden-brand-menu.html" class="header-nav-link" data-i18n="nav_menu">メニュー</a>
       <a href="./aiden-brand-stores.html" class="header-nav-link" data-i18n="nav_stores">お店を探す</a>
@@ -106,7 +106,7 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
 
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo-row"><div class="footer-logo-mark-sm" id="footer-mark">🔥</div><span class="footer-brand-name" id="footer-name">炭火亭</span></div>
+    <div class="footer-logo-row"><div class="footer-logo-mark-sm" id="footer-mark"></div><span class="footer-brand-name" id="footer-name"></span></div>
     <div class="footer-links">
       <a href="./brand.html" data-i18n="nav_top">トップ</a>
       <a href="./aiden-privacy-policy.html" data-i18n="f_privacy">プライバシーポリシー</a>
@@ -114,7 +114,7 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
       <a href="./aiden-tokushoho.html">特定商取引法に基づく表示</a>
       <a href="./aiden-sitemap.html" data-i18n="f_sitemap">サイトマップ</a>
     </div>
-    <div class="footer-copy">© 2026 炭火亭 All rights reserved. Powered by AIden</div>
+    <div class="footer-copy" id="footer-copy">© 2026 All rights reserved. Powered by AIden</div>
   </div>
 </footer>
 
@@ -122,28 +122,17 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
 function escH(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 var BRAND_CONFIG = {
-  name:'焼肉 炭火亭', primaryColor:'#D32F2F', primaryDark:'#B71C1C',
+  name:'', primaryColor:'#D32F2F', primaryDark:'#B71C1C',
   headerBg:'#D32F2F', headerTextColor:'#FFFFFF', fontColor:'#333333',
-  fontFamily:'Noto Sans JP', logoMarkType:'emoji', logoMarkEmoji:'🔥', logoTextValue:'炭火亭'
+  fontFamily:'Noto Sans JP', logoMarkType:'emoji', logoMarkEmoji:'', logoTextValue:''
 };
 
 /* =====================================================
-   ニュースデータ（Supabase news テーブルから取得）
-   最新順。ブランドごとに管理画面から追加・編集・削除可能。
+   ニュースデータ（Supabase brand_news テーブルから取得）
+   D-83: ハードコード禁止。DB取得失敗時は空配列（「—」表示）
    cat: 'store'=お店情報, 'corp'=会社情報, 'menu'=メニュー, 'campaign'=キャンペーン
    ===================================================== */
-let NEWS_DATA = [
-  {id:1, date:'2026.02.21', cat:'store',    title:{ja:'新宿東口店　2/24(火)のみ　臨時休業', en:'Shinjuku East Exit – Temporary Closure Feb 24 (Tue) Only', zh:'新宿东口店　2/24（周二）仅当天　临时休业', ko:'신주쿠 동쪽 출구점　2/24(화)만　임시 휴업', fr:'Shinjuku Est – Fermeture temporaire 24 fév seulement', it:'Shinjuku Est – Chiusura temporanea solo 24 feb', id:'Shinjuku Timur – Tutup Sementara Hanya 24 Feb'}},
-  {id:2, date:'2026.02.21', cat:'store',    title:{ja:'池袋店　2/24(火)〜3/5(木)　リニューアル休業', en:'Ikebukuro – Closed for Renovation Feb 24 – Mar 5', zh:'池袋店　2/24（周二）〜3/5（周四）　装修休业', ko:'이케부쿠로점　2/24(화)〜3/5(목)　리뉴얼 휴업', fr:'Ikebukuro – Fermeture rénovation 24 fév – 5 mars', it:'Ikebukuro – Chiusura per ristrutturazione 24 feb – 5 mar', id:'Ikebukuro – Tutup Renovasi 24 Feb – 5 Mar'}},
-  {id:3, date:'2026.02.20', cat:'corp',     title:{ja:'恵比寿店　2/24(火)〜3/5(木) リニューアル休業・価格改定', en:'Ebisu – Renovation Closure & Price Revision Feb 24 – Mar 5', zh:'惠比寿店　2/24〜3/5 装修休业・价格调整', ko:'에비스점　2/24〜3/5 리뉴얼 휴업・가격 개정', fr:'Ebisu – Rénovation & révision des prix 24 fév – 5 mars', it:'Ebisu – Ristrutturazione & revisione prezzi 24 feb – 5 mar', id:'Ebisu – Renovasi & Revisi Harga 24 Feb – 5 Mar'}},
-  {id:4, date:'2026.02.18', cat:'menu',     title:{ja:'「名店監修」特製クッパ 期間限定新登場', en:'Special Koppamtang by Renowned Chef – Limited Time', zh:'名店监制 特制牛骨汤 期间限定新登场', ko:'명점 감수 특제 곰탕 기간 한정 신등장', fr:'Soupe spéciale par un chef renommé – Durée limitée', it:'Zuppa speciale dello chef – Periodo limitato', id:'Sup Spesial Chef Ternama – Waktu Terbatas'}},
-  {id:5, date:'2026.02.15', cat:'menu',     title:{ja:'春の特選コース 3/1〜 ご予約受付開始', en:'Spring Premium Course from Mar 1 – Reservations Open', zh:'春季精选套餐 3/1起 开始接受预约', ko:'봄 특선 코스 3/1〜 예약 접수 시작', fr:'Menu Printemps Premium dès le 1er mars – Réservations ouvertes', it:'Menu Primavera Premium dal 1 marzo – Prenotazioni aperte', id:'Menu Premium Musim Semi mulai 1 Mar – Reservasi Dibuka'}},
-  {id:6, date:'2026.02.10', cat:'campaign', title:{ja:'炭火亭×アニメコラボ 2/4〜 開催中', en:'Sumibite × Anime Collab – Ongoing from Feb 4', zh:'炭火亭×动漫联名 2/4起 进行中', ko:'탄화정×애니메 콜라보 2/4부터 진행 중', fr:'Sumibite × Collab Anime – En cours depuis le 4 fév', it:'Sumibite × Collab Anime – In corso dal 4 feb', id:'Sumibite × Kolaborasi Anime – Berlangsung mulai 4 Feb'}},
-  {id:7, date:'2026.02.05', cat:'campaign', title:{ja:'北海道産 黒毛和牛 特上カルビ祭 開催', en:'Hokkaido Wagyu Premium Kalbi Festival', zh:'北海道和牛特上牛肋排节 举办中', ko:'홋카이도산 와규 특상 갈비 축제 개최', fr:'Festival Wagyu Hokkaido Kalbi', it:'Festival Wagyu Hokkaido Kalbi', id:'Festival Wagyu Hokkaido Kalbi'}},
-  {id:8, date:'2026.01.28', cat:'store',    title:{ja:'渋谷店 2/1(月) リニューアルオープン', en:'Shibuya – Reopening Feb 1 (Mon)', zh:'涩谷店 2/1（周一）重新开业', ko:'시부야점 2/1(월) 리뉴얼 오픈', fr:'Shibuya – Réouverture le 1er fév (Lun)', it:'Shibuya – Riapertura 1 feb (Lun)', id:'Shibuya – Pembukaan Kembali 1 Feb (Sen)'}},
-  {id:9, date:'2026.01.20', cat:'menu',     title:{ja:'冬の定番メニュー「もつ鍋コース」登場', en:'Winter Special: Motsu Nabe Course Available', zh:'冬季特色菜单「内脏锅套餐」上市', ko:'겨울 정통 메뉴 「곱창전골 코스」 등장', fr:'Spécial hiver: Menu Motsu Nabe disponible', it:'Speciale inverno: Menu Motsu Nabe disponibile', id:'Spesial Musim Dingin: Kursus Motsu Nabe Tersedia'}},
-  {id:10, date:'2026.01.10', cat:'corp',    title:{ja:'炭火亭アプリ 次回アップデート予定のお知らせ', en:'Notice: Upcoming Sumibite App Update', zh:'炭火亭App 下次更新预告', ko:'탄화정 앱 다음 업데이트 예정 안내', fr:'Notice: Prochaine mise à jour de l\'App Sumibite', it:'Avviso: Prossimo aggiornamento dell\'App Sumibite', id:'Pemberitahuan: Pembaruan App Sumibite Mendatang'}},
-];
+let NEWS_DATA = [];
 
 var I18N = {
   ja:{nav_top:'トップ', nav_menu:'メニュー', nav_stores:'お店を探す', nav_reserve:'📅 来店予約', nav_order:'🥡 テイクアウト・デリバリー', page_title:'ニュース・キャンペーン', f_all:'すべて', f_store:'お店情報', f_corp:'会社情報', f_menu:'メニュー', f_campaign:'キャンペーン', f_privacy:'プライバシーポリシー', f_terms:'利用規約', f_sitemap:'サイトマップ'},
@@ -238,6 +227,32 @@ const BRAND_ID = new URLSearchParams(location.search).get('brand_id') || session
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const _brandParam = new URLSearchParams(window.location.search).get('brand');
 
+async function loadBrandFromSupabase() {
+  if (!BRAND_ID) return;
+  var {data: brand} = await sb.from('brands').select('*').eq('id', BRAND_ID).maybeSingle();
+  if (!brand) return;
+  BRAND_CONFIG.name = brand.name || '';
+  if (brand.primary_color) BRAND_CONFIG.primaryColor = brand.primary_color;
+  if (brand.primary_dark) BRAND_CONFIG.primaryDark = brand.primary_dark;
+  if (brand.header_bg) BRAND_CONFIG.headerBg = brand.header_bg;
+  if (brand.header_text_color) BRAND_CONFIG.headerTextColor = brand.header_text_color;
+  if (brand.font_color) BRAND_CONFIG.fontColor = brand.font_color;
+  if (brand.font_family) BRAND_CONFIG.fontFamily = brand.font_family;
+  if (brand.logo_mark_type) BRAND_CONFIG.logoMarkType = brand.logo_mark_type;
+  if (brand.logo_mark_emoji) BRAND_CONFIG.logoMarkEmoji = brand.logo_mark_emoji;
+  BRAND_CONFIG.logoTextValue = brand.logo_text_value || brand.name || '';
+  // Update document title and OGP
+  if (brand.name) {
+    document.title = 'ニュース・キャンペーン | ' + brand.name;
+    var ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = document.title;
+    var twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.content = document.title;
+    var footerCopy = document.getElementById('footer-copy');
+    if (footerCopy) footerCopy.textContent = '© 2026 ' + brand.name + ' All rights reserved. Powered by AIden';
+  }
+}
+
 async function loadNewsFromSupabase() {
   if (!BRAND_ID) return;
   var {data: news} = await sb.from('brand_news').select('id, brand_id, title, category, published_at').eq('brand_id', BRAND_ID).order('published_at', {ascending: false});
@@ -250,6 +265,7 @@ async function loadNewsFromSupabase() {
 }
 
 document.addEventListener('DOMContentLoaded', async function(){
+  try { await loadBrandFromSupabase(); } catch(e) { /* ignored */ }
   try { await loadNewsFromSupabase(); } catch(e) { /* ignored */ }
   applyBrand(); render();
 });
