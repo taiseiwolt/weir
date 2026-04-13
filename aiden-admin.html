@@ -174,7 +174,15 @@ async function loadAllData(){
     _uuid:r.id, id:r.display_id, name:r.name, rep:r.representative||'',
     status:r.status||'active', created:(r.created_at||'').split('T')[0],
     stripe_account_id:r.stripe_account_id, rep_email:r.rep_email||'',
-    website_url:r.website_url||'', recruit_url:r.recruit_url||''
+    website_url:r.website_url||'', recruit_url:r.recruit_url||'',
+    corp_number:r.corp_number||'',
+    bank_name:r.bank_name||'',
+    bank_branch_code:r.bank_branch_code||'',
+    bank_account_number:r.bank_account_number||'',
+    hq_address:r.hq_address||'',
+    hq_phone:r.hq_phone||'',
+    contact_name:r.contact_name||'',
+    contact_email:r.contact_email||''
   }));
   // Map brands (DB: primary_color not main_color, no slug, no is_active)
   BRANDS=(brandsRaw||[]).map(r=>({
@@ -4258,10 +4266,41 @@ async function saveStoreBasic(storeDisplayId){
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
-  corp:{filename:'aiden_corp_template.xlsx',format:'xlsx',
-    headers:['法人名*','代表者名','代表メールアドレス','会社HP','採用ページ','法人番号','銀行名','支店番号','口座番号','本部住所','本部電話番号','代表メール','担当者氏名','担当者メールアドレス'],
-    sample:[['株式会社サンプル','渡辺太郎','rep@example.co.jp','-','-','1234567890123','○○銀行','○○支店','1234567','東京都目黒区○○1-2-3','03-XXXX-XXXX','tanto@example.com','担当花子','tanto@example.com']],
-    categories:[{cols:[0,4],color:'f0ecff',label:'法人基本'},{cols:[5,8],color:'e8f4fd',label:'銀行情報'},{cols:[9,11],color:'e6f9f0',label:'本部連絡先'},{cols:[12,13],color:'fff8e1',label:'担当者'}]},
+  corp:{filename:'aiden_corp_template.csv',format:'csv',
+    headers:[
+      '法人名*','代表者名','代表メールアドレス','会社HP','採用ページ',
+      '法人番号','銀行名','支店番号','口座番号','本部住所','本部電話番号','代表メール','担当者氏名','担当者メールアドレス',
+      'ブランド名','ブランドスラッグ','メインカラー(hex)','サブカラー(hex)','ロゴ絵文字',
+      'テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)',
+      '店舗名','店舗住所','店舗電話番号','店舗メール','ジャンル',
+      '営業時間_平日開始','営業時間_平日終了','定休日',
+      'アカウント氏名','アカウントメール'
+    ],
+    keys:[
+      'name','rep','corpEmail','hp','recruit',
+      'corpNumber','bankName','bankBranch','bankAccount','hqAddress','hqPhone','repEmail','contactName','contactEmail',
+      'brandName','brandSlug','mainColor','subColor','logoEmoji',
+      'takeout','delivery','reserv',
+      'venueName','venueAddr','venueTel','venueEmail','venueGenre',
+      'hoursOpen','hoursClose','holiday',
+      'accountName','accountEmail'
+    ],
+    sample:[[
+      '居酒屋 潮','前田大生','taisei@example.com','https://meguro-ushio.owst.jp','',
+      '','','','','東京都目黒区上目黒3-8-3','03-6303-0383','info@ushio.com','前田大生','taisei@example.com',
+      '居酒屋 潮','izakaya-ushio','#688945','#577635','🌊',
+      'OFF','OFF','ON',
+      '居酒屋 潮','東京都目黒区上目黒3-8-3 千陽中目黒ビル アネックス2F','03-6303-0383','','居酒屋',
+      '17:00','00:00','日曜日',
+      '前田大生','taisei@example.com'
+    ]],
+    comment:'# 法人名のみ必須。ブランド名+スラッグで同時作成、店舗名でブランド配下に店舗作成、アカウントメールでowner権限アカウント作成',
+    categories:[
+      {cols:[0,13],color:'f0ecff',label:'法人情報'},
+      {cols:[14,21],color:'e8f4fd',label:'ブランド情報（任意）'},
+      {cols:[22,29],color:'e6f9f0',label:'店舗情報（任意）'},
+      {cols:[30,31],color:'fff8e1',label:'アカウント情報（任意）'}
+    ]},
   brand:{filename:'aiden_brand_template.xlsx',format:'xlsx',
     headers:['ブランド名*','スラッグ*','所属法人ID*','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙','ジャンル（カンマ区切り）','ブランドホームページURL','ブランド担当者氏名','ブランド担当者メール'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','','','','','','Noto Sans JP','ON','OFF','OFF','全席禁煙','焼肉,和食','https://example.co.jp','担当太郎','tanto@example.co.jp']],
@@ -4392,7 +4431,7 @@ function showBulkPreview(rows){
     const dispCols=getDisplayColumns(_bulkType);
     h+='<div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px"><table class="data-table" style="font-size:11px"><thead><tr><th>#</th>'+dispCols.map(c=>'<th>'+c.label+'</th>').join('')+'<th>状態</th></tr></thead><tbody>';
     validated.valid.forEach((item,i)=>{
-      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+esc(item[c.key]||'—')+'</td>').join('')+'<td>'+(item._warnings&&item._warnings.length?'<span style="color:#e17055;font-weight:700;font-size:10px" title="'+esc(item._warnings.join('\n'))+'">⚠️ '+item._warnings.length+'件補正</span>':'<span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span>')+'</td></tr>';
+      h+='<tr><td>'+(i+1)+'</td>'+dispCols.map(c=>'<td>'+(c.render?c.render(item):esc(item[c.key]||'—'))+'</td>').join('')+'<td>'+(item._warnings&&item._warnings.length?'<span style="color:#e17055;font-weight:700;font-size:10px" title="'+esc(item._warnings.join('\n'))+'">⚠️ '+item._warnings.length+'件補正</span>':'<span style="color:var(--success);font-weight:700;font-size:10px">✅ OK</span>')+'</td></tr>';
     });
     h+='</tbody></table></div>';
     h+='<div style="font-size:12px;margin-top:12px;color:var(--success);font-weight:700">✅ '+validated.valid.length+'件が登録可能です</div>';
@@ -4406,7 +4445,13 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function xlsxTimeToHHMM(val){if(typeof val==='number'&&val>=0&&val<1){var totalMins=Math.round(val*24*60);var h=Math.floor(totalMins/60)%24;var m=totalMins%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}return String(val!=null?val:'').trim();}
 
 function getDisplayColumns(type){
-  if(type==='corp')return [{key:'name',label:'法人名'},{key:'rep',label:'代表者'},{key:'hqAddress',label:'本部住所'},{key:'contactName',label:'担当者'},{key:'contactEmail',label:'担当者メール'}];
+  if(type==='corp')return [
+    {key:'name',label:'法人名'},
+    {key:'rep',label:'代表者'},
+    {key:'brandName',label:'ブランド',render:it=>it.hasBrand?esc(it.brandName):'<span style="color:#aaa">スキップ</span>'},
+    {key:'venueName',label:'店舗',render:it=>it.hasVenue?esc(it.venueName):'<span style="color:#aaa">スキップ</span>'},
+    {key:'accountEmail',label:'アカウント',render:it=>it.hasAccount?esc(it.accountEmail):'<span style="color:#aaa">スキップ</span>'}
+  ];
   if(type==='brand')return [{key:'name',label:'ブランド名'},{key:'slug',label:'スラッグ'},{key:'corpName',label:'法人'},{key:'mainColor',label:'カラー'},{key:'status',label:'ステータス'}];
   if(type==='store')return [{key:'name',label:'店舗名'},{key:'brandName',label:'ブランド'},{key:'addr',label:'住所'},{key:'tel',label:'電話'},{key:'hoursType',label:'営業形態'}];
   if(type==='account')return [{key:'name',label:'氏名'},{key:'email',label:'メール'},{key:'role',label:'権限'},{key:'corpName',label:'法人'}];
@@ -4428,18 +4473,41 @@ function validateBulkRows(dataRows,type){
     const rn=i+2;const g=idx=>String(row[idx]!=null?row[idx]:'').trim();
     try{
       if(type==='corp'){
-        const EXPECTED_CORP_COLS=14;
-        if(row.length>EXPECTED_CORP_COLS&&row[EXPECTED_CORP_COLS]!=null&&String(row[EXPECTED_CORP_COLS]).trim()!==''){errors.push('行'+rn+': テンプレート形式が古い可能性があります。最新テンプレートをDLして再試行してください（14列形式）');return;}
         const nr=normalizeRow(row);
         const name=nr.g(0);
         if(!name){errors.push('行'+rn+': 法人名が空');return;}
         const warnings=[];
         const hp=nr.normalize(nr.g(3));
         const recruit=nr.normalize(nr.g(4));
-        valid.push({name,rep:nr.g(1),corpEmail:nr.g(2),hp,recruit,
+        const brandName=nr.g(14);
+        const brandSlug=nr.g(15);
+        const hasBrand=!!(brandName&&brandSlug);
+        if(brandName&&!brandSlug)warnings.push('ブランドスラッグが空のためブランドはスキップ');
+        if(brandSlug&&!brandName)warnings.push('ブランド名が空のためブランドはスキップ');
+        const venueName=nr.g(22);
+        const hasVenue=hasBrand&&!!venueName;
+        if(venueName&&!hasBrand)warnings.push('ブランド情報が未入力のため店舗はスキップ');
+        const accountName=nr.g(30);
+        const accountEmail=nr.g(31);
+        const hasAccount=!!accountEmail;
+        valid.push({
+          name,rep:nr.g(1),corpEmail:nr.g(2),hp,recruit,
           corpNumber:nr.g(5),bankName:nr.g(6),bankBranch:nr.g(7),bankAccount:nr.g(8),
           hqAddress:nr.g(9),hqPhone:nr.g(10),repEmail:nr.g(11),
-          contactName:nr.g(12),contactEmail:nr.g(13),_warnings:warnings});
+          contactName:nr.g(12),contactEmail:nr.g(13),
+          brandName,brandSlug,mainColor:nr.g(16)||'#6c5ce7',subColor:nr.g(17)||'',
+          logoEmoji:nr.g(18)||'',
+          takeout:nr.normalizeOnOff(nr.g(19))||'OFF',
+          delivery:nr.normalizeOnOff(nr.g(20))||'OFF',
+          reserv:nr.normalizeOnOff(nr.g(21))||'ON',
+          hasBrand,
+          venueName,venueAddr:nr.g(23),venueTel:nr.g(24),venueEmail:nr.g(25),
+          venueGenre:nr.g(26),hoursOpen:nr.g(27),hoursClose:nr.g(28),holiday:nr.g(29),
+          hasVenue,
+          accountName:accountName||nr.g(12),accountEmail:accountEmail||nr.g(13)||nr.g(2),
+          hasAccount,
+          _warnings:warnings
+        });
       }else if(type==='brand'){
         const nr=normalizeRow(row);
         const name=nr.g(0),slug=nr.g(1),corpId=nr.g(2);
@@ -4501,8 +4569,39 @@ async function confirmBulkImport(){
         const token=await getToken();
         const res=await fetch('/api/admin/corporations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,representative:item.rep||undefined,rep_email:item.repEmail||item.corpEmail||undefined,website_url:item.hp||undefined,recruit_url:item.recruit||undefined,corp_number:item.corpNumber||undefined,bank_name:item.bankName||undefined,bank_branch_code:item.bankBranch||undefined,bank_account_number:item.bankAccount||undefined,hq_address:item.hqAddress||undefined,hq_phone:item.hqPhone||undefined,contact_name:item.contactName||undefined,contact_email:item.contactEmail||undefined})});
         const d=await res.json();if(!res.ok)throw new Error(d.error||'法人保存失敗');
-        MERCHANTS.push({_uuid:d.data.id,id:d.data.display_id,name:item.name,rep:item.rep||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:item.repEmail||'',corp_number:item.corpNumber||'',bank_name:item.bankName||'',hq_address:item.hqAddress||'',contact_name:item.contactName||''});
+        MERCHANTS.push({_uuid:d.data.id,id:d.data.display_id,name:item.name,rep:item.rep||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:item.repEmail||'',corp_number:item.corpNumber||'',bank_name:item.bankName||'',bank_branch_code:item.bankBranch||'',bank_account_number:item.bankAccount||'',hq_address:item.hqAddress||'',hq_phone:item.hqPhone||'',contact_name:item.contactName||'',contact_email:item.contactEmail||''});
         added++;
+        const chainWarnings=[];
+        if(item.hasBrand){
+          try{
+            const bRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.brandName,corp_id:d.data.id,slug:item.brandSlug,primary_color:item.mainColor||undefined,secondary_color:item.subColor||undefined})});
+            const bData=await bRes.json();
+            if(!bRes.ok)throw new Error(bData.error||'ブランド保存失敗');
+            const brandUuid=bData.data.id;
+            const brandDisplayId=bData.data.display_id;
+            BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:d.data.display_id,name:item.brandName,slug:item.brandSlug,status:'active',mainColor:item.mainColor||'#6c5ce7',secondaryColor:item.subColor||'#1A1A1A',fontFamilies:['Noto Sans JP'],socialLinks:{},serviceSettings:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
+            if(item.hasVenue){
+              try{
+                const vRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.venueName,brand_id:brandUuid,address:item.venueAddr||undefined,phone:item.venueTel||undefined,email:item.venueEmail||undefined,reservation_enabled:item.reserv==='ON',takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON'})});
+                const vData=await vRes.json();
+                if(!vRes.ok)throw new Error(vData.error||'店舗保存失敗');
+                const venueUuid=vData.data.id;
+                if(item.hoursOpen&&item.hoursClose){
+                  const hoursRows=[0,1,2,3,4,5,6].map(dow=>({venue_id:venueUuid,day_of_week:dow,open_time:item.hoursOpen.includes(':')?item.hoursOpen+':00':item.hoursOpen,close_time:item.hoursClose.includes(':')?item.hoursClose+':00':item.hoursClose,is_closed:false}));
+                  await sb.from('venue_hours').insert(hoursRows);
+                }
+                VENUES.push({_uuid:venueUuid,id:vData.data.display_id,brandId:brandDisplayId,name:item.venueName,status:'active',addr:item.venueAddr||'',tel:item.venueTel||'',orders:0,revenue:0});
+              }catch(vErr){chainWarnings.push('店舗作成失敗: '+vErr.message);}
+            }
+          }catch(bErr){chainWarnings.push('ブランド作成失敗: '+bErr.message);}
+        }
+        if(item.hasAccount&&item.accountEmail){
+          try{
+            const aRes=await fetch('/api/admin/staff-accounts',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({display_name:item.accountName||item.contactName||item.rep||'担当者',email:item.accountEmail,role:'owner',merchant_id:d.data.id,status:'active'})});
+            if(!aRes.ok){const aErr=await aRes.json();chainWarnings.push('アカウント作成失敗: '+(aErr.error||'不明なエラー'));}
+          }catch(aErr){chainWarnings.push('アカウント作成失敗: '+aErr.message);}
+        }
+        if(chainWarnings.length)showToast('⚠️ '+item.name+': '+chainWarnings.join(' / '));
       }catch(e){var msg=item.name+': '+e.message;showToast('⚠️ '+msg);var pv=document.getElementById('bulkPreview');if(pv)pv.innerHTML+='<div class="upload-result err" style="margin-top:8px">❌ '+esc(msg)+'</div>';continue;}
     }else if(_bulkType==='brand'){
       try{
