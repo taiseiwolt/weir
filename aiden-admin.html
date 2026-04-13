@@ -3540,7 +3540,7 @@ async function saveCorpWizard(){
     const corpUuid=corpD.data.id,corpDisplayId=corpD.data.display_id;
     MERCHANTS.push({_uuid:corpUuid,id:corpDisplayId,name:d.corpName.trim(),rep:d.corpRep.trim()||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:d.corpEmail.trim(),website_url:d.corpWebsite.trim(),recruit_url:d.corpRecruit.trim()});
     // 2. Brand
-    const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName.trim(),corp_id:corpUuid,slug:d.brandSlug.trim()||undefined})});
+    const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName.trim(),merchant_id:corpUuid,slug:d.brandSlug.trim()||undefined})});
     const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランドの保存に失敗');
     const brandUuid=brandD.data.id,brandDisplayId=brandD.data.display_id;
     BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:corpDisplayId,name:d.brandName.trim(),slug:d.brandSlug.trim()||'',status:'suspended',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
@@ -3595,7 +3595,7 @@ async function saveBrand(){
   if(!corp){showToast('⚠️ 法人を選択してください');return;}
   const mainColor=document.getElementById('addBrandColor').value;
   try{
-    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,corp_id:corp._uuid,primary_color:mainColor})});
+    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,merchant_id:corp._uuid,primary_color:mainColor})});
     const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
     const brandType=(document.getElementById('addBrandType')||{}).value||'own';
     const permRole=brandType==='fc'?'viewer':'owner';
@@ -4294,7 +4294,7 @@ async function saveStoreBasic(storeDisplayId){
         await sb.from('venue_merchant_history').insert({venue_id:s._uuid,merchant_id:newCorpUuid,corp_name_snapshot:newCorp?.name||'',started_at:new Date().toISOString()});
       }
     }
-    const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,address:addr,phone:tel,corp_id:newCorpUuid||null})});
+    const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,address:addr,phone:tel,merchant_id:newCorpUuid||null})});
     if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
     s.name=name;s.addr=addr;s.tel=tel;
     s.corpUuid=newCorpUuid||'';s.corpId=newCorpUuid?(MERCHANTS.find(c=>c._uuid===newCorpUuid)?.id||''):'';
@@ -4629,7 +4629,7 @@ async function confirmBulkImport(){
         const chainWarnings=[];
         if(item.hasBrand){
           try{
-            const bRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.brandName,corp_id:d.data.id,slug:item.brandSlug,primary_color:item.mainColor||undefined,secondary_color:item.subColor||undefined})});
+            const bRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.brandName,merchant_id:d.data.id,slug:item.brandSlug,primary_color:item.mainColor||undefined,secondary_color:item.subColor||undefined})});
             const bData=await bRes.json();
             if(!bRes.ok)throw new Error(bData.error||'ブランド保存失敗');
             const brandUuid=bData.data.id;
@@ -4677,7 +4677,7 @@ async function confirmBulkImport(){
     }else if(_bulkType==='brand'){
       try{
         const token=await getToken();
-        const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,corp_id:MERCHANTS.find(c=>c.id===item.corpId)?._uuid,slug:item.slug,company_url:item.hpUrl||undefined,contact_name:item.contactName||undefined,contact_email:item.contactEmail||undefined})});
+        const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,merchant_id:MERCHANTS.find(c=>c.id===item.corpId)?._uuid,slug:item.slug,company_url:item.hpUrl||undefined,contact_name:item.contactName||undefined,contact_email:item.contactEmail||undefined})});
         const d=await res.json();if(!res.ok)throw new Error(d.error||'ブランド保存失敗');
         BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:item.corpId,name:item.name,slug:item.slug,status:'suspended',mainColor:item.mainColor||'#6c5ce7',secondaryColor:item.subColor||'#a29bfe',fontFamilies:[item.font||'Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
         added++;
@@ -7337,7 +7337,7 @@ function openCorpWizard(){
       // オプションの最初のブランド
       if(d.brandName){
         try{
-          var br=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName,corp_id:corpUuid,primary_color:'#6c5ce7'})});
+          var br=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName,merchant_id:corpUuid,primary_color:'#6c5ce7'})});
           var bj=await br.json();if(br.ok){
             var permRole=d.brandType==='fc'?'viewer':'owner';
             BRANDS.push({_uuid:bj.data.id,id:bj.data.display_id,corpId:corpDisplayId,name:d.brandName,slug:d.brandSlug,status:'suspended',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
@@ -7413,7 +7413,7 @@ function openBrandWizard(){
       var cp=MERCHANTS.find(function(c){return c.id===d.corpId;});
       if(!cp)throw new Error('法人が見つかりません');
       // 基本フィールドのみ送信。拡張項目はaudit_logsに記録
-      var res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,corp_id:cp._uuid,primary_color:d.mainColor})});
+      var res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,merchant_id:cp._uuid,primary_color:d.mainColor})});
       var j=await res.json();if(!res.ok)throw new Error(j.error||'ブランド作成に失敗');
       BRANDS.push({_uuid:j.data.id,id:j.data.display_id,corpId:cp.id,name:d.name,slug:d.slug,status:'suspended',mainColor:d.mainColor,secondaryColor:d.subColor,fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
       logAudit('wizard_create_brand','brands',j.data.id,{name:d.name,slug:d.slug,tagline:d.tagline,mainColor:d.mainColor,subColor:d.subColor,emoji:d.emoji,services:d.services});
