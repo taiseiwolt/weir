@@ -66,17 +66,11 @@
 
     var brandSlug = params.get('brand');
     if (brandSlug) {
-      // Resolve slug via store table (brands table has no slug column)
       var client = getSb();
       if (client) {
         try {
-          // Try venue slug prefix match
-          var prefix = brandSlug.split('-')[0];
-          var res = await client.from('venues').select('brand_id').ilike('slug', prefix + '-%').limit(1);
-          if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].brand_id };
-          // Try exact venue slug match
-          var exact = await client.from('venues').select('brand_id').eq('slug', brandSlug).limit(1);
-          if (exact.data && exact.data.length > 0) return { type: 'id', value: exact.data[0].brand_id };
+          var res = await client.from('brands').select('id').eq('slug', brandSlug).limit(1);
+          if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].id };
         } catch (e) { /* fall through to default */ }
       }
       // Slug didn't resolve — fall through to sessionStorage / default
