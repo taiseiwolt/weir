@@ -14,7 +14,7 @@
   var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
   var TIMEOUT_MS = 3000;
 
-  var BRAND_COLUMNS = 'id,name,display_id,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain';
+  var BRAND_COLUMNS = 'id,name,display_id,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain,hp_settings';
 
   /* =============================================================
      2. escH() — XSS escape helper

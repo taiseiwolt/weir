@@ -231,7 +231,7 @@ img{max-width:100%}
   <div class="hero-video-wrap" id="hero-wrap">
     <div class="hero-carousel" id="hero-carousel">
       <div class="hero-slides" id="hero-slides">
-        <div class="hero-slide" id="hero-bg" style="background:linear-gradient(135deg,#1a0000 0%,#4a0e0e 40%,#2a0000 100%);display:flex;align-items:center;justify-content:center;font-size:120px">🥩</div>
+        <div class="hero-slide" id="hero-bg" style="background:#f5f5f5;display:flex;align-items:center;justify-content:center"></div>
       </div>
       <button class="hero-arrow prev" onclick="heroSlide(-1)">&#8249;</button>
       <button class="hero-arrow next" onclick="heroSlide(1)">&#8250;</button>
@@ -802,12 +802,22 @@ AidenCommon.addTranslations({
   }
 });
 
+var _brandNotPublished = false;
+
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize common foundation (header, footer, brand loading, i18n)
   await AidenCommon.init({
     header: 'brand',
     footer: true,
     onBrandLoaded: function(brand) {
+      // HP公開チェック: hp_settings.status === 'published' 以外は「準備中」表示
+      var hpStatus = (brand && brand.hp_settings && brand.hp_settings.status) || 'draft';
+      if (hpStatus !== 'published') {
+        _brandNotPublished = true;
+        document.title = '準備中';
+        document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;background:#f5f5f5;padding:20px;text-align:center"><h1 style="font-size:28px;color:#333;margin-bottom:16px;font-weight:600">このページは現在準備中です</h1><p style="color:#666;font-size:14px;line-height:1.7;max-width:400px">ブランドHPの公開準備中です。<br>今しばらくお待ちください。</p></div>';
+        return;
+      }
       // Page title
       document.title = brand.name || 'AIden';
       // Hero catchphrase
@@ -835,6 +845,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     }
   });
+
+  if (_brandNotPublished) return;
 
   // Propagate ?brand= param to internal navigation links
   if (_brandParam) {
