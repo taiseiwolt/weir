@@ -2824,7 +2824,7 @@ function renderBrandPage(b){
   '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandBasic(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" id="brandBasicName" value="'+escHtml(b.name)+'"></div><div class="form-group"><label>スラッグ</label><input type="text" id="brandBasicSlug" value="'+escHtml(b.slug)+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+escHtml(b.id)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>所属法人ID</label><input type="text" value="'+(cp?escHtml(cp.id+' / '+cp.name):'—')+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント（複数選択可）</label><div id="brandFontChecks" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">'+['Noto Sans JP','Noto Serif JP','M PLUS Rounded 1c','Zen Maru Gothic','Kosugi Maru'].map(function(f){return '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" value="'+f+'"'+(b.fontFamilies.indexOf(f)>=0?' checked':'')+'>'+escHtml(f)+'</label>';}).join('')+'</div></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandSocialLinks(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>Instagram</label><input type="url" id="brandSnsIg" value="'+escHtml(b.socialLinks.instagram||'')+'" placeholder="https://instagram.com/..."></div><div class="form-group"><label>X</label><input type="url" id="brandSnsX" value="'+escHtml(b.socialLinks.x||'')+'" placeholder="https://x.com/..."></div><div class="form-group"><label>LINE</label><input type="url" id="brandSnsLine" value="'+escHtml(b.socialLinks.line||'')+'" placeholder="https://line.me/..."></div><div class="form-group"><label>TikTok</label><input type="url" id="brandSnsTiktok" value="'+escHtml(b.socialLinks.tiktok||'')+'" placeholder="https://tiktok.com/..."></div></div></div></div>'+
   '<div class="tab-content" id="brand-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">法人（'+cp.name+'）でONになっているサービスのみ選択可能です。ここでONにしたサービスは配下店舗で選択できます。</p><div class="svc-grid">'+renderServiceCards(b.id,'brand',cp.id)+'</div></div></div>'+
   '<div class="tab-content" id="brand-design"><div class="card"><div class="card-title">デザイン設定 <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="autofetchBrandColors(\''+b.id+'\',\''+b._uuid+'\')">🌐 URLから自動取得</button> <button class="btn btn-primary btn-sm" onclick="saveBrandDesign(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>メインカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignMainColor" value="'+escHtml(b.mainColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignMainColorText\').value=this.value"><input type="text" id="brandDesignMainColorText" value="'+escHtml(b.mainColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignMainColor\').value=this.value"></div></div><div class="form-group"><label>サブカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignSubColor" value="'+escHtml(b.secondaryColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignSubColorText\').value=this.value"><input type="text" id="brandDesignSubColorText" value="'+escHtml(b.secondaryColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignSubColor\').value=this.value"></div></div><div class="form-group"><label>ヘッダー文字色</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignHeaderText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignHeaderTextText\').value=this.value"><input type="text" id="brandDesignHeaderTextText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignHeaderText\').value=this.value"></div></div></div></div><div class="card"><div class="card-title">ロゴ <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="document.getElementById(\'brandLogoInput_'+b._uuid+'\').click()">📁 アップロード</button></span></div><input type="file" id="brandLogoInput_'+b._uuid+'" accept="image/*" style="display:none" onchange="uploadBrandLogo(\''+b._uuid+'\',\''+b.id+'\',this)"><div id="brandLogoPreview_'+b._uuid+'" style="margin-top:8px;text-align:center">'+(b.logo_url?'<img src="'+escHtml(b.logo_url)+'" style="max-height:80px;max-width:200px;border-radius:6px">':'<div style="padding:24px;border:2px dashed var(--border);border-radius:10px;color:var(--text-light);font-size:12px">ロゴ未設定</div>')+'</div></div></div>'+
-  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+escHtml(b.slug)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="draft"'+((b.hpSettings.status||'draft')==='draft'?' selected':'')+'>準備中（非公開）</option><option value="published"'+(b.hpSettings.status==='published'?' selected':'')+'>公開中</option></select><div style="font-size:10px;color:var(--text-light);margin-top:4px">※「公開中」にすると https://aiden-jp.net/'+escHtml(b.slug||'')+' が一般公開されます</div></div><div class="form-group"><label>Meta Description</label><textarea id="brandHpMetaDesc" rows="3" style="font-size:13px">'+escHtml(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+escHtml(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>Favicon URL</label><input type="url" id="brandHpFavicon" value="'+escHtml(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定すると、URLに「aiden」が表示されなくなります</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+escHtml(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="heroSlidesList-'+b.id+'" style="font-size:12px;color:var(--text-light)">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">複数枚登録可能。5秒間隔で自動スクロールします。</div></div></div>'+
+  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right">'+((b.hpSettings.status||'draft')!=='published'?'<button class="btn btn-primary btn-sm" onclick="publishBrandHp(\''+b.id+'\')" style="background:#00b894">🌐 HP公開</button> ':'<button class="btn btn-secondary btn-sm" onclick="unpublishBrandHp(\''+b.id+'\')">📝 下書きに戻す</button> ')+'<button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+escHtml(b.slug)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="draft"'+((b.hpSettings.status||'draft')==='draft'?' selected':'')+'>準備中（非公開）</option><option value="published"'+(b.hpSettings.status==='published'?' selected':'')+'>公開中</option></select><div style="font-size:10px;color:var(--text-light);margin-top:4px">※「公開中」にすると https://aiden-jp.net/'+escHtml(b.slug||'')+' が一般公開されます</div></div><div class="form-group"><label>Meta Description</label><textarea id="brandHpMetaDesc" rows="3" style="font-size:13px">'+escHtml(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+escHtml(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>Favicon URL</label><input type="url" id="brandHpFavicon" value="'+escHtml(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定すると、URLに「aiden」が表示されなくなります</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+escHtml(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="heroSlidesList-'+b.id+'" style="font-size:12px;color:var(--text-light)">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">複数枚登録可能。5秒間隔で自動スクロールします。</div></div></div>'+
   '<div class="tab-content" id="brand-news"><div class="card"><div class="card-title">ニュース管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddNewsModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandNewsList-'+b.id+'">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">記事本文はMarkdown記法で入力できます。</div></div></div>'+
   '<div class="tab-content" id="brand-campaign"><div class="card"><div class="card-title">キャンペーン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCampaignModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCampaignList-'+b.id+'">読み込み中...</div></div></div>'+
   '<div class="tab-content" id="brand-coupon"><div class="card"><div class="card-title">クーポン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCouponModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCouponList-'+b.id+'">読み込み中...</div></div></div>'+
@@ -3332,11 +3332,44 @@ const PRICE_RANGES=['~¥999','¥1,000~¥1,999','¥2,000~¥2,999','¥3,000~¥3,99
 const _PRICE_RANGES=PRICE_RANGES;
 const _SMOKING_OPTS=['全席禁煙','全席喫煙','分煙'];
 const _HOURS_TYPES=['通し営業','中休みあり'];
+
+// ===== TEMPLATE PICKER HELPERS =====
+let _templatesCache=null;
+async function loadTemplatesList(){
+  if(_templatesCache)return _templatesCache;
+  const {data,error}=await sb.from('templates').select('*').eq('is_active',true).order('sort_order');
+  if(error){console.error('templates load failed',error);return [];}
+  _templatesCache=data||[];
+  return _templatesCache;
+}
+function renderTemplatePickerGrid(containerId,selectedId,onSelectFn){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-light);font-size:12px">テンプレート読み込み中...</div>';
+  loadTemplatesList().then(function(list){
+    if(!list.length){el.innerHTML='<div class="empty-state">利用可能なテンプレートがありません</div>';return;}
+    el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">'+list.map(function(t){
+      const isSel=t.id===selectedId;
+      const previewUrl=t.preview_image_url||('./public/templates/'+(t.css_file||'').replace('/style.css','/preview.svg'));
+      const colors=t.default_colors||{};
+      return '<div data-tpl-id="'+escHtml(t.id)+'" onclick="'+onSelectFn+'(\''+escHtml(t.id)+'\')" style="border:2px solid '+(isSel?'var(--accent)':'var(--border)')+';border-radius:10px;overflow:hidden;cursor:pointer;transition:all .15s;position:relative;background:#fff'+(isSel?';box-shadow:0 0 0 3px rgba(108,92,231,.2)':'')+'">'+
+        (isSel?'<div style="position:absolute;top:8px;right:8px;background:var(--accent);color:white;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;z-index:1">✓ 選択中</div>':'')+
+        '<img src="'+escHtml(previewUrl)+'" style="width:100%;aspect-ratio:2/3;object-fit:cover;background:#f5f5f5;display:block" loading="lazy" onerror="this.style.background=\'#eee\';this.alt=\'preview\'">'+
+        '<div style="padding:10px 12px">'+
+        '<div style="font-size:12px;font-weight:700">'+escHtml(t.name_ja||t.name)+'</div>'+
+        '<div style="font-size:10px;color:var(--text-light);margin-top:2px">'+escHtml(t.name||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text-light);margin-top:6px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+escHtml(t.description||'')+'</div>'+
+        '<div style="display:flex;gap:3px;margin-top:8px"><div style="width:14px;height:14px;border-radius:50%;border:1px solid #ddd;background:'+escHtml(colors.primary||'#000')+'"></div><div style="width:14px;height:14px;border-radius:50%;border:1px solid #ddd;background:'+escHtml(colors.secondary||'#fff')+'"></div><div style="width:14px;height:14px;border-radius:50%;border:1px solid #ddd;background:'+escHtml(colors.accent||'#f00')+'"></div></div>'+
+        '</div></div>';
+    }).join('')+'</div>';
+  });
+}
 function openAddCorpModal(){
   _corpWizStep=1;
+  _corpWizCache={};
   const h='<button class="modal-close" onclick="closeModal()">✕</button><h3>🏢 法人追加（ステップウィザード）</h3>'+
   '<div style="display:flex;gap:4px;margin-bottom:20px" id="corpWizSteps">'+
-  '<div class="wiz-step active" data-s="1">1. 法人情報</div><div class="wiz-step" data-s="2">2. ブランド情報</div><div class="wiz-step" data-s="3">3. 店舗情報</div><div class="wiz-step" data-s="4">4. アカウント情報</div></div>'+
+  '<div class="wiz-step active" data-s="1">1. 法人情報</div><div class="wiz-step" data-s="2">2. ブランド情報</div><div class="wiz-step" data-s="3">3. 店舗情報</div><div class="wiz-step" data-s="4">4. アカウント情報</div><div class="wiz-step" data-s="5">5. HPデザイン</div></div>'+
   '<div id="corpWizBody"></div>'+
   '<div class="btn-group" style="margin-top:16px" id="corpWizBtns"></div>';
   openModal(h,true);
@@ -3412,8 +3445,14 @@ function renderCorpWizStep(){
     '<div class="form-group"><label>管理者メール</label><input type="email" id="cwAccEmail" placeholder="admin@example.com"></div>'+
     '<div class="form-group"><label>権限</label><select id="cwAccRole"><option value="owner">Owner</option><option value="admin">Admin</option><option value="staff">Staff</option></select></div>'+
     '</div>';
-    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">確認 →</button>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">次へ →</button>';
   }else if(_corpWizStep===5){
+    body.innerHTML='<div class="card" style="margin-bottom:0"><div class="card-title">🎨 HPデザインテンプレート <span style="color:var(--danger);font-size:12px;margin-left:6px">必須</span></div>'+
+    '<p style="font-size:11px;color:var(--text-light);margin-bottom:14px">ブランドHPで使用するテンプレートを選択してください。登録後も変更可能です。</p>'+
+    '<div id="cwTplPicker"></div></div>';
+    btns.innerHTML='<button class="btn btn-secondary" onclick="corpWizPrev()">← 戻る</button><button class="btn btn-primary" onclick="corpWizNext()">確認 →</button>';
+    renderTemplatePickerGrid('cwTplPicker',_corpWizCache.templateId||null,'_corpWizSelectTpl');
+  }else if(_corpWizStep===6){
     // confirmation
     const d=_getCorpWizData();
     body.innerHTML='<div style="font-size:13px"><div class="card" style="margin-bottom:12px"><div class="card-title">法人情報</div><div class="form-grid">'+
@@ -3425,6 +3464,7 @@ function renderCorpWizStep(){
     '<div class="card" style="margin-bottom:12px"><div class="card-title">ブランド情報</div><div class="form-grid">'+
     '<div class="form-group"><label>ブランド名</label><div style="font-weight:600">'+escHtml(d.brandName)+'</div></div>'+
     '<div class="form-group"><label>スラッグ</label><div>'+escHtml(d.brandSlug||'—')+'</div></div>'+
+    '<div class="form-group"><label>HPテンプレート</label><div style="font-weight:600">'+escHtml(_tplLabelForId(d.templateId))+'</div></div>'+
     '</div></div>'+
     '<div class="card" style="margin-bottom:12px"><div class="card-title">店舗情報</div><div class="form-grid">'+
     '<div class="form-group"><label>店舗名</label><div style="font-weight:600">'+escHtml(d.storeName)+'</div></div>'+
@@ -3526,11 +3566,14 @@ function _restoreCorpWizStep(){
   else if(_corpWizStep===4){if(_corpWizCache.accName!=null){document.getElementById('cwAccName').value=_corpWizCache.accName;document.getElementById('cwAccEmail').value=_corpWizCache.accEmail;document.getElementById('cwAccRole').value=_corpWizCache.accRole;}}
 }
 function _getCorpWizData(){return Object.assign({},_corpWizCache);}
+function _tplLabelForId(id){if(!id)return '未選択';const t=(_templatesCache||[]).find(function(x){return x.id===id;});return t?(t.name_ja||t.name)+' ('+t.id+')':id;}
+function _corpWizSelectTpl(id){_corpWizCache.templateId=id;if(_corpWizStep===5)renderTemplatePickerGrid('cwTplPicker',id,'_corpWizSelectTpl');}
 function corpWizNext(){
   _cacheCorpWizStep();
   if(_corpWizStep===1&&!_corpWizCache.corpName.trim()){showToast('⚠️ 法人名は必須です');return;}
   if(_corpWizStep===2&&!_corpWizCache.brandName.trim()){showToast('⚠️ ブランド名は必須です');return;}
   if(_corpWizStep===3){if(!_corpWizCache.storeName.trim()||!_corpWizCache.storeAddr.trim()||!_corpWizCache.storeTel.trim()){showToast('⚠️ 店舗名・住所・電話番号は必須です');return;}if(!_corpWizCache.storeGenres||!_corpWizCache.storeGenres.length){showToast('⚠️ ジャンルを1つ以上選択してください');return;}}
+  if(_corpWizStep===5&&!_corpWizCache.templateId){showToast('⚠️ HPテンプレートを選択してください');return;}
   _corpWizStep++;renderCorpWizStep();if(_corpWizStep<=4)_restoreCorpWizStep();
 }
 function corpWizPrev(){_cacheCorpWizStep();_corpWizStep--;renderCorpWizStep();_restoreCorpWizStep();}
@@ -3543,11 +3586,18 @@ async function saveCorpWizard(){
     const corpD=await corpRes.json();if(!corpRes.ok)throw new Error(corpD.error||'法人の保存に失敗');
     const corpUuid=corpD.data.id,corpDisplayId=corpD.data.display_id;
     MERCHANTS.push({_uuid:corpUuid,id:corpDisplayId,name:d.corpName.trim(),rep:d.corpRep.trim()||'—',status:'active',created:new Date().toISOString().split('T')[0],stripe_account_id:null,rep_email:d.corpEmail.trim(),website_url:d.corpWebsite.trim(),recruit_url:d.corpRecruit.trim()});
-    // 2. Brand
-    const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName.trim(),merchant_id:corpUuid,slug:d.brandSlug.trim()||undefined})});
+    // 2. Brand (new brands default to draft HP status)
+    const brandRes=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.brandName.trim(),merchant_id:corpUuid,slug:d.brandSlug.trim()||undefined,hp_settings:{status:'draft'},hp_published:false})});
     const brandD=await brandRes.json();if(!brandRes.ok)throw new Error(brandD.error||'ブランドの保存に失敗');
     const brandUuid=brandD.data.id,brandDisplayId=brandD.data.display_id;
-    BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:corpDisplayId,name:d.brandName.trim(),slug:d.brandSlug.trim()||'',status:'suspended',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{}});
+    BRANDS.push({_uuid:brandUuid,id:brandDisplayId,corpId:corpDisplayId,name:d.brandName.trim(),slug:d.brandSlug.trim()||'',status:'suspended',mainColor:'#6c5ce7',secondaryColor:'#a29bfe',fontFamilies:['Noto Sans JP'],socialLinks:{},designSettings:{},hpSettings:{status:'draft'},cancelPolicy:{},pii_access_settings:{}});
+    // 2b. Link template selection
+    if(d.templateId){
+      const tpl=(_templatesCache||[]).find(function(x){return x.id===d.templateId;});
+      const tplCustomization=tpl?{colors:tpl.default_colors||{},font:tpl.default_font||'Noto Sans JP'}:{};
+      const btErr=(await sb.from('brand_templates').upsert({brand_id:brandUuid,template_id:d.templateId,customization:tplCustomization,selected_at:new Date().toISOString()},{onConflict:'brand_id'})).error;
+      if(btErr)showToast('⚠️ テンプレート紐付けに一部失敗: '+btErr.message);
+    }
     // 3. Store
     const smokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','分煙':'separated'};
     var priceLunch=d.priceMode==='split'?d.priceLunch:d.storePrice;
@@ -3578,7 +3628,10 @@ async function saveCorpWizard(){
   }catch(e){showToast('⚠️ '+e.message);}
 }
 
+let _addBrandTplId=null;
+function _addBrandSelectTpl(id){_addBrandTplId=id;renderTemplatePickerGrid('addBrandTplPicker',id,'_addBrandSelectTpl');}
 function openAddBrandModal(){
+  _addBrandTplId=null;
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>🏷️ ブランド追加</h3>'+
   '<div class="form-grid">'+
   '<div class="form-group"><label>ブランド名 <span style="color:var(--danger)">*</span></label><input type="text" id="addBrandName" placeholder="例: 焼肉 〇〇店"></div>'+
@@ -3588,7 +3641,9 @@ function openAddBrandModal(){
   '<div class="form-group"><label>ブランド種別</label><select id="addBrandType"><option value="own">自社ブランド（owner権限）</option><option value="fc">FC加盟（viewer権限）</option></select></div>'+
   '<div class="form-group"><label>ステータス</label><select id="addBrandStatus"><option value="active" selected>稼働中</option><option value="trial">トライアル</option></select></div>'+
   '</div>'+
-  '<div class="btn-group"><button class="btn btn-primary" onclick="saveBrand()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
+  '<div class="card" style="margin-top:14px;padding:14px"><div class="card-title" style="margin-bottom:8px;padding-bottom:8px">🎨 HPデザインテンプレート <span style="color:var(--danger);font-size:11px;margin-left:6px">必須</span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">ブランドHPで使用するテンプレートを選択してください（登録後も変更可能）</p><div id="addBrandTplPicker"></div></div>'+
+  '<div class="btn-group"><button class="btn btn-primary" onclick="saveBrand()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>',true);
+  renderTemplatePickerGrid('addBrandTplPicker',null,'_addBrandSelectTpl');
 }
 async function saveBrand(){
   const name=document.getElementById('addBrandName').value.trim();
@@ -3597,9 +3652,10 @@ async function saveBrand(){
   const corpDisplayId=document.getElementById('addBrandCorp').value;
   const corp=MERCHANTS.find(c=>c.id===corpDisplayId);
   if(!corp){showToast('⚠️ 法人を選択してください');return;}
+  if(!_addBrandTplId){showToast('⚠️ HPテンプレートを選択してください');return;}
   const mainColor=document.getElementById('addBrandColor').value;
   try{
-    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,merchant_id:corp._uuid,primary_color:mainColor})});
+    const res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,slug:slug,merchant_id:corp._uuid,primary_color:mainColor,hp_settings:{status:'draft'},hp_published:false})});
     const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
     const brandType=(document.getElementById('addBrandType')||{}).value||'own';
     const permRole=brandType==='fc'?'viewer':'owner';
@@ -3607,7 +3663,11 @@ async function saveBrand(){
     for(const acc of corpAccounts){
       try{await sb.from('brand_permissions').insert({account_id:acc._uuid,brand_id:d.data.id,role:permRole});}catch(e){}
     }
-    BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'suspended',mainColor:mainColor,secondaryColor:'#a29bfe',fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
+    const tpl=(_templatesCache||[]).find(function(x){return x.id===_addBrandTplId;});
+    const tplCustomization=tpl?{colors:tpl.default_colors||{},font:tpl.default_font||'Noto Sans JP'}:{};
+    const btErr=(await sb.from('brand_templates').upsert({brand_id:d.data.id,template_id:_addBrandTplId,customization:tplCustomization,selected_at:new Date().toISOString()},{onConflict:'brand_id'})).error;
+    if(btErr)showToast('⚠️ テンプレート紐付けに一部失敗: '+btErr.message);
+    BRANDS.push({_uuid:d.data.id,id:d.data.display_id,corpId:corpDisplayId,name:name,slug:slug,status:'suspended',mainColor:mainColor,secondaryColor:'#a29bfe',fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{status:'draft'},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
     closeModal();showToast('✅ ブランドを追加しました（権限: '+permRole+'）');renderPage();
   }catch(e){showToast('⚠️ '+e.message);}
 }
@@ -3920,6 +3980,34 @@ async function saveBrandDesign(brandDisplayId){
 }
 
 // ===== HP SETTINGS + HERO BANNER =====
+async function publishBrandHp(brandDisplayId){
+  var b=BRANDS.find(function(x){return x.id===brandDisplayId;});
+  if(!b)return;
+  if(!confirm('このブランドのHPを一般公開します。https://aiden-jp.net/'+(b.slug||'')+' が誰でもアクセス可能になります。よろしいですか？'))return;
+  var hpSettings=Object.assign({},b.hpSettings||{},{status:'published'});
+  try{
+    var {error}=await sb.from('brands').update({hp_settings:hpSettings,hp_published:true}).eq('id',b._uuid);
+    if(error)throw error;
+    b.hpSettings=hpSettings;
+    logAudit('publish_brand_hp','brands',b._uuid,{slug:b.slug});
+    showToast('✅ HPを公開しました');
+    renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
+async function unpublishBrandHp(brandDisplayId){
+  var b=BRANDS.find(function(x){return x.id===brandDisplayId;});
+  if(!b)return;
+  if(!confirm('HPを下書き（非公開）に戻します。URLにアクセスしても「準備中」が表示されます。よろしいですか？'))return;
+  var hpSettings=Object.assign({},b.hpSettings||{},{status:'draft'});
+  try{
+    var {error}=await sb.from('brands').update({hp_settings:hpSettings,hp_published:false}).eq('id',b._uuid);
+    if(error)throw error;
+    b.hpSettings=hpSettings;
+    logAudit('unpublish_brand_hp','brands',b._uuid,{slug:b.slug});
+    showToast('✅ HPを非公開にしました');
+    renderPage();
+  }catch(e){showToast('⚠️ '+e.message);}
+}
 async function saveBrandHpSettings(brandDisplayId){
   var b=BRANDS.find(x=>x.id===brandDisplayId);
   if(!b)return;
@@ -7363,8 +7451,10 @@ function openCorpWizard(){
 }
 
 // ----- ブランド登録ウィザード -----
+function _wBrSelectTpl(id){window._wBrCurrentTplId=id;renderTemplatePickerGrid('wBrTplPicker',id,'_wBrSelectTpl');}
 function openBrandWizard(){
   if(!MERCHANTS||!MERCHANTS.length){showToast('⚠️ 先に法人を登録してください');return;}
+  window._wBrCurrentTplId=null;
   openWizardModal({
     type:'brand',
     title:'🏷️ ブランド登録ウィザード',
@@ -7402,6 +7492,13 @@ function openBrandWizard(){
         var services=['mobile_order','dine_in','takeout','delivery','reservation','membership'];
         d.services={};services.forEach(function(k){d.services[k]=wizChecked('wBrSvc_'+k);});
       }},
+      {label:'HPデザイン',help:'ブランドHPテンプレートを選択（必須）',render:function(d){
+        setTimeout(function(){renderTemplatePickerGrid('wBrTplPicker',d.templateId||null,'_wBrSelectTpl');},0);
+        return '<p style="font-size:11px;color:var(--text-light);margin-bottom:12px">ブランドHPで使用するテンプレートを選択してください（登録後も変更可能）</p><div id="wBrTplPicker"></div>';
+      },collect:function(d){
+        d.templateId=window._wBrCurrentTplId||d.templateId;
+        if(!d.templateId)return {error:'HPテンプレートを選択してください'};
+      }},
       {label:'確認',help:'以下の内容で登録します',render:function(d){
         function row(k,v){return '<tr><td style="font-weight:600;width:140px">'+esc(k)+'</td><td>'+esc(v||'—')+'</td></tr>';}
         var cp=MERCHANTS.find(function(c){return c.id===d.corpId;});
@@ -7410,17 +7507,22 @@ function openBrandWizard(){
           row('ブランド名',d.name)+row('スラッグ',d.slug)+row('所属法人',cp?cp.name:'')+row('キャッチコピー',d.tagline)+
           row('メインカラー',d.mainColor)+row('サブカラー',d.subColor)+row('ロゴ絵文字',d.emoji)+
           row('有効サービス',svcList)+
+          row('HPテンプレート',_tplLabelForId(d.templateId))+
         '</table>';
       }}
     ],
     submit:async function(d){
       var cp=MERCHANTS.find(function(c){return c.id===d.corpId;});
       if(!cp)throw new Error('法人が見つかりません');
-      // 基本フィールドのみ送信。拡張項目はaudit_logsに記録
-      var res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,merchant_id:cp._uuid,primary_color:d.mainColor})});
+      if(!d.templateId)throw new Error('HPテンプレートが選択されていません');
+      var res=await fetch('/api/admin/brands',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,slug:d.slug,merchant_id:cp._uuid,primary_color:d.mainColor,hp_settings:{status:'draft'},hp_published:false})});
       var j=await res.json();if(!res.ok)throw new Error(j.error||'ブランド作成に失敗');
-      BRANDS.push({_uuid:j.data.id,id:j.data.display_id,corpId:cp.id,name:d.name,slug:d.slug,status:'suspended',mainColor:d.mainColor,secondaryColor:d.subColor,fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
-      logAudit('wizard_create_brand','brands',j.data.id,{name:d.name,slug:d.slug,tagline:d.tagline,mainColor:d.mainColor,subColor:d.subColor,emoji:d.emoji,services:d.services});
+      var tpl=(_templatesCache||[]).find(function(x){return x.id===d.templateId;});
+      var tplCustomization=tpl?{colors:tpl.default_colors||{},font:tpl.default_font||'Noto Sans JP'}:{};
+      var btErr=(await sb.from('brand_templates').upsert({brand_id:j.data.id,template_id:d.templateId,customization:tplCustomization,selected_at:new Date().toISOString()},{onConflict:'brand_id'})).error;
+      if(btErr)showToast('⚠️ テンプレート紐付けに一部失敗: '+btErr.message);
+      BRANDS.push({_uuid:j.data.id,id:j.data.display_id,corpId:cp.id,name:d.name,slug:d.slug,status:'suspended',mainColor:d.mainColor,secondaryColor:d.subColor,fontFamilies:{heading:'Noto Sans JP',body:'Noto Sans JP'},socialLinks:{},designSettings:{},hpSettings:{status:'draft'},cancelPolicy:{},pii_access_settings:{...PII_ACCESS_DEFAULTS}});
+      logAudit('wizard_create_brand','brands',j.data.id,{name:d.name,slug:d.slug,tagline:d.tagline,mainColor:d.mainColor,subColor:d.subColor,emoji:d.emoji,services:d.services,templateId:d.templateId});
       showToast('✅ ブランドをウィザードで登録しました');
       renderPage();
     }
