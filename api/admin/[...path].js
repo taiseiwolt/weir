@@ -154,9 +154,21 @@ async function handleGet(req, res, config, id) {
   return ok(res, { success: true, data });
 }
 
+// ── venues カラム名マッピング ─────────────────────────────
+// 旧名 → 実カラム名。`is_active` は存在しない列のため drop する（status 列はデフォルト'active'）
+function normalizeStoresBody(body) {
+  const b = { ...body };
+  if ('takeout_enabled' in b) { b.has_takeout = b.takeout_enabled; delete b.takeout_enabled; }
+  if ('delivery_enabled' in b) { b.has_delivery = b.delivery_enabled; delete b.delivery_enabled; }
+  delete b.is_active;
+  return b;
+}
+
 // ── POST ──────────────────────────────────────────────────
 async function handlePost(req, res, config, entity) {
-  const body = req.body || {};
+  let body = req.body || {};
+
+  if (entity === 'stores') body = normalizeStoresBody(body);
 
   // Auto-generate display_id for entities that need it
   if (config.displayIdPrefix) {
@@ -202,6 +214,8 @@ async function handlePut(req, res, config, id) {
       if (f in raw) body[f] = raw[f];
     }
   }
+
+  if (config.table === 'venues') body = normalizeStoresBody(body);
 
   const { data, error: dbErr } = await supabase
     .from(config.table)

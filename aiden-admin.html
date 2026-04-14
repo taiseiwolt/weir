@@ -3602,7 +3602,7 @@ async function saveCorpWizard(){
     const smokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','分煙':'separated'};
     var priceLunch=d.priceMode==='split'?d.priceLunch:d.storePrice;
     var priceDinner=d.priceMode==='split'?d.priceDinner:d.storePrice;
-    const storeBody={name:d.storeName.trim(),brand_id:brandUuid,address:d.storeAddr.trim(),phone:d.storeTel.trim(),email:d.storeEmail.trim()||undefined,nearest_station:d.storeStation.trim()||undefined,genres:d.storeGenres||[],regular_holiday:d.storeHoliday||'',price_range_lunch:priceLunch||'',price_range_dinner:priceDinner||'',seats:d.storeSeats?parseInt(d.storeSeats):undefined,takeout_enabled:d.storeTakeout==='ON',delivery_enabled:d.storeDelivery==='ON',reservation_enabled:d.storeReserv==='ON',smoking_policy:smokingMap[d.storeSmoking]||'no_smoking',is_active:true};
+    const storeBody={name:d.storeName.trim(),brand_id:brandUuid,address:d.storeAddr.trim(),phone:d.storeTel.trim(),email:d.storeEmail.trim()||undefined,nearest_station:d.storeStation.trim()||undefined,genres:d.storeGenres||[],regular_holiday:d.storeHoliday||'',price_range_lunch:priceLunch||'',price_range_dinner:priceDinner||'',seats:d.storeSeats?parseInt(d.storeSeats):undefined,has_takeout:d.storeTakeout==='ON',has_delivery:d.storeDelivery==='ON',reservation_enabled:d.storeReserv==='ON',smoking_policy:smokingMap[d.storeSmoking]||'no_smoking'};
     const storeRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify(storeBody)});
     const storeD=await storeRes.json();if(!storeRes.ok)throw new Error(storeD.error||'店舗の保存に失敗');
     var storeUuid=storeD.data.id;
@@ -3692,7 +3692,7 @@ async function saveStore(){
   const addr=document.getElementById('addStoreAddr').value.trim();
   const tel=document.getElementById('addStoreTel').value.trim();
   try{
-    const res=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,brand_id:brand._uuid,address:addr,phone:tel,is_active:true})});
+    const res=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,brand_id:brand._uuid,address:addr,phone:tel})});
     const d=await res.json();if(!res.ok)throw new Error(d.error||'保存に失敗');
     VENUES.push({_uuid:d.data.id,id:d.data.display_id,brandId:brandDisplayId,name:name,status:'active',addr:addr,tel:tel,orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
     closeModal();showToast('✅ 店舗を追加しました');renderPage();
@@ -4789,7 +4789,7 @@ async function confirmBulkImport(){
             try{const {error:cbrErr}=await sb.from('merchant_brand_relations').insert({merchant_id:d.data.id,brand_id:brandUuid,role:'owner'});if(cbrErr)throw cbrErr;CBR.push({corp_id:d.data.id,brand_id:brandUuid,role:'owner'});}catch(cbrE){chainWarnings.push('法人ブランド紐づけ失敗: '+cbrE.message);}
             if(item.hasVenue){
               try{
-                const vRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.venueName,brand_id:brandUuid,merchant_id:d.data.id,address:item.venueAddr||undefined,phone:item.venueTel||undefined,email:item.venueEmail||undefined,reservation_enabled:item.reserv==='ON',takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON'})});
+                const vRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.venueName,brand_id:brandUuid,merchant_id:d.data.id,address:item.venueAddr||undefined,phone:item.venueTel||undefined,email:item.venueEmail||undefined,reservation_enabled:item.reserv==='ON',has_takeout:item.takeout==='ON',has_delivery:item.delivery==='ON'})});
                 const vData=await vRes.json();
                 if(!vRes.ok)throw new Error(vData.error||'店舗保存失敗');
                 const venueUuid=vData.data.id;
@@ -4840,7 +4840,7 @@ async function confirmBulkImport(){
         var sCorp=MERCHANTS.find(function(m){return m.id===sBrand?.corpId;});
         var sCorpUuid=sCorp?._uuid||null;
         var sSmokingMap={'全席禁煙':'no_smoking','全席喫煙':'allowed','喫煙可':'allowed','分煙':'separated'};
-        var sStoreRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,brand_id:sBrand?._uuid,merchant_id:sCorpUuid||undefined,address:item.addr||undefined,phone:item.tel||undefined,email:item.email||undefined,nearest_station:item.station||undefined,price_range_lunch:item.priceLunch||undefined,price_range_dinner:item.priceDinner||undefined,seats:item.seats?parseInt(item.seats):undefined,smoking_policy:sSmokingMap[item.smoking]||'no_smoking',children_policy:item.children==='同伴可'?'allowed':item.children==='要相談'?'consultation':'not_allowed',regular_holiday:item.holiday||undefined,takeout_enabled:item.takeout==='ON',delivery_enabled:item.delivery==='ON',reservation_enabled:item.reserv==='ON',is_active:true})});
+        var sStoreRes=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({name:item.name,brand_id:sBrand?._uuid,merchant_id:sCorpUuid||undefined,address:item.addr||undefined,phone:item.tel||undefined,email:item.email||undefined,nearest_station:item.station||undefined,price_range_lunch:item.priceLunch||undefined,price_range_dinner:item.priceDinner||undefined,seats:item.seats?parseInt(item.seats):undefined,smoking_policy:sSmokingMap[item.smoking]||'no_smoking',children_policy:item.children==='同伴可'?'allowed':item.children==='要相談'?'consultation':'not_allowed',regular_holiday:item.holiday||undefined,has_takeout:item.takeout==='ON',has_delivery:item.delivery==='ON',reservation_enabled:item.reserv==='ON'})});
         var sStoreD=await sStoreRes.json();if(!sStoreRes.ok)throw new Error(sStoreD.error||'店舗保存失敗');
         var sStoreUuid=sStoreD.data.id;
         var allDows=[0,1,2,3,4,5,6];var sHoursRows=[];
@@ -7657,7 +7657,7 @@ function openStoreWizard(){
       var br=BRANDS.find(function(b){return b.id===d.brandId;});
       if(!br)throw new Error('ブランドが見つかりません');
       // 基本フィールドのみ送信。拡張項目はaudit_logsに記録
-      var res=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,brand_id:br._uuid,address:d.addr,phone:d.tel,is_active:true})});
+      var res=await fetch('/api/admin/stores',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:d.name,brand_id:br._uuid,address:d.addr,phone:d.tel})});
       var j=await res.json();if(!res.ok)throw new Error(j.error||'店舗作成に失敗');
       VENUES.push({_uuid:j.data.id,id:j.data.display_id,brandId:br.id,name:d.name,status:'active',addr:d.addr,tel:d.tel,orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:parseInt(d.minOrder)||0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:parseInt(d.prepTime)||30,minOrderApplyTypes:{dinein:false,takeout:!!d.hasTakeout,delivery:!!d.hasDelivery}});
       logAudit('wizard_create_store','stores',j.data.id,{
