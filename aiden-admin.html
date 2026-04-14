@@ -4496,10 +4496,10 @@ const TEMPLATES={
     dvDefs:[{col:9,list:'"ON,OFF"'},{col:10,list:'"ON,OFF"'},{col:11,list:'"ON,OFF"'},{col:12,list:'"'+_SMOKING_OPTS.join(',')+'"'}],
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'f0ecff',label:'デザイン（任意）'},{cols:[9,13],color:'e6f9f0',label:'サービス設定'},{cols:[14,16],color:'fff8e1',label:'担当者'}]},
   store:{filename:'aiden_venue_template.xlsx',format:'xlsx',sheetName:'店舗登録',
-    headers:['店舗名*','所属法人ID','所属ブランドID*','住所','電話番号','メール','最寄り駅','価格帯','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','店舗担当者メール','店舗担当者電話','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙'],
-    sample:[['渋谷店','CRP-xxxxxxx','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','¥3,000~¥3,999','40','全席禁煙','同伴不可','同伴不可','なし','tanto@example.com','090-1234-5678','40','中休みあり','11:00','14:00','17:00','22:00','日曜日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','ON','全席禁煙']],
+    headers:['店舗名*','所属法人ID','所属ブランドID*','住所','電話番号','メール','最寄り駅','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','店舗担当者メール','店舗担当者電話','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙'],
+    sample:[['渋谷店','CRP-xxxxxxx','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','40','全席禁煙','同伴不可','同伴不可','なし','tanto@example.com','090-1234-5678','40','中休みあり','11:00','14:00','17:00','22:00','日曜日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','ON','全席禁煙']],
     comment:'※営業時間は全日共通で入力してください。曜日別設定は登録後に管理画面で行えます。',
-    categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'e6f9f0',label:'店舗情報'},{cols:[9,12],color:'fff8e1',label:'施設情報'},{cols:[13,14],color:'f0ecff',label:'担当者'},{cols:[15,21],color:'fff0e0',label:'営業時間'},{cols:[22,27],color:'fce4ec',label:'サービス設定'}]},
+    categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,7],color:'e6f9f0',label:'店舗情報'},{cols:[8,11],color:'fff8e1',label:'施設情報'},{cols:[12,13],color:'f0ecff',label:'担当者'},{cols:[14,20],color:'fff0e0',label:'営業時間'},{cols:[21,26],color:'fce4ec',label:'サービス設定'}]},
   account:{filename:'aiden_account_template.csv',
     headers:['氏名*','メールアドレス*','権限(owner/admin/staff)*','所属法人ID*','電話番号'],
     sample:[['代表者名','yamada@example.com','staff','CRP-xxxxxxx','090-1234-5678']]}
@@ -4661,7 +4661,8 @@ function validateBulkRows(dataRows,type,headers){
   const valid=[],errors=[];
   const EXPECTED_FIRST_HEADER={corp:'法人名',brand:'ブランド名',store:'店舗名',account:'氏名'};
   const expected=EXPECTED_FIRST_HEADER[type];
-  if(expected&&headers&&headers[0]!==expected){
+  const firstHeader=String((headers&&headers[0])||'').replace(/[*＊]\s*$/,'').trim();
+  if(expected&&headers&&firstHeader!==expected){
     errors.push('このファイルは「📋 テンプレート」ボタンからDLしたテンプレートと形式が異なります（1列目: 「'+(headers[0]||'空')+'」／期待値: 「'+expected+'」）。商品・メニュー等の一括登録は「データ一括管理」ページをご利用ください。');
     return {valid,errors};
   }
@@ -4740,16 +4741,16 @@ function validateBulkRows(dataRows,type,headers){
         var brand=BRANDS.find(function(b){return b.id===brandId;});
         if(!brand){errors.push('行'+rn+': ブランドID「'+brandId+'」が存在しません');return;}
         var sWarnings=[];
-        var sHoursType=nr.g(16)||'通し営業';
-        var sPriceLunchRaw=nr.g(22),sPriceDinnerRaw=nr.g(23);
+        var sHoursType=nr.g(15)||'通し営業';
+        var sPriceLunchRaw=nr.g(21),sPriceDinnerRaw=nr.g(22);
         var sPriceLunch=PRICE_RANGES.includes(sPriceLunchRaw)?sPriceLunchRaw:'';
         var sPriceDinner=PRICE_RANGES.includes(sPriceDinnerRaw)?sPriceDinnerRaw:'';
         if(sPriceLunchRaw&&!sPriceLunch)sWarnings.push('昼の価格帯「'+sPriceLunchRaw+'」は認識できないため空白で登録');
         if(sPriceDinnerRaw&&!sPriceDinner)sWarnings.push('夜の価格帯「'+sPriceDinnerRaw+'」は認識できないため空白で登録');
-        var sSmokingRaw=nr.g(27)||nr.g(9);
+        var sSmokingRaw=nr.g(26)||nr.g(8);
         var sSmoking=_SMOKING_OPTS.includes(sSmokingRaw)?sSmokingRaw:'全席禁煙';
         if(sSmokingRaw&&!_SMOKING_OPTS.includes(sSmokingRaw))sWarnings.push('喫煙「'+sSmokingRaw+'」は認識できないため「全席禁煙」で登録');
-        valid.push({name:sName,brandId:brandId,brandName:brand.name,corpId:brand.corpId,addr:nr.g(3),tel:nr.g(4),email:nr.g(5),station:nr.g(6),priceRange:nr.g(7),seats:nr.g(15)||nr.g(8),smoking:sSmoking,children:nr.g(10)||'同伴不可',pets:nr.g(11)||'同伴不可',parking:nr.g(12)||'なし',contactEmail:nr.g(13),contactPhone:nr.g(14),hoursType:sHoursType,lunchOpen:xlsxTimeToHHMM(row[17]),lunchClose:xlsxTimeToHHMM(row[18]),dinnerOpen:xlsxTimeToHHMM(row[19]),dinnerClose:xlsxTimeToHHMM(row[20]),holiday:nr.g(21),priceLunch:sPriceLunch,priceDinner:sPriceDinner,takeout:(nr.normalizeOnOff(nr.g(24))||'OFF'),delivery:(nr.normalizeOnOff(nr.g(25))||'OFF'),reserv:(nr.normalizeOnOff(nr.g(26))||'OFF'),_warnings:sWarnings});
+        valid.push({name:sName,brandId:brandId,brandName:brand.name,corpId:brand.corpId,addr:nr.g(3),tel:nr.g(4),email:nr.g(5),station:nr.g(6),seats:nr.g(14)||nr.g(7),smoking:sSmoking,children:nr.g(9)||'同伴不可',pets:nr.g(10)||'同伴不可',parking:nr.g(11)||'なし',contactEmail:nr.g(12),contactPhone:nr.g(13),hoursType:sHoursType,lunchOpen:xlsxTimeToHHMM(row[16]),lunchClose:xlsxTimeToHHMM(row[17]),dinnerOpen:xlsxTimeToHHMM(row[18]),dinnerClose:xlsxTimeToHHMM(row[19]),holiday:nr.g(20),priceLunch:sPriceLunch,priceDinner:sPriceDinner,takeout:(nr.normalizeOnOff(nr.g(23))||'OFF'),delivery:(nr.normalizeOnOff(nr.g(24))||'OFF'),reserv:(nr.normalizeOnOff(nr.g(25))||'OFF'),_warnings:sWarnings});
       }else if(type==='account'){
         const name=g(0),email=g(1),role=g(2),corpId=g(3);
         if(!name||!email){errors.push('行'+rn+': 氏名またはメールが空');return;}
