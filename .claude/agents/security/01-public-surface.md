@@ -5,7 +5,7 @@
 
 ## 対象
 - 認証不要: ブランドHP、店舗HP、モバイルオーダーページ、テイクアウト注文フロー、メンバープログラム説明ページ、ゲスト注文フロー
-- 認証後（XSS/情報漏洩のみ）: 管理マスタ（aiden-admin.html）、顧客管理画面（aiden-customer-admin.html）
+- 認証後（XSS/情報漏洩のみ）: 管理マスタ（weir-admin.html）、顧客管理画面（weir-customer-admin.html）
 
 ## チェックリスト
 
@@ -25,7 +25,7 @@
 - [ ] エラーレスポンスの内部情報（テーブル名、カラム名、スタックトレース）
 - [ ] ソースマップ（.mapファイル）の本番公開有無
 - [ ] robots.txt / sitemap.xml に管理画面URLが含まれていないか
-- [ ] aiden-admin.html / aiden-customer-admin.html のURLが推測可能であることのリスク評価
+- [ ] weir-admin.html / weir-customer-admin.html のURLが推測可能であることのリスク評価
 
 ### C. ゲスト注文PII保護
 - [ ] PII（名前、メール、電話）のlocalStorage/sessionStorage保存有無

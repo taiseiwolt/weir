@@ -7,7 +7,7 @@
 ### 1. 注文作成フローの統一
 
 **現状:**
-- `aiden-order-checkout.html` は Edge Function (`stripe-create-payment-intent`) を使用
+- `weir-order-checkout.html` は Edge Function (`stripe-create-payment-intent`) を使用
   → Stripe PaymentIntent のみ作成、orders テーブルへの INSERT なし
 - `api/orders/[...path].js` は POST ハンドラで orders + order_items テーブルに INSERT
   → 正しいサーバーサイドフロー

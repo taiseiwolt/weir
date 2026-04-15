@@ -1,5 +1,5 @@
 User-agent: *
-Disallow: /aiden-admin.html
-Disallow: /aiden-customer-admin.html
-Disallow: /aiden-order-dashboard.html
+Disallow: /weir-admin.html
+Disallow: /weir-customer-admin.html
+Disallow: /weir-order-dashboard.html
 Disallow: /api/

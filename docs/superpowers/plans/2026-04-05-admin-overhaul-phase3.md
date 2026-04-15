@@ -4,7 +4,7 @@
 
 **Goal:** 店舗管理の全タブDB永続化、ユーザー管理のハードコード排除+DB連携、BAN機能のDB永続化+MO画面チェックを実装する
 
-**Architecture:** `aiden-admin.html`内の店舗管理・ユーザー管理・BAN管理セクションを改修。DBマイグレーション（store_tables作成 + user_bans拡張）→ 店舗一覧・詳細タブ改修 → ユーザー管理DB連携 → BAN DB永続化 + MO画面チェックの4段階。
+**Architecture:** `weir-admin.html`内の店舗管理・ユーザー管理・BAN管理セクションを改修。DBマイグレーション（store_tables作成 + user_bans拡張）→ 店舗一覧・詳細タブ改修 → ユーザー管理DB連携 → BAN DB永続化 + MO画面チェックの4段階。
 
 **Tech Stack:** Vanilla JS, Supabase JS Client v2, PostgreSQL 15, RLS
 
@@ -13,8 +13,8 @@
 ## File Structure
 
 - **Create:** `supabase/migrations/20260405200000_phase3_store_user_ban.sql` — store_tables作成 + user_bans拡張
-- **Modify:** `aiden-admin.html` — 店舗管理・ユーザー管理・BAN管理の全セクション
-- **Modify:** `aiden-order-checkout.html` — 注文確定前BANチェック追加
+- **Modify:** `weir-admin.html` — 店舗管理・ユーザー管理・BAN管理の全セクション
+- **Modify:** `weir-order-checkout.html` — 注文確定前BANチェック追加
 
 ---
 
@@ -89,7 +89,7 @@ git commit -m "feat: add Phase 3 migration (store_tables, user_bans extensions)"
 ### Task 2: 店舗一覧ページ改修
 
 **Files:**
-- Modify: `aiden-admin.html:650-656` (renderStoresList)
+- Modify: `weir-admin.html:650-656` (renderStoresList)
 
 改修内容:
 - 月間注文/月間売上列を削除
@@ -136,7 +136,7 @@ function filterStoresList(){
 - [ ] **Step 2: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: store list - add corp/service columns, remove revenue, add search filter"
 ```
 
@@ -145,7 +145,7 @@ git commit -m "feat: store list - add corp/service columns, remove revenue, add 
 ### Task 3: 店舗詳細 — 売上タブ削除 + 営業時間DB連携 + 施設改善
 
 **Files:**
-- Modify: `aiden-admin.html:1777` (store tabs), `aiden-admin.html:1787` (store-sales tab), `aiden-admin.html:1849-1855` (initStoreTabs)
+- Modify: `weir-admin.html:1777` (store tabs), `weir-admin.html:1787` (store-sales tab), `weir-admin.html:1849-1855` (initStoreTabs)
 
 - [ ] **Step 1: 売上タブを削除**
 
@@ -297,7 +297,7 @@ serviceChargeValue:r.service_charge_value||10,
 - [ ] **Step 8: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: store detail - remove sales tab, DB-backed hours, improved facility"
 ```
 
@@ -306,7 +306,7 @@ git commit -m "feat: store detail - remove sales tab, DB-backed hours, improved 
 ### Task 4: ユーザー管理 — 会員/ゲストDB連携 + アカウント編集修正
 
 **Files:**
-- Modify: `aiden-admin.html:111-123` (hardcoded constants), `aiden-admin.html:659-686` (renderUsers)
+- Modify: `weir-admin.html:111-123` (hardcoded constants), `weir-admin.html:659-686` (renderUsers)
 
 - [ ] **Step 1: ハードコードデータを空配列に変更 + DB読み込み追加**
 
@@ -498,7 +498,7 @@ else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();load
 - [ ] **Step 5: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: user management - DB-backed members/guests/bans, search, pagination, export"
 ```
 
@@ -507,7 +507,7 @@ git commit -m "feat: user management - DB-backed members/guests/bans, search, pa
 ### Task 5: BAN管理 — DB永続化 + scope拡張
 
 **Files:**
-- Modify: `aiden-admin.html:708-856` (BAN functions)
+- Modify: `weir-admin.html:708-856` (BAN functions)
 
 - [ ] **Step 1: saveBan関数をDB永続化に更新**
 
@@ -613,7 +613,7 @@ Update renderBanTab to use `b.scope_type` instead of `b.ban_type` for the type b
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: BAN management - DB persistence for add/unban with scope types"
 ```
 
@@ -622,11 +622,11 @@ git commit -m "feat: BAN management - DB persistence for add/unban with scope ty
 ### Task 6: MO画面BANチェック追加
 
 **Files:**
-- Modify: `aiden-order-checkout.html:1894` (placeOrder function)
+- Modify: `weir-order-checkout.html:1894` (placeOrder function)
 
 - [ ] **Step 1: placeOrder関数にBANチェック追加**
 
-In `aiden-order-checkout.html`, at the beginning of the `placeOrder()` function (after session validity check, around line 1902), add a BAN check:
+In `weir-order-checkout.html`, at the beginning of the `placeOrder()` function (after session validity check, around line 1902), add a BAN check:
 
 ```js
 // BAN check — insert after session validation, before payment intent creation
@@ -684,7 +684,7 @@ function showBanError(msg){
 - [ ] **Step 3: Commit**
 
 ```bash
-git add aiden-order-checkout.html
+git add weir-order-checkout.html
 git commit -m "feat: add BAN check to checkout flow - block banned users from ordering"
 ```
 

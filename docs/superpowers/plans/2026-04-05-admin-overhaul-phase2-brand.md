@@ -4,7 +4,7 @@
 
 **Goal:** ブランド管理の全12タブをDB永続化し、ハードコード排除・CRUD動作・FC権限制御を実装する
 
-**Architecture:** 単一ファイル `aiden-admin.html` 内のブランド管理セクションを段階的に改修。DB拡張（brandsカラム追加 + brand_couponsテーブル新設）→ 設定系タブDB永続化 → コンテンツ系タブCRUD → メニューパターン連携 → 残りタブ+FC権限制御の5段階。全CRUD操作はSupabase JS Client直接呼出し。
+**Architecture:** 単一ファイル `weir-admin.html` 内のブランド管理セクションを段階的に改修。DB拡張（brandsカラム追加 + brand_couponsテーブル新設）→ 設定系タブDB永続化 → コンテンツ系タブCRUD → メニューパターン連携 → 残りタブ+FC権限制御の5段階。全CRUD操作はSupabase JS Client直接呼出し。
 
 **Tech Stack:** Vanilla JS, Supabase JS Client v2, PostgreSQL 15, RLS
 
@@ -12,7 +12,7 @@
 
 ## File Structure
 
-- **Modify:** `aiden-admin.html` — 全ブランドタブのJS関数改修（~1399-1421行のrenderBrandPage + 新規関数追加）
+- **Modify:** `weir-admin.html` — 全ブランドタブのJS関数改修（~1399-1421行のrenderBrandPage + 新規関数追加）
 - **Create:** `supabase/migrations/20260405100000_phase2_brand_extensions.sql` — DB拡張マイグレーション（手動実行用）
 
 ---
@@ -93,13 +93,13 @@ git commit -m "feat: add Phase 2 brand extensions migration (slug, social_links,
 ### Task 2: loadFeeSchedules バグ修正（Phase 1持ち越し）
 
 **Files:**
-- Modify: `aiden-admin.html:397-406` (switchTab), `aiden-admin.html:433` (renderPage corp hook)
+- Modify: `weir-admin.html:397-406` (switchTab), `weir-admin.html:433` (renderPage corp hook)
 
 法人詳細ページの初期表示時にfeeタブが読み込まれないバグ。`switchTab`でのみ`loadFeeSchedules`が呼ばれ、初期ロード時にはスキップされる。
 
 - [ ] **Step 1: renderPage内のcorp post-hookにfee自動ロード追加**
 
-`aiden-admin.html:436`付近（`renderPage`関数の末尾のpost hooks）に法人ページ初期表示時のフィー自動ロードを追加:
+`weir-admin.html:436`付近（`renderPage`関数の末尾のpost hooks）に法人ページ初期表示時のフィー自動ロードを追加:
 
 ```js
 // 既存: if(v.type==='brand')initBrandTabs();
@@ -120,7 +120,7 @@ if(v.type==='corp'){
 - [ ] **Step 3: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "fix: auto-load fee schedules on corp page initial render"
 ```
 
@@ -129,13 +129,13 @@ git commit -m "fix: auto-load fee schedules on corp page initial render"
 ### Task 3: loadAllData拡張 — brandsの追加カラム読み込み
 
 **Files:**
-- Modify: `aiden-admin.html:184-188` (BRANDS mapping in loadAllData)
+- Modify: `weir-admin.html:184-188` (BRANDS mapping in loadAllData)
 
 現在のBRANDS mappingは`name, display_id, primary_color, pii_access_settings`のみ。Phase 2で追加したカラムを読み込む。
 
 - [ ] **Step 1: BRANDS mapping拡張**
 
-`aiden-admin.html:184-188`のBRANDSマッピングを以下に変更:
+`weir-admin.html:184-188`のBRANDSマッピングを以下に変更:
 
 ```js
 BRANDS=(brandsRaw||[]).map(r=>({
@@ -156,7 +156,7 @@ BRANDS=(brandsRaw||[]).map(r=>({
 - [ ] **Step 2: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: load extended brand columns (slug, social_links, design, etc.)"
 ```
 
@@ -165,8 +165,8 @@ git commit -m "feat: load extended brand columns (slug, social_links, design, et
 ### Task 4: 基本情報タブ — DB永続化+複数フォント選択
 
 **Files:**
-- Modify: `aiden-admin.html:1406` (brand-basic tab HTML in renderBrandPage)
-- Modify: `aiden-admin.html:1894-1905` (saveBrandBasic)
+- Modify: `weir-admin.html:1406` (brand-basic tab HTML in renderBrandPage)
+- Modify: `weir-admin.html:1894-1905` (saveBrandBasic)
 
 - [ ] **Step 1: 基本情報タブHTML更新**
 
@@ -231,7 +231,7 @@ async function saveBrandSocialLinks(brandDisplayId){
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand basic info & social links DB persistence with multi-font select"
 ```
 
@@ -240,8 +240,8 @@ git commit -m "feat: brand basic info & social links DB persistence with multi-f
 ### Task 5: サービス設定タブ — product_dev/new_store削除 + delivery_hub Coming Soon + DB保存
 
 **Files:**
-- Modify: `aiden-admin.html:126-137` (SERVICES constant)
-- Modify: `aiden-admin.html:1407` (brand-services tab)
+- Modify: `weir-admin.html:126-137` (SERVICES constant)
+- Modify: `weir-admin.html:1407` (brand-services tab)
 
 - [ ] **Step 1: SERVICES定数からproduct_dev/new_store削除、delivery_hubにComingSoon追加**
 
@@ -291,7 +291,7 @@ function renderServiceCards(entityId, level, parentId){
 - [ ] **Step 3: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: remove product_dev/new_store services, add Coming Soon badge for delivery_hub/paid tiers"
 ```
 
@@ -300,7 +300,7 @@ git commit -m "feat: remove product_dev/new_store services, add Coming Soon badg
 ### Task 6: デザインタブ — DB永続化
 
 **Files:**
-- Modify: `aiden-admin.html:1408` (brand-design tab HTML)
+- Modify: `weir-admin.html:1408` (brand-design tab HTML)
 
 - [ ] **Step 1: デザインタブHTML更新**
 
@@ -335,7 +335,7 @@ async function saveBrandDesign(brandDisplayId){
 - [ ] **Step 3: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand design tab DB persistence (colors, header text)"
 ```
 
@@ -344,7 +344,7 @@ git commit -m "feat: brand design tab DB persistence (colors, header text)"
 ### Task 7: HP設定タブ — DB永続化 + ヒーローバナーCRUD
 
 **Files:**
-- Modify: `aiden-admin.html:1409` (brand-hp tab HTML)
+- Modify: `weir-admin.html:1409` (brand-hp tab HTML)
 
 - [ ] **Step 1: HP設定タブHTML更新**
 
@@ -449,7 +449,7 @@ function initBrandTabs(){
 - [ ] **Step 5: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand HP settings DB persistence + hero banner CRUD"
 ```
 
@@ -458,7 +458,7 @@ git commit -m "feat: brand HP settings DB persistence + hero banner CRUD"
 ### Task 8: ニュースタブ — DB連携CRUD
 
 **Files:**
-- Modify: `aiden-admin.html:1410` (brand-news tab HTML)
+- Modify: `weir-admin.html:1410` (brand-news tab HTML)
 
 - [ ] **Step 1: ニュースタブHTML更新**
 
@@ -585,7 +585,7 @@ function initBrandTabs(){
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand news tab full CRUD with DB persistence"
 ```
 
@@ -594,7 +594,7 @@ git commit -m "feat: brand news tab full CRUD with DB persistence"
 ### Task 9: キャンペーンタブ — DB連携CRUD
 
 **Files:**
-- Modify: `aiden-admin.html:1411` (brand-campaign tab HTML)
+- Modify: `weir-admin.html:1411` (brand-campaign tab HTML)
 
 - [ ] **Step 1: キャンペーンタブHTML更新**
 
@@ -730,7 +730,7 @@ function initBrandTabs(){
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand campaign tab full CRUD with DB persistence"
 ```
 
@@ -739,7 +739,7 @@ git commit -m "feat: brand campaign tab full CRUD with DB persistence"
 ### Task 10: クーポンタブ — DB連携CRUD
 
 **Files:**
-- Modify: `aiden-admin.html:1412` (brand-coupon tab HTML)
+- Modify: `weir-admin.html:1412` (brand-coupon tab HTML)
 
 - [ ] **Step 1: クーポンタブHTML更新**
 
@@ -869,7 +869,7 @@ function initBrandTabs(){
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand coupon tab full CRUD with service/platform targeting"
 ```
 
@@ -878,9 +878,9 @@ git commit -m "feat: brand coupon tab full CRUD with service/platform targeting"
 ### Task 11: メニュー管理タブ — menu_patterns連携 + 商品CRUD
 
 **Files:**
-- Modify: `aiden-admin.html:1414` (brand-menu tab HTML)
-- Modify: `aiden-admin.html:1419-1421` (renderBrandMenu, initBrandTabs)
-- Remove: `aiden-admin.html:123` (hardcoded MENU constant)
+- Modify: `weir-admin.html:1414` (brand-menu tab HTML)
+- Modify: `weir-admin.html:1419-1421` (renderBrandMenu, initBrandTabs)
+- Remove: `weir-admin.html:123` (hardcoded MENU constant)
 
 - [ ] **Step 1: ハードコードMENU定数をDB読み込みに置換**
 
@@ -1149,7 +1149,7 @@ function initBrandTabs(){
 - [ ] **Step 7: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: menu patterns + product CRUD with DB persistence (replaces hardcoded MENU)"
 ```
 
@@ -1158,9 +1158,9 @@ git commit -m "feat: menu patterns + product CRUD with DB persistence (replaces 
 ### Task 12: 会員CRM + キャンセルポリシー + 法人店舗タブ
 
 **Files:**
-- Modify: `aiden-admin.html:1413` (brand-member tab)
-- Modify: `aiden-admin.html:1415` (brand-cancel tab)
-- Modify: `aiden-admin.html:1417` (brand-related tab)
+- Modify: `weir-admin.html:1413` (brand-member tab)
+- Modify: `weir-admin.html:1415` (brand-cancel tab)
+- Modify: `weir-admin.html:1417` (brand-related tab)
 
 - [ ] **Step 1: 会員CRMタブ更新 — DB永続化**
 
@@ -1214,7 +1214,7 @@ ss.map(s=>'<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6p
 - [ ] **Step 5: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: brand member CRM (Coming Soon), cancel policy DB save, store code in related tab"
 ```
 
@@ -1223,7 +1223,7 @@ git commit -m "feat: brand member CRM (Coming Soon), cancel policy DB save, stor
 ### Task 13: FC権限制御 — brand_permissions連携
 
 **Files:**
-- Modify: `aiden-admin.html` — loadAllData, renderBrandPage
+- Modify: `weir-admin.html` — loadAllData, renderBrandPage
 
 管理マスタは全権限で操作可能（service_role）だが、将来の顧客管理画面用にbrand_permissionsの概念をUIに反映する。
 
@@ -1290,7 +1290,7 @@ async function saveBrand(){
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: FC brand permission auto-setup on brand creation (owner/viewer)"
 ```
 

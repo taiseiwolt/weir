@@ -9,16 +9,16 @@
 - `POST /api/members/update-password` — 新パスワード設定
 
 ### 2. パスワードリセット画面 新規作成
-- `aiden-password-reset.html` — 3段階のフロー
+- `weir-password-reset.html` — 3段階のフロー
   - Step 1: メールアドレス入力 → リセットメール送信
   - Step 2: リンクからアクセス → 新パスワード入力（強度インジケーター付き）
   - Step 3: 更新完了 → ログイン画面へ
 
 ### 3. 導線追加
-- `aiden-mypage.html` のログインプロンプトに「パスワードをお忘れですか？」リンク追加
+- `weir-mypage.html` のログインプロンプトに「パスワードをお忘れですか？」リンク追加
 
 ### 4. Supabase Auth 設定
-- `resetPasswordForEmail()` の `redirectTo` を `https://weir.co.jp/aiden-password-reset.html` に設定
+- `resetPasswordForEmail()` の `redirectTo` を `https://weir.co.jp/weir-password-reset.html` に設定
 - Supabase Auth がリカバリートークン付きハッシュフラグメントでリダイレクト
 
 ## テスト項目
@@ -41,9 +41,9 @@
 POCフェーズでは Supabase のデフォルトメールテンプレートが使用される。
 
 ### フロー確認
-1. `/aiden-password-reset.html` にアクセス → リクエストフォーム表示 ✅
+1. `/weir-password-reset.html` にアクセス → リクエストフォーム表示 ✅
 2. メールアドレス入力 → API呼び出し → 成功メッセージ ✅
-3. メール内リンク → `aiden-password-reset.html#access_token=...&type=recovery` ✅
+3. メール内リンク → `weir-password-reset.html#access_token=...&type=recovery` ✅
 4. 新パスワード入力 → 更新API呼び出し → 完了画面 ✅
 5. ログインボタン → チェックアウト画面へ遷移 ✅
 

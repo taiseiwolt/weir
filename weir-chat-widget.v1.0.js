@@ -4,7 +4,7 @@
  * 共通チャットウィジェット。事業者向け / エンドユーザー向け 両対応。
  *
  * Usage:
- *   <script src="aiden-chat-widget.js"></script>
+ *   <script src="weir-chat-widget.js"></script>
  *   <script>
  *     new AidenChatWidget({
  *       contextType: 'merchant', // or 'enduser'
@@ -61,10 +61,10 @@ class AidenChatWidget {
   }
 
   _injectStyles() {
-    if (document.getElementById('aiden-chat-widget-styles')) return;
+    if (document.getElementById('weir-chat-widget-styles')) return;
 
     const style = document.createElement('style');
-    style.id = 'aiden-chat-widget-styles';
+    style.id = 'weir-chat-widget-styles';
     style.textContent = `
       .acw-btn {
         position: fixed;

@@ -195,7 +195,7 @@ serve(async (req) => {
 
     // ===== Step 5: フロントにリダイレクト =====
     // セッション情報をフラグメント（#）で渡す（URLパラメータはサーバーログに残るため）
-    const frontendUrl = redirectAfter || '/aiden-order-checkout.html'
+    const frontendUrl = redirectAfter || '/weir-order-checkout.html'
     const fragment = new URLSearchParams({
       line_auth: 'success',
       temp_email: sessionData.temp_email,
@@ -221,7 +221,7 @@ serve(async (req) => {
 })
 
 function redirectWithError(message: string, stateParam: string | null): Response {
-  let redirectAfter = '/aiden-order-checkout.html'
+  let redirectAfter = '/weir-order-checkout.html'
   try {
     const stateJson = JSON.parse(atob(stateParam || ''))
     redirectAfter = stateJson.redirect_after || redirectAfter

@@ -8,7 +8,7 @@
     <meta property="og:title" content="店舗情報 | Weir">
     <meta property="og:description" content="">
     <meta property="og:image" content="https://weir.co.jp/ogp.png">
-    <meta property="og:url" content="https://weir.co.jp/aiden-store.html">
+    <meta property="og:url" content="https://weir.co.jp/weir-store.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
@@ -931,8 +931,8 @@ let STORE = {
   googleMapsQ:   '',
 
   /* 外部URL（管理画面で設定） */
-  takeoutUrl:  './aiden-order.html?mode=takeout',
-  deliveryUrl: './aiden-order.html?mode=delivery',
+  takeoutUrl:  './weir-order.html?mode=takeout',
+  deliveryUrl: './weir-order.html?mode=delivery',
 
   /* ギャラリー（Supabase mediaテーブルから上書き） */
   galleryMedia: [],
@@ -975,7 +975,7 @@ var GENRES = {
    ===================================================== */
 // ===== API CONFIG =====
 const API_BASE = 'https://weir.co.jp'; // Production domain
-// URLパラメータ ?store=xxx からslugを取得（例: aiden-store.html?store=<slug>）
+// URLパラメータ ?store=xxx からslugを取得（例: weir-store.html?store=<slug>）
 const STORE_SLUG = new URLSearchParams(window.location.search).get('store');
 
 async function apiFetch(path) {

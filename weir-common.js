@@ -1,7 +1,7 @@
 /* =============================================================
-   aiden-common.js — Weir 共通基盤
+   weir-common.js — Weir 共通基盤
    Brand loading, i18n, Header/Footer generation, init()
-   Usage: <script src="aiden-common.js"></script>
+   Usage: <script src="weir-common.js"></script>
           <script>AidenCommon.init({ header:'brand', footer:true })</script>
    ============================================================= */
 (function() {
@@ -343,7 +343,7 @@
      16. renderHeaderBrand(brand) — Type A header
      ============================================================= */
   function renderHeaderBrand(brand) {
-    var el = document.getElementById('aiden-header');
+    var el = document.getElementById('weir-header');
     if (!el) return;
 
     var bp = buildBrandParam(brand);
@@ -366,11 +366,11 @@
           '</a>' +
         '</div>' +
         '<nav class="header-nav">' +
-          '<a href="./aiden-brand-menu.html' + bp + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-          '<a href="./aiden-brand-stores.html' + bp + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
-          '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership" id="nav-membership-link">' + t('nav_membership') + '</a>' +
+          '<a href="./weir-brand-menu.html' + bp + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
+          '<a href="./weir-brand-stores.html' + bp + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
+          '<a href="./weir-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership" id="nav-membership-link">' + t('nav_membership') + '</a>' +
           '<a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
-          '<a href="./aiden-order.html' + bp + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
+          '<a href="./weir-order.html' + bp + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
         '</nav>' +
         buildLangSelect() +
         '<button class="header-hamburger" id="hamburger" onclick="AidenCommon.toggleNav()">☰</button>' +
@@ -379,12 +379,12 @@
     '<div class="mobile-nav" id="mobile-nav">' +
       '<div class="mobile-nav-cta">' +
         '<a href="javascript:void(0)" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
-        '<a href="./aiden-order.html' + bp + '" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
-        '<a href="./aiden-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery">' + t('cta_delivery') + '</a>' +
+        '<a href="./weir-order.html' + bp + '" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
+        '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery">' + t('cta_delivery') + '</a>' +
       '</div>' +
-      '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-      '<a href="./aiden-brand-stores.html' + bp + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
-      '<a href="./aiden-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
+      '<a href="./weir-brand-menu.html' + bp + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
+      '<a href="./weir-brand-stores.html' + bp + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
+      '<a href="./weir-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
     '</div>';
 
     el.innerHTML = html;
@@ -394,14 +394,14 @@
      17. renderHeaderOrder(brand, options) — Type B header
      ============================================================= */
   function renderHeaderOrder(brand, options) {
-    var el = document.getElementById('aiden-header');
+    var el = document.getElementById('weir-header');
     if (!el) return;
 
     options = options || {};
 
     var html = '<header class="header header--order">' +
       '<div class="header-main">' +
-        '<button class="header-back" id="aiden-header-back" data-i18n="back" aria-label="' + t('back') + '">←</button>' +
+        '<button class="header-back" id="weir-header-back" data-i18n="back" aria-label="' + t('back') + '">←</button>' +
         '<div class="header-center">' +
           '<div class="header-logo">' +
             '<span style="display:flex;align-items:center;gap:10px">' +
@@ -412,10 +412,10 @@
         '</div>' +
         '<div class="header-actions">' +
           buildLangSelect() +
-          '<button class="header-cart" id="aiden-header-cart" style="display:none" aria-label="' + t('cart') + '">' +
-            '🛒<span class="header-cart-badge" id="aiden-cart-badge" style="display:none">0</span>' +
+          '<button class="header-cart" id="weir-header-cart" style="display:none" aria-label="' + t('cart') + '">' +
+            '🛒<span class="header-cart-badge" id="weir-cart-badge" style="display:none">0</span>' +
           '</button>' +
-          '<button class="header-signin" id="aiden-header-signin" data-i18n="signin">' + t('signin') + '</button>' +
+          '<button class="header-signin" id="weir-header-signin" data-i18n="signin">' + t('signin') + '</button>' +
         '</div>' +
       '</div>' +
     '</header>';
@@ -423,10 +423,10 @@
     el.innerHTML = html;
 
     // Add body class for padding-top
-    document.body.classList.add('aiden-order-body');
+    document.body.classList.add('weir-order-body');
 
     // Attach back button handler
-    var backBtn = document.getElementById('aiden-header-back');
+    var backBtn = document.getElementById('weir-header-back');
     if (backBtn) {
       backBtn.addEventListener('click', function() {
         if (typeof options.onBack === 'function') {
@@ -442,7 +442,7 @@
      18. renderFooter(brand) — footer generation
      ============================================================= */
   function renderFooter(brand) {
-    var el = document.getElementById('aiden-footer');
+    var el = document.getElementById('weir-footer');
     if (!el) return;
 
     var bp = buildBrandParam(brand);
@@ -482,11 +482,11 @@
         '<div>' +
           '<div class="footer-nav-title" data-i18n="footer_menu">' + t('footer_menu') + '</div>' +
           '<div class="footer-nav-list">' +
-            '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
-            '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
-            '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
-            '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
-            '<a href="./aiden-brand-menu.html' + bp + '" data-i18n="f_course">' + t('f_course') + '</a>' +
+            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
+            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
+            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
+            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
+            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_course">' + t('f_course') + '</a>' +
           '</div>' +
         '</div>' +
         // Column 3: Service
@@ -494,8 +494,8 @@
           '<div class="footer-nav-title" data-i18n="footer_service">' + t('footer_service') + '</div>' +
           '<div class="footer-nav-list">' +
             '<a href="javascript:void(0)" data-i18n="cta_reserve" onclick="if(window.openResModal)openResModal()">' + t('cta_reserve') + '</a>' +
-            '<a href="./aiden-order.html' + bp + (bp ? '&' : '?') + 'mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
-            '<a href="./aiden-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
+            '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
+            '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
           '</div>' +
         '</div>' +
         // Column 4: Company + News
@@ -503,14 +503,14 @@
           '<div class="footer-nav-title" data-i18n="footer_company">' + t('footer_company') + '</div>' +
           '<div class="footer-nav-list" id="footer-company-links">' + companyLinksHtml + '</div>' +
           '<div class="footer-nav-title" style="margin-top:16px" data-i18n="footer_news">' + t('footer_news') + '</div>' +
-          '<div class="footer-nav-list"><a href="./aiden-brand-news.html' + bp + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
+          '<div class="footer-nav-list"><a href="./weir-brand-news.html' + bp + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
         '</div>' +
         // Column 5: FAQ/Contact
         '<div>' +
           '<div class="footer-nav-title">' + t('footer_service') + '</div>' +
           '<div class="footer-nav-list">' +
-            '<a href="./aiden-sitemap.html' + bp + '" data-i18n="f_faq">' + t('f_faq') + '</a>' +
-            '<a href="./aiden-sitemap.html' + bp + '" data-i18n="f_contact">' + t('f_contact') + '</a>' +
+            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_faq">' + t('f_faq') + '</a>' +
+            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_contact">' + t('f_contact') + '</a>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -519,15 +519,15 @@
         '<div class="footer-bottom-inner">' +
           '<span class="footer-copyright">&copy; ' + year + ' ' + brandName + ' All rights reserved.</span>' +
           '<div class="footer-bottom-links">' +
-            '<a href="./aiden-privacy.html' + bp + '" data-i18n="f_privacy">' + t('f_privacy') + '</a>' +
-            '<a href="./aiden-terms.html' + bp + '" data-i18n="f_terms">' + t('f_terms') + '</a>' +
-            '<a href="./aiden-sitemap.html' + bp + '" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
+            '<a href="./weir-privacy.html' + bp + '" data-i18n="f_privacy">' + t('f_privacy') + '</a>' +
+            '<a href="./weir-terms.html' + bp + '" data-i18n="f_terms">' + t('f_terms') + '</a>' +
+            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
           '</div>' +
           '<span class="powered">Powered by Weir</span>' +
         '</div>' +
       '</div>';
 
-    el.className = 'aiden-footer';
+    el.className = 'weir-footer';
     el.innerHTML = html;
   }
 
@@ -577,7 +577,7 @@
       timedOut = true;
       if (!brandLoaded) {
         // Show page with neutral colors (CSS variable defaults)
-        document.body.classList.add('aiden-ready');
+        document.body.classList.add('weir-ready');
       }
     }, TIMEOUT_MS);
 
@@ -615,14 +615,14 @@
       }
 
       // Ensure page is visible
-      document.body.classList.add('aiden-ready');
+      document.body.classList.add('weir-ready');
 
     }).catch(function(err) {
       brandLoaded = true;
       clearTimeout(timer);
 
       // On error, show with neutral colors
-      document.body.classList.add('aiden-ready');
+      document.body.classList.add('weir-ready');
     });
   }
 

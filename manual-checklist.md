@@ -23,8 +23,8 @@
 ## 3. メニューデータの確認
 
 - [ ] **3-1.** customer-admin でメニュー（商品）を追加
-- [ ] **3-2.** aiden-order-store.html でその商品が表示されること
-- [ ] **3-3.** aiden-brand-menu.html でその商品が表示されること
+- [ ] **3-2.** weir-order-store.html でその商品が表示されること
+- [ ] **3-3.** weir-brand-menu.html でその商品が表示されること
 - [ ] **3-4.** admin.html ではメニューがハードコードのため反映されないことを確認（既知の制限）
 
 ## 4. Dashboard ↔ Admin 注文データ一致
@@ -35,10 +35,10 @@
 
 ## 5. モバイルオーダー → 管理画面フロー
 
-- [ ] **5-1.** aiden-order-store.html でカートに追加 → checkout.html に遷移
+- [ ] **5-1.** weir-order-store.html でカートに追加 → checkout.html に遷移
 - [ ] **5-2.** checkout.html でテストカード決済を完了
-- [ ] **5-3.** aiden-order-dashboard.html にリアルタイムで注文が表示されること
-- [ ] **5-4.** aiden-admin.html の注文一覧に同じ注文が表示されること
+- [ ] **5-3.** weir-order-dashboard.html にリアルタイムで注文が表示されること
+- [ ] **5-4.** weir-admin.html の注文一覧に同じ注文が表示されること
 - [ ] **5-5.** 注文金額が全画面で一致すること
 
 ## 6. ポイント・ランクの整合性

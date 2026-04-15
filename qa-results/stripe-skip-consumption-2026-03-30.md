@@ -26,7 +26,7 @@
 | **A-07** | 完了表示 | **PASS** | トラッキングページ: `token=`パラメータで注文正常表示（店名・注文種別・所要時間） |
 | **A-08** | 注文完了メール | **PASS** | `send-order-email` Edge Function存在確認。`confirm-order`から自動呼び出し（Resend API経由） |
 | **A-12** | 認証済みアカウント注文 | **PASS** | `member_id`付き注文をDB作成→ダッシュボードに表示確認 |
-| **A-13** | 注文履歴表示 | **PASS** | `aiden-mypage.html` L483: `orders.select().eq('member_id', memberId).limit(10)` で最新10件取得確認 |
+| **A-13** | 注文履歴表示 | **PASS** | `weir-mypage.html` L483: `orders.select().eq('member_id', memberId).limit(10)` で最新10件取得確認 |
 | **B-08** | 会員注文の顧客データ確認 | **PASS** | `member_id=dd000000-...`リンク付き注文作成→DB照合確認 |
 | **B-10** | 売上サマリ一致確認 | **PASS** | ダッシュボード L1036-1042: `done`ステータス注文の`total_amount`合計で売上計算確認 |
 | **B-11** | 返金操作 | **PASS** | Stripe API: 全額返金(`¥1500 succeeded`) + 部分返金(`¥800 succeeded`) |
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | **E-03** | 承認制ステータス変更 | **PASS** | DB直接更新: `pending→confirmed→completed` 全遷移成功。`update-reservation-status` Edge Function: 有効遷移マップ定義済み（L14-19） |
 | **E-04** | 自動キャンセル | **FAIL** | 予約用pg_cronジョブ未実装。`reservation_cancel_deadline_hours`カラムは存在するが、期限超過を検出するcronジョブがない。注文用`cleanup_orphan_pending_orders`は存在 |
-| **IR-15** | 予約処理中ブラウザバック | **PASS** | `aiden-order-checkout.html` L1972-1973: `beforeunload`イベントで決済中のページ離脱を防止 |
+| **IR-15** | 予約処理中ブラウザバック | **PASS** | `weir-order-checkout.html` L1972-1973: `beforeunload`イベントで決済中のページ離脱を防止 |
 
 ---
 

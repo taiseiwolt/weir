@@ -46,7 +46,7 @@
 2. ブランドを新規追加（テストブランド名: 「テストブランド999」）
 3. 店舗を新規追加（テスト店舗名: 「テスト店舗999」）
 4. 追加後、以下で表示されるか確認:
-   - EU注文画面（aiden-order-store.html）に新店舗表示
+   - EU注文画面（weir-order-store.html）に新店舗表示
    - customer-admin画面で新ブランド/店舗表示
 5. **テスト後: テストデータを削除または無効化**
 - 期待: 新規追加データが全画面に反映
@@ -70,8 +70,8 @@
 #### M-01: 店舗名変更
 1. admin > 店舗詳細 > 店舗名を変更（末尾に「テスト」追加）
 2. 確認先:
-   - EU注文画面（aiden-order-store.html）で店舗名変更反映
-   - 受注ダッシュボード（aiden-order-dashboard.html）で店舗名変更反映
+   - EU注文画面（weir-order-store.html）で店舗名変更反映
+   - 受注ダッシュボード（weir-order-dashboard.html）で店舗名変更反映
    - customer-admin画面で店舗名変更反映
 3. **テスト後: 元の店舗名に戻す**
 - 重要度: 🔴Critical
@@ -211,7 +211,7 @@ CCではChrome操作が中心のため、コード上の互換性リスク分析
 - 重要度: 🟡Warning
 
 ### J-03: iPad表示確認（G-11）
-1. 受注ダッシュボード（aiden-order-dashboard.html）をiPadサイズ（768×1024）で表示
+1. 受注ダッシュボード（weir-order-dashboard.html）をiPadサイズ（768×1024）で表示
 2. レイアウト崩れ、ボタン操作性を確認
 3. Chrome DevToolsのデバイスシミュレーションで確認
 - 重要度: 🟡Warning

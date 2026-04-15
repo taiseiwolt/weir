@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add CSV/XLSX bulk import with UPSERT logic for corporations, brands, stores, and menu data to both aiden-admin.html and aiden-customer-admin.html.
+**Goal:** Add CSV/XLSX bulk import with UPSERT logic for corporations, brands, stores, and menu data to both weir-admin.html and weir-customer-admin.html.
 
-**Architecture:** Client parses CSV/XLSX in-browser using the existing XLSX CDN library, then sends JSON to a new Vercel Serverless Function (`api/bulk-import/[...path].js`) which validates, detects new-vs-update via UPSERT keys, and executes DB operations via Supabase service-role client. The existing bulk upload UI in aiden-admin.html is extended (not replaced) with DB-backed operations, UPSERT detection, menu support, and "download with existing data" feature. A new "一括登録" tab is added to aiden-customer-admin.html.
+**Architecture:** Client parses CSV/XLSX in-browser using the existing XLSX CDN library, then sends JSON to a new Vercel Serverless Function (`api/bulk-import/[...path].js`) which validates, detects new-vs-update via UPSERT keys, and executes DB operations via Supabase service-role client. The existing bulk upload UI in weir-admin.html is extended (not replaced) with DB-backed operations, UPSERT detection, menu support, and "download with existing data" feature. A new "一括登録" tab is added to weir-customer-admin.html.
 
 **Tech Stack:** Vanilla JS + XLSX CDN (client), Vercel Serverless Functions + @supabase/supabase-js (API), PostgreSQL/Supabase (DB)
 
@@ -15,8 +15,8 @@
 | File | Action | Responsibility |
 |------|--------|---------------|
 | `api/bulk-import/[...path].js` | Create | API: preview (validate+UPSERT detect), execute (DB write), template download with data |
-| `aiden-admin.html` | Modify | Extend existing bulk upload: add menu type, UPSERT detection, DB-backed execute, download-with-data, progress UI |
-| `aiden-customer-admin.html` | Modify | Add "一括登録" tab with bulk import UI for corp/brand/store |
+| `weir-admin.html` | Modify | Extend existing bulk upload: add menu type, UPSERT detection, DB-backed execute, download-with-data, progress UI |
+| `weir-customer-admin.html` | Modify | Add "一括登録" tab with bulk import UI for corp/brand/store |
 | `vercel.json` | Modify | Add rewrite for `/api/bulk-import` routes |
 
 ---
@@ -499,10 +499,10 @@ git commit -m "feat: add bulk-import API endpoint with preview, execute, and exp
 
 ---
 
-### Task 2: aiden-admin.html — Extend Bulk Upload with DB-backed UPSERT
+### Task 2: weir-admin.html — Extend Bulk Upload with DB-backed UPSERT
 
 **Files:**
-- Modify: `aiden-admin.html` (lines ~1363-1526: TEMPLATES, downloadTemplate, bulk upload functions)
+- Modify: `weir-admin.html` (lines ~1363-1526: TEMPLATES, downloadTemplate, bulk upload functions)
 
 This task extends the existing bulk upload infrastructure to:
 1. Add menu type to templates
@@ -909,22 +909,22 @@ For each list page, add to the toolbar area:
 - [ ] **Step 10: Commit**
 
 ```bash
-git add aiden-admin.html
+git add weir-admin.html
 git commit -m "feat: extend admin bulk upload with DB-backed UPSERT, menu support, and download-with-data"
 ```
 
 ---
 
-### Task 3: aiden-customer-admin.html — Add Bulk Import Tab
+### Task 3: weir-customer-admin.html — Add Bulk Import Tab
 
 **Files:**
-- Modify: `aiden-customer-admin.html`
+- Modify: `weir-customer-admin.html`
 
 This task adds a "一括登録" tab to the customer admin page for corp/brand/store bulk operations.
 
 - [ ] **Step 1: Identify the sidebar navigation structure**
 
-Read the sidebar/nav area of aiden-customer-admin.html to find where to add the new page section link. The file uses a sidebar navigation with `page-*` sections.
+Read the sidebar/nav area of weir-customer-admin.html to find where to add the new page section link. The file uses a sidebar navigation with `page-*` sections.
 
 - [ ] **Step 2: Add navigation item**
 
@@ -1189,7 +1189,7 @@ Check if `<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.m
 - [ ] **Step 6: Commit**
 
 ```bash
-git add aiden-customer-admin.html
+git add weir-customer-admin.html
 git commit -m "feat: add bulk import tab to customer admin with corp/brand/store support"
 ```
 
@@ -1239,5 +1239,5 @@ git commit -m "fix: lint and security review for bulk import feature"
 | 既存データのUPSERT | Task 1 (validateAndDetect + executeUpsert) |
 | 空セルが「変更なし」 | Task 1 (cleanData filters nulls in executeUpsert) |
 | エラー行がプレビューでハイライト | Task 2 Step 7 (renderBulkPreviewResult) |
-| aiden-customer-admin.html にUI配置 | Task 3 |
-| aiden-admin.html にUI配置 | Task 2 |
+| weir-customer-admin.html にUI配置 | Task 3 |
+| weir-admin.html にUI配置 | Task 2 |

@@ -231,7 +231,7 @@ async function handleRegister(req, res) {
   }
 
   try {
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html';
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -627,14 +627,14 @@ async function handleLineCallback(req, res) {
   const { code } = req.query;
   const frontendUrl = process.env.FRONTEND_URL || 'https://taiseiwolt.github.io/aiden-demo';
 
-  if (!code) return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=missing_code');
+  if (!code) return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=missing_code');
 
   const channelId = process.env.LINE_CHANNEL_ID;
   const channelSecret = process.env.LINE_CHANNEL_SECRET;
   const callbackUrl = process.env.LINE_CALLBACK_URL;
 
   if (!channelId || !channelSecret || !callbackUrl) {
-    return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=server_config');
+    return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=server_config');
   }
 
   try {
@@ -652,7 +652,7 @@ async function handleLineCallback(req, res) {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
-      return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=token_failed');
+      return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=token_failed');
     }
 
     const profileRes = await fetch('https://api.line.me/v2/profile', {
@@ -661,7 +661,7 @@ async function handleLineCallback(req, res) {
     const profile = await profileRes.json();
 
     if (!profileRes.ok || !profile.userId) {
-      return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=profile_failed');
+      return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=profile_failed');
     }
 
     const { data: existingMember } = await supabase
@@ -689,7 +689,7 @@ async function handleLineCallback(req, res) {
         user_metadata: { line_user_id: profile.userId, display_name: profile.displayName },
       });
 
-      if (authError) return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=auth_create_failed');
+      if (authError) return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=auth_create_failed');
       authUserId = authData.user.id;
 
       const { data: newMember, error: memberError } = await supabase
@@ -706,7 +706,7 @@ async function handleLineCallback(req, res) {
 
       if (memberError) {
         await supabase.auth.admin.deleteUser(authUserId);
-        return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=member_create_failed');
+        return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=member_create_failed');
       }
 
       member = newMember;
@@ -721,7 +721,7 @@ async function handleLineCallback(req, res) {
       password: tempPassword,
     });
 
-    if (loginError) return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=session_failed');
+    if (loginError) return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=session_failed');
 
     const fragment = new URLSearchParams({
       access_token: loginData.session.access_token,
@@ -730,9 +730,9 @@ async function handleLineCallback(req, res) {
       is_new_user: String(isNewUser),
     }).toString();
 
-    return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#' + fragment);
+    return res.redirect(302, frontendUrl + '/weir-order-checkout.html#' + fragment);
   } catch (e) {
-    return res.redirect(302, frontendUrl + '/aiden-order-checkout.html#error=server_error');
+    return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=server_error');
   }
 }
 
@@ -790,7 +790,7 @@ async function handleResendVerification(req, res) {
       type: 'signup',
       email: email,
       options: {
-        redirectTo: (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html',
+        redirectTo: (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html',
       },
     });
 
@@ -857,7 +857,7 @@ async function handleBulkSendVerification(req, res) {
     // Send verification emails via Supabase Auth generateLink
     let sentCount = 0;
     const errors = [];
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html';
 
     for (const member of unverified) {
       try {
@@ -949,7 +949,7 @@ async function handleResetPassword(req, res) {
 
   try {
     const anonClient = createAnonClient();
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-password-reset.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-password-reset.html';
 
     const { error: resetError } = await anonClient.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,

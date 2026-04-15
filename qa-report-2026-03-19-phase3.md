@@ -23,7 +23,7 @@
 
 ## Detailed Results
 
-### Bug1: MyPage住所管理 (aiden-mypage-membership.html)
+### Bug1: MyPage住所管理 (weir-mypage-membership.html)
 - [x] 「配達先住所」セクション表示
 - [x] 「+ 住所を追加」ボタン表示
 - [x] モーダル開閉動作
@@ -31,13 +31,13 @@
 - [x] モバイル(375px)でレイアウト崩れなし
 - Screenshot: `qa-screenshots/bug1-mypage-address.png`, `qa-screenshots/mobile-mypage.png`
 
-### Bug2: サービス料ツールチップ (aiden-order-checkout.html)
+### Bug2: サービス料ツールチップ (weir-order-checkout.html)
 - [x] `.surcharge-info` (?)アイコン存在
 - [x] `#surchargeTooltip` 要素存在
 - Note: カートデータなしでリダイレクトされるため、DOM存在確認のみ
 - Screenshot: `qa-screenshots/bug2-checkout-tooltip.png`
 
-### Bug3: 営業時間外UI (aiden-order-store.html)
+### Bug3: 営業時間外UI (weir-order-store.html)
 - [x] `#toastNotification` 要素存在
 - [x] `showClosedToast()` 関数存在・動作確認
 - [x] `updateCartButtonForClosedState()` 関数存在
@@ -47,7 +47,7 @@
 - [x] Toast表示トリガー正常動作
 - Screenshot: `qa-screenshots/bug3-toast-visible.png`
 
-### Bug5: サインインボタン (aiden-order.html)
+### Bug5: サインインボタン (weir-order.html)
 - [x] `#hdr-signin` に `onclick="handleSignIn()"` 設定済み
 - [x] クリックでログインモーダル表示
 - [x] メールアドレス/パスワード入力フィールド表示
@@ -56,7 +56,7 @@
 - [x] モバイル(375px)でモーダルが画面内に収まる (width: 345px)
 - Screenshot: `qa-screenshots/bug5-order-signin.png`, `qa-screenshots/mobile-order-signin.png`
 
-### Bug6: 注文後導線 (aiden-order-tracking.html)
+### Bug6: 注文後導線 (weir-order-tracking.html)
 - [x] `#postDeliveryActions` コンテナ存在
 - [x] 「口コミを書いてポイントGET」ボタン存在 (テキスト確認済み)
 - [x] 「もう一度注文する」ボタン存在 (テキスト確認済み)

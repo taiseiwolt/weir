@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 <style>
 :root {
   --brand: var(--brand-primary);
@@ -422,7 +422,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 </head>
 <body>
 
-<div id="aiden-header"></div>
+<div id="weir-header"></div>
 
 <!-- ===== SIGNIN MODAL ===== -->
 <div id="signinOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
@@ -728,7 +728,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
       </div>
 
       <div class="price-privacy">
-        この注文で提供された個人情報は、Weirと<span id="privacyBrandName"></span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./aiden-privacy.html">Weirのプライバシーポリシー</a>をご覧ください。
+        この注文で提供された個人情報は、Weirと<span id="privacyBrandName"></span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./weir-privacy.html">Weirのプライバシーポリシー</a>をご覧ください。
       </div>
 
       <button class="btn-order incomplete" id="btnOrder" onclick="placeOrder()">
@@ -743,7 +743,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 
 <script>
 // ===================================================================
-// CONFIG - passed from previous page (aiden-order-store)
+// CONFIG - passed from previous page (weir-order-store)
 // ===================================================================
 // ===================================================================
 // SUPABASE CONFIG
@@ -863,8 +863,8 @@ let CHECKOUT_DATA = {
   brandLogoText: '',
   brandColor: '',
   storeName: '',
-  storePageUrl: 'aiden-store.html',
-  menuPageUrl: 'aiden-order-store.html',
+  storePageUrl: 'weir-store.html',
+  menuPageUrl: 'weir-order-store.html',
   heroImg: 'https://images.unsplash.com/photo-1504544750208-dc0358e63f7f?w=1200&h=300&fit=crop',
   pointEnabled: true,
   freeDeliveryThreshold: 3000,
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     header: 'order',
     footer: true,
     onBack: function() {
-      window.location.href = './aiden-order-store.html' + window.location.search;
+      window.location.href = './weir-order-store.html' + window.location.search;
     },
     onBrandLoaded: function(brand) {
       document.title = (brand.name || '') + ' | お会計';
@@ -1537,7 +1537,7 @@ function goBackToMenu() {
   try {
     sessionStorage.setItem('aiden_cart_restore', JSON.stringify(storeCart));
   } catch(e) { /* ignored */ }
-  let menuUrl = CHECKOUT_DATA.menuPageUrl || './aiden-order-store.html';
+  let menuUrl = CHECKOUT_DATA.menuPageUrl || './weir-order-store.html';
   const _params = new URLSearchParams(window.location.search);
   const sid = CHECKOUT_DATA.storeId || _params.get('venue_id') || _params.get('store_id');
   if (sid && !menuUrl.includes('venue_id=') && !menuUrl.includes('store_id=')) {
@@ -2173,12 +2173,12 @@ async function placeOrder() {
         // ── トラッキングページにリダイレクト ──
         // IR-03/IR-04: 決済後ブラウザバック防止
         if (trackingToken) {
-          const trackingUrl = 'aiden-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+          const trackingUrl = 'weir-order-tracking.html?token=' + encodeURIComponent(trackingToken);
           history.replaceState(null, '', trackingUrl);
           window.location.href = trackingUrl;
         } else {
           // 最終フォールバック: payment_intent_id でtracking.htmlに渡す
-          const trackingUrl = 'aiden-order-tracking.html?pi=' + encodeURIComponent(piId);
+          const trackingUrl = 'weir-order-tracking.html?pi=' + encodeURIComponent(piId);
           history.replaceState(null, '', trackingUrl);
           window.location.href = trackingUrl;
         }
@@ -2340,7 +2340,7 @@ async function placeOrder() {
       sessionStorage.setItem('aiden_tracking_token', orderRow.tracking_token);
       sessionStorage.setItem('aiden_last_order_id', orderRow.display_id);
       // IR-03/IR-04: 決済後ブラウザバック防止
-      const trackingUrl = 'aiden-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
+      const trackingUrl = 'weir-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
       history.replaceState(null, '', trackingUrl);
       window.location.href = trackingUrl;
 
@@ -2431,7 +2431,7 @@ async function handleForgotPassword() {
   const successEl = document.getElementById('signinSuccess');
   const errEl = document.getElementById('signinError');
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/aiden-mypage.html' });
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/weir-mypage.html' });
     if (error) throw error;
     successEl.textContent = 'パスワードリセットメールを送信しました。メールをご確認ください。';
     successEl.style.display = 'block';
@@ -2454,7 +2454,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSigni
 // オーバーレイクリックで閉じる
 document.getElementById('signinOverlay')?.addEventListener('click', (e) => { if (e.target.id === 'signinOverlay') closeSigninModal(); });
 </script>
-<div id="aiden-footer"></div>
+<div id="weir-footer"></div>
 <!-- 特商法モーダル -->
 <div id="tokushoho-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
   <div style="background:white;max-width:600px;margin:40px auto;border-radius:12px;padding:24px;position:relative;">
@@ -2560,7 +2560,7 @@ async function showTokushoho() {
         <td style="padding:12px 8px;">店舗が注文を受付（ステータスが「調理中」以降）した後のキャンセルはできません。受付前であればアプリ上からキャンセル可能です。</td>
       </tr>
     </table>
-    <p style="margin-top:16px;font-size:12px;color:#6b7280;"><a href="/aiden-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">エンドユーザー利用規約</a> | <a href="/aiden-privacy-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">プライバシーポリシー</a> | <a href="/aiden-tokushoho.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">特定商取引法に基づく表示（全文）</a></p>
+    <p style="margin-top:16px;font-size:12px;color:#6b7280;"><a href="/weir-terms-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">エンドユーザー利用規約</a> | <a href="/weir-privacy-enduser.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">プライバシーポリシー</a> | <a href="/weir-tokushoho.html" target="_blank" style="color:#3b82f6;text-decoration:underline;">特定商取引法に基づく表示（全文）</a></p>
   `;
 }
 document.addEventListener('keydown', function(e) {
@@ -2570,7 +2570,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 </script>
-<script src="aiden-chat-widget.js"></script>
+<script src="weir-chat-widget.js"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);

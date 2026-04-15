@@ -245,7 +245,7 @@
 | `supabase/functions/stripe-create-payment-intent/index.ts` | product_sizes価格検証追加（金額改ざん防止） | E4-03 |
 | `supabase/functions/stripe-create-payment-intent/index.ts` | 空カートバリデーション追加 | ER-02 |
 | `supabase/functions/confirm-order/index.ts` | メタデータからfee情報読み取り+保存追加 | DI-02 |
-| `aiden-order-tracking.html` | ETAカウントダウン30秒更新タイマー追加 | T-01 |
+| `weir-order-tracking.html` | ETAカウントダウン30秒更新タイマー追加 | T-01 |
 
 ---
 
@@ -299,7 +299,7 @@ DELETE FROM orders WHERE id IN (
 ### 修正ファイル一覧（追加）
 | ファイル | 修正内容 | 関連テスト |
 |---------|---------|-----------|
-| `aiden-order-tracking.html` | ボタンをfixed→フロー内flex配置に変更 | UI重なり |
+| `weir-order-tracking.html` | ボタンをfixed→フロー内flex配置に変更 | UI重なり |
 
 ---
 

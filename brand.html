@@ -17,13 +17,13 @@
     <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
     <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
+<link rel="stylesheet" href="./weir-common.css">
 <link rel="stylesheet" href="./public/templates/base.css">
 <link rel="stylesheet" id="tpl-css" href="">
-<script src="./aiden-common.js"></script>
+<script src="./weir-common.js"></script>
 <link id="font-link" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ===== Page-level CSS variable aliases (brand vars provided by aiden-common.css) ===== */
+/* ===== Page-level CSS variable aliases (brand vars provided by weir-common.css) ===== */
 :root {
   --red: var(--brand-primary);
   --red-dark: var(--brand-primary-dark);
@@ -223,8 +223,8 @@ img{max-width:100%}
 </head>
 <body>
 
-<!-- ===== HEADER (rendered by aiden-common.js) ===== -->
-<div id="aiden-header"></div>
+<!-- ===== HEADER (rendered by weir-common.js) ===== -->
+<div id="weir-header"></div>
 
 <!-- ===== HERO ===== -->
 <div class="hero">
@@ -264,11 +264,11 @@ img{max-width:100%}
         <div class="main-cta-card-img">📅</div>
         <div><div class="main-cta-card-title" data-i18n="cta_reserve">来店予約</div><div class="main-cta-card-sub" data-i18n="cta_reserve_sub">空席確認・来店予約</div></div>
       </a>
-      <a href="./aiden-order.html?mode=takeout" class="main-cta-card">
+      <a href="./weir-order.html?mode=takeout" class="main-cta-card">
         <div class="main-cta-card-img">🥡</div>
         <div><div class="main-cta-card-title" data-i18n="cta_takeout">テイクアウト</div><div class="main-cta-card-sub" data-i18n="cta_takeout_sub">テイクアウト注文</div></div>
       </a>
-      <a href="./aiden-order.html?mode=delivery" class="main-cta-card">
+      <a href="./weir-order.html?mode=delivery" class="main-cta-card">
         <div class="main-cta-card-img">🛵</div>
         <div><div class="main-cta-card-title" data-i18n="cta_delivery">デリバリー</div><div class="main-cta-card-sub" data-i18n="cta_delivery_sub">自宅に届けます</div></div>
       </a>
@@ -320,7 +320,7 @@ img{max-width:100%}
     <div>
       <div class="sec-title" style="margin-bottom:12px" data-i18n="news_title">ニュース</div>
       <div class="news-list" id="news-list"></div>
-      <a href="./aiden-brand-news.html" class="news-more" data-i18n="news_more">ニュース一覧</a>
+      <a href="./weir-brand-news.html" class="news-more" data-i18n="news_more">ニュース一覧</a>
     </div>
   </div>
 </section>
@@ -328,11 +328,11 @@ img{max-width:100%}
 <!-- ===== SNS ===== -->
 <section class="sns-section"><div class="sns-inner"><div class="sns-title" id="sns-title" data-i18n="sns_title">公式SNS</div><div class="sns-sub" data-i18n="sns_sub">フォローして最新情報をゲットしよう</div><div class="sns-icons" id="sns-icons"></div></div></section>
 
-<!-- ===== FOOTER (rendered by aiden-common.js) ===== -->
-<div id="aiden-footer"></div>
+<!-- ===== FOOTER (rendered by weir-common.js) ===== -->
+<div id="weir-footer"></div>
 
 <div class="float-order">
-  <a href="./aiden-order.html" class="float-order-btn"><span>🥡</span><span data-i18n="nav_order">テイクアウト・デリバリー</span></a>
+  <a href="./weir-order.html" class="float-order-btn"><span>🥡</span><span data-i18n="nav_order">テイクアウト・デリバリー</span></a>
   <div class="float-order-pulse"></div>
 </div>
 
@@ -465,7 +465,7 @@ function goStoreSearch(area) {
   var params = [];
   if (_brandParam) params.push('brand=' + encodeURIComponent(_brandParam));
   if (q) params.push('q=' + encodeURIComponent(q));
-  window.location.href = './aiden-brand-stores.html' + (params.length ? '?' + params.join('&') : '');
+  window.location.href = './weir-brand-stores.html' + (params.length ? '?' + params.join('&') : '');
 }
 
 // ===== TEMPLATE LOADER =====
@@ -589,7 +589,7 @@ async function loadFromSupabase() {
     }
 
     // 3b. Load categories for footer menu
-    var menuUrl = './aiden-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
+    var menuUrl = './weir-brand-menu.html' + (_brandParam ? '?brand=' + encodeURIComponent(_brandParam) : '');
     var catRes = await sb.from('categories').select('id, name, sort_order').eq('brand_id', brandId).order('sort_order');
     if (catRes.data && catRes.data.length > 0) {
       var footerMenu = document.querySelector('.footer-nav-list');
@@ -852,7 +852,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (_brandParam) {
     document.querySelectorAll('a[href]').forEach(function(a) {
       var h = a.getAttribute('href');
-      if (h && (h.startsWith('./aiden-brand-') || h === './brand.html') && !h.includes('brand=')) {
+      if (h && (h.startsWith('./weir-brand-') || h === './brand.html') && !h.includes('brand=')) {
         a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
       }
     });

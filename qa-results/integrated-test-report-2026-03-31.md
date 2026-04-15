@@ -20,10 +20,10 @@
 | Galaxy S21 | 360×800 |
 
 ### 対象ページ
-1. aiden-order.html（店舗選択）
-2. aiden-order-store.html（メニュー・カート）
-3. aiden-order-checkout.html（チェックアウト）
-4. aiden-order-tracking.html（トラッキング）
+1. weir-order.html（店舗選択）
+2. weir-order-store.html（メニュー・カート）
+3. weir-order-checkout.html（チェックアウト）
+4. weir-order-tracking.html（トラッキング）
 5. aiden-brand-sushiro.html（ブランドHP）
 
 ### 発見・修正した問題
@@ -114,13 +114,13 @@
 | `f0744f9` | セキュリティ: 認証チェック, beforeunload |
 
 ### 修正ファイル: 7ファイル
-- aiden-order.html
-- aiden-order-store.html
-- aiden-order-checkout.html
-- aiden-order-tracking.html
+- weir-order.html
+- weir-order-store.html
+- weir-order-checkout.html
+- weir-order-tracking.html
 - aiden-brand-sushiro.html
-- aiden-order-dashboard.html
-- aiden-admin.html
+- weir-order-dashboard.html
+- weir-admin.html
 
 ### デプロイ: 完了
 - 全修正が https://weir.co.jp に反映済み

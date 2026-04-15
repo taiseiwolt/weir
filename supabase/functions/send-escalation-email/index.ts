@@ -130,7 +130,7 @@ serve(async (req) => {
 
             <!-- Action -->
             <div style="text-align:center;margin-top:24px;">
-              <a href="https://weir.co.jp/aiden-admin.html#cs"
+              <a href="https://weir.co.jp/weir-admin.html#cs"
                  style="display:inline-block;background:#D32F2F;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
                 管理画面で確認する
               </a>

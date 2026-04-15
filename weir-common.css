@@ -1,11 +1,11 @@
 /* =============================================================
-   aiden-common.css — Weir 共通スタイル
+   weir-common.css — Weir 共通スタイル
    FOUC制御 / CSS変数デフォルト / Header Type A & B / Footer / Responsive
    ============================================================= */
 
 /* ===== FOUC Control ===== */
-body:not(.aiden-ready) { opacity: 0; }
-body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
+body:not(.weir-ready) { opacity: 0; }
+body.weir-ready { opacity: 1; transition: opacity .3s ease; }
 
 /* ===== CSS Variable Defaults (neutral fallback) ===== */
 :root {
@@ -61,35 +61,35 @@ body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
 .header--order .header-cart-badge{position:absolute;top:2px;right:2px;background:white;color:var(--brand-header-bg);font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .header--order .header-signin{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:var(--brand-header-text);font-size:11px;padding:6px 12px;border-radius:3px;cursor:pointer;font-family:var(--brand-font);white-space:nowrap}
 .header--order .header-signin:hover{background:rgba(255,255,255,.3)}
-.aiden-order-body{padding-top:56px}
+.weir-order-body{padding-top:56px}
 
 /* ===== Footer ===== */
-footer.aiden-footer{background:#222;color:rgba(255,255,255,.7)}
-.aiden-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
-.aiden-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.aiden-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
-.aiden-footer .footer-brand-desc{font-size:12px;line-height:1.8;opacity:.6}
-.aiden-footer .footer-nav-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.15)}
-.aiden-footer .footer-nav-list{display:flex;flex-direction:column;gap:9px}
-.aiden-footer .footer-nav-list a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;text-decoration:none}
-.aiden-footer .footer-nav-list a:hover{color:white}
-.aiden-footer .footer-bottom{border-top:1px solid rgba(255,255,255,.1);padding:16px 20px}
-.aiden-footer .footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.aiden-footer .footer-bottom-links{display:flex;gap:16px;flex-wrap:wrap}
-.aiden-footer .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4);text-decoration:none}
-.aiden-footer .footer-bottom-links a:hover{color:white}
-.aiden-footer .footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
-.aiden-footer .powered{font-size:10px;color:rgba(255,255,255,.2)}
+footer.weir-footer{background:#222;color:rgba(255,255,255,.7)}
+.weir-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
+.weir-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.weir-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
+.weir-footer .footer-brand-desc{font-size:12px;line-height:1.8;opacity:.6}
+.weir-footer .footer-nav-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.15)}
+.weir-footer .footer-nav-list{display:flex;flex-direction:column;gap:9px}
+.weir-footer .footer-nav-list a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;text-decoration:none}
+.weir-footer .footer-nav-list a:hover{color:white}
+.weir-footer .footer-bottom{border-top:1px solid rgba(255,255,255,.1);padding:16px 20px}
+.weir-footer .footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.weir-footer .footer-bottom-links{display:flex;gap:16px;flex-wrap:wrap}
+.weir-footer .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4);text-decoration:none}
+.weir-footer .footer-bottom-links a:hover{color:white}
+.weir-footer .footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
+.weir-footer .powered{font-size:10px;color:rgba(255,255,255,.2)}
 
 /* ===== Responsive ===== */
 @media(max-width:900px){
   .header-nav{display:none}
   .header-hamburger{display:block}
   .lang-select-wrap{margin-left:0}
-  .aiden-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}
+  .weir-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}
 }
 @media(max-width:600px){
-  .aiden-footer .footer-main{grid-template-columns:1fr}
-  .aiden-footer .footer-bottom-inner{flex-direction:column;align-items:flex-start}
-  .aiden-footer .footer-bottom-links{flex-wrap:wrap}
+  .weir-footer .footer-main{grid-template-columns:1fr}
+  .weir-footer .footer-bottom-inner{flex-direction:column;align-items:flex-start}
+  .weir-footer .footer-bottom-links{flex-wrap:wrap}
 }

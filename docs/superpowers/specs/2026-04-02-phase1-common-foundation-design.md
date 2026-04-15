@@ -10,26 +10,26 @@
 
 ```
 aiden-demo/
-├── aiden-common.css      # 共通スタイル
-├── aiden-common.js       # 共通ロジック
+├── weir-common.css      # 共通スタイル
+├── weir-common.js       # 共通ロジック
 ```
 
 各HTMLの `<head>` 末尾（Supabase CDN の後）に追加:
 ```html
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 ## 2. FOUC制御
 
-### CSS (aiden-common.css)
+### CSS (weir-common.css)
 ```css
-body:not(.aiden-ready) { opacity: 0; }
-body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
+body:not(.weir-ready) { opacity: 0; }
+body.weir-ready { opacity: 1; transition: opacity .3s ease; }
 ```
 
-### JS (aiden-common.js)
-- `AidenCommon.init()` 完了時に `document.body.classList.add('aiden-ready')` でフェードイン
+### JS (weir-common.js)
+- `AidenCommon.init()` 完了時に `document.body.classList.add('weir-ready')` でフェードイン
 - **タイムアウト: 3秒**でSupabase応答がない場合は強制表示
 - タイムアウト時のカラー: **ニュートラル（白/グレー系）** — ブランドカラーは適用しない
   - `--brand-primary: #666`, `--brand-header-bg: #FFFFFF`, `--brand-header-text: #333`
@@ -38,8 +38,8 @@ body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
 ### タイムアウトフロー
 ```
 ページ読込 → body opacity:0
-  ├─ Supabase応答OK → ブランドカラー適用 → aiden-ready
-  └─ 3秒タイムアウト → ニュートラルカラー適用 → aiden-ready
+  ├─ Supabase応答OK → ブランドカラー適用 → weir-ready
+  └─ 3秒タイムアウト → ニュートラルカラー適用 → weir-ready
        └─ その後Supabase応答が来たら → ブランドカラーで上書き（シームレス）
 ```
 
@@ -114,7 +114,7 @@ font_color       → --brand-font-color
 ## 5. ヘッダーコンポーネント
 
 ### Type A: ブランドページ用 (header: 'brand')
-対象: brand.html, aiden-brand-menu.html, aiden-brand-stores.html, aiden-membership.html
+対象: brand.html, weir-brand-menu.html, weir-brand-stores.html, weir-membership.html
 
 構造（brand.htmlの現在の実装を共通化）:
 - ブランドカラー背景 `var(--brand-header-bg)`
@@ -126,16 +126,16 @@ font_color       → --brand-font-color
 - モバイルナビ: CTAグリッド + ナビリンク
 
 ナビリンクのURL:
-- `./aiden-brand-menu.html?brand={slug}`
-- `./aiden-brand-stores.html?brand={slug}`
-- `./aiden-membership.html?brand_id={id}`
-- `./aiden-order.html?brand={slug}` (MO)
+- `./weir-brand-menu.html?brand={slug}`
+- `./weir-brand-stores.html?brand={slug}`
+- `./weir-membership.html?brand_id={id}`
+- `./weir-order.html?brand={slug}` (MO)
 
 アクティブリンク: 現在のページに対応するリンクに `.active` クラスを付与。
 判定は `location.pathname` から。
 
 ### Type B: MOページ用 (header: 'order')
-対象: aiden-order.html, aiden-order-store.html, aiden-order-checkout.html
+対象: weir-order.html, weir-order-store.html, weir-order-checkout.html
 
 構造:
 - ブランドカラー背景 `var(--brand-header-bg)`（現在の白→変更）
@@ -146,12 +146,12 @@ font_color       → --brand-font-color
 - テキスト色: `var(--brand-header-text)`
 
 戻るボタンの挙動:
-- aiden-order.html: 非表示 or ブランドHPへ
-- aiden-order-store.html: 店舗選択ページへ
-- aiden-order-checkout.html: メニュー選択ページへ
+- weir-order.html: 非表示 or ブランドHPへ
+- weir-order-store.html: 店舗選択ページへ
+- weir-order-checkout.html: メニュー選択ページへ
 
-### 共通CSS (aiden-common.css)
-ヘッダーのCSSはType A / Type Bともに aiden-common.css に含める。
+### 共通CSS (weir-common.css)
+ヘッダーのCSSはType A / Type Bともに weir-common.css に含める。
 各HTMLファイルから重複するヘッダーCSSを削除する。
 
 ## 6. フッターコンポーネント
@@ -179,7 +179,7 @@ font_color       → --brand-font-color
 
 ### 方式
 - `data-i18n` 属性 + `querySelectorAll('[data-i18n]')` に統一
-- aiden-order.html の `getElementById` 方式は `data-i18n` に移行
+- weir-order.html の `getElementById` 方式は `data-i18n` に移行
 
 ### 翻訳辞書
 - **共通辞書** (`AidenCommon.I18N`): ヘッダー/フッター/共通UIの翻訳（7言語）
@@ -204,12 +204,12 @@ font_color       → --brand-font-color
 | # | ページ | 削除 | 追加 |
 |---|--------|------|------|
 | 1 | brand.html | ヘッダー/フッターHTML、CSS変数デフォルト値、`applyBrandConfig()`の一部、`changeLang()`、`I18N`辞書、`escH()` | `<link>`+`<script>` 読込、`AidenCommon.init({header:'brand',footer:true})` 呼出、ページ固有翻訳 |
-| 2 | aiden-brand-menu.html | 同上 | 同上 |
-| 3 | aiden-brand-stores.html | 同上 | 同上 |
-| 4 | aiden-membership.html | 独自ヘッダー、CSS変数、ブランド読込全体 | 共通読込、i18n対応追加（新規）、ヘッダー/フッター |
-| 5 | aiden-order.html | 独自ヘッダー、`LNG`辞書、`changeLang()` | 共通読込、Supabase初期化追加、`data-i18n`属性付与 |
-| 6 | aiden-order-store.html | 独自ヘッダー、ブランド色個別適用 | 共通読込、フッター追加 |
-| 7 | aiden-order-checkout.html | 独自ヘッダー、独自FOUC制御、`I18N`辞書 | 共通読込、フッター追加 |
+| 2 | weir-brand-menu.html | 同上 | 同上 |
+| 3 | weir-brand-stores.html | 同上 | 同上 |
+| 4 | weir-membership.html | 独自ヘッダー、CSS変数、ブランド読込全体 | 共通読込、i18n対応追加（新規）、ヘッダー/フッター |
+| 5 | weir-order.html | 独自ヘッダー、`LNG`辞書、`changeLang()` | 共通読込、Supabase初期化追加、`data-i18n`属性付与 |
+| 6 | weir-order-store.html | 独自ヘッダー、ブランド色個別適用 | 共通読込、フッター追加 |
+| 7 | weir-order-checkout.html | 独自ヘッダー、独自FOUC制御、`I18N`辞書 | 共通読込、フッター追加 |
 
 ## 9. 制約・前提
 
@@ -217,7 +217,7 @@ font_color       → --brand-font-color
 - **各ページ固有ロジックには手を入れない** — ヒーローカルーセル、メニュー表示、地図、決済フロー等
 - **Supabase `sb` 変数は各ページで維持** — クエリパターンが異なるため共通化しない
 - **Phase 1完了後に全ページリグレッション確認を実施**
-- **aiden-order.htmlのハードコード店舗リスト→Supabase化はPhase 2で対応**
+- **weir-order.htmlのハードコード店舗リスト→Supabase化はPhase 2で対応**
 
 ## 10. リグレッション確認項目
 

@@ -29,11 +29,11 @@
 
 | ファイル | escH()定義 | DB値の未エスケープinnerHTML | 判定 |
 |---|---|---|---|
-| aiden-mypage.html | ✅ 有 | なし（全てescH()適用済み） | ✅PASS |
-| aiden-order.html | ✅ 有 | なし（textContent使用 or 事前ビルド済みHTML） | ✅PASS |
+| weir-mypage.html | ✅ 有 | なし（全てescH()適用済み） | ✅PASS |
+| weir-order.html | ✅ 有 | なし（textContent使用 or 事前ビルド済みHTML） | ✅PASS |
 | aiden-brand-sushiro.html | ✅ 有 | BRAND_CONFIG値のみ（ハードコードJS、DB値ではない） | ✅PASS |
-| aiden-brand-menu.html | ✅ 有 | BRAND_CONFIG値（ハードコード）+ 予約確認モーダルのフォーム値（Self-XSS、低リスク） | ✅PASS |
-| aiden-brand-stores.html | ✅ 有 | STORE_ATTRS値（ハードコード絵文字配列、DB値ではない） | ✅PASS |
+| weir-brand-menu.html | ✅ 有 | BRAND_CONFIG値（ハードコード）+ 予約確認モーダルのフォーム値（Self-XSS、低リスク） | ✅PASS |
+| weir-brand-stores.html | ✅ 有 | STORE_ATTRS値（ハードコード絵文字配列、DB値ではない） | ✅PASS |
 
 ## カテゴリ別結果
 
@@ -168,8 +168,8 @@
 
 | # | 内容 | リスク | 優先度 |
 |---|---|---|---|
-| WARN-1 | aiden-order-checkout.html / aiden-membership.html にescH()未定義。admin管理データのinnerHTML展開あり | 低（管理者入力のみ） | P3 |
-| WARN-2 | aiden-brand-menu.html L1249: 予約確認モーダルでフォーム値をinnerHTML展開（Self-XSS） | 低（自己入力のみ） | P3 |
+| WARN-1 | weir-order-checkout.html / weir-membership.html にescH()未定義。admin管理データのinnerHTML展開あり | 低（管理者入力のみ） | P3 |
+| WARN-2 | weir-brand-menu.html L1249: 予約確認モーダルでフォーム値をinnerHTML展開（Self-XSS） | 低（自己入力のみ） | P3 |
 | WARN-3 | Content-Security-Policy / X-Content-Type-Options ヘッダー未設定（HSTSは設定済み） | 中 | P2 |
 | WARN-4 | `select=*` でorders テーブルが`permission denied`（カラムレベルGRANTの仕様）。アプリ内で`select('*')`使用箇所がある場合は明示的カラム指定に変更が必要 | 中 | P2 |
 

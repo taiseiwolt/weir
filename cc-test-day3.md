@@ -35,7 +35,7 @@
 SEC-01〜04の修正がデプロイ済み。既存機能が壊れていないことを確認する。
 
 ### SEC-R1: 注文フローE2Eリグレッション
-1. https://weir.co.jp を開く（aiden-order-store.html）
+1. https://weir.co.jp を開く（weir-order-store.html）
 2. 店舗を選択 → メニュー表示確認
 3. 商品をカートに追加 → チェックアウト画面遷移
 4. チェックアウト画面で金額表示が正しいか確認（小計、配達料、サービス料、合計）
@@ -44,7 +44,7 @@ SEC-01〜04の修正がデプロイ済み。既存機能が壊れていないこ
 - 重要度: 🔴Critical
 
 ### SEC-R2: 受注ダッシュボード表示確認
-1. aiden-order-dashboard.html を開く
+1. weir-order-dashboard.html を開く
 2. 既存注文が正しく表示されるか確認（orders_public_viewからの取得に切り替わったため）
 3. 注文詳細に **customer_name, email, phone が表示されないこと** を確認（ビュー経由）
 4. ステータス変更ボタンが機能するか確認
@@ -52,7 +52,7 @@ SEC-01〜04の修正がデプロイ済み。既存機能が壊れていないこ
 - 重要度: 🔴Critical
 
 ### SEC-R3: トラッキングページ確認
-1. aiden-order-tracking.html を既存注文IDで表示
+1. weir-order-tracking.html を既存注文IDで表示
 2. orders_public_view経由のクエリで正しく表示されるか
 3. ステータス・残り時間・注文内容が表示されるか
 - 期待: トラッキング正常表示
@@ -134,7 +134,7 @@ LIMIT 3;
 - 記録: SupabaseのデフォルトTZ設定を確認（`SHOW timezone;`）
 
 ### TZ-02: フロント表示時刻確認
-1. aiden-order-tracking.html で注文の時刻表示を確認
+1. weir-order-tracking.html で注文の時刻表示を確認
 2. 表示時刻がJST（日本時間）になっているか
 3. DB保存値との対応関係を記録
 - 重要度: 🟡Warning
@@ -154,7 +154,7 @@ ORDER BY jobname;
 ## Phase 4: バリデーション・エッジケーステスト 🟡Warning
 
 ### E4-01: カート商品数上限
-1. aiden-order-store.html を開く
+1. weir-order-store.html を開く
 2. 同じ商品を連続でカートに追加（+ボタン連打 or 数量変更）
 3. 上限があるか確認（50個? 100個? 上限なし?）
 4. 上限なしの場合: カートに大量追加してcheckout画面に進み、金額計算が正しいか確認
@@ -162,7 +162,7 @@ ORDER BY jobname;
 - 重要度: 🟡Warning
 
 ### E4-02: カート空でチェックアウトアクセス
-1. カートが空の状態でaiden-order-checkout.htmlに直接アクセス
+1. カートが空の状態でweir-order-checkout.htmlに直接アクセス
 2. エラー表示 or リダイレクトされるか
 - 期待: 空カートでの注文不可
 - 重要度: 🟡Warning
@@ -210,7 +210,7 @@ SELECT * FROM banned_users;
 ## Phase 6: タイマー・スケジュールテスト 🟡Warning
 
 ### T-01: トラッキング残り時間（既知バグ）
-1. aiden-order-tracking.html を表示
+1. weir-order-tracking.html を表示
 2. 残り時間が49分固定で動かないバグの現状確認
 3. JSコードを確認して原因特定
 4. **修正可能であれば修正**（カウントダウンが正しく動くように）
@@ -337,7 +337,7 @@ curl -X POST "https://iikwusprydaogzeslgdz.supabase.co/rest/v1/orders" \
 - 重要度: ℹ️Info
 
 ### G-09: Realtime長時間接続
-1. aiden-order-dashboard.html を開く
+1. weir-order-dashboard.html を開く
 2. Supabase Realtimeの接続設定を確認（reconnect設定、heartbeat等）
 3. コード上でreconnectハンドリングがあるか確認
 - 重要度: ℹ️Info

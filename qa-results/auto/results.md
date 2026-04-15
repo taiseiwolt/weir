@@ -153,6 +153,6 @@ Active jobs:
 
 ### Minor: Cancel function innerHTML without escH
 - **Severity**: LOW
-- **Files**: `aiden-order-dashboard.html` lines 875, 886, 888, 895
+- **Files**: `weir-order-dashboard.html` lines 875, 886, 888, 895
 - **Impact**: Internal demo data only; no user-supplied input reaches these paths currently
 - **Recommended**: Add escH() for defense-in-depth

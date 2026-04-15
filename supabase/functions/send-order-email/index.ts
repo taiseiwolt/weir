@@ -173,7 +173,7 @@ function buildConfirmationEmail(data: EmailRequest): string {
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
               <tr>
                 <td align="center" style="padding:8px 0;">
-                  <a href="https://weir.co.jp/aiden-order-tracking.html?token=${data.tracking_token}"
+                  <a href="https://weir.co.jp/weir-order-tracking.html?token=${data.tracking_token}"
                      style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
                     注文状況を確認する
                   </a>

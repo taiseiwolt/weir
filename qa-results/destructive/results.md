@@ -30,19 +30,19 @@
 ## Critical Bugs Found
 
 ### CRITICAL-02: Topping price included in unit_price causes server-side validation failure
-- **File:** `aiden-order-checkout.html` line ~1897, `stripe-create-payment-intent/index.ts` line 131
+- **File:** `weir-order-checkout.html` line ~1897, `stripe-create-payment-intent/index.ts` line 131
 - **Severity:** P0
 - **Description:** Frontend sends `unit_price` as base price + topping price (e.g. 1980+150=2130), but server validates against `product_sizes` table which only has base prices [1980, 3680]. Any order with toppings fails.
 - **Impact:** Orders with toppings/options always fail server-side price validation.
 
 ### BUG-04: Order tracking page cannot find orders (RLS issue)
-- **File:** `aiden-order-tracking.html` line 300-304
+- **File:** `weir-order-tracking.html` line 300-304
 - **Severity:** P0
 - **Description:** Tracking page queries `orders` table directly with anon key, but RLS blocks anon access after SEC-4 fix. Page shows "注文が見つかりません" even though order exists (confirmed via `orders_public_view` API). Should use `orders_public_view` or add RLS policy for tracking_token access.
 - **Impact:** ALL order tracking is broken for guest users. After successful payment, user sees "Order not found".
 
 ### BUG-05: Dashboard cannot see orders (RLS issue)
-- **File:** `aiden-order-dashboard.html`
+- **File:** `weir-order-dashboard.html`
 - **Severity:** P0
 - **Description:** Dashboard authenticated as `admin@sumibite.jp` shows 0 orders despite order ORD-pOUuHub existing for the store. RLS policy for authenticated store admins may be missing or not linking auth.uid() to store correctly.
 - **Impact:** Store admins cannot see any orders on dashboard.
@@ -54,13 +54,13 @@
 - **Details:** subtotal ¥1,280 + service ¥150 + surcharge ¥220 = ¥1,650 (server). UI showed ¥1,280 + ¥150 = ¥1,430.
 
 ### BUG-01: Mypage session requires both Supabase session AND sessionStorage `weir_member_id`
-- **File:** `aiden-mypage.html` line 332
+- **File:** `weir-mypage.html` line 332
 - **Severity:** P1
 - **Description:** `if (!session || !memberId)` checks both `sb.auth.getSession()` and `sessionStorage.getItem('weir_member_id')`. Login from checkout page sets Supabase auth but does not set `weir_member_id` in sessionStorage.
 - **Impact:** Blocks all mypage-dependent flows.
 
 ### BUG-02: Password reset error message invisible
-- **File:** `aiden-password-reset.html`
+- **File:** `weir-password-reset.html`
 - **Severity:** P2
 - **Description:** Error element exists in DOM but is not visually visible to user.
 

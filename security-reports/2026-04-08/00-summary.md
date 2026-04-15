@@ -52,7 +52,7 @@
 | ID | 内容 | 影響 |
 |----|------|------|
 | 01-P0-1 | Stored XSS: body_htmlの生DOM挿入 | セッションハイジャック |
-| 01-P0-2 | aiden-admin.html: ロールチェックなし | 管理画面不正アクセス |
+| 01-P0-2 | weir-admin.html: ロールチェックなし | 管理画面不正アクセス |
 | 01-P0-3 | 管理画面: anon keyで機密操作 | 認証バイパス |
 
 ### API・インフラ（1件）
@@ -185,7 +185,7 @@ supabase functions delete run-migration
 ### 5. 管理画面アクセス制御（01-P0-2）
 
 ```javascript
-// aiden-admin.html — セッション確認後にロールチェック追加
+// weir-admin.html — セッション確認後にロールチェック追加
 const { data: { session } } = await supabase.auth.getSession();
 if (!session) { window.location.href = '/'; return; }
 

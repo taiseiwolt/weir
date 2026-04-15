@@ -23,19 +23,19 @@
 ### 保存場所（全箇所）
 
 **フロントエンドHTMLファイル（21ファイル）:**
-- `aiden-admin.html`
-- `aiden-brand-menu.html` / `aiden-brand-menu-v1.7.html`
-- `aiden-brand-news.html` / `aiden-brand-news-v1.4.html`
-- `aiden-brand-stores.html` / `aiden-brand-stores-v1.4.html`
+- `weir-admin.html`
+- `weir-brand-menu.html` / `aiden-brand-menu-v1.7.html`
+- `weir-brand-news.html` / `aiden-brand-news-v1.4.html`
+- `weir-brand-stores.html` / `aiden-brand-stores-v1.4.html`
 - `aiden-brand-sushiro.html` / `aiden-brand-sushiro-v4.5.html`
-- `aiden-customer-admin.html` / `aiden-customer-admin-v24.91.html`
-- `aiden-membership.html`
-- `aiden-mypage.html`
-- `aiden-mypage-membership.html`
-- `aiden-order-checkout.html` / `aiden-order-checkout-v13.html`
-- `aiden-order-dashboard.html` / `aiden-order-dashboard-v22.7.html`
-- `aiden-order-store.html` / `aiden-order-store-v2_9.html`
-- `aiden-store.html` / `aiden-store-v5.4.html`
+- `weir-customer-admin.html` / `aiden-customer-admin-v24.91.html`
+- `weir-membership.html`
+- `weir-mypage.html`
+- `weir-mypage-membership.html`
+- `weir-order-checkout.html` / `aiden-order-checkout-v13.html`
+- `weir-order-dashboard.html` / `aiden-order-dashboard-v22.7.html`
+- `weir-order-store.html` / `aiden-order-store-v2_9.html`
+- `weir-store.html` / `aiden-store-v5.4.html`
 
 **変数名:** `SUPABASE_KEY` または直接文字列として記載
 
@@ -158,7 +158,7 @@ supabase projects list
 ## 5. Stripe Publishable Key
 
 ### 保存場所
-- **フロントエンドHTML**: `aiden-order-checkout.html`（Stripe.js初期化で使用）
+- **フロントエンドHTML**: `weir-order-checkout.html`（Stripe.js初期化で使用）
 
 ### 新しいキーの発行方法
 1. Stripe Dashboard → Developers → API Keys
@@ -166,7 +166,7 @@ supabase projects list
 3. 新しいキーをコピー
 
 ### 差し替え手順
-1. `aiden-order-checkout.html` で `pk_test_` または `pk_live_` で始まるキーを検索
+1. `weir-order-checkout.html` で `pk_test_` または `pk_live_` で始まるキーを検索
 2. 新しいキーに置換
 3. `vercel --prod` で再デプロイ
 

@@ -16,11 +16,11 @@ const DEVICE_CONFIGS = [
 ];
 
 const PAGES = [
-  { name: 'aiden-order', url: '/aiden-order.html', label: '店舗選択' },
-  { name: 'aiden-order-store', url: '/aiden-order-store.html?store_id=shibuya', label: 'メニュー・カート' },
-  { name: 'aiden-order-checkout', url: '/aiden-order-checkout.html?store_id=shibuya', label: 'チェックアウト' },
-  { name: 'aiden-order-tracking', url: '/aiden-order-tracking.html', label: 'トラッキング' },
-  { name: 'aiden-brand-sushiro', url: '/aiden-brand-sushiro.html', label: 'ブランドHP' },
+  { name: 'aiden-order', url: '/weir-order.html', label: '店舗選択' },
+  { name: 'aiden-order-store', url: '/weir-order-store.html?store_id=shibuya', label: 'メニュー・カート' },
+  { name: 'aiden-order-checkout', url: '/weir-order-checkout.html?store_id=shibuya', label: 'チェックアウト' },
+  { name: 'aiden-order-tracking', url: '/weir-order-tracking.html', label: 'トラッキング' },
+  { name: 'aiden-brand-sushiro', url: ./weir-brand-sushiro.html', label: 'ブランドHP' },
 ];
 
 async function ensureDir(dir) {

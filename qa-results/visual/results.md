@@ -15,7 +15,7 @@
 
 ### A-01: MO画面メニュー表示
 - **Result: PASS**
-- URL: https://weir.co.jp/aiden-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
+- URL: https://weir.co.jp/weir-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
 - Store name "新宿店" displayed correctly
 - 5 category tabs: 焼肉セット, 単品焼肉, サイドメニュー, ドリンク, デザート
 - Menu items show name, description, price, + button
@@ -25,7 +25,7 @@
 
 ### A-04: トラッキング画面構造
 - **Result: PASS**
-- URL: https://weir.co.jp/aiden-order-tracking.html
+- URL: https://weir.co.jp/weir-order-tracking.html
 - Map displayed (Leaflet/OpenStreetMap) with delivery route
 - Rider icon and store icon on map
 - Circular progress indicator: "10分 でお届け"
@@ -37,7 +37,7 @@
 
 ### A-05: 受注ダッシュボード表示
 - **Result: PASS**
-- URL: https://weir.co.jp/aiden-order-dashboard.html
+- URL: https://weir.co.jp/weir-order-dashboard.html
 - Left sidebar: Weir logo, 注文 (badge 3), 売上, メニュー, 設定, notification bell
 - Header: store name "焼肉 炭火亭 渋谷店", 接続中 indicator, notification badge (3), 受付中 toggle
 - Status tabs: すべて 0 / 新規 0 / 調理中 0 / 受け渡し待ち 0 / 受渡済 0 / 取消 0
@@ -47,7 +47,7 @@
 
 ### A-14: マイページ構造
 - **Result: PASS**
-- URL: https://weir.co.jp/aiden-mypage.html
+- URL: https://weir.co.jp/weir-mypage.html
 - Header: "マイページ" with back arrow (red bar)
 - User avatar icon (generic profile silhouette)
 - "ログインしてください" heading
@@ -131,4 +131,4 @@
 ## Notes
 
 ### Non-blocking Issue
-- **Menu item images broken**: All product images on MO page (aiden-order-store.html) display as broken placeholder icons (gray question mark boxes). This affects visual presentation but does not block ordering functionality. Likely a Supabase Storage URL or image path issue.
+- **Menu item images broken**: All product images on MO page (weir-order-store.html) display as broken placeholder icons (gray question mark boxes). This affects visual presentation but does not block ordering functionality. Likely a Supabase Storage URL or image path issue.

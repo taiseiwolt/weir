@@ -7,7 +7,7 @@
 <meta property="og:title" content="会員プログラム | Weir">
 <meta property="og:description" content="お得な会員特典やポイントプログラムをご紹介します。">
 <meta property="og:image" content="https://weir.co.jp/ogp.png">
-<meta property="og:url" content="https://weir.co.jp/aiden-membership.html">
+<meta property="og:url" content="https://weir.co.jp/weir-membership.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Weir">
 <meta name="twitter:card" content="summary_large_image">
@@ -16,8 +16,8 @@
 <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
 <meta name="description" content="お得な会員特典やポイントプログラムをご紹介します。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -134,7 +134,7 @@ img{max-width:100%}
 </head>
 <body>
 
-<div id="aiden-header"></div>
+<div id="weir-header"></div>
 
 <!-- Hero -->
 <div class="hero" id="heroSection">
@@ -181,7 +181,7 @@ img{max-width:100%}
   </div>
 </div>
 
-<div id="aiden-footer"></div>
+<div id="weir-footer"></div>
 
 <script>
 // ===================================================================
@@ -321,7 +321,7 @@ async function loadMembershipData(brandId) {
     // CTA: toggle based on login state
     if (session && memberId) {
       document.getElementById('ctaBtn').textContent = 'マイページへ';
-      document.getElementById('ctaBtn').href = './aiden-mypage.html';
+      document.getElementById('ctaBtn').href = './weir-mypage.html';
       document.getElementById('ctaSub').textContent = '';
     }
 
@@ -342,7 +342,7 @@ async function loadMembershipData(brandId) {
 // ===================================================================
 function openSignupFlow() {
   var brandParam = AidenCommon.brand ? '?brand_id=' + encodeURIComponent(AidenCommon.brand.id) : '';
-  window.location.href = './aiden-mypage.html' + brandParam + (brandParam ? '&' : '?') + 'action=signup';
+  window.location.href = './weir-mypage.html' + brandParam + (brandParam ? '&' : '?') + 'action=signup';
 }
 
 // ===================================================================

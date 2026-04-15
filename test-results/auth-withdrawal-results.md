@@ -20,7 +20,7 @@
 - **PASS** - 認証ボタン付きHTMLメール
 
 ### A-3: 登録完了画面（認証待ち画面）
-- **PASS** - `aiden-email-pending.html` 作成
+- **PASS** - `weir-email-pending.html` 作成
 - 認証メール送信メッセージ表示
 - 60分以内の認証を促す案内
 - 迷惑メールフォルダ確認の案内
@@ -32,7 +32,7 @@
 - **PASS** - 認証済みユーザーのログイン → 正常にトークン返却
 
 ### A-5: 認証完了ページ
-- **PASS** - `aiden-email-verified.html` 作成
+- **PASS** - `weir-email-verified.html` 作成
 - 認証成功: 「会員登録が完了しました」+ ログインボタン
 - 認証失敗: エラーメッセージ + 再登録誘導
 
@@ -99,8 +99,8 @@
 ### 新規作成
 | ファイル | 内容 |
 |---------|------|
-| `aiden-email-verified.html` | メール認証完了ページ |
-| `aiden-email-pending.html` | 認証待ち画面（再送ボタン付き） |
+| `weir-email-verified.html` | メール認証完了ページ |
+| `weir-email-pending.html` | 認証待ち画面（再送ボタン付き） |
 | `supabase/migrations/20260322000000_withdrawal_columns.sql` | 退会カラム追加マイグレーション |
 
 ### 修正
@@ -108,7 +108,7 @@
 |---------|---------|
 | `api/members/[...path].js` | ログインにemail_confirmed_at・withdrawal_statusチェック追加、register APIにbrand_id・name対応追加、resend-verification API追加、withdraw API追加、パスセグメント解析バグ修正 |
 | `api/_lib/response.js` | error関数にエラーコード引数追加 |
-| `aiden-mypage.html` | 退会ボタン・確認モーダル・完了画面・JS処理追加 |
+| `weir-mypage.html` | 退会ボタン・確認モーダル・完了画面・JS処理追加 |
 
 ### Supabase設定変更
 | 設定 | 変更内容 |

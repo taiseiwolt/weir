@@ -91,13 +91,13 @@ footer{background:#222;color:rgba(255,255,255,.7);margin-top:40px}
         <span class="header-logo-text" id="logo-text">ブランド名</span>
       </a>
     </div>
-    <a href="./aiden-brand-news.html" class="header-back">← ニュース一覧</a>
+    <a href="./weir-brand-news.html" class="header-back">← ニュース一覧</a>
   </div>
 </header>
 
 <nav class="breadcrumb">
   <a href="./brand.html">トップ</a> &gt;
-  <a href="./aiden-brand-news.html">ニュース</a> &gt;
+  <a href="./weir-brand-news.html">ニュース</a> &gt;
   <span id="news-bc-title">記事</span>
 </nav>
 
@@ -113,12 +113,12 @@ footer{background:#222;color:rgba(255,255,255,.7);margin-top:40px}
     <div class="news-detail-image" id="news-image"></div>
     <div class="news-detail-body" id="news-body"></div>
     <div class="news-detail-back">
-      <a href="./aiden-brand-news.html">← ニュース一覧に戻る</a>
+      <a href="./weir-brand-news.html">← ニュース一覧に戻る</a>
     </div>
   </div>
   <div class="news-empty" id="news-empty" style="display:none">
     <p>記事が見つかりませんでした。</p>
-    <a href="./aiden-brand-news.html" style="color:var(--brand-primary)">ニュース一覧に戻る</a>
+    <a href="./weir-brand-news.html" style="color:var(--brand-primary)">ニュース一覧に戻る</a>
   </div>
 </main>
 
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (_brandParam) {
     document.querySelectorAll('a[href]').forEach(function(a) {
       var h = a.getAttribute('href');
-      if (h && (h.startsWith('./aiden-brand-') || h.startsWith('./brand')) && !h.includes('brand=')) {
+      if (h && (h.startsWith('./weir-brand-') || h.startsWith('./brand')) && !h.includes('brand=')) {
         a.href = h + (h.includes('?') ? '&' : '?') + 'brand=' + encodeURIComponent(_brandParam);
       }
     });

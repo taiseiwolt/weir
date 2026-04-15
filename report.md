@@ -2,10 +2,10 @@
 
 ## 調査日: 2026-03-18
 ## 対象ファイル
-- `aiden-admin.html` (Weir管理マスタ)
-- `aiden-customer-admin.html` (顧客管理画面)
-- `aiden-order-dashboard.html` (受注ダッシュボード)
-- `aiden-order-checkout.html` (チェックアウト)
+- `weir-admin.html` (Weir管理マスタ)
+- `weir-customer-admin.html` (顧客管理画面)
+- `weir-order-dashboard.html` (受注ダッシュボード)
+- `weir-order-checkout.html` (チェックアウト)
 - `api/orders/[...path].js` (注文API)
 - `supabase/functions/` (Edge Functions)
 
@@ -13,29 +13,29 @@
 
 ## 修正済み (自動修正)
 
-### 1. aiden-admin.html: 注文取得上限 500→2000
+### 1. weir-admin.html: 注文取得上限 500→2000
 - **重要度:** 🟡 Warning
 - **問題:** `.limit(500)` で注文が500件を超えるとデータ切り捨て → 店舗別売上集計に影響
 - **修正:** `.limit(2000)` に変更 (行 247)
 
-### 2. aiden-admin.html: 会員名の表示順序を日本語順に統一
+### 2. weir-admin.html: 会員名の表示順序を日本語順に統一
 - **重要度:** 🟡 Warning
 - **問題:** `first_name + ' ' + last_name` (欧米順) → customer-admin は `last_name + first_name` (日本語順)
 - **修正:** `last_name + ' ' + first_name` に変更 (行 200)
 
-### 3. aiden-customer-admin.html: 会員ランク表示のバグ修正
+### 3. weir-customer-admin.html: 会員ランク表示のバグ修正
 - **重要度:** 🔴 Critical
 - **問題:** `m.rank` (存在しないカラム) を読んでおり、全会員が常に「レギュラー」表示
 - **原因:** members テーブルには `rank` カラムは無く `current_rank_id` (UUID FK→rank_settings) が正しい参照先
 - **修正:** `rank_settings` をロード → `current_rank_id` でランクマップ参照 (admin.html と同じロジック) (行 4864-4877)
 
-### 4. aiden-customer-admin.html: 会員ポイント表示のバグ修正
+### 4. weir-customer-admin.html: 会員ポイント表示のバグ修正
 - **重要度:** 🔴 Critical
 - **問題:** `m.point_balance` (存在しないカラム) を読んでおり、全会員のポイントが常に0表示
 - **原因:** members テーブルに `point_balance` カラムは無い。admin.html は `point_transactions` を集計して算出
 - **修正:** `point_transactions` テーブルから `member_id, amount` を取得し集計 (admin.html と同じロジック) (行 4884-4893)
 
-### 5. aiden-order-dashboard.html: ステータスマッピング不一致修正
+### 5. weir-order-dashboard.html: ステータスマッピング不一致修正
 - **重要度:** 🔴 Critical
 - **問題1:** API が `order_placed` ステータスで注文を作成するが、Dashboard の `mapOrderStatus` が `order_placed` を認識せず → 新規注文が表示されない
 - **問題2:** Dashboard → API のステータス更新で `confirmed` を送信するが、API の有効値は `accepted` → ステータス更新が400エラーで失敗
@@ -53,7 +53,7 @@
 - **状況:**
   - **API パス** (`POST /api/orders`): サーバーサイドで価格計算→Stripe PI作成→ordersテーブルINSERT→order_items INSERT (正しいフロー)
   - **Edge Function パス** (`stripe-create-payment-intent`): Stripe PI のみ作成、ordersテーブルへの書き込みなし
-  - `aiden-order-checkout.html` は Edge Function パスを使用しており、orders テーブルへの INSERT が見つからない
+  - `weir-order-checkout.html` は Edge Function パスを使用しており、orders テーブルへの INSERT が見つからない
 - **リスク:** チェックアウトで作成された注文がDBに保存されない可能性がある
 
 ### B. members 集計値のクライアントサイド更新

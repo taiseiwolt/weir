@@ -9,8 +9,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 <style>
 
 :root{
@@ -28,14 +28,14 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:var(--font);color:var(--text);font-size:14px;line-height:1.6;background:var(--white);overflow:hidden;touch-action:manipulation}
-body.aiden-order-body{padding-top:0!important} /* padding handled by #page-wrap */
+body.weir-order-body{padding-top:0!important} /* padding handled by #page-wrap */
 button{font-family:var(--font);cursor:pointer;border:none;background:none}
 input,select,textarea{font-family:var(--font);font-size:16px!important}
 
 /* ===== PAGE LAYOUT — header(fixed) + screen fill exactly 100vh ===== */
 #page-wrap{display:flex;flex-direction:column;height:100vh;padding-top:56px;overflow:hidden}
 
-/* ===== HEADER (managed by aiden-common.js) ===== */
+/* ===== HEADER (managed by weir-common.js) ===== */
 
 /* ===== SCREEN SYSTEM ===== */
 /* Screen 1: fill the remaining height (100vh - header) */
@@ -601,8 +601,8 @@ input,select,textarea{font-family:var(--font);font-size:16px!important}
 <body>
 <div id="page-wrap">
 
-<!-- ===== HEADER (rendered by aiden-common.js) ===== -->
-<div id="aiden-header"></div>
+<!-- ===== HEADER (rendered by weir-common.js) ===== -->
+<div id="weir-header"></div>
 
 <!-- ===== SCREEN 1: STORE SELECT ===== -->
 <div id="screen-store" class="s-show">
@@ -1199,7 +1199,7 @@ function goScreen(name){
     window.scrollTo(0, 0);
   }
   /* カートボタン */
-  var cb = document.getElementById('aiden-header-cart');
+  var cb = document.getElementById('weir-header-cart');
   if(name === 'menu'){
     renderMenu();
     updateCartBar();
@@ -1813,7 +1813,7 @@ function onOrderBtnClick(btn){
   var s   = STORES.filter(function(x){ return x.id === sid; })[0];
   if(!s || !isOrderable(s)){ showToast(L_('btn_unavail')); return; }
 
-  // Save selected store info to sessionStorage for aiden-order-store.html
+  // Save selected store info to sessionStorage for weir-order-store.html
   try {
     sessionStorage.setItem('aiden_selected_store', JSON.stringify({
       storeId: s.id,
@@ -1831,7 +1831,7 @@ function onOrderBtnClick(btn){
   } catch(e) { /* ignored */ }
 
   // Navigate to order-store page (versionless)
-  window.location.href = './aiden-order-store.html';
+  window.location.href = './weir-order-store.html';
 }
 
 /* ============================================================
@@ -1842,8 +1842,8 @@ function cartTotal(){ return cart.reduce(function(s,ci){ return s + calcItemTota
 
 function updateCartBar(){
   var n  = cartCount();
-  var cb = document.getElementById('aiden-header-cart');
-  var badge = document.getElementById('aiden-cart-badge');
+  var cb = document.getElementById('weir-header-cart');
+  var badge = document.getElementById('weir-cart-badge');
   var br = document.getElementById('cart-bar');
   if(n > 0){
     if(cb) cb.style.display = '';
@@ -2471,6 +2471,6 @@ function downloadReceipt(){
 var etaInterval = null;
 var trackingStepIdx = 0;
 </script>
-<div id="aiden-footer"></div>
+<div id="weir-footer"></div>
 </body>
 </html>

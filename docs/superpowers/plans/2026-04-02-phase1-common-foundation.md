@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 全7ページにFOUC制御・共通ヘッダー/フッター・統一i18nを提供する `aiden-common.css` + `aiden-common.js` を作成し、各ページに統合する
+**Goal:** 全7ページにFOUC制御・共通ヘッダー/フッター・統一i18nを提供する `weir-common.css` + `weir-common.js` を作成し、各ページに統合する
 
 **Architecture:** 外部CSS+JSファイル方式。CSSで初期非表示（opacity:0）、JSでブランドデータ取得→CSS変数適用→ヘッダー/フッターDOM注入→フェードイン。各ページの既存固有ロジック（カルーセル、メニュー、地図、決済等）には手を入れない。
 
@@ -16,29 +16,29 @@
 
 | Action | File | Responsibility |
 |--------|------|---------------|
-| Create | `aiden-common.css` | FOUC制御、ヘッダーCSS (Type A + B)、フッターCSS、言語セレクトCSS、モバイルナビCSS、レスポンシブ |
-| Create | `aiden-common.js` | AidenCommon名前空間: escH, resolveBrandId, loadBrand, CSS変数適用, ヘッダー/フッター生成, i18n辞書+changeLang, FOUC完了制御 |
+| Create | `weir-common.css` | FOUC制御、ヘッダーCSS (Type A + B)、フッターCSS、言語セレクトCSS、モバイルナビCSS、レスポンシブ |
+| Create | `weir-common.js` | AidenCommon名前空間: escH, resolveBrandId, loadBrand, CSS変数適用, ヘッダー/フッター生成, i18n辞書+changeLang, FOUC完了制御 |
 | Modify | `brand.html` | 共通読込追加、重複コード削除（ヘッダー/フッターHTML、CSS、I18N辞書、changeLang、escH、applyBrandConfig一部） |
-| Modify | `aiden-brand-menu.html` | 同上 |
-| Modify | `aiden-brand-stores.html` | 同上 |
-| Modify | `aiden-membership.html` | 共通読込追加、独自ヘッダー→共通ヘッダー、フッター追加、i18n追加 |
-| Modify | `aiden-order.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、フッター追加、Supabase初期化追加、LNG辞書→data-i18n移行 |
-| Modify | `aiden-order-store.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、フッター追加 |
-| Modify | `aiden-order-checkout.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、独自FOUC→共通FOUC、フッター追加 |
+| Modify | `weir-brand-menu.html` | 同上 |
+| Modify | `weir-brand-stores.html` | 同上 |
+| Modify | `weir-membership.html` | 共通読込追加、独自ヘッダー→共通ヘッダー、フッター追加、i18n追加 |
+| Modify | `weir-order.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、フッター追加、Supabase初期化追加、LNG辞書→data-i18n移行 |
+| Modify | `weir-order-store.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、フッター追加 |
+| Modify | `weir-order-checkout.html` | 共通読込追加、独自ヘッダー→共通MOヘッダー、独自FOUC→共通FOUC、フッター追加 |
 
 ---
 
-## Task 1: aiden-common.css を作成
+## Task 1: weir-common.css を作成
 
 **Files:**
-- Create: `aiden-common.css`
+- Create: `weir-common.css`
 
 - [ ] **Step 1: FOUC制御CSSを書く**
 
 ```css
 /* ===== FOUC CONTROL ===== */
-body:not(.aiden-ready) { opacity: 0; }
-body.aiden-ready { opacity: 1; transition: opacity .3s ease; }
+body:not(.weir-ready) { opacity: 0; }
+body.weir-ready { opacity: 1; transition: opacity .3s ease; }
 ```
 
 - [ ] **Step 2: ニュートラルCSS変数のデフォルト値を書く**
@@ -118,7 +118,7 @@ MO用ヘッダー。ブランドカラー背景、fixedポジション。
 .header--order .header-signin{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:var(--brand-header-text);font-size:11px;padding:6px 12px;border-radius:3px;cursor:pointer;font-family:var(--brand-font);white-space:nowrap}
 .header--order .header-signin:hover{background:rgba(255,255,255,.3)}
 /* Order pages need top padding for fixed header */
-.aiden-order-body{padding-top:56px}
+.weir-order-body{padding-top:56px}
 ```
 
 - [ ] **Step 5: フッターCSSを書く**
@@ -127,22 +127,22 @@ brand.html の lines 197-215 のフッターCSS をコピー。
 
 ```css
 /* ===== FOOTER ===== */
-footer.aiden-footer{background:#222;color:rgba(255,255,255,.7)}
-.aiden-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
-.aiden-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.aiden-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
-.aiden-footer .footer-brand-desc{font-size:12px;line-height:1.8;opacity:.6}
-.aiden-footer .footer-nav-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.15)}
-.aiden-footer .footer-nav-list{display:flex;flex-direction:column;gap:9px}
-.aiden-footer .footer-nav-list a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;text-decoration:none}
-.aiden-footer .footer-nav-list a:hover{color:white}
-.aiden-footer .footer-bottom{border-top:1px solid rgba(255,255,255,.1);padding:16px 20px}
-.aiden-footer .footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.aiden-footer .footer-bottom-links{display:flex;gap:16px;flex-wrap:wrap}
-.aiden-footer .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4);text-decoration:none}
-.aiden-footer .footer-bottom-links a:hover{color:white}
-.aiden-footer .footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
-.aiden-footer .powered{font-size:10px;color:rgba(255,255,255,.2)}
+footer.weir-footer{background:#222;color:rgba(255,255,255,.7)}
+.weir-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
+.weir-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.weir-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
+.weir-footer .footer-brand-desc{font-size:12px;line-height:1.8;opacity:.6}
+.weir-footer .footer-nav-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.15)}
+.weir-footer .footer-nav-list{display:flex;flex-direction:column;gap:9px}
+.weir-footer .footer-nav-list a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;text-decoration:none}
+.weir-footer .footer-nav-list a:hover{color:white}
+.weir-footer .footer-bottom{border-top:1px solid rgba(255,255,255,.1);padding:16px 20px}
+.weir-footer .footer-bottom-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.weir-footer .footer-bottom-links{display:flex;gap:16px;flex-wrap:wrap}
+.weir-footer .footer-bottom-links a{font-size:11px;color:rgba(255,255,255,.4);text-decoration:none}
+.weir-footer .footer-bottom-links a:hover{color:white}
+.weir-footer .footer-copyright{font-size:11px;color:rgba(255,255,255,.3)}
+.weir-footer .powered{font-size:10px;color:rgba(255,255,255,.2)}
 ```
 
 - [ ] **Step 6: レスポンシブCSSを書く**
@@ -153,28 +153,28 @@ footer.aiden-footer{background:#222;color:rgba(255,255,255,.7)}
   .header-nav{display:none}
   .header-hamburger{display:block}
   .lang-select-wrap{margin-left:0}
-  .aiden-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}
+  .weir-footer .footer-main{grid-template-columns:1fr 1fr;gap:24px}
 }
 @media(max-width:600px){
-  .aiden-footer .footer-main{grid-template-columns:1fr}
-  .aiden-footer .footer-bottom-inner{flex-direction:column;align-items:flex-start}
-  .aiden-footer .footer-bottom-links{flex-wrap:wrap}
+  .weir-footer .footer-main{grid-template-columns:1fr}
+  .weir-footer .footer-bottom-inner{flex-direction:column;align-items:flex-start}
+  .weir-footer .footer-bottom-links{flex-wrap:wrap}
 }
 ```
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add aiden-common.css
-git commit -m "feat: create aiden-common.css with FOUC, header, footer, responsive styles"
+git add weir-common.css
+git commit -m "feat: create weir-common.css with FOUC, header, footer, responsive styles"
 ```
 
 ---
 
-## Task 2: aiden-common.js を作成 — コア部分（escH, Supabase, resolveBrandId, loadBrand, CSS変数適用）
+## Task 2: weir-common.js を作成 — コア部分（escH, Supabase, resolveBrandId, loadBrand, CSS変数適用）
 
 **Files:**
-- Create: `aiden-common.js`
+- Create: `weir-common.js`
 
 - [ ] **Step 1: AidenCommon 名前空間の骨格と escH を書く**
 
@@ -214,7 +214,7 @@ git commit -m "feat: create aiden-common.css with FOUC, header, footer, responsi
 
 - [ ] **Step 2: resolveBrandId を実装する**
 
-brand.html line 486-506 のロジックをそのまま移植。`aiden-common.js` のIIFE内に追加。
+brand.html line 486-506 のロジックをそのまま移植。`weir-common.js` のIIFE内に追加。
 
 ```javascript
   async function resolveBrandId() {
@@ -302,16 +302,16 @@ brand.html line 486-506 のロジックをそのまま移植。`aiden-common.js`
 - [ ] **Step 4: Commit**
 
 ```bash
-git add aiden-common.js
-git commit -m "feat: create aiden-common.js core — escH, resolveBrandId, loadBrand, applyBrandCSS"
+git add weir-common.js
+git commit -m "feat: create weir-common.js core — escH, resolveBrandId, loadBrand, applyBrandCSS"
 ```
 
 ---
 
-## Task 3: aiden-common.js — i18n 実装
+## Task 3: weir-common.js — i18n 実装
 
 **Files:**
-- Modify: `aiden-common.js`
+- Modify: `weir-common.js`
 
 - [ ] **Step 1: 共通翻訳辞書を追加する**
 
@@ -495,16 +495,16 @@ git commit -m "feat: create aiden-common.js core — escH, resolveBrandId, loadB
 - [ ] **Step 3: Commit**
 
 ```bash
-git add aiden-common.js
-git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionary, changeLang, addTranslations"
+git add weir-common.js
+git commit -m "feat: add i18n system to weir-common.js — 7-language dictionary, changeLang, addTranslations"
 ```
 
 ---
 
-## Task 4: aiden-common.js — ヘッダー/フッター生成 + init()
+## Task 4: weir-common.js — ヘッダー/フッター生成 + init()
 
 **Files:**
-- Modify: `aiden-common.js`
+- Modify: `weir-common.js`
 
 - [ ] **Step 1: renderHeader (Type A: brand) を実装する**
 
@@ -528,7 +528,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
       logoHtml = escH(brand.logo_text_value || brand.name);
     }
 
-    var headerEl = document.getElementById('aiden-header');
+    var headerEl = document.getElementById('weir-header');
     if (!headerEl) return;
 
     headerEl.innerHTML =
@@ -542,11 +542,11 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
             '</a>' +
           '</div>' +
           '<nav class="header-nav">' +
-            '<a href="./aiden-brand-menu.html' + brandParam + '" class="header-nav-link' + (isMenu ? ' active' : '') + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-            '<a href="./aiden-brand-stores.html' + brandParam + '" class="header-nav-link' + (isStores ? ' active' : '') + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
-            '<a href="./aiden-membership.html' + brandIdParam + '" class="header-nav-link' + (isMembership ? ' active' : '') + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
+            '<a href="./weir-brand-menu.html' + brandParam + '" class="header-nav-link' + (isMenu ? ' active' : '') + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
+            '<a href="./weir-brand-stores.html' + brandParam + '" class="header-nav-link' + (isStores ? ' active' : '') + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
+            '<a href="./weir-membership.html' + brandIdParam + '" class="header-nav-link' + (isMembership ? ' active' : '') + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
             '<a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
-            '<a href="./aiden-order.html' + brandParam + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
+            '<a href="./weir-order.html' + brandParam + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
           '</nav>' +
           '<div class="lang-select-wrap">' +
             '<select class="lang-select" id="lang-select" onchange="AidenCommon.changeLang(this.value)">' +
@@ -567,12 +567,12 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
       '<div class="mobile-nav" id="mobile-nav">' +
         '<div class="mobile-nav-cta">' +
           '<a href="javascript:void(0)" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">📅 ' + t('cta_reserve') + '</a>' +
-          '<a href="./aiden-order.html' + brandParam + '&mode=takeout" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
-          '<a href="./aiden-order.html' + brandParam + '&mode=delivery">🛵 ' + t('cta_delivery') + '</a>' +
+          '<a href="./weir-order.html' + brandParam + '&mode=takeout" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
+          '<a href="./weir-order.html' + brandParam + '&mode=delivery">🛵 ' + t('cta_delivery') + '</a>' +
         '</div>' +
-        '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="nav_menu">📖 ' + t('nav_menu') + '</a>' +
-        '<a href="./aiden-brand-stores.html' + brandParam + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
-        '<a href="./aiden-membership.html' + brandIdParam + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
+        '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="nav_menu">📖 ' + t('nav_menu') + '</a>' +
+        '<a href="./weir-brand-stores.html' + brandParam + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
+        '<a href="./weir-membership.html' + brandIdParam + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
       '</div>';
   }
 ```
@@ -581,7 +581,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
 
 ```javascript
   function renderHeaderOrder(brand) {
-    var headerEl = document.getElementById('aiden-header');
+    var headerEl = document.getElementById('weir-header');
     if (!headerEl) return;
 
     var logoHtml = '';
@@ -594,7 +594,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
     headerEl.innerHTML =
       '<header class="header header--order">' +
         '<div class="header-main">' +
-          '<button class="header-back" id="aiden-header-back" onclick="if(AidenCommon._options.onBack)AidenCommon._options.onBack();else history.back()">←</button>' +
+          '<button class="header-back" id="weir-header-back" onclick="if(AidenCommon._options.onBack)AidenCommon._options.onBack();else history.back()">←</button>' +
           '<div class="header-center">' +
             '<span class="header-logo-text">' + logoHtml + '</span>' +
           '</div>' +
@@ -612,14 +612,14 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
               '</select>' +
               '<span class="lang-select-arrow">▼</span>' +
             '</div>' +
-            '<button class="header-cart" id="aiden-header-cart" style="display:none">🛒<span class="header-cart-badge" id="aiden-cart-badge">0</span></button>' +
-            '<button class="header-signin" id="aiden-header-signin" data-i18n="signin">' + t('signin') + '</button>' +
+            '<button class="header-cart" id="weir-header-cart" style="display:none">🛒<span class="header-cart-badge" id="weir-cart-badge">0</span></button>' +
+            '<button class="header-signin" id="weir-header-signin" data-i18n="signin">' + t('signin') + '</button>' +
           '</div>' +
         '</div>' +
       '</header>';
 
     // Add body padding for fixed header
-    document.body.classList.add('aiden-order-body');
+    document.body.classList.add('weir-order-body');
   }
 ```
 
@@ -627,7 +627,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
 
 ```javascript
   function renderFooter(brand) {
-    var footerEl = document.getElementById('aiden-footer');
+    var footerEl = document.getElementById('weir-footer');
     if (!footerEl) return;
 
     var slug = brand.slug || '';
@@ -653,7 +653,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
     var year = new Date().getFullYear();
 
     footerEl.innerHTML =
-      '<footer class="aiden-footer">' +
+      '<footer class="weir-footer">' +
         '<div class="footer-main">' +
           '<div>' +
             '<div class="footer-logo"><div class="footer-logo-text" id="footer-logo-text">' + logoHtml + '</div></div>' +
@@ -661,36 +661,36 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
           '</div>' +
           '<div><div class="footer-nav-title" data-i18n="footer_menu">' + t('footer_menu') + '</div>' +
             '<div class="footer-nav-list" id="footer-menu-links">' +
-              '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
-              '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
-              '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
-              '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
-              '<a href="./aiden-brand-menu.html' + brandParam + '" data-i18n="f_course">' + t('f_course') + '</a>' +
+              '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
+              '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
+              '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
+              '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
+              '<a href="./weir-brand-menu.html' + brandParam + '" data-i18n="f_course">' + t('f_course') + '</a>' +
             '</div>' +
           '</div>' +
           '<div><div class="footer-nav-title" data-i18n="footer_service">' + t('footer_service') + '</div>' +
             '<div class="footer-nav-list">' +
               '<a href="javascript:void(0)" data-i18n="cta_reserve" onclick="if(window.openResModal)openResModal()">' + t('cta_reserve') + '</a>' +
-              '<a href="./aiden-order.html' + brandParam + '&mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
-              '<a href="./aiden-order.html' + brandParam + '&mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
-              '<a href="./aiden-membership.html' + brandIdParam + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
+              '<a href="./weir-order.html' + brandParam + '&mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
+              '<a href="./weir-order.html' + brandParam + '&mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
+              '<a href="./weir-membership.html' + brandIdParam + '" data-i18n="nav_membership">' + t('nav_membership') + '</a>' +
             '</div>' +
           '</div>' +
           '<div><div class="footer-nav-title" data-i18n="footer_company">' + t('footer_company') + '</div>' +
             '<div class="footer-nav-list" id="footer-company-links">' + companyLinks + '</div>' +
           '</div>' +
           '<div><div class="footer-nav-title" data-i18n="footer_news">' + t('footer_news') + '</div>' +
-            '<div class="footer-nav-list"><a href="./aiden-brand-news.html' + brandParam + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
+            '<div class="footer-nav-list"><a href="./weir-brand-news.html' + brandParam + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
           '</div>' +
         '</div>' +
         '<div class="footer-bottom"><div class="footer-bottom-inner">' +
           '<span class="footer-copyright">© ' + year + ' ' + escH(brand.name) + ' All rights reserved.</span>' +
           '<div class="footer-bottom-links">' +
-            '<a href="/aiden-tokushoho.html">特定商取引法に基づく表示</a>' +
+            '<a href="/weir-tokushoho.html">特定商取引法に基づく表示</a>' +
             '<a href="./legal/privacy.html" data-i18n="f_privacy">' + t('f_privacy') + '</a>' +
             '<a href="./legal/terms.html" data-i18n="f_terms">' + t('f_terms') + '</a>' +
             '<a href="./legal/refund.html">返金ポリシー</a>' +
-            '<a href="./aiden-sitemap.html" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
+            '<a href="./weir-sitemap.html" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
             '<a href="mailto:support@weir.co.jp">' + t('f_contact') + '</a>' +
           '</div>' +
           '<span class="powered">Powered by Weir</span>' +
@@ -744,7 +744,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
     var timeoutId = setTimeout(function() {
       if (!brandLoaded) {
         // Timeout: show with neutral colors (CSS defaults), no brand applied
-        document.body.classList.add('aiden-ready');
+        document.body.classList.add('weir-ready');
       }
     }, TIMEOUT_MS);
 
@@ -786,7 +786,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
     }
 
     // Always show page
-    document.body.classList.add('aiden-ready');
+    document.body.classList.add('weir-ready');
   }
 
   window.AidenCommon.init = init;
@@ -795,8 +795,8 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
 - [ ] **Step 6: Commit**
 
 ```bash
-git add aiden-common.js
-git commit -m "feat: add header/footer rendering and init() to aiden-common.js"
+git add weir-common.js
+git commit -m "feat: add header/footer rendering and init() to weir-common.js"
 ```
 
 ---
@@ -813,8 +813,8 @@ git commit -m "feat: add header/footer rendering and init() to aiden-common.js"
 brand.html の `<head>` 内、Supabase CDN の `<script>` タグの直後（line 19の後）に追加:
 
 ```html
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 - [ ] **Step 2: ヘッダーHTMLをプレースホルダーに置き換える**
@@ -822,8 +822,8 @@ brand.html の `<head>` 内、Supabase CDN の `<script>` タグの直後（line
 brand.html の lines 293-340 の `<header>...</header>` と `<div class="mobile-nav">...</div>` を以下に置き換え:
 
 ```html
-<!-- ===== HEADER (rendered by aiden-common.js) ===== -->
-<div id="aiden-header"></div>
+<!-- ===== HEADER (rendered by weir-common.js) ===== -->
+<div id="weir-header"></div>
 ```
 
 - [ ] **Step 3: フッターHTMLをプレースホルダーに置き換える**
@@ -831,17 +831,17 @@ brand.html の lines 293-340 の `<header>...</header>` と `<div class="mobile-
 brand.html の lines 445-469 の `<footer>...</footer>` を以下に置き換え:
 
 ```html
-<!-- ===== FOOTER (rendered by aiden-common.js) ===== -->
-<div id="aiden-footer"></div>
+<!-- ===== FOOTER (rendered by weir-common.js) ===== -->
+<div id="weir-footer"></div>
 ```
 
 - [ ] **Step 4: 重複CSSを削除する**
 
 brand.html の `<style>` ブロックから以下のCSSセクションを削除:
-- `:root { ... }` ブロック (lines 25-41) — aiden-common.css のニュートラルデフォルトに置き換え
-- `/* ===== HEADER ===== */` ～ `.mobile-nav-cta` (lines 50-82) — aiden-common.css に移動済み
-- `/* ===== FOOTER ===== */` ～ `.powered` (lines 197-215) — aiden-common.css に移動済み
-- `@media` 内のヘッダー/フッター関連（`.header-nav{display:none}`, `.header-hamburger{display:block}`, `.footer-main` のgrid変更） — aiden-common.css に移動済み
+- `:root { ... }` ブロック (lines 25-41) — weir-common.css のニュートラルデフォルトに置き換え
+- `/* ===== HEADER ===== */` ～ `.mobile-nav-cta` (lines 50-82) — weir-common.css に移動済み
+- `/* ===== FOOTER ===== */` ～ `.powered` (lines 197-215) — weir-common.css に移動済み
+- `@media` 内のヘッダー/フッター関連（`.header-nav{display:none}`, `.header-hamburger{display:block}`, `.footer-main` のgrid変更） — weir-common.css に移動済み
 
 **残す:** `:root` ブロック以外の `*{box-sizing...}` 以降のベースCSS、ヒーロー、キャンペーン、CTA、店舗検索、予約モーダル等のCSS。
 
@@ -955,27 +955,27 @@ git commit -m "refactor: integrate aiden-common into brand.html — shared heade
 
 ---
 
-## Task 6: aiden-brand-menu.html に共通基盤を統合する
+## Task 6: weir-brand-menu.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-brand-menu.html`
+- Modify: `weir-brand-menu.html`
 
 - [ ] **Step 1: 現在のファイルの構造を確認する**
 
-Run: aiden-brand-menu.html のヘッダー/フッター/I18N/changeLang/escH/loadBrandConfig の行番号を確認
+Run: weir-brand-menu.html のヘッダー/フッター/I18N/changeLang/escH/loadBrandConfig の行番号を確認
 
 - [ ] **Step 2: `<head>` に共通CSS/JS読込を追加する**
 
 Supabase CDNの `<script>` タグの直後に追加:
 ```html
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 - [ ] **Step 3: ヘッダーHTML → プレースホルダー、フッターHTML → プレースホルダー**
 
-既存の `<header>...</header>` + `<div class="mobile-nav">...</div>` を `<div id="aiden-header"></div>` に置き換え。
-既存の `<footer>...</footer>` を `<div id="aiden-footer"></div>` に置き換え。
+既存の `<header>...</header>` + `<div class="mobile-nav">...</div>` を `<div id="weir-header"></div>` に置き換え。
+既存の `<footer>...</footer>` を `<div id="weir-footer"></div>` に置き換え。
 
 - [ ] **Step 4: 重複CSS/JSを削除**
 
@@ -988,7 +988,7 @@ Task 5 と同じパターン:
 ```javascript
 AidenCommon.addTranslations({
   page_title: { ja:'メニュー', en:'Menu', zh:'菜单', ko:'메뉴' },
-  // ... aiden-brand-menu.html 固有の翻訳キー
+  // ... weir-brand-menu.html 固有の翻訳キー
 });
 
 await AidenCommon.init({
@@ -1008,16 +1008,16 @@ var escH = AidenCommon.escH;
 - [ ] **Step 6: 動作確認 + Commit**
 
 ```bash
-git add aiden-brand-menu.html
-git commit -m "refactor: integrate aiden-common into aiden-brand-menu.html"
+git add weir-brand-menu.html
+git commit -m "refactor: integrate aiden-common into weir-brand-menu.html"
 ```
 
 ---
 
-## Task 7: aiden-brand-stores.html に共通基盤を統合する
+## Task 7: weir-brand-stores.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-brand-stores.html`
+- Modify: `weir-brand-stores.html`
 
 手順は Task 6 と同一パターン。
 
@@ -1032,7 +1032,7 @@ git commit -m "refactor: integrate aiden-common into aiden-brand-menu.html"
 
 ```javascript
 AidenCommon.addTranslations({
-  // aiden-brand-stores.html 固有の翻訳キー
+  // weir-brand-stores.html 固有の翻訳キー
   // 検索関連、フィルター、地図、アクセス等
 });
 
@@ -1049,16 +1049,16 @@ var escH = AidenCommon.escH;
 - [ ] **Step 6: 動作確認 + Commit**
 
 ```bash
-git add aiden-brand-stores.html
-git commit -m "refactor: integrate aiden-common into aiden-brand-stores.html"
+git add weir-brand-stores.html
+git commit -m "refactor: integrate aiden-common into weir-brand-stores.html"
 ```
 
 ---
 
-## Task 8: aiden-membership.html に共通基盤を統合する
+## Task 8: weir-membership.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-membership.html`
+- Modify: `weir-membership.html`
 
 このページは現在 i18n なし、独自ヘッダー（back+title）、フッターなし。最も変更が大きい。
 
@@ -1074,14 +1074,14 @@ git commit -m "refactor: integrate aiden-common into aiden-brand-stores.html"
 
 Supabase CDNの後に:
 ```html
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 - [ ] **Step 3: 独自ヘッダーHTML → プレースホルダー、フッタープレースホルダー追加**
 
-独自ヘッダー（back arrow + title + logo mark）を `<div id="aiden-header"></div>` に置き換え。
-ページ末尾（`</body>` の前）に `<div id="aiden-footer"></div>` を追加。
+独自ヘッダー（back arrow + title + logo mark）を `<div id="weir-header"></div>` に置き換え。
+ページ末尾（`</body>` の前）に `<div id="weir-footer"></div>` を追加。
 
 - [ ] **Step 4: 重複CSS/JSを削除**
 
@@ -1111,16 +1111,16 @@ var escH = AidenCommon.escH;
 - [ ] **Step 6: 動作確認 + Commit**
 
 ```bash
-git add aiden-membership.html
-git commit -m "refactor: integrate aiden-common into aiden-membership.html — add header/footer/i18n"
+git add weir-membership.html
+git commit -m "refactor: integrate aiden-common into weir-membership.html — add header/footer/i18n"
 ```
 
 ---
 
-## Task 9: aiden-order.html に共通基盤を統合する
+## Task 9: weir-order.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-order.html`
+- Modify: `weir-order.html`
 
 このページは現在 **Supabase未使用**、ハードコード店舗リスト。Phase 1ではSupabase初期化を追加し、共通ヘッダー/フッター/i18nを統合。ハードコード店舗リストのSupabase化はPhase 2。
 
@@ -1132,14 +1132,14 @@ git commit -m "refactor: integrate aiden-common into aiden-membership.html — a
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 - [ ] **Step 3: 独自ヘッダー → プレースホルダー、フッタープレースホルダー追加**
 
-`.app-header` を `<div id="aiden-header"></div>` に置き換え。
-ページ末尾に `<div id="aiden-footer"></div>` を追加。
+`.app-header` を `<div id="weir-header"></div>` に置き換え。
+ページ末尾に `<div id="weir-footer"></div>` を追加。
 
 - [ ] **Step 4: LNG辞書を data-i18n 方式に移行**
 
@@ -1149,7 +1149,7 @@ HTML内の翻訳対象要素に `data-i18n` 属性を付与。
 
 ```javascript
 AidenCommon.addTranslations({
-  // aiden-order.html 固有の翻訳キー
+  // weir-order.html 固有の翻訳キー
   // LNG辞書の内容をここに移行
 });
 ```
@@ -1176,16 +1176,16 @@ await AidenCommon.init({
 - [ ] **Step 6: 動作確認 + Commit**
 
 ```bash
-git add aiden-order.html
-git commit -m "refactor: integrate aiden-common into aiden-order.html — add Supabase, shared header/footer/i18n"
+git add weir-order.html
+git commit -m "refactor: integrate aiden-common into weir-order.html — add Supabase, shared header/footer/i18n"
 ```
 
 ---
 
-## Task 10: aiden-order-store.html に共通基盤を統合する
+## Task 10: weir-order-store.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-order-store.html`
+- Modify: `weir-order-store.html`
 
 - [ ] **Step 1: 現在のファイルの構造を確認する**
 - [ ] **Step 2: `<head>` に共通CSS/JS読込を追加する**
@@ -1202,12 +1202,12 @@ await AidenCommon.init({
   header: 'order',
   footer: true,
   onBack: function() {
-    window.location.href = './aiden-order.html' + window.location.search;
+    window.location.href = './weir-order.html' + window.location.search;
   },
   onBrandLoaded: function(brand) {
     document.title = brand.name + ' | メニュー';
     // Show cart button
-    var cartBtn = document.getElementById('aiden-header-cart');
+    var cartBtn = document.getElementById('weir-header-cart');
     if (cartBtn) cartBtn.style.display = '';
   }
 });
@@ -1216,22 +1216,22 @@ var escH = AidenCommon.escH;
 
 - [ ] **Step 6: カート/サインインの連携**
 
-共通ヘッダーのカートバッジ更新: 既存のカート更新ロジック内で `document.getElementById('aiden-cart-badge')` の textContent を更新するコードを追加。
-サインインボタン: 既存の認証ロジックと `#aiden-header-signin` を接続。
+共通ヘッダーのカートバッジ更新: 既存のカート更新ロジック内で `document.getElementById('weir-cart-badge')` の textContent を更新するコードを追加。
+サインインボタン: 既存の認証ロジックと `#weir-header-signin` を接続。
 
 - [ ] **Step 7: 動作確認 + Commit**
 
 ```bash
-git add aiden-order-store.html
-git commit -m "refactor: integrate aiden-common into aiden-order-store.html"
+git add weir-order-store.html
+git commit -m "refactor: integrate aiden-common into weir-order-store.html"
 ```
 
 ---
 
-## Task 11: aiden-order-checkout.html に共通基盤を統合する
+## Task 11: weir-order-checkout.html に共通基盤を統合する
 
 **Files:**
-- Modify: `aiden-order-checkout.html`
+- Modify: `weir-order-checkout.html`
 
 - [ ] **Step 1: 現在のファイルの構造を確認する**
 - [ ] **Step 2: `<head>` にSupabase CDN移動 + 共通読込追加**
@@ -1239,15 +1239,15 @@ git commit -m "refactor: integrate aiden-common into aiden-order-store.html"
 現在 Supabase CDN が mid-file (line 436) にある。`<head>` に移動:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="./aiden-common.css">
-<script src="./aiden-common.js"></script>
+<link rel="stylesheet" href="./weir-common.css">
+<script src="./weir-common.js"></script>
 ```
 
 - [ ] **Step 3: 独自ヘッダー → プレースホルダー、フッター追加、独自FOUC削除**
 
-独自ヘッダーを `<div id="aiden-header"></div>` に置き換え。
-`<div id="aiden-footer"></div>` を追加。
-独自FOUC制御 (`body.style.opacity = '0.4'`) を削除 — aiden-common.css の `body:not(.aiden-ready)` が処理。
+独自ヘッダーを `<div id="weir-header"></div>` に置き換え。
+`<div id="weir-footer"></div>` を追加。
+独自FOUC制御 (`body.style.opacity = '0.4'`) を削除 — weir-common.css の `body:not(.weir-ready)` が処理。
 
 - [ ] **Step 4: 重複CSS/JSを削除**
 
@@ -1266,7 +1266,7 @@ await AidenCommon.init({
   header: 'order',
   footer: true,
   onBack: function() {
-    window.location.href = './aiden-order-store.html' + window.location.search;
+    window.location.href = './weir-order-store.html' + window.location.search;
   },
   onBrandLoaded: function(brand) {
     document.title = brand.name + ' | お会計';
@@ -1278,8 +1278,8 @@ var escH = AidenCommon.escH;
 - [ ] **Step 6: 動作確認 + Commit**
 
 ```bash
-git add aiden-order-checkout.html
-git commit -m "refactor: integrate aiden-common into aiden-order-checkout.html"
+git add weir-order-checkout.html
+git commit -m "refactor: integrate aiden-common into weir-order-checkout.html"
 ```
 
 ---
@@ -1287,7 +1287,7 @@ git commit -m "refactor: integrate aiden-common into aiden-order-checkout.html"
 ## Task 12: 全ページリグレッション確認
 
 **Files:**
-- All 7 HTML pages + aiden-common.css + aiden-common.js
+- All 7 HTML pages + weir-common.css + weir-common.js
 
 - [ ] **Step 1: npm run lint を実行**
 
@@ -1298,19 +1298,19 @@ Expected: PASS (console.log 残存なし)
 
 各ページをブラウザで開き、以下を確認:
 1. `brand.html?brand=sumibite` — FOUC無し、ヘッダー/フッター表示、カルーセル動作
-2. `aiden-brand-menu.html?brand=sumibite` — FOUC無し、メニュー表示、カテゴリフィルタ動作
-3. `aiden-brand-stores.html?brand=sumibite` — FOUC無し、店舗検索動作
-4. `aiden-membership.html?brand_id=22222222-0000-0000-0000-000000000001` — FOUC無し、ヘッダー/フッター追加
-5. `aiden-order.html?brand=sumibite` — FOUC無し、MOヘッダー（ブランドカラー）
-6. `aiden-order-store.html` — FOUC無し、MOヘッダー、カート、フッター
-7. `aiden-order-checkout.html` — FOUC無し、MOヘッダー、フッター
+2. `weir-brand-menu.html?brand=sumibite` — FOUC無し、メニュー表示、カテゴリフィルタ動作
+3. `weir-brand-stores.html?brand=sumibite` — FOUC無し、店舗検索動作
+4. `weir-membership.html?brand_id=22222222-0000-0000-0000-000000000001` — FOUC無し、ヘッダー/フッター追加
+5. `weir-order.html?brand=sumibite` — FOUC無し、MOヘッダー（ブランドカラー）
+6. `weir-order-store.html` — FOUC無し、MOヘッダー、カート、フッター
+7. `weir-order-checkout.html` — FOUC無し、MOヘッダー、フッター
 
 - [ ] **Step 3: 言語切替テスト**
 
 1. brand.html で英語に切替 → 全テキストが英語に
-2. aiden-brand-menu.html に遷移 → 英語が維持される
-3. aiden-brand-stores.html に遷移 → 英語が維持される
-4. aiden-order.html に遷移 → 英語が維持される
+2. weir-brand-menu.html に遷移 → 英語が維持される
+3. weir-brand-stores.html に遷移 → 英語が維持される
+4. weir-order.html に遷移 → 英語が維持される
 
 - [ ] **Step 4: モバイル表示確認**
 

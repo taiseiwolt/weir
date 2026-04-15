@@ -33,7 +33,7 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // A-01: MO画面メニュー表示
-    await page.goto(`${BASE}/aiden-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
     const storeCards = await page.$$('[data-sid]');
     await page.screenshot({ path: path.join(SS_DIR, 'A-01.png') });
     log('A-01', 'MO画面メニュー表示', storeCards.length > 0, `${storeCards.length}店舗表示`, 'A-01.png');
@@ -41,7 +41,7 @@ function log(id, name, pass, detail, screenshot) {
     // Click first store to go to order-store
     const firstBtn = await page.$('button[data-sid="shibuya"]');
     if (firstBtn) await firstBtn.click();
-    await page.waitForURL('**/aiden-order-store.html**', { timeout: 10000 }).catch(() => {});
+    await page.waitForURL('**/weir-order-store.html**', { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(2000);
 
     // A-01 continued: menu items visible
@@ -99,7 +99,7 @@ function log(id, name, pass, detail, screenshot) {
     log('A-13', '注文履歴表示', true, 'コードレビューPASS: order history query確認済み');
 
     // A-14: デリバリー選択不可
-    await page.goto(`${BASE}/aiden-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
     const delTab = await page.$('#tab-delivery, button:has-text("デリバリー")');
     if (delTab) {
       await delTab.click();
@@ -122,7 +122,7 @@ function log(id, name, pass, detail, screenshot) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
 
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const storeName = await page.$eval('.store-hero-name, .hero-title, h1', el => el.textContent).catch(() => '');
     log('B-01', 'メニュー名変更→MO反映', true, `店舗名表示: ${storeName.trim().substring(0, 30)}. データ連携はコードレビューPASS`);
@@ -131,7 +131,7 @@ function log(id, name, pass, detail, screenshot) {
     log('B-04', '新メニュー追加→MO表示', true, 'コードレビューPASS: 動的メニュー読み込み確認済み');
 
     // B-05/B-06: Brand HP data
-    await page.goto(`${BASE}/aiden-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE./weir-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1000);
     const hasStoreSection = await page.$('.store-section, .stores, #store-list');
     log('B-05', '営業時間変更→HP反映', true, 'コードレビューPASS: リアルタイムDB参照確認済み');
@@ -178,7 +178,7 @@ function log(id, name, pass, detail, screenshot) {
     log('C-09', 'pg_cronジョブ状態', true, 'コードレビューPASS: pg_cronジョブ設定確認済み');
 
     // C-10: 営業時間外注文制御
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const offHoursBanner = await page.$('text=営業時間外');
     await page.screenshot({ path: path.join(SS_DIR, 'C-10.png') });
@@ -201,7 +201,7 @@ function log(id, name, pass, detail, screenshot) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
 
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const chatFab = await page.$('.chat-fab, [class*="chat"], button:has-text("チャット")');
     log('D-05', 'MO画面フッター問い合わせ', !!chatFab, chatFab ? 'チャットFAB検出' : 'チャット機能未検出');
@@ -209,7 +209,7 @@ function log(id, name, pass, detail, screenshot) {
     log('D-06', 'ダッシュボード問い合わせ・緊急', true, 'コードレビューPASS: 問い合わせ機能確認済み');
     log('D-07', '管理マスタ問い合わせ', true, 'コードレビューPASS: 問い合わせ機能確認済み');
 
-    await page.goto(`${BASE}/aiden-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE./weir-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1000);
     const contactSection = await page.$('text=お問い合わせ');
     log('D-08', 'ブランドHP問い合わせ', true, `ブランドHP読み込み確認. お問い合わせ: ${!!contactSection}`);
@@ -225,7 +225,7 @@ function log(id, name, pass, detail, screenshot) {
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto(`${BASE}/aiden-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE./weir-brand-sushiro.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
 
     // Find reservation button
@@ -246,7 +246,7 @@ function log(id, name, pass, detail, screenshot) {
     log('E-04', '自動キャンセル', true, 'コードレビューPASS: pg_cron自動キャンセル確認済み');
 
     // E-05: カレンダー/リストビュー切替 (dashboard)
-    await page.goto(`${BASE}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const calendarTab = await page.$('button:has-text("カレンダー"), [class*="calendar-tab"]');
     const listTab = await page.$('button:has-text("リスト"), [class*="list-tab"]');
@@ -263,7 +263,7 @@ function log(id, name, pass, detail, screenshot) {
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto(`${BASE}/aiden-order-tracking.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-tracking.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: path.join(SS_DIR, 'F-01.png') });
 
@@ -287,7 +287,7 @@ function log(id, name, pass, detail, screenshot) {
 
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto(`${BASE}/aiden-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const pointSection = await page.$('[class*="point"]').catch(() => null) || await page.$('text=ポイント').catch(() => null);
     await page.screenshot({ path: path.join(SS_DIR, 'G-04.png') });
@@ -306,7 +306,7 @@ function log(id, name, pass, detail, screenshot) {
     log('H-01', 'Stripe失敗カード処理', true, 'コードレビューPASS: エラーハンドリング実装確認済み');
 
     // H-02: 決済ボタン連打防止
-    await page.goto(`${BASE}/aiden-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const orderBtn = await page.$('#orderBtn, button:has-text("注文する")');
     if (orderBtn) {
@@ -318,7 +318,7 @@ function log(id, name, pass, detail, screenshot) {
     }
 
     // H-03: 営業時間外注文ブロック
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const offHours = await page.$('text=営業時間外');
     await page.screenshot({ path: path.join(SS_DIR, 'H-03.png') });
@@ -328,13 +328,13 @@ function log(id, name, pass, detail, screenshot) {
     log('H-04', '売り切れ商品の注文', true, 'コードレビューPASS: sold_outフラグチェック確認済み');
 
     // H-05: 空カート注文確定
-    await page.goto(`${BASE}/aiden-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const emptyCartMsg = await page.$('.empty-cart').catch(() => null) || await page.$('text=カートが空').catch(() => null);
     log('H-05', '空カートで注文確定', true, `空カート検出: ${!!emptyCartMsg}. コードレビューPASS: カート空チェック確認済み`);
 
     // H-06: 不正store_id
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=INVALID_ID`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=INVALID_ID`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const errorMsg = await page.$('text=見つかりませんでした').catch(() => null) || await page.$('text=エラー').catch(() => null);
     await page.screenshot({ path: path.join(SS_DIR, 'H-06.png') });
@@ -350,7 +350,7 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // I-01: 店舗切替
-    await page.goto(`${BASE}/aiden-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order.html`, { waitUntil: 'networkidle', timeout: 30000 });
     const stores = await page.$$('[data-sid]');
     const storeNames = [];
     for (const s of stores.slice(0, 3)) {
@@ -360,7 +360,7 @@ function log(id, name, pass, detail, screenshot) {
     log('I-01', 'MO画面で店舗切替', stores.length >= 2, `${stores.length}店舗: ${storeNames.join(', ')}`);
 
     // I-02: ブランドデータ混在なし
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const pageText = await page.evaluate(() => document.body.innerText);
     const hasSushiro = pageText.includes('スシロー');
@@ -388,7 +388,7 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // IR-01: Stripe決済ボタン連打
-    await page.goto(`${BASE}/aiden-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-checkout.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const payBtn = await page.$('#orderBtn, button:has-text("注文する")');
     if (payBtn) {
@@ -435,7 +435,7 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // IR-16: ステータス変更連打 — ダッシュボードで確認
-    await page.goto(`${BASE}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: path.join(SS_DIR, 'IR-16.png') });
 
@@ -460,7 +460,7 @@ function log(id, name, pass, detail, screenshot) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
 
-    await page.goto(`${BASE}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const src = await page.content();
 
@@ -469,7 +469,7 @@ function log(id, name, pass, detail, screenshot) {
     log('IR-26', '補償ポイント付与連打', true, 'コードレビューPASS: disabled実装確認済み');
     log('IR-27', '2オペレーターが同時ポイント付与', true, 'コードレビューPASS: DB排他制御確認済み');
 
-    await page.goto(`${BASE}/aiden-customer-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-customer-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const custSrc = await page.content();
     log('IR-28', 'ユーザーBAN連打', custSrc.includes('disabled'), `disabled in source: ${custSrc.includes('disabled')}`);
@@ -485,19 +485,19 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // IR-31: ログアウト後ブラウザバック（顧客管理）
-    await page.goto(`${BASE}/aiden-customer-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-customer-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const custSrc = await page.content();
     const hasAuthCheck = custSrc.includes('onAuthStateChange') || custSrc.includes('getSession') || custSrc.includes('checkAuth');
     log('IR-31', '顧客管理ログアウト後ブラウザバック', hasAuthCheck, `認証チェック: ${hasAuthCheck}. コードレビューPASS`);
 
-    await page.goto(`${BASE}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const dashSrc = await page.content();
     const dashAuth = dashSrc.includes('onAuthStateChange') || dashSrc.includes('getSession');
     log('IR-32', 'ダッシュボードログアウト後ブラウザバック', dashAuth, `認証チェック: ${dashAuth}. コードレビューPASS`);
 
-    await page.goto(`${BASE}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const adminSrc = await page.content();
     const adminAuth = adminSrc.includes('onAuthStateChange') || adminSrc.includes('getSession');
@@ -518,7 +518,7 @@ function log(id, name, pass, detail, screenshot) {
     const page = await ctx.newPage();
 
     // IR-38: トラッキングRealtimeタイムアウト
-    await page.goto(`${BASE}/aiden-order-tracking.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-tracking.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1500);
     const trackSrc = await page.content();
     const hasReconnect = trackSrc.includes('subscribe') || trackSrc.includes('channel');
@@ -528,7 +528,7 @@ function log(id, name, pass, detail, screenshot) {
     log('IR-39', 'チャットメッセージ送信連打', true, 'コードレビューPASS: disabled実装確認済み');
 
     // IR-40: カート追加連打
-    await page.goto(`${BASE}/aiden-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE}/weir-order-store.html?store_id=shibuya`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
     const storeSrc = await page.content();
     const hasAddDisable = storeSrc.includes('disabled') || storeSrc.includes('adding');

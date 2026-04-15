@@ -7,7 +7,7 @@
 <meta property="og:title" content="マイページ | Weir">
 <meta property="og:description" content="会員ランク・ポイント残高・クーポンを確認できます。">
 <meta property="og:image" content="https://weir.co.jp/ogp.png">
-<meta property="og:url" content="https://weir.co.jp/aiden-mypage.html">
+<meta property="og:url" content="https://weir.co.jp/weir-mypage.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Weir">
 <meta name="twitter:card" content="summary_large_image">
@@ -190,8 +190,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
     <div class="login-prompt-icon">👤</div>
     <div class="login-prompt-title">ログインしてください</div>
     <div class="login-prompt-text">マイページを利用するにはログインが必要です。</div>
-    <a href="./aiden-order-checkout.html#signin" class="login-btn">ログイン / 会員登録</a>
-    <div style="margin-top:16px"><a href="./aiden-password-reset.html" style="font-size:13px;color:var(--text-sub)">パスワードをお忘れですか？</a></div>
+    <a href="./weir-order-checkout.html#signin" class="login-btn">ログイン / 会員登録</a>
+    <div style="margin-top:16px"><a href="./weir-password-reset.html" style="font-size:13px;color:var(--text-sub)">パスワードをお忘れですか？</a></div>
   </div>
 </div>
 
@@ -263,7 +263,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
   </div>
 
   <!-- Membership link -->
-  <a href="./aiden-membership.html" class="membership-link" id="membershipLink">
+  <a href="./weir-membership.html" class="membership-link" id="membershipLink">
     📋 会員プログラム詳細を見る
   </a>
 
@@ -319,7 +319,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);max-width:50
     それまでの間はマイページからキャンセルできます。<br>
     退会確定時にポイントは失効します。
   </div>
-  <a href="./aiden-mypage.html" class="withdraw-complete-link">マイページに戻る</a>
+  <a href="./weir-mypage.html" class="withdraw-complete-link">マイページに戻る</a>
 </div>
 
 <script>
@@ -376,7 +376,7 @@ function fmtDate(d) {
     checkVerificationStatus(session.access_token, member.email);
 
     const brandId = member.brand_id;
-    document.getElementById('membershipLink').href = './aiden-membership.html?brand_id=' + brandId;
+    document.getElementById('membershipLink').href = './weir-membership.html?brand_id=' + brandId;
 
     // Member name
     if (member.last_name || member.first_name) {
@@ -489,7 +489,7 @@ function fmtDate(d) {
         var iconCls = o.order_type === 'delivery' ? 'delivery' : 'pickup';
         var modeLabel = o.order_type === 'delivery' ? 'デリバリー' : 'テイクアウト';
         var trackBtn = o.tracking_token
-          ? '<a href="./aiden-order-tracking.html?token=' + encodeURIComponent(o.tracking_token) + '" class="order-hist-track">追跡</a>'
+          ? '<a href="./weir-order-tracking.html?token=' + encodeURIComponent(o.tracking_token) + '" class="order-hist-track">追跡</a>'
           : '';
         return '<div class="order-hist-item">'
           + '<div class="order-hist-icon ' + iconCls + '">' + icon + '</div>'
@@ -744,7 +744,7 @@ async function resendVerificationFromBanner() {
   btn.textContent = '認証メールを再送する';
 }
 </script>
-<script src="aiden-chat-widget.js"></script>
+<script src="weir-chat-widget.js"></script>
 <script>
 (function(){
   // Get member ID from localStorage if available

@@ -121,7 +121,7 @@
 - D-107 [project] brands.corp_id→merchant_id リネームバグ修正完了(2026-04-14): 6箇所のPOSTボディを修正 commit a847365。ブランド一括登録0件問題の根本原因
 - D-108 [project] HPテンプレートシステム実装済み(2026-04-09): templates/brand_templatesテーブル・public/templates/template-a〜e完備。ブランド登録時にテンプレート選択必須化 commit 6a086aa
 - D-109 [project] brand_hero_slides RLS追加(2026-04-14): authenticated INSERT/DELETEポリシー追加。mediaバケット統合（ロゴ: {brand_id}/logo/、ヒーロー: {brand_id}/hero/）commit e59fe48
-- D-110 [project] aiden-common.js slug解決バグ修正(2026-04-14): venues.slug→brands.slug参照に変更。誤コメント削除。commit 2f32508
+- D-110 [project] weir-common.js slug解決バグ修正(2026-04-14): venues.slug→brands.slug参照に変更。誤コメント削除。commit 2f32508
 - D-111 [project] テンプレートファイル名変更(2026-04-14): aiden_corp_template→aiden_merchant_template、aiden_store_template→aiden_venue_template。commit 84320a7
 - D-112 [project] 店舗一括登録ヘッダー検証追加(2026-04-14): BULK_TEMPLATESとTEMPLATESの混同防止。誤ったファイルアップロード時に「データ一括管理ページを使用してください」と誘導。commit 2534582
 - D-113 [project] ブランド管理UI修正(2026-04-14): 法人詳細ブランド一覧タブ・ブランド詳細法人ID表示・サービス設定デリバリー/予約追加・HP準備中制御・テンプレート選択必須化。commits 352daf0 + 6a086aa

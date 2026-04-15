@@ -86,8 +86,8 @@ serve(async (req) => {
     // 3. Account Link（オンボーディングURL）を生成
     const linkParams = new URLSearchParams({
       'account': account.id,
-      'refresh_url': `${FRONTEND_URL}/aiden-customer-admin.html?stripe_refresh=true`,
-      'return_url': `${FRONTEND_URL}/aiden-customer-admin.html?stripe_onboarding=complete&account_id=${account.id}`,
+      'refresh_url': `${FRONTEND_URL}/weir-customer-admin.html?stripe_refresh=true`,
+      'return_url': `${FRONTEND_URL}/weir-customer-admin.html?stripe_onboarding=complete&account_id=${account.id}`,
       'type': 'account_onboarding',
     })
 

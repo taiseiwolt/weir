@@ -17,7 +17,7 @@
 ### A-1: ゲスト注文（Dine-in）
 テスト用Stripeカード: 4242 4242 4242 4242（有効期限: 任意の未来日、CVC: 任意3桁）
 
-テスト用店舗URL: https://weir.co.jp/aiden-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
+テスト用店舗URL: https://weir.co.jp/weir-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
 
 - [ ] A-01: MO画面を開く → メニューが表示される
   結果: ___  備考:

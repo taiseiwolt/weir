@@ -13,15 +13,15 @@ echo "=== D-83 ハードコードスキャン ==="
 echo ""
 
 FILES=(
-  "aiden-admin.html"
-  "aiden-customer-admin.html"
-  "aiden-order.html"
-  "aiden-order-store.html"
-  "aiden-brand-stores.html"
-  "aiden-store.html"
+  "weir-admin.html"
+  "weir-customer-admin.html"
+  "weir-order.html"
+  "weir-order-store.html"
+  "weir-brand-stores.html"
+  "weir-store.html"
   "brand.html"
-  "aiden-brand-news.html"
-  "aiden-brand-menu.html"
+  "weir-brand-news.html"
+  "weir-brand-menu.html"
 )
 
 PATTERN="炭火亭|sumibite|Sumibite|スミビ|山田太郎|また一つ、焼肉|近重泰輔|佐藤花子|鈴木一郎|高橋次郎|テスト店舗|テストブランド"

@@ -25,17 +25,17 @@
 - **リグレッションなし**
 
 ### C-08: Stored XSS（ダッシュボード） — FIXED
-- `aiden-order-dashboard.html` に `escH()` 関数が実装済み（L579）
+- `weir-order-dashboard.html` に `escH()` 関数が実装済み（L579）
 - customer_name, phone, 注文ID, 商品名, オプション名など全innerHTML展開箇所でescH()によるサニタイズ確認
 - **18箇所以上でescH()適用を確認**
 
 ### A-11: サインインハッシュハンドラー — FIXED
-- `aiden-order-checkout.html` L2281-2288: `#signin`ハッシュ検知→`openSigninModal()`呼び出し
+- `weir-order-checkout.html` L2281-2288: `#signin`ハッシュ検知→`openSigninModal()`呼び出し
 - DOMContentLoaded待機処理あり
 - ESCキー / オーバーレイクリックで閉じる実装あり
 
 ### BUG-3: パスワードリセットUX — FIXED
-- `aiden-password-reset.html` に成功メッセージ表示要素(`requestSuccess`)が実装済み
+- `weir-password-reset.html` に成功メッセージ表示要素(`requestSuccess`)が実装済み
 - API成功時にメッセージを表示する処理を確認（L176-178）
 
 ### CRON-1: google-places-bg-collector — FIXED
@@ -69,8 +69,8 @@
 - 次回実行時（日曜18:30 UTC）に確実に失敗する
 - job 7, 8, 14はハードコードされたキーで正常動作しているため、job 15も同様の方式に修正すべき
 
-### XSS-2 (NEW): aiden-order-store.html innerHTML未サニタイズ — STILL OPEN (Medium)
-- `aiden-order-store.html` に innerHTML 使用箇所が21箇所
+### XSS-2 (NEW): weir-order-store.html innerHTML未サニタイズ — STILL OPEN (Medium)
+- `weir-order-store.html` に innerHTML 使用箇所が21箇所
 - escH() / escapeHtml() は未実装
 - 商品名、オプション名、カテゴリ名等がサニタイズなしで展開される
 - DBから取得したデータを直接innerHTML展開しているため、Stored XSSリスクあり
@@ -121,7 +121,7 @@
 ### P1（リリース前修正推奨）
 1. **C-06**: orders_public_viewからdelivery_address, delivery_lat/lng, member_id除外
 2. **A-03**: 決済フロー再テスト（Stripe Connect設定確認）
-3. **XSS-2**: aiden-order-store.htmlにescH()実装
+3. **XSS-2**: weir-order-store.htmlにescH()実装
 
 ### P2（リリース後でも可）
 4. SEC-7: store_hours RLS有効化

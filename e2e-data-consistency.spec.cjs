@@ -12,7 +12,7 @@ function record(name, status, detail = '') {
 }
 
 // ============================================================
-// 1. aiden-admin.html ↔ aiden-customer-admin.html 整合性テスト
+// 1. weir-admin.html ↔ weir-customer-admin.html 整合性テスト
 // ============================================================
 test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
 
@@ -27,7 +27,7 @@ test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
 
   test('1-1. 店舗データの一致確認（stores テーブル参照）', async ({ page }) => {
     // Admin 側の店舗データ取得
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const adminStores = await page.evaluate(() => {
@@ -71,7 +71,7 @@ test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
   });
 
   test('1-2. 会員データ件数の一致確認', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const adminMemberCount = await page.evaluate(() => {
@@ -97,7 +97,7 @@ test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
   });
 
   test('1-3. 会員ランク表示方式の確認（current_rank_id 参照）', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     // Admin のランク分布を取得
@@ -125,7 +125,7 @@ test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
   });
 
   test('1-4. 会員ポイント（point_transactions 集計 vs 表示値）', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(5000);
 
     const pointCheck = await page.evaluate(async (cfg) => {
@@ -177,12 +177,12 @@ test.describe('1. Admin ↔ Customer-Admin データ整合性', () => {
 });
 
 // ============================================================
-// 2. aiden-order-dashboard.html ↔ aiden-admin.html 整合性テスト
+// 2. weir-order-dashboard.html ↔ weir-admin.html 整合性テスト
 // ============================================================
 test.describe('2. Dashboard ↔ Admin 注文データ整合性', () => {
 
   test('2-1. 注文ステータスマッピング検証', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     // ステータスマッピング関数のテスト
@@ -230,7 +230,7 @@ test.describe('2. Dashboard ↔ Admin 注文データ整合性', () => {
   });
 
   test('2-2. Dashboard → API ステータス更新値の検証', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
 
     const statusNextCheck = await page.evaluate(() => {
@@ -264,7 +264,7 @@ test.describe('2. Dashboard ↔ Admin 注文データ整合性', () => {
   });
 
   test('2-3. Admin注文件数 vs Supabase注文件数', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(5000);
 
     const orderCheck = await page.evaluate(async (cfg) => {
@@ -312,7 +312,7 @@ test.describe('2. Dashboard ↔ Admin 注文データ整合性', () => {
 test.describe('3. Mobile Order → Admin データフロー', () => {
 
   test('3-1. Checkout → orders テーブル: Stripe Edge Function 疎通確認', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-order-checkout.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-order-checkout.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
 
     // stripe-create-payment-intent の URL が正しく設定されているか確認
@@ -329,7 +329,7 @@ test.describe('3. Mobile Order → Admin データフロー', () => {
   });
 
   test('3-2. Order Dashboard リアルタイム購読設定の確認', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-order-dashboard.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const realtimeCheck = await page.evaluate(() => {
@@ -355,7 +355,7 @@ test.describe('3. Mobile Order → Admin データフロー', () => {
   });
 
   test('3-3. point_transactions の order_id 設定確認', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const ptCheck = await page.evaluate(async (cfg) => {
@@ -400,7 +400,7 @@ test.describe('3. Mobile Order → Admin データフロー', () => {
 test.describe('4. Supabase テーブル参照整合性', () => {
 
   test('4-1. guest_order_summaries ビュー: Admin と Customer-Admin の結果一致', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const viewCheck = await page.evaluate(async (cfg) => {
@@ -424,7 +424,7 @@ test.describe('4. Supabase テーブル参照整合性', () => {
   });
 
   test('4-2. orders テーブルの store_id 外部キー整合性', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     const fkCheck = await page.evaluate(async (cfg) => {
@@ -462,7 +462,7 @@ test.describe('4. Supabase テーブル参照整合性', () => {
   });
 
   test('4-3. members.total_spend と orders 実績の一致確認', async ({ page }) => {
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(5000);
 
     const spendCheck = await page.evaluate(async (cfg) => {
@@ -584,7 +584,7 @@ test.describe('5. API エンドポイント整合性', () => {
     }
 
     // Supabase からも直接取得して比較
-    await page.goto(`${BASE_URL}/aiden-admin.html`, { waitUntil: 'networkidle', timeout: 15000 });
+    await page.goto(`${BASE_URL}/weir-admin.html`, { waitUntil: 'networkidle', timeout: 15000 });
     const dbProducts = await page.evaluate(async (cfg) => {
       const sb = supabase.createClient(cfg.url, cfg.key);
       const { data } = await sb.from('products').select('id, name');
