@@ -3132,15 +3132,14 @@ async function loadStoreHours(storeUuid){
     var c2=(h.close_time2||'').substring(0,5);
     var closed=!!h.is_closed;
     var row1Attr=closed?' disabled style="opacity:0.4"':'';
-    var row2Disabled=(closed||!o2);
-    var row2Attr=row2Disabled?' disabled style="opacity:0.4"':'';
+    var row2Attr=closed?' disabled style="opacity:0.4"':'';
     return '<div class="day-label">'+DAYS_MAP[day]+'</div>'+
-      '<input type="time" id="storeHour_'+day+'_open" value="'+o1+'"'+row1Attr+'>'+
-      '<input type="time" id="storeHour_'+day+'_close" value="'+c1+'"'+row1Attr+'>'+
+      '<input type="time" id="storeHour_'+day+'_open" min="00:00" max="23:59" value="'+o1+'"'+row1Attr+'>'+
+      '<input type="time" id="storeHour_'+day+'_close" min="00:00" max="23:59" value="'+c1+'"'+row1Attr+'>'+
       '<label class="closed-check" style="justify-content:flex-end"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>'+
       '<div></div>'+
-      '<input type="time" id="storeHour_'+day+'_open2" value="'+o2+'"'+row2Attr+' placeholder="（中休みあり時）">'+
-      '<input type="time" id="storeHour_'+day+'_close2" value="'+c2+'"'+row2Attr+'>'+
+      '<input type="time" id="storeHour_'+day+'_open2" min="00:00" max="23:59" value="'+o2+'"'+row2Attr+'>'+
+      '<input type="time" id="storeHour_'+day+'_close2" min="00:00" max="23:59" value="'+c2+'"'+row2Attr+'>'+
       '<div></div>';
   }).join('');
 }
