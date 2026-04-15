@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Agent:** chrome-destructive
-**Environment:** Production (https://weir.co.jp)
+**Environment:** Production (https://xorder.co.jp)
 **Test Store:** Supabase store_id=aaaa3333-0000-0000-0000-000000000002
 
 ---

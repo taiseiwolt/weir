@@ -453,7 +453,7 @@ git commit -m "fix: rename coupon section, add 'none' option as default, hide co
       contextType: 'enduser',
       storeId: params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
-      apiBase: 'https://weir.co.jp',
+      apiBase: 'https://xorder.co.jp',
     });
   }
 })();

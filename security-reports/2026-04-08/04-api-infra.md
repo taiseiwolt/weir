@@ -118,7 +118,7 @@
 
 #### P2-4: CORSオリジンマッチングがstartsWithを使用
 - **対象**: `api/_lib/response.js` line 15
-- **内容**: `ALLOWED_ORIGINS.some(o => origin.startsWith(o))` — `https://weir.co.jp.evil.com`がマッチする
+- **内容**: `ALLOWED_ORIGINS.some(o => origin.startsWith(o))` — `https://xorder.co.jp.evil.com`がマッチする
 - **修正方針**: `ALLOWED_ORIGINS.includes(origin)`に変更
 - **フェーズ影響**: Phase 1
 

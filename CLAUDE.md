@@ -48,7 +48,7 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 
 ### Infrastructure / Deployment
 - Vercel（ホスティング・デプロイ）、GitHub: https://github.com/taiseiwolt/aiden-demo
-- Vercel Demo: https://weir.vercel.app 、Production: https://weir.co.jp
+- Vercel Demo: https://weir.vercel.app 、Production: https://xorder.co.jp
 - Supabase: https://iikwusprydaogzeslgdz.supabase.co
 - `vercel --prod`（手動デプロイ。GitHub auto-integration は壊れている）
 - .env ファイルは .gitignore に含める

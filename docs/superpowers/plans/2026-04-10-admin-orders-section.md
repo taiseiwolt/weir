@@ -1003,7 +1003,7 @@ vercel --prod
 
 - [ ] **Step 6: 本番URL動作確認**
 
-- https://weir.co.jp/weir-admin.html を開く
+- https://xorder.co.jp/weir-admin.html を開く
 - ログイン → サイドバーに「📋 注文管理」
 - 全件表示 / フィルタ / カスケード / 検索 / リセット / 詳細モーダル / ステータス進行 / キャンセル + Stripe案内 / Realtime の各項目を本番で確認
 - 完了基準チェックリスト（依頼書）を1つずつ潰す

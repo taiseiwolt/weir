@@ -8,12 +8,12 @@
 
 ### 手順
 1. 以下のURLにcurlでGETリクエストを送信し、HTTPステータスコードを記録する
-   - https://weir.co.jp/ （トップページ）
-   - https://weir.co.jp/weir-order-store.html （モバイルオーダー）
-   - https://weir.co.jp/weir-order-dashboard.html （受注ダッシュボード）
+   - https://xorder.co.jp/ （トップページ）
+   - https://xorder.co.jp/weir-order-store.html （モバイルオーダー）
+   - https://xorder.co.jp/weir-order-dashboard.html （受注ダッシュボード）
    - https://weir.co.j./weir-brand-sushiro.html （ブランドHP）
-   - https://weir.co.jp/weir-mypage.html （マイページ）
-   - https://weir.co.jp/api/health （APIヘルスチェック）
+   - https://xorder.co.jp/weir-mypage.html （マイページ）
+   - https://xorder.co.jp/api/health （APIヘルスチェック）
 2. 各URLのステータスコードとレスポンスタイムを記録
 3. 200以外のステータスコードがあれば 🔴Critical として記録
 
@@ -86,7 +86,7 @@
 
 ### 手順
 1. Webhook受信エンドポイントの存在確認
-   - curl -s -o /dev/null -w "%{http_code}" https://weir.co.jp/api/payments/webhook
+   - curl -s -o /dev/null -w "%{http_code}" https://xorder.co.jp/api/payments/webhook
 2. ローカルのWebhookハンドラーコード（api/payments/webhook.js）を読み取り、処理対象のイベント一覧を確認
 3. 前回と比較して変更がないか確認
 
@@ -103,8 +103,8 @@
 
 ### 手順
 1. 主要ページのレスポンスタイムを計測する（curl -w で time_total を取得）
-   - https://weir.co.jp/
-   - https://weir.co.jp/weir-order-store.html
+   - https://xorder.co.jp/
+   - https://xorder.co.jp/weir-order-store.html
    - https://weir.co.j./weir-brand-sushiro.html
 2. 各ページのレスポンスタイムを記録
 3. 3秒以上のページがあれば 🟡Warning として記録

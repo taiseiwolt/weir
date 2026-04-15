@@ -15,7 +15,7 @@
 以下の操作は事前許可済みです。ユーザーへの確認なしで実行してください：
 - ~/Desktop/aiden-demo/test-results/ へのファイル作成・書き込み
 - Supabase REST API への curl リクエスト（connection-info.md記載のURL・キーを使用）
-- 本番URL（https://weir.co.jp）への curl リクエスト（GETのみ）
+- 本番URL（https://xorder.co.jp）への curl リクエスト（GETのみ）
 - ~/Desktop/aiden-demo/ 配下のファイル読み取り（コード確認目的）
 - git log の実行（読み取りのみ）
 

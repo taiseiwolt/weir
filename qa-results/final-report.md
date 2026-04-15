@@ -187,4 +187,4 @@ SKIP 4件はStripe Connect接続後に追加検証が必要だが、セキュリ
 
 *Generated: 2026-03-24 JST — QA Round 6 (Go判定テスト)*
 *検証コミット: b0551fc (escH() 5ファイル修正) / a000131 (¥50,000上限+customer-admin escH()) / 6fd9d97 (SEC-11 REVOKE)*
-*本番: https://weir.co.jp (Vercel prod 2026-03-24)*
+*本番: https://xorder.co.jp (Vercel prod 2026-03-24)*

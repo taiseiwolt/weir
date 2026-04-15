@@ -11,7 +11,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://weir.co.jp
+- 本番URL: https://xorder.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Supabase Legacy JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...（Edge Function認証用）

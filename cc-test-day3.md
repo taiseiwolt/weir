@@ -11,7 +11,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://weir.co.jp
+- 本番URL: https://xorder.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Supabase Legacy JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...（Edge Function認証用）
@@ -35,7 +35,7 @@
 SEC-01〜04の修正がデプロイ済み。既存機能が壊れていないことを確認する。
 
 ### SEC-R1: 注文フローE2Eリグレッション
-1. https://weir.co.jp を開く（weir-order-store.html）
+1. https://xorder.co.jp を開く（weir-order-store.html）
 2. 店舗を選択 → メニュー表示確認
 3. 商品をカートに追加 → チェックアウト画面遷移
 4. チェックアウト画面で金額表示が正しいか確認（小計、配達料、サービス料、合計）

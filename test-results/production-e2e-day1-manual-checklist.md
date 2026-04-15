@@ -2,7 +2,7 @@
 
 テスト日: 2026-03-22
 テスター: Taisei
-本番URL: https://weir.co.jp
+本番URL: https://xorder.co.jp
 
 ## 使い方
 1. 各テストを上から順に実施する
@@ -17,7 +17,7 @@
 ### A-1: ゲスト注文（Dine-in）
 テスト用Stripeカード: 4242 4242 4242 4242（有効期限: 任意の未来日、CVC: 任意3桁）
 
-テスト用店舗URL: https://weir.co.jp/weir-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
+テスト用店舗URL: https://xorder.co.jp/weir-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
 
 - [ ] A-01: MO画面を開く → メニューが表示される
   結果: ___  備考:

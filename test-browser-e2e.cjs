@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const BASE = 'https://weir.co.jp';
+const BASE = 'https://xorder.co.jp';
 const SS_DIR = path.join(__dirname, 'qa-screenshots', 'browser-e2e');
 const REPORT_PATH = path.join(__dirname, 'qa-results', 'browser-e2e-test-2026-03-31.md');
 

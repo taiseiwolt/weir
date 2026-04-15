@@ -5,8 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // --- CORS ---
 const ALLOWED_ORIGINS = [
-  'https://weir.co.jp',
-  'https://www.weir.co.jp',
+  'https://xorder.co.jp',
+  'https://www.xorder.co.jp',
   'https://weir.vercel.app',
 ]
 

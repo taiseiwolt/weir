@@ -49,7 +49,7 @@ function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; h
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://weir.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="https://xorder.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
@@ -84,7 +84,7 @@ function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; ht
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://weir.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="https://xorder.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">

@@ -7,14 +7,14 @@
     <!-- OGP / SNS Meta Tags -->
     <meta property="og:title" content="Weir 受注ダッシュボード">
     <meta property="og:description" content="Weir受注ダッシュボード - リアルタイムで注文を管理">
-    <meta property="og:image" content="https://weir.co.jp/ogp.png">
-    <meta property="og:url" content="https://weir.co.jp/weir-order-dashboard.html">
+    <meta property="og:image" content="https://xorder.co.jp/ogp.png">
+    <meta property="og:url" content="https://xorder.co.jp/weir-order-dashboard.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Weir 受注ダッシュボード">
     <meta name="twitter:description" content="Weir受注ダッシュボード - リアルタイムで注文を管理">
-    <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
+    <meta name="twitter:image" content="https://xorder.co.jp/ogp.png">
     <meta name="description" content="Weir受注ダッシュボード - リアルタイムで注文を管理">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -633,7 +633,7 @@ body{font-family:'Noto Sans JP',sans-serif;overflow:hidden;height:100vh;backgrou
 
 <script>
 // ===== API CONFIG =====
-const API_BASE = 'https://weir.co.jp'; // Production domain
+const API_BASE = 'https://xorder.co.jp'; // Production domain
 const STORE_SLUG = new URLSearchParams(location.search).get('store_slug') || '';
 let STORE_ID = null; // Set after initial load
 
@@ -1512,7 +1512,7 @@ function startReservationRealtime(){
     storeId: params.get('venue_id') || params.get('store_id') || null,
     brandId: params.get('brand_id') || null,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://weir.co.jp',
+    apiBase: 'https://xorder.co.jp',
   });
 })();
 </script>

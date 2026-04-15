@@ -49,7 +49,7 @@
   async function resolveBrandId() {
     // 1. Custom domain detection (highest priority)
     var hostname = window.location.hostname;
-    if (hostname && hostname !== 'localhost' && hostname !== 'weir.co.jp' && !hostname.endsWith('.vercel.app')) {
+    if (hostname && hostname !== 'localhost' && hostname !== 'xorder.co.jp' && !hostname.endsWith('.vercel.app')) {
       var client = getSb();
       if (client) {
         try {

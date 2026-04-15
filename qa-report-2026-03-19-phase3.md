@@ -1,6 +1,6 @@
 # QA Report - Phase 3: UX Improvements
 **Date:** 2026-03-19
-**Environment:** https://weir.co.jp (Vercel prod)
+**Environment:** https://xorder.co.jp (Vercel prod)
 **Test Tool:** Playwright 1.58.2 (Chromium)
 **Commit:** 84199fb
 

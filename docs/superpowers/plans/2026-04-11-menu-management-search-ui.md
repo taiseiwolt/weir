@@ -552,7 +552,7 @@ git push origin main
 vercel --prod
 ```
 
-- [ ] **Step 7: 本番URL（https://weir.co.jp/weir-admin.html）でスモークテスト**
+- [ ] **Step 7: 本番URL（https://xorder.co.jp/weir-admin.html）でスモークテスト**
 
 上記 Step 2 のチェック項目を本番で再実行。
 

@@ -2,7 +2,7 @@
 
 実行日: 2026-03-22
 実行者: Claude Code
-デプロイ先: https://weir.co.jp
+デプロイ先: https://xorder.co.jp
 
 ---
 
@@ -11,7 +11,7 @@
 ### A-1: Supabase Auth設定変更
 - **PASS** - `mailer_autoconfirm: false`（Confirm email ON）確認済み
 - **PASS** - `mailer_otp_exp: 3600`（60分）確認済み
-- **PASS** - `site_url` を `https://weir.co.jp` に更新
+- **PASS** - `site_url` を `https://xorder.co.jp` に更新
 - **PASS** - `uri_allow_list` にリダイレクトURL追加
 
 ### A-2: 認証メールテンプレート
@@ -113,7 +113,7 @@
 ### Supabase設定変更
 | 設定 | 変更内容 |
 |------|---------|
-| `site_url` | `http://localhost:3000` → `https://weir.co.jp` |
+| `site_url` | `http://localhost:3000` → `https://xorder.co.jp` |
 | `uri_allow_list` | リダイレクトURL追加 |
 | `mailer_subjects_confirmation` | 日本語件名に変更 |
 | `mailer_templates_confirmation_content` | Weirブランドの日本語テンプレートに変更 |

@@ -18,7 +18,7 @@
 - `weir-mypage.html` のログインプロンプトに「パスワードをお忘れですか？」リンク追加
 
 ### 4. Supabase Auth 設定
-- `resetPasswordForEmail()` の `redirectTo` を `https://weir.co.jp/weir-password-reset.html` に設定
+- `resetPasswordForEmail()` の `redirectTo` を `https://xorder.co.jp/weir-password-reset.html` に設定
 - Supabase Auth がリカバリートークン付きハッシュフラグメントでリダイレクト
 
 ## テスト項目

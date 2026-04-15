@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'https://weir.co.jp';
+const BASE_URL = 'https://xorder.co.jp';
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const SS_DIR = 'test-results/screenshots/data-consistency';

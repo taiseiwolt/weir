@@ -231,7 +231,7 @@ async function handleRegister(req, res) {
   }
 
   try {
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html';
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -790,7 +790,7 @@ async function handleResendVerification(req, res) {
       type: 'signup',
       email: email,
       options: {
-        redirectTo: (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html',
+        redirectTo: (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html',
       },
     });
 
@@ -857,7 +857,7 @@ async function handleBulkSendVerification(req, res) {
     // Send verification emails via Supabase Auth generateLink
     let sentCount = 0;
     const errors = [];
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html';
 
     for (const member of unverified) {
       try {
@@ -949,7 +949,7 @@ async function handleResetPassword(req, res) {
 
   try {
     const anonClient = createAnonClient();
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/weir-password-reset.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-password-reset.html';
 
     const { error: resetError } = await anonClient.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,

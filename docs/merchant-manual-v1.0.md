@@ -57,7 +57,7 @@ Weir では主に3つの画面を使います。
 ### 2.1 ログイン方法
 
 1. ブラウザ（Chrome や Safari）を開きます
-2. アドレスバー（画面上部のURL入力欄）に `https://weir.co.jp/weir-order-dashboard.html` と入力します
+2. アドレスバー（画面上部のURL入力欄）に `https://xorder.co.jp/weir-order-dashboard.html` と入力します
 3. **メールアドレス**と**パスワード**を入力します
 4. 「ログイン」ボタンをタップします
 
@@ -143,7 +143,7 @@ Weir では主に3つの画面を使います。
 
 ### 3.1 管理マスタへのアクセス
 
-1. ブラウザで `https://weir.co.jp/weir-admin.html` を開きます
+1. ブラウザで `https://xorder.co.jp/weir-admin.html` を開きます
 2. ログインします（受注ダッシュボードと同じアカウント）
 
 ---
@@ -227,7 +227,7 @@ Weir では主に3つの画面を使います。
 
 ### 4.1 顧客管理画面へのアクセス
 
-1. ブラウザで `https://weir.co.jp/weir-customer-admin.html` を開きます
+1. ブラウザで `https://xorder.co.jp/weir-customer-admin.html` を開きます
 2. ログインします
 
 ---

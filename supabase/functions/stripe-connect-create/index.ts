@@ -14,7 +14,7 @@ import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, saniti
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://weir.co.jp'
+const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://xorder.co.jp'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

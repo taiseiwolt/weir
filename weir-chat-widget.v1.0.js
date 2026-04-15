@@ -13,7 +13,7 @@
  *       memberId: '...',       // optional (logged-in member)
  *       operatorId: '...',     // optional (merchant operator)
  *       supabaseClient: sb,    // existing Supabase client
- *       apiBase: 'https://weir.co.jp',
+ *       apiBase: 'https://xorder.co.jp',
  *     });
  *   </script>
  */
@@ -27,7 +27,7 @@ class WeirChatWidget {
     this.operatorId = options.operatorId || null;
     this.guestSessionId = options.guestSessionId || null;
     this.sb = options.supabaseClient || null;
-    this.apiBase = options.apiBase || 'https://weir.co.jp';
+    this.apiBase = options.apiBase || 'https://xorder.co.jp';
 
     this.sessionId = null;
     this.isOpen = false;

@@ -29,7 +29,7 @@ const FROM_NAME = 'Weir監視'
 const ACCESS_TOKEN_EXPIRY = new Date('2026-06-20T00:00:00Z')
 
 // 本番URL
-const PRODUCTION_URL = 'https://weir.co.jp'
+const PRODUCTION_URL = 'https://xorder.co.jp'
 
 // 主要Edge Functions一覧（デプロイ状態チェック用）
 const CRITICAL_EDGE_FUNCTIONS = [

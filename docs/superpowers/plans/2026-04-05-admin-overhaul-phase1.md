@@ -87,7 +87,7 @@ Lines 3520-3530を削除:
   new WeirChatWidget({
     contextType: 'merchant',
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://weir.co.jp',
+    apiBase: 'https://xorder.co.jp',
   });
   if(location.hash === '#cs') goTo('cs');
 })();
@@ -831,7 +831,7 @@ git pull --rebase origin main
 
 - [ ] **Step 3: ブラウザ動作確認（本番URL）**
 
-https://weir.co.jp/weir-admin.html で以下を確認:
+https://xorder.co.jp/weir-admin.html で以下を確認:
 - [ ] ダッシュボード: KPIカード4カテゴリ×7指標が表示、追加サービスはグレーアウト
 - [ ] ダッシュボード: 直近アクティビティがDB取得
 - [ ] ダッシュボード: 法人別GMVが表示

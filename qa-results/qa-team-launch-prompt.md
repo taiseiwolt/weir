@@ -37,7 +37,7 @@ Weir の QA チームを起動してください。
 - 結果出力先: ~/Desktop/aiden-demo/qa-results/observer-notes/
 
 ## 接続情報
-- 本番URL: https://weir.co.jp
+- 本番URL: https://xorder.co.jp
 - Supabase: https://iikwusprydaogzeslgdz.supabase.co
 - Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Stripe Test Card: 4242 4242 4242 4242（有効期限: 任意の未来日、CVC: 任意3桁）

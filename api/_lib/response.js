@@ -1,5 +1,5 @@
 const ALLOWED_ORIGINS = [
-  'https://weir.co.jp',
+  'https://xorder.co.jp',
   'https://taiseiwolt.github.io',
   'https://weir.vercel.app',
   'http://localhost:3000',
