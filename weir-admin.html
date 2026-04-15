@@ -442,7 +442,7 @@ function goTo(p){currentView={type:p,id:null};clearSearch();updateSidebar();rend
 function openMerchantModal(id){history.replaceState(null,'','#merchants/'+id);currentView={type:'corp',id:id};clearSearch();updateSidebar();renderPage();}
 function goToBrand(id){openBrandModal(id);}
 function openBrandModal(id){history.replaceState(null,'','#brands/'+id);const b=BRANDS.find(x=>x.id===id);if(!b)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderBrandPage(b);openModal(html,true);loadHeroSlides(b._uuid,b.id);loadBrandNews(b._uuid,b.id);loadBrandCampaigns(b._uuid,b.id);loadBrandCoupons(b._uuid,b.id);}
-function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);}
+function openVenueModal(id){history.replaceState(null,'','#venues/'+id);const s=VENUES.find(x=>x.id===id);if(!s)return;const html='<button class="modal-close" onclick="closeModal()">✕</button>'+renderStorePage(s);openModal(html,true);loadStoreHours(s._uuid);loadStoreAIUsage(s._uuid);loadStoreMedia(s._uuid);loadStoreReviews(s._uuid);}
 function clearSearch(){document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('show');}
 function updateSidebar(){
   const sidebarPage={dashboard:'dashboard',corps:'corps',brands:'brands',stores:'stores',menus:'menus',users:'users',orders:'orders',system:'system',ai:'ai',cost:'cost',billing:'billing',compensation:'compensation',auditlog:'auditlog',corp:'corps',brand:'brands',store:'stores'}[currentView.type]||currentView.type;
@@ -3019,8 +3019,8 @@ function renderStorePage(s){
   '<div class="tab-content" id="store-reservation"><div class="card"><div class="card-title">予約詳細設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminReservation(\''+s.id+'\')">保存</button></span></div><div style="font-size:11px;color:#8a5a00;background:#fff7e6;border:1px solid #f59f00;border-radius:6px;padding:8px 10px;margin-bottom:12px">ℹ️ 来店予約の<strong>ON/OFF</strong>は「サービス設定」タブで管理します（法人・ブランド・店舗のいずれの階層でも切り替え可能）。</div><div class="form-grid"><div class="form-group"><label>確定方法</label><select id="adminResConfMode" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="auto"'+(s.resConfMode==='auto'?' selected':'')+'>即時確定</option><option value="manual"'+(s.resConfMode!=='auto'?' selected':'')+'>承認制</option></select></div><div class="form-group"><div class="toggle-row"><label style="font-size:12px;font-weight:600">クレカ登録必須</label><label class="toggle-sw"><input type="checkbox" id="adminResRequireCard" '+(s.resRequireCard?'checked':'')+'><span class="slider"></span></label></div></div><div class="form-group"><label>キャンセル料（円）</label><input type="number" id="adminResCancelFee" value="'+(s.resCancelFee||0)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">0 = キャンセル料なし</div></div><div class="form-group"><label>キャンセル締切（時間前）</label><input type="number" id="adminResCancelDeadline" value="'+(s.resCancelDeadline||72)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">この時間を過ぎると店舗承認が必要</div></div></div></div></div>'+
   '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminDelivery(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" id="adminDeliveryRadius" value="'+(s.deliveryRadius||5)+'"></div><div class="form-group"><label>配達料金（円）</label><input type="number" id="adminDeliveryFee" value="'+(s.deliveryFee||770)+'"></div><div class="form-group"><label>最低注文額（円）</label><input type="number" id="adminMinOrderAmount" value="'+(s.minOrder||1500)+'"></div><div class="form-group"><label>最低注文金額未満時の対応</label><select id="adminMinOrderPolicy" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="surcharge"'+(s.minOrderPolicy==="block"?"":' selected')+'>差額を手数料として加算</option><option value="block"'+(s.minOrderPolicy==="block"?' selected':"")+'>注文を受け付けない</option></select></div><div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="adminSmallOrderMax" value="'+(s.surchargeMax||1500)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限</div></div><div class="form-group"><label>調理見積（分）</label><input type="number" id="adminPrepTime" value="'+(s.prepTime||30)+'"></div></div></div><div class="card"><div class="card-title">少額注文手数料の適用対象</div><div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDinein"'+(s.minOrderApplyTypes&&s.minOrderApplyTypes.dinein?" checked":"")+'> 店内飲食</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderTakeout"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.takeout!==false?" checked":"")+'> テイクアウト</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDelivery"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.delivery!==false?" checked":"")+'> デリバリー</label></div><div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div></div></div>'+
   '<div class="tab-content" id="store-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">空欄 = ブランドデフォルト適用</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>当日（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" placeholder="50"></div></div></div></div>'+
-  '<div class="tab-content" id="store-media"><div class="card"><div class="card-title">📸 メディア</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 画像をアップロード</div></div></div>'+
-  '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody><tr><td>2026-03-10</td><td>ゲスト</td><td>⭐⭐⭐⭐⭐</td><td>最高！</td><td><button class="btn btn-secondary btn-sm">返信</button></td></tr></tbody></table></div></div>'+
+  '<div class="tab-content" id="store-media"><div class="card"><div class="card-title">📸 メディア <span class="ct-right"><button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'storeMediaInput_'+s._uuid+'\').click()">＋ 追加</button></span></div><input type="file" id="storeMediaInput_'+s._uuid+'" accept="image/*" multiple style="display:none" onchange="uploadStoreMedia(event,\''+s._uuid+'\',\''+s.id+'\')"><div id="storeMediaDrop_'+s._uuid+'" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\';this.style.background=\'rgba(0,0,0,0.02)\'" ondragleave="this.style.borderColor=\'var(--border)\';this.style.background=\'transparent\'" ondrop="handleStoreMediaDrop(event,\''+s._uuid+'\',\''+s.id+'\')" onclick="document.getElementById(\'storeMediaInput_'+s._uuid+'\').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px;cursor:pointer;margin-bottom:12px;background:transparent;transition:all 0.2s">📎 画像をドロップまたはクリックしてアップロード（複数可）</div><div id="storeMediaList_'+s._uuid+'"><div style="color:var(--text-light);font-size:12px">読み込み中...</div></div></div></div>'+
+  '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody id="storeReviewsBody"><tr><td colspan="5" style="text-align:center;color:var(--text-light);font-size:12px;padding:12px">読み込み中...</td></tr></tbody></table></div></div>'+
   '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>';
 }
 async function saveAdminDelivery(storeId){
@@ -3085,8 +3085,33 @@ async function initStoreTabs(){
   var s=VENUES.find(x=>x.id===currentView.id);
   if(!s)return;
   await loadStoreHours(s._uuid);
+  loadStoreAIUsage(s._uuid);
+  loadStoreMedia(s._uuid);
+  loadStoreReviews(s._uuid);
+}
+
+function loadStoreAIUsage(venueUuid){
   var ae=document.getElementById('storeAIChart');
-  if(ae){var d=[{n:'SNS投稿文',v:85},{n:'AI画像',v:62},{n:'口コミ返信',v:48},{n:'POP作成',v:21}];var mx=Math.max(...d.map(x=>x.v));ae.innerHTML=d.map(x=>'<div class="chart-bar-row"><div class="chart-bar-label">'+x.n+'</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(x.v/mx*100).toFixed(0)+'%;background:var(--accent)"><span class="chart-bar-val">'+x.v+'回</span></div></div></div>').join('');}
+  if(!ae||!venueUuid)return;
+  ae.innerHTML='<div style="color:var(--text-light);font-size:12px;padding:8px 0">読み込み中...</div>';
+  var typeLabels={'review_reply':'口コミ返信','sns_post':'SNS投稿文','pop_image':'POP作成','monthly_comment':'月次コメント'};
+  var since=new Date(Date.now()-30*24*60*60*1000).toISOString();
+  sb.from('ai_interactions').select('interaction_type').eq('venue_id',venueUuid).gte('created_at',since).then(function(res){
+    var data=res.data;
+    if(!data||!data.length){
+      ae.innerHTML='<div style="color:var(--text-light);font-size:12px;padding:16px 0">直近30日のAI利用履歴はありません</div>';
+      return;
+    }
+    var counts={};
+    data.forEach(function(r){counts[r.interaction_type]=(counts[r.interaction_type]||0)+1;});
+    var mx=Math.max.apply(null,Object.values(counts));
+    ae.innerHTML=Object.entries(counts).map(function(e){
+      var k=e[0],v=e[1];
+      return '<div class="chart-bar-row"><div class="chart-bar-label">'+escHtml(typeLabels[k]||k)+'</div>'+
+        '<div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+(v/mx*100).toFixed(0)+'%;background:var(--accent)">'+
+        '<span class="chart-bar-val">'+v+'回</span></div></div></div>';
+    }).join('');
+  });
 }
 
 async function loadStoreHours(storeUuid){
@@ -3192,6 +3217,127 @@ async function saveStoreFacility(storeUuid,storeId){
     logAudit('update_store_facility','stores',storeId,{seats,smoking,children,chargeType,chargeValue});
   }catch(e){
     showToast('❌ 施設情報の保存に失敗しました');
+  }
+}
+
+// ===== STORE MEDIA =====
+async function uploadStoreMedia(event,storeUuid,storeId){
+  var files=Array.from(event.target.files||[]);
+  if(!files.length)return;
+  var ok=0;
+  for(var f of files){
+    var safe=f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    var path=storeUuid+'/'+Date.now()+'_'+safe;
+    var{error}=await sb.storage.from('media').upload(path,f,{upsert:false});
+    if(error){showToast('❌ アップロード失敗: '+f.name);}else{ok++;}
+  }
+  if(ok>0){showToast('✅ '+ok+'件アップロードしました');logAudit('upload_store_media','venues',storeId,{count:ok});}
+  loadStoreMedia(storeUuid);
+  if(event.target&&'value' in event.target)event.target.value='';
+}
+
+function handleStoreMediaDrop(event,storeUuid,storeId){
+  event.preventDefault();
+  if(event.currentTarget){event.currentTarget.style.borderColor='var(--border)';event.currentTarget.style.background='transparent';}
+  var files=Array.from(event.dataTransfer.files||[]).filter(function(f){return f.type.startsWith('image/');});
+  if(!files.length)return;
+  uploadStoreMedia({target:{files:files,value:''}},storeUuid,storeId);
+}
+
+async function loadStoreMedia(storeUuid){
+  var el=document.getElementById('storeMediaList_'+storeUuid);
+  if(!el)return;
+  var{data,error}=await sb.storage.from('media').list(storeUuid+'/',{limit:50,sortBy:{column:'created_at',order:'desc'}});
+  if(error||!data){el.innerHTML='<div style="font-size:12px;color:var(--text-light)">メディアはありません</div>';return;}
+  var files=data.filter(function(f){return f.name&&f.name!=='.emptyFolderPlaceholder';});
+  if(!files.length){el.innerHTML='<div style="font-size:12px;color:var(--text-light)">メディアはありません</div>';return;}
+  el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px">'+files.map(function(f){
+    var pu=sb.storage.from('media').getPublicUrl(storeUuid+'/'+f.name);
+    var url=pu&&pu.data?pu.data.publicUrl:'';
+    return '<div style="position:relative;display:inline-block">'+
+      '<img src="'+escHtml(url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" loading="lazy">'+
+      '</div>';
+  }).join('')+'</div>';
+}
+
+// ===== STORE REVIEWS =====
+async function loadStoreReviews(storeUuid){
+  var el=document.getElementById('storeReviewsBody');
+  if(!el)return;
+  el.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-light);font-size:12px;padding:12px">読み込み中...</td></tr>';
+  try{
+    var{data:v}=await sb.from('venues').select('google_place_id').eq('id',storeUuid).maybeSingle();
+    if(!v||!v.google_place_id){
+      el.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-light);font-size:12px;padding:16px">Google Place IDが未設定です（集客データ収集で設定できます）</td></tr>';
+      return;
+    }
+    var{data:reviews}=await sb.from('google_reviews').select('*').eq('place_id',v.google_place_id).order('published_at',{ascending:false}).limit(20);
+    if(!reviews||!reviews.length){
+      el.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-light);font-size:12px;padding:16px">口コミはありません</td></tr>';
+      return;
+    }
+    var s=VENUES.find(x=>x._uuid===storeUuid);
+    var storeId=s?s.id:'';
+    el.innerHTML=reviews.map(function(r){
+      var stars='⭐'.repeat(Math.min(r.rating||0,5));
+      var textFull=r.text||'';
+      var textShort=escHtml(textFull.substring(0,80))+(textFull.length>80?'...':'');
+      var jsSafe=textFull.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ').replace(/\r/g,'');
+      var attrSafe=escHtml(jsSafe).replace(/"/g,'&quot;');
+      return '<tr>'+
+        '<td style="white-space:nowrap">'+escHtml((r.published_at||'').substring(0,10))+'</td>'+
+        '<td>'+escHtml(r.author_name||'—')+'</td>'+
+        '<td style="white-space:nowrap">'+stars+'</td>'+
+        '<td style="font-size:11px;max-width:180px;white-space:normal">'+textShort+'</td>'+
+        '<td><button class="btn btn-secondary btn-sm" onclick="openReviewReplyModal(\''+escHtml(storeId)+'\','+(r.rating||0)+',\''+attrSafe+'\')">AI返信</button></td>'+
+        '</tr>';
+    }).join('');
+  }catch(e){
+    el.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--danger);font-size:12px;padding:12px">読み込みエラー</td></tr>';
+  }
+}
+
+async function openReviewReplyModal(storeId,rating,reviewText){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=
+    '<div style="background:#fff;border-radius:12px;padding:24px;width:560px;max-width:90vw;max-height:80vh;overflow-y:auto">'+
+    '<div style="font-weight:700;font-size:15px;margin-bottom:12px">🤖 AI返信生成</div>'+
+    '<div style="font-size:12px;color:var(--text-light);background:#f5f6fa;border-radius:6px;padding:8px;margin-bottom:16px">'+
+    '★'+(rating||0)+' 「'+escHtml((reviewText||'').substring(0,120))+(reviewText&&reviewText.length>120?'...':'')+'」</div>'+
+    '<div id="replyResults" style="font-size:12px;color:var(--text-light)">生成中...</div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-top:16px">'+
+    '<button class="btn btn-secondary btn-sm" onclick="this.closest(\'div[style*=fixed]\')?.remove()">閉じる</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+  try{
+    var s=VENUES.find(x=>x.id===storeId);
+    if(!s||!s._uuid)throw new Error('店舗が見つかりません');
+    var token=await getToken();
+    var res=await fetch(SUPABASE_URL+'/functions/v1/generate-review-reply',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({venue_id:s._uuid,review_text:reviewText,rating:rating})
+    });
+    var d=await res.json();
+    var el=overlay.querySelector('#replyResults');
+    if(!res.ok)throw new Error(d&&d.error?d.error:'生成失敗');
+    if(el&&d.variants&&d.variants.length){
+      el.innerHTML=d.variants.map(function(v,i){
+        var label=v.tone||v.label||('案'+(i+1));
+        var text=v.text||v.reply||'';
+        return '<div style="margin-bottom:16px">'+
+          '<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">'+escHtml(label)+'</div>'+
+          '<div style="background:#f5f6fa;border-radius:6px;padding:10px;font-size:13px;line-height:1.6;white-space:pre-wrap">'+escHtml(text)+'</div>'+
+          '</div>';
+      }).join('');
+    }else if(el){
+      el.innerHTML='<div style="color:var(--danger)">返信の生成に失敗しました</div>';
+    }
+  }catch(e){
+    var el2=overlay.querySelector('#replyResults');
+    if(el2)el2.innerHTML='<div style="color:var(--danger)">❌ '+escHtml(e.message||'')+'</div>';
   }
 }
 
