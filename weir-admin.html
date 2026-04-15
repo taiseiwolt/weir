@@ -50,7 +50,7 @@
 .chart-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:6px}.chart-bar-label{font-size:11px;font-weight:600;color:#666;width:80px;text-align:right;flex-shrink:0}.chart-bar-track{flex:1;background:#f0f0f0;border-radius:4px;height:22px;overflow:hidden}.chart-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;min-width:1px;transition:width .4s}.chart-bar-val{font-size:10px;font-weight:700;color:#fff;padding:0 8px;white-space:nowrap}
 .log-time{font-size:11px;color:var(--text-light);width:100px;flex-shrink:0}.log-badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;flex-shrink:0}
 .perm-grid{display:grid;grid-template-columns:200px repeat(3,80px);gap:0;font-size:12px}.perm-grid .ph{font-weight:700;padding:8px;background:#f5f6fa;border-bottom:1px solid var(--border)}.perm-grid .pc{padding:8px;border-bottom:1px solid #f0f0f0;text-align:center}.perm-grid .pl{padding:8px;border-bottom:1px solid #f0f0f0;font-weight:500}
-.hours-grid{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:8px;align-items:center}.day-label{font-size:12px;font-weight:700}.closed-check{font-size:11px;color:#999;display:flex;align-items:center;gap:4px}
+.hours-grid{display:grid;grid-template-columns:72px 1fr 1fr 80px;gap:6px 8px;align-items:center}.day-label{font-size:12px;font-weight:700}.closed-check{font-size:11px;color:#999;display:flex;align-items:center;gap:4px}
 .menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.mcard{background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden;padding:14px;transition:border-color .15s}.mcard:hover{border-color:var(--accent-light)}.mcard-img{width:100%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:32px;padding:12px 0}.mcard-body{padding:0}.mcard-header{display:flex;align-items:baseline;gap:6px}.mcard-header h4{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.mh-price{font-size:13px;font-weight:900;color:var(--accent);white-space:nowrap}.mcard-cat{font-size:10px;color:var(--text-light);margin-bottom:4px}.mcard-desc{font-size:10px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px}.mcard-footer{display:flex;gap:6px}.mcard-footer button{flex:1;padding:4px 0;border-radius:4px;font-size:9px;font-weight:700;cursor:pointer;border:1px solid #ddd;background:#fff;color:#666;font-family:inherit}.mcard-footer button:hover{background:#f5f5f5}
 .cat-chip{padding:5px 14px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;border:1px solid var(--border);color:var(--text-light);display:inline-block;margin:0 2px}.cat-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .empty-state{text-align:center;padding:40px;color:var(--text-light);font-size:13px}
@@ -216,6 +216,10 @@ async function loadAllData(){
     children:r.children_policy||'not_allowed',
     serviceChargeType:r.service_charge_type||'percent',
     serviceChargeValue:r.service_charge_value||10,
+    station:r.nearest_station||'',
+    priceLunch:r.price_range_lunch||'',
+    priceDinner:r.price_range_dinner||'',
+    seatOnlyReservation:r.seat_only_reservation,
     corpUuid:r.corp_id||'',
     corpId:r.corp_id?(MERCHANTS.find(c=>c._uuid===r.corp_id)?.id||''):''
   }));
@@ -3007,8 +3011,8 @@ function renderStorePage(s){
   '<div class="page-header"><div class="page-title">'+(br?br.name+' ':'')+s.name+'</div><span class="page-type-badge store">店舗</span></div>'+
   '<div class="page-subtitle">'+s.id+' / '+s.addr+' / '+statusBadge(s.status)+(s.slug?' <a href="https://xorder.co.jp/weir-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--accent);text-decoration:none;margin-left:12px">🛒 モバイルオーダーを開く ↗</a>':'')+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(s.revenue)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+s.orders.toLocaleString()+'</div></div><div class="stat-card orange"><div class="sc-label">客単価</div><div class="sc-val">'+(s.orders>0?Y(Math.round(s.revenue/s.orders)):'—')+'</div></div></div>'+
-  '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'flags\')">機能</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div><div class="tab" onclick="switchTab(\'store\',this,\'related\')">法人・ブランド</div></div>'+
-  '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div><div class="form-group"><label>運営法人</label><select id="storeCorpUuid"><option value="">未設定</option>'+MERCHANTS.map(function(c){return '<option value="'+escHtml(c._uuid)+'"'+(s.corpUuid===c._uuid?' selected':'')+'>'+escHtml(c.name)+'（'+escHtml(c.id)+'）</option>';}).join('')+'</select></div></div></div></div>'+
+  '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div></div>'+
+  '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" id="storeStation" value="'+escHtml(s.station||'')+'"></div><div class="form-group"><label>昼の価格帯</label><select id="storePriceLunch" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="">未設定</option>'+PRICE_RANGES.map(function(p){return '<option value="'+escHtml(p)+'"'+(s.priceLunch===p?' selected':'')+'>'+escHtml(p)+'</option>';}).join('')+'</select></div><div class="form-group"><label>夜の価格帯</label><select id="storePriceDinner" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="">未設定</option>'+PRICE_RANGES.map(function(p){return '<option value="'+escHtml(p)+'"'+(s.priceDinner===p?' selected':'')+'>'+escHtml(p)+'</option>';}).join('')+'</select></div><div class="form-group"><label>所属法人ID</label><input type="text" id="storeCorpId" value="'+escHtml(cp?cp.id:'')+'" placeholder="CRP-xxxxxxx" style="font-family:monospace"><div style="font-size:10px;color:var(--text-light);margin-top:2px">存在しない法人IDは保存時に弾かれます</div></div><div class="form-group"><label>所属ブランドID</label><input type="text" id="storeBrandId" value="'+escHtml(br?br.id:'')+'" placeholder="BRD-xxxxxxx" style="font-family:monospace"><div style="font-size:10px;color:var(--text-light);margin-top:2px">存在しないブランドIDは保存時に弾かれます</div></div></div></div></div>'+
   '<div class="tab-content" id="store-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">ブランド（'+(br?br.name:'—')+'）でONになっているサービスのみ選択可能です。</p><div class="svc-grid">'+renderServiceCards(s.id,'store',br?br.id:null)+'</div></div></div>'+
   '<div class="tab-content" id="store-hours"><div class="card"><div class="card-title">営業時間 <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="applyAllStoreHours(\''+s._uuid+'\')">全日一括適用</button><button class="btn btn-primary btn-sm" onclick="saveStoreHours(\''+s._uuid+'\')">保存</button></span></div><div class="hours-grid" id="storeHoursGrid"></div></div></div>'+
   '<div class="tab-content" id="store-facility"><div class="card"><div class="card-title">施設・設備 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreFacility(\''+s._uuid+'\',\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>座席数</label><input type="number" id="facilitySeats" value="'+(s.seats||6)+'" min="1" max="1000"></div><div class="form-group"><label>喫煙</label><select id="facilitySmoking"><option value="no_smoking"'+(s.smoking==='no_smoking'?' selected':'')+'>全席禁煙</option><option value="all_smoking"'+(s.smoking==='all_smoking'?' selected':'')+'>全席喫煙</option><option value="partial"'+(s.smoking==='partial'?' selected':'')+'>一部喫煙可</option></select></div><div class="form-group"><label>子連れ</label><select id="facilityChildren"><option value="allowed"'+(s.children==='allowed'?' selected':'')+'>同伴可</option><option value="not_allowed"'+(s.children==='not_allowed'?' selected':'')+'>同伴不可</option><option value="consultation"'+(s.children==='consultation'?' selected':'')+'>要相談</option></select></div><div class="form-group"><label>サービス料</label><div style="display:flex;gap:8px"><select id="facilityChargeType" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px"><option value="percent"'+(s.serviceChargeType==='percent'?' selected':'')+'>%</option><option value="yen"'+(s.serviceChargeType==='yen'?' selected':'')+'>¥</option></select><input type="number" id="facilityChargeValue" value="'+(s.serviceChargeValue||10)+'" style="flex:1"></div></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">テーブル管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showAddTableModal(\''+s._uuid+'\')">＋ 追加</button></span></div><table class="data-table"><thead><tr><th>テーブル番号</th><th>テーブル名</th><th>席数</th><th>フロア</th><th>ステータス</th><th></th></tr></thead><tbody id="storeTablesBody"><tr><td colspan="6" style="text-align:center;color:#999;font-size:12px;padding:16px">読み込み中...</td></tr></tbody></table></div></div>'+
@@ -3016,10 +3020,8 @@ function renderStorePage(s){
   '<div class="tab-content" id="store-delivery"><div class="card"><div class="card-title">配達設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveAdminDelivery(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>配達圏（km）</label><input type="number" id="adminDeliveryRadius" value="'+(s.deliveryRadius||5)+'"></div><div class="form-group"><label>配達料金（円）</label><input type="number" id="adminDeliveryFee" value="'+(s.deliveryFee||770)+'"></div><div class="form-group"><label>最低注文額（円）</label><input type="number" id="adminMinOrderAmount" value="'+(s.minOrder||1500)+'"></div><div class="form-group"><label>最低注文金額未満時の対応</label><select id="adminMinOrderPolicy" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%"><option value="surcharge"'+(s.minOrderPolicy==="block"?"":' selected')+'>差額を手数料として加算</option><option value="block"'+(s.minOrderPolicy==="block"?' selected':"")+'>注文を受け付けない</option></select></div><div class="form-group"><label>少額注文手数料の上限（円）</label><input type="number" id="adminSmallOrderMax" value="'+(s.surchargeMax||1500)+'"><div style="font-size:10px;color:var(--text-light);margin-top:2px">※差額がこの金額を超える場合、この金額が上限</div></div><div class="form-group"><label>調理見積（分）</label><input type="number" id="adminPrepTime" value="'+(s.prepTime||30)+'"></div></div></div><div class="card"><div class="card-title">少額注文手数料の適用対象</div><div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDinein"'+(s.minOrderApplyTypes&&s.minOrderApplyTypes.dinein?" checked":"")+'> 店内飲食</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderTakeout"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.takeout!==false?" checked":"")+'> テイクアウト</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="adminMinOrderDelivery"'+(!s.minOrderApplyTypes||s.minOrderApplyTypes.delivery!==false?" checked":"")+'> デリバリー</label></div><div style="font-size:10px;color:var(--text-light);margin-top:6px">※チェックした注文タイプにのみ最低注文金額・少額注文手数料が適用されます</div></div></div>'+
   '<div class="tab-content" id="store-cancel"><div class="card"><div class="card-title">キャンセルポリシー <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:12px">空欄 = ブランドデフォルト適用</p><div class="form-grid cols-3"><div class="form-group"><label>無断（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>当日（%）</label><input type="number" placeholder="100"></div><div class="form-group"><label>3日前（%）</label><input type="number" placeholder="50"></div></div></div></div>'+
   '<div class="tab-content" id="store-media"><div class="card"><div class="card-title">📸 メディア</div><div style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-light);font-size:12px">📎 画像をアップロード</div></div></div>'+
-  '<div class="tab-content" id="store-flags"><div class="card"><div class="card-title">機能ON/OFF <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">席のみ予約</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">テイクアウト</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div><div class="toggle-row"><label style="font-size:12px;font-weight:600">デリバリー</label><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div></div></div>'+
   '<div class="tab-content" id="store-reviews"><div class="card"><div class="card-title">⭐ 口コミ</div><table class="data-table"><thead><tr><th>日時</th><th>ユーザー</th><th>評価</th><th>コメント</th><th></th></tr></thead><tbody><tr><td>2026-03-10</td><td>ゲスト</td><td>⭐⭐⭐⭐⭐</td><td>最高！</td><td><button class="btn btn-secondary btn-sm">返信</button></td></tr></tbody></table></div></div>'+
-  '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>'+
-  '<div class="tab-content" id="store-related"><div class="card"><div class="card-title">所属法人</div>'+(cp?'<div class="link-card" onclick="openMerchantModal(\''+cp.id+'\')"><div class="lc-icon corp">🏢</div><div class="lc-info"><div class="lc-name">'+cp.name+'</div><div class="lc-sub">'+cp.id+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div><div class="card"><div class="card-title">所属ブランド</div>'+(br?'<div class="link-card" onclick="goToBrand(\''+br.id+'\')"><div class="lc-icon brand">🏷️</div><div class="lc-info"><div class="lc-name">'+br.name+'</div><div class="lc-sub">'+br.slug+'</div></div><div class="lc-arrow">›</div></div>':'')+'</div></div>';
+  '<div class="tab-content" id="store-ai"><div class="card"><div class="card-title">🤖 AI利用状況</div><div id="storeAIChart"></div></div></div>';
 }
 async function saveAdminDelivery(storeId){
   const s=VENUES.find(x=>x.id===storeId);
@@ -3098,45 +3100,36 @@ async function loadStoreHours(storeUuid){
   var hoursByDay={};
   rows.forEach(function(r){hoursByDay[r.day_of_week]=r;});
   hg.innerHTML=DAYS_ORDER.map(function(day){
-    var h=hoursByDay[day]||{open_time:'11:00',close_time:'22:00',is_closed:false,hours_type:'through'};
-    var openVal=(h.open_time||'11:00').substring(0,5);
-    var closeVal=(h.close_time||'22:00').substring(0,5);
-    var open2Val=(h.open_time2||'17:00').substring(0,5);
-    var close2Val=(h.close_time2||'22:00').substring(0,5);
-    var type=h.hours_type||'through';
+    var h=hoursByDay[day]||{open_time:'11:00',close_time:'22:00',open_time2:null,close_time2:null,is_closed:false};
+    var o1=(h.open_time||'11:00').substring(0,5);
+    var c1=(h.close_time||'22:00').substring(0,5);
+    var o2=(h.open_time2||'').substring(0,5);
+    var c2=(h.close_time2||'').substring(0,5);
     var closed=!!h.is_closed;
-    var opStyle=closed?' style="opacity:0.4;pointer-events:none"':'';
-    var op2Style=(type!=='split'||closed)?' style="opacity:0.4;pointer-events:none"':'';
+    var row1Attr=closed?' disabled style="opacity:0.4"':'';
+    var row2Disabled=(closed||!o2);
+    var row2Attr=row2Disabled?' disabled style="opacity:0.4"':'';
     return '<div class="day-label">'+DAYS_MAP[day]+'</div>'+
-      '<label class="closed-check"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>'+
-      '<select id="storeHour_'+day+'_type" onchange="toggleDayType('+day+')"'+opStyle+'><option value="through"'+(type!=='split'?' selected':'')+'>通し</option><option value="split"'+(type==='split'?' selected':'')+'>中休みあり</option></select>'+
-      '<input type="time" id="storeHour_'+day+'_open" value="'+openVal+'"'+opStyle+'>'+
-      '<input type="time" id="storeHour_'+day+'_close" value="'+closeVal+'"'+opStyle+'>'+
-      '<input type="time" id="storeHour_'+day+'_open2" value="'+open2Val+'"'+op2Style+'>'+
-      '<input type="time" id="storeHour_'+day+'_close2" value="'+close2Val+'"'+op2Style+'>';
+      '<input type="time" id="storeHour_'+day+'_open" value="'+o1+'"'+row1Attr+'>'+
+      '<input type="time" id="storeHour_'+day+'_close" value="'+c1+'"'+row1Attr+'>'+
+      '<label class="closed-check" style="justify-content:flex-end"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>'+
+      '<div></div>'+
+      '<input type="time" id="storeHour_'+day+'_open2" value="'+o2+'"'+row2Attr+' placeholder="（中休みあり時）">'+
+      '<input type="time" id="storeHour_'+day+'_close2" value="'+c2+'"'+row2Attr+'>'+
+      '<div></div>';
   }).join('');
 }
 
 function toggleDayClosed(day){
   var cb=document.getElementById('storeHour_'+day+'_closed');
   if(!cb)return;
-  var els=['_type','_open','_close','_open2','_close2'].map(function(s){return document.getElementById('storeHour_'+day+s);});
-  els.forEach(function(el){if(el){el.style.opacity=cb.checked?'0.4':'';el.style.pointerEvents=cb.checked?'none':'';}});
-  if(!cb.checked)toggleDayType(day);
-}
-
-function toggleDayType(day){
-  var sel=document.getElementById('storeHour_'+day+'_type');
-  var open2=document.getElementById('storeHour_'+day+'_open2');
-  var close2=document.getElementById('storeHour_'+day+'_close2');
-  if(!sel||!open2||!close2)return;
-  var isSplit=sel.value==='split';
-  open2.style.opacity=isSplit?'':'0.4';open2.style.pointerEvents=isSplit?'':'none';
-  close2.style.opacity=isSplit?'':'0.4';close2.style.pointerEvents=isSplit?'':'none';
+  ['_open','_close','_open2','_close2'].forEach(function(s){
+    var el=document.getElementById('storeHour_'+day+s);
+    if(el){el.disabled=cb.checked;el.style.opacity=cb.checked?'0.4':'';}
+  });
 }
 
 function applyAllStoreHours(storeUuid){
-  var typeVal=document.getElementById('storeHour_1_type').value;
   var openVal=document.getElementById('storeHour_1_open').value;
   var closeVal=document.getElementById('storeHour_1_close').value;
   var open2Val=document.getElementById('storeHour_1_open2').value;
@@ -3144,22 +3137,21 @@ function applyAllStoreHours(storeUuid){
   var closed=document.getElementById('storeHour_1_closed').checked;
   DAYS_ORDER.forEach(function(day){
     if(day===1)return;
-    document.getElementById('storeHour_'+day+'_type').value=typeVal;
     document.getElementById('storeHour_'+day+'_open').value=openVal;
     document.getElementById('storeHour_'+day+'_close').value=closeVal;
     document.getElementById('storeHour_'+day+'_open2').value=open2Val;
     document.getElementById('storeHour_'+day+'_close2').value=close2Val;
     document.getElementById('storeHour_'+day+'_closed').checked=closed;
-    toggleDayClosed(day);toggleDayType(day);
+    toggleDayClosed(day);
   });
   showToast('✅ 月曜の設定を全日に適用しました');
 }
 
 async function saveStoreHours(storeUuid){
   var rows=DAYS_ORDER.map(function(day){
-    var type=document.getElementById('storeHour_'+day+'_type')?.value||'through';
-    var open2=document.getElementById('storeHour_'+day+'_open2')?.value;
-    var close2=document.getElementById('storeHour_'+day+'_close2')?.value;
+    var open2=document.getElementById('storeHour_'+day+'_open2')?.value||'';
+    var close2=document.getElementById('storeHour_'+day+'_close2')?.value||'';
+    var type=open2.length>0?'split':'through';
     return {
       venue_id:storeUuid,
       day_of_week:day,
@@ -3222,14 +3214,41 @@ function renderServiceCards(entityId, level, parentId){
     if(level==='store'&&parentId&&!getSvc(parentId,s.key)){locked=true;lockMsg='ブランドでOFFのため選択不可';}
     const cls='svc-card'+(isOn?' enabled':'')+(locked?' locked':'');
     const costTag=s.cost==='free'?'<span class="svc-tag free">無料</span>':'<span class="svc-tag paid">追加課金</span>';
+    var seatOnlyBlock='';
+    if(s.key==='reservation'&&level==='store'){
+      var v=VENUES.find(x=>x.id===entityId);
+      var seatOnly=v&&v.seatOnlyReservation;
+      seatOnlyBlock='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+
+        '<div class="toggle-row" style="margin:0">'+
+        '<label style="font-size:11px;color:var(--text-light)">席のみ予約（テーブル番号不要）</label>'+
+        '<label class="toggle-sw"><input type="checkbox" id="svcSeatOnly_'+entityId+'"'+(seatOnly?' checked':'')+' onchange="toggleSeatOnly(\''+entityId+'\')"><span class="slider"></span></label>'+
+        '</div></div>';
+    }
     return '<div class="'+cls+'">'+
       '<div class="svc-head"><div class="svc-icon">'+s.icon+'</div><div class="svc-name">'+s.name+'</div>'+costTag+'</div>'+
       '<div class="svc-desc">'+s.desc+'</div>'+
       '<div class="svc-toggle"><span class="svc-status '+(isOn?'on':'off')+'">'+(isOn?'✅ 利用中':'OFF')+'</span>'+
       '<label class="toggle-sw"><input type="checkbox"'+(isOn?' checked':'')+' onchange="toggleSvc(\''+entityId+'\',\''+s.key+'\',\''+level+'\')"><span class="slider"></span></label></div>'+
+      seatOnlyBlock+
       (locked?'<div class="svc-lock">🔒 '+lockMsg+'</div>':'')+
       '</div>';
   }).join('');
+}
+
+async function toggleSeatOnly(entityId){
+  var el=document.getElementById('svcSeatOnly_'+entityId);
+  var s=VENUES.find(x=>x.id===entityId);
+  if(!s||!el)return;
+  s.seatOnlyReservation=el.checked;
+  try{
+    var{error}=await sb.from('venues').update({seat_only_reservation:el.checked}).eq('id',s._uuid);
+    if(error)throw error;
+    showToast('✅ 保存しました');
+    logAudit('update_seat_only_reservation','venues',s.id,{enabled:el.checked});
+  }catch(e){
+    el.checked=!el.checked;s.seatOnlyReservation=el.checked;
+    showToast('❌ 保存に失敗しました');
+  }
 }
 
 const SVC_PRICES={ai_pro:4980,ai_expert:9800,crm_pro:4980,crm_expert:9800};
@@ -4425,7 +4444,16 @@ async function saveStoreBasic(storeDisplayId){
   const name=inputs[0]?.value.trim()||s.name;
   const addr=inputs[2]?.value.trim()||s.addr;
   const tel=inputs[3]?.value.trim()||s.tel;
-  var newCorpUuid=document.getElementById('storeCorpUuid')?.value||null;
+  const station=document.getElementById('storeStation')?.value.trim()||'';
+  const priceLunch=document.getElementById('storePriceLunch')?.value||'';
+  const priceDinner=document.getElementById('storePriceDinner')?.value||'';
+  const corpIdInput=document.getElementById('storeCorpId')?.value.trim()||'';
+  const newCorp=corpIdInput?MERCHANTS.find(c=>c.id===corpIdInput):null;
+  if(corpIdInput&&!newCorp){showToast('❌ 法人ID「'+corpIdInput+'」が見つかりません');return;}
+  const brandIdInput=document.getElementById('storeBrandId')?.value.trim()||'';
+  const newBrand=brandIdInput?BRANDS.find(b=>b.id===brandIdInput):null;
+  if(brandIdInput&&!newBrand){showToast('❌ ブランドID「'+brandIdInput+'」が見つかりません');return;}
+  const newCorpUuid=newCorp?._uuid||null;
   try{
     // corp_id 変更時のみ history を挿入
     if(newCorpUuid!==(s.corpUuid||null)){
@@ -4433,14 +4461,16 @@ async function saveStoreBasic(storeDisplayId){
         await sb.from('venue_merchant_history').update({ended_at:new Date().toISOString()}).eq('venue_id',s._uuid).is('ended_at',null);
       }
       if(newCorpUuid){
-        var newCorp=MERCHANTS.find(function(c){return c._uuid===newCorpUuid;});
         await sb.from('venue_merchant_history').insert({venue_id:s._uuid,merchant_id:newCorpUuid,corp_name_snapshot:newCorp?.name||'',started_at:new Date().toISOString()});
       }
     }
-    const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify({name:name,address:addr,phone:tel,merchant_id:newCorpUuid||null})});
+    const body={name:name,address:addr,phone:tel,merchant_id:newCorpUuid,nearest_station:station,price_range_lunch:priceLunch,price_range_dinner:priceDinner};
+    if(newBrand)body.brand_id=newBrand._uuid;
+    const res=await fetch('/api/admin/stores/'+s._uuid,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await getToken()},body:JSON.stringify(body)});
     if(!res.ok){const d=await res.json();throw new Error(d.error||'保存に失敗');}
-    s.name=name;s.addr=addr;s.tel=tel;
-    s.corpUuid=newCorpUuid||'';s.corpId=newCorpUuid?(MERCHANTS.find(c=>c._uuid===newCorpUuid)?.id||''):'';
+    s.name=name;s.addr=addr;s.tel=tel;s.station=station;s.priceLunch=priceLunch;s.priceDinner=priceDinner;
+    s.corpUuid=newCorpUuid||'';s.corpId=newCorp?newCorp.id:'';
+    if(newBrand){s.brandId=newBrand.id;}
     showToast('✅ 店舗情報を保存しました');
   }catch(e){showToast('⚠️ '+e.message);}
 }
