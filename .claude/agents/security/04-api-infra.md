@@ -28,7 +28,7 @@ Vercel Serverless Functions + Supabase Edge Functions + インフラレベルの
 
 ### C. CORS設定
 - [ ] Access-Control-Allow-Origin が * でないこと
-- [ ] 許可オリジンが https://aiden-jp.net + 必要ドメインのみ
+- [ ] 許可オリジンが https://weir.co.jp + 必要ドメインのみ
 - [ ] Allow-Methods の最小限設定
 - [ ] Allow-Headers の適切設定
 - [ ] プリフライト（OPTIONS）処理

@@ -1,4 +1,4 @@
-# AIden Project Structure
+# Weir Project Structure
 
 CLAUDE.md から切り出したプロジェクト構造ツリー。Claude Code が毎回読む必要はなく、構造を確認したいときだけ参照する。
 
@@ -59,7 +59,7 @@ aiden-demo/
 ├── test-results/                     # テスト結果
 │
 │── ## HTML Files (versionless)
-├── aiden-admin.html                  # 管理マスタ（AIden運営側）
+├── aiden-admin.html                  # 管理マスタ（Weir運営側）
 ├── aiden-brand-menu.html             # ブランドメニュー一覧
 ├── aiden-brand-news.html             # ブランドニュース
 ├── aiden-brand-stores.html           # ブランド店舗一覧

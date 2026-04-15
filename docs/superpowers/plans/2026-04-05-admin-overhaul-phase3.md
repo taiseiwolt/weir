@@ -632,7 +632,7 @@ In `aiden-order-checkout.html`, at the beginning of the `placeOrder()` function 
 // BAN check — insert after session validation, before payment intent creation
 var banEmail = document.getElementById('custEmail')?.value.trim();
 var banPhone = document.getElementById('custPhone')?.value.trim();
-var banMemberId = sessionStorage.getItem('aiden_member_id') || null;
+var banMemberId = sessionStorage.getItem('weir_member_id') || null;
 if(banEmail || banPhone || banMemberId){
   try{
     var banQuery = sb.from('user_bans').select('id,scope_type,ban_type')

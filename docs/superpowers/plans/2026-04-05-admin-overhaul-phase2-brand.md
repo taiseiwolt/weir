@@ -351,7 +351,7 @@ git commit -m "feat: brand design tab DB persistence (colors, header text)"
 `renderBrandPage`内の`brand-hp` div（line 1409）を更新。OGP/メタディスクリプション/ファビコン設定を追加し、ヒーローバナーをDB連携:
 
 ```js
-'<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://aiden-jp.net/'+escHtml(b.slug)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="published"'+((b.hpSettings.status||'published')==='published'?' selected':'')+'>公開中</option><option value="draft"'+((b.hpSettings.status)==='draft'?' selected':'')+'>非公開</option></select></div><div class="form-group full"><label>メタディスクリプション</label><textarea id="brandHpMetaDesc" rows="2" style="font-size:12px" placeholder="検索エンジンに表示される説明文（120文字程度）">'+(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>ファビコンURL</label><input type="url" id="brandHpFavicon" value="'+(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div>'+
+'<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>公開URL</label><input type="text" value="https://weir.co.jp/'+escHtml(b.slug)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="published"'+((b.hpSettings.status||'published')==='published'?' selected':'')+'>公開中</option><option value="draft"'+((b.hpSettings.status)==='draft'?' selected':'')+'>非公開</option></select></div><div class="form-group full"><label>メタディスクリプション</label><textarea id="brandHpMetaDesc" rows="2" style="font-size:12px" placeholder="検索エンジンに表示される説明文（120文字程度）">'+(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>ファビコンURL</label><input type="url" id="brandHpFavicon" value="'+(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div>'+
 '<div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div style="font-size:12px;color:var(--text-light);margin-bottom:8px">ブランド専用ドメインを設定（URLに「aiden」が表示されなくなります）</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div>'+
 '<div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="heroSlidesList-'+b.id+'"><div style="color:#888;text-align:center;padding:20px">読み込み中...</div></div></div></div>'
 ```
@@ -758,7 +758,7 @@ async function loadBrandCoupons(brandUuid,brandDisplayId){
     if(error)throw error;
     if(!coupons||!coupons.length){el.innerHTML='<div class="empty-state">クーポンがありません</div>';return;}
     var svcLabels={dinein:'店内',takeout:'持帰',delivery:'配達'};
-    var platLabels={aiden:'AIden',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
+    var platLabels={aiden:'Weir',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
     el.innerHTML='<table class="data-table"><thead><tr><th>コード</th><th>名前</th><th class="r">割引</th><th>対象サービス</th><th>対象媒体</th><th>期間</th><th></th></tr></thead><tbody>'+
     coupons.map(c=>{
       var discountText=c.discount_type==='percent'?c.discount_value+'%':'¥'+Number(c.discount_value).toLocaleString();
@@ -773,7 +773,7 @@ async function loadBrandCoupons(brandUuid,brandDisplayId){
 function couponFormFields(prefix,c){
   c=c||{};
   var svcChecks=['dinein','takeout','delivery'].map(s=>'<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" id="'+prefix+'CouponSvc_'+s+'" value="'+s+'" '+((c.target_services||['dinein','takeout','delivery']).includes(s)?'checked':'')+'>'+({dinein:'店内注文',takeout:'持ち帰り',delivery:'デリバリー'}[s])+'</label>').join('');
-  var platChecks=['aiden','uber_eats','demaecan','menu','rakuten'].map(p=>'<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" id="'+prefix+'CouponPlat_'+p+'" value="'+p+'" '+((c.target_platforms||['aiden']).includes(p)?'checked':'')+'>'+({aiden:'AIden',uber_eats:'UberEats',demaecan:'出前館',menu:'menu',rakuten:'楽天'}[p])+'</label>').join('');
+  var platChecks=['aiden','uber_eats','demaecan','menu','rakuten'].map(p=>'<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" id="'+prefix+'CouponPlat_'+p+'" value="'+p+'" '+((c.target_platforms||['aiden']).includes(p)?'checked':'')+'>'+({aiden:'Weir',uber_eats:'UberEats',demaecan:'出前館',menu:'menu',rakuten:'楽天'}[p])+'</label>').join('');
   return '<div class="form-group"><label>コード <span style="color:var(--danger)">*</span></label><input type="text" id="'+prefix+'CouponCode" value="'+escHtml(c.code||'')+'" placeholder="WELCOME10"></div>'+
     '<div class="form-group"><label>名前 <span style="color:var(--danger)">*</span></label><input type="text" id="'+prefix+'CouponName" value="'+escHtml(c.name||'')+'" placeholder="初回10%OFF"></div>'+
     '<div class="form-group"><label>割引種別</label><select id="'+prefix+'CouponType"><option value="percent"'+((c.discount_type||'percent')==='percent'?' selected':'')+'>%割引</option><option value="fixed"'+(c.discount_type==='fixed'?' selected':'')+'>定額割引（円）</option></select></div>'+
@@ -1335,7 +1335,7 @@ vercel --prod
 
 - [ ] **Step 6: ブラウザ動作確認**
 
-本番URL (`https://aiden-jp.net`) で以下を確認:
+本番URL (`https://weir.co.jp`) で以下を確認:
 1. ブランド一覧表示
 2. ブランド詳細→全12タブ切替
 3. 基本情報保存→リロードして値維持

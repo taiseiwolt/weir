@@ -3,7 +3,7 @@ import { stripe } from '../_lib/stripe.js';
 import { handleCors, ok, error } from '../_lib/response.js';
 import { authenticateRequest, requireAuth, isStoreStaffMember } from '../_lib/auth.js';
 
-// AIden 手数料率（チャネル別）
+// Weir 手数料率（チャネル別）
 const AIDEN_FEE_RATES = { takeout: 0.040, dinein: 0.038, delivery: 0.040 };
 
 export default async function handler(req, res) {

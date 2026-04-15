@@ -150,9 +150,9 @@ git commit -m "fix: single-line confirm text, save address to sessionStorage for
 **Files:**
 - Modify: `aiden-order-store.html:6,1239-1241`
 
-- [ ] **Step 1: ページタイトルからAIdenを除去**
+- [ ] **Step 1: ページタイトルからWeirを除去**
 
-Line 6: `<title>モバイルオーダー | AIden</title>` を `<title>モバイルオーダー</title>` に変更。
+Line 6: `<title>モバイルオーダー | Weir</title>` を `<title>モバイルオーダー</title>` に変更。
 
 `onBrandLoaded` コールバック（line 1437-1438）は既に `document.title = (brand.name || '') + ' | メニュー';` で上書きするので、初期値は「モバイルオーダー」でOK。
 
@@ -172,7 +172,7 @@ Lines 1239-1241 を削除:
 
 ```bash
 git add aiden-order-store.html
-git commit -m "fix: remove AIden from title (white-label) and delete beforeunload handler"
+git commit -m "fix: remove Weir from title (white-label) and delete beforeunload handler"
 ```
 
 ---
@@ -453,7 +453,7 @@ git commit -m "fix: rename coupon section, add 'none' option as default, hide co
       contextType: 'enduser',
       storeId: params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
-      apiBase: 'https://aiden-jp.net',
+      apiBase: 'https://weir.co.jp',
     });
   }
 })();
@@ -482,7 +482,7 @@ Expected: PASS
 
 ローカルサーバーで以下を確認:
 1. `aiden-order.html` — マップピンがブランドカラー、ホバーでハイライト、確認テキスト1行
-2. `aiden-order-store.html` — タイトルにAIdenなし、beforeunloadなし、初期通知非表示
+2. `aiden-order-store.html` — タイトルにWeirなし、beforeunloadなし、初期通知非表示
 3. `aiden-order-checkout.html` — クーポン「使用しない」がデフォルト、チャットウィジェット表示
 
 - [ ] **Step 3: 住所引き継ぎフローを確認**

@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">ニュース・キャンペーン | AIden</title>
+<title id="page-title">ニュース・キャンペーン | Weir</title>
     <!-- OGP / SNS Meta Tags (brand-specific values are set via JS after brand load) -->
-    <meta property="og:title" content="ニュース・キャンペーン | AIden">
+    <meta property="og:title" content="ニュース・キャンペーン | Weir">
     <meta property="og:description" content="">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-brand-news.html">
+    <meta property="og:image" content="https://weir.co.jp/ogp.png">
+    <meta property="og:url" content="https://weir.co.jp/aiden-brand-news.html">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
+    <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="ニュース・キャンペーン | AIden">
+    <meta name="twitter:title" content="ニュース・キャンペーン | Weir">
     <meta name="twitter:description" content="">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
     <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@ footer{background:#1a1a1a;color:rgba(255,255,255,.7);padding:32px 20px 16px}
       <a href="./aiden-tokushoho.html">特定商取引法に基づく表示</a>
       <a href="./aiden-sitemap.html" data-i18n="f_sitemap">サイトマップ</a>
     </div>
-    <div class="footer-copy" id="footer-copy">© 2026 All rights reserved. Powered by AIden</div>
+    <div class="footer-copy" id="footer-copy">© 2026 All rights reserved. Powered by Weir</div>
   </div>
 </footer>
 
@@ -249,7 +249,7 @@ async function loadBrandFromSupabase() {
     var twTitle = document.querySelector('meta[name="twitter:title"]');
     if (twTitle) twTitle.content = document.title;
     var footerCopy = document.getElementById('footer-copy');
-    if (footerCopy) footerCopy.textContent = '© 2026 ' + brand.name + ' All rights reserved. Powered by AIden';
+    if (footerCopy) footerCopy.textContent = '© 2026 ' + brand.name + ' All rights reserved. Powered by Weir';
   }
 }
 

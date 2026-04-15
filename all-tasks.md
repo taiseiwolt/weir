@@ -1,4 +1,4 @@
-# AIden QA タスク一覧
+# Weir QA タスク一覧
 
 ---
 
@@ -8,12 +8,12 @@
 
 ### 手順
 1. 以下のURLにcurlでGETリクエストを送信し、HTTPステータスコードを記録する
-   - https://aiden-jp.net/ （トップページ）
-   - https://aiden-jp.net/aiden-order-store.html （モバイルオーダー）
-   - https://aiden-jp.net/aiden-order-dashboard.html （受注ダッシュボード）
-   - https://aiden-jp.net/aiden-brand-sushiro.html （ブランドHP）
-   - https://aiden-jp.net/aiden-mypage.html （マイページ）
-   - https://aiden-jp.net/api/health （APIヘルスチェック）
+   - https://weir.co.jp/ （トップページ）
+   - https://weir.co.jp/aiden-order-store.html （モバイルオーダー）
+   - https://weir.co.jp/aiden-order-dashboard.html （受注ダッシュボード）
+   - https://weir.co.jp/aiden-brand-sushiro.html （ブランドHP）
+   - https://weir.co.jp/aiden-mypage.html （マイページ）
+   - https://weir.co.jp/api/health （APIヘルスチェック）
 2. 各URLのステータスコードとレスポンスタイムを記録
 3. 200以外のステータスコードがあれば 🔴Critical として記録
 
@@ -86,7 +86,7 @@
 
 ### 手順
 1. Webhook受信エンドポイントの存在確認
-   - curl -s -o /dev/null -w "%{http_code}" https://aiden-jp.net/api/payments/webhook
+   - curl -s -o /dev/null -w "%{http_code}" https://weir.co.jp/api/payments/webhook
 2. ローカルのWebhookハンドラーコード（api/payments/webhook.js）を読み取り、処理対象のイベント一覧を確認
 3. 前回と比較して変更がないか確認
 
@@ -103,9 +103,9 @@
 
 ### 手順
 1. 主要ページのレスポンスタイムを計測する（curl -w で time_total を取得）
-   - https://aiden-jp.net/
-   - https://aiden-jp.net/aiden-order-store.html
-   - https://aiden-jp.net/aiden-brand-sushiro.html
+   - https://weir.co.jp/
+   - https://weir.co.jp/aiden-order-store.html
+   - https://weir.co.jp/aiden-brand-sushiro.html
 2. 各ページのレスポンスタイムを記録
 3. 3秒以上のページがあれば 🟡Warning として記録
 4. 5秒以上のページがあれば 🔴Critical として記録

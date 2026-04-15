@@ -1,5 +1,5 @@
 /* =============================================================
-   aiden-common.js — AIden 共通基盤
+   aiden-common.js — Weir 共通基盤
    Brand loading, i18n, Header/Footer generation, init()
    Usage: <script src="aiden-common.js"></script>
           <script>AidenCommon.init({ header:'brand', footer:true })</script>
@@ -49,7 +49,7 @@
   async function resolveBrandId() {
     // 1. Custom domain detection (highest priority)
     var hostname = window.location.hostname;
-    if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+    if (hostname && hostname !== 'localhost' && hostname !== 'weir.co.jp' && !hostname.endsWith('.vercel.app')) {
       var client = getSb();
       if (client) {
         try {
@@ -523,7 +523,7 @@
             '<a href="./aiden-terms.html' + bp + '" data-i18n="f_terms">' + t('f_terms') + '</a>' +
             '<a href="./aiden-sitemap.html' + bp + '" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
           '</div>' +
-          '<span class="powered">Powered by AIden</span>' +
+          '<span class="powered">Powered by Weir</span>' +
         '</div>' +
       '</div>';
 

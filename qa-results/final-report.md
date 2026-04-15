@@ -91,7 +91,7 @@
 | C-01 | Dine-in 3-way照合 | ⏭️SKIP | Stripe Connect未接続 |
 | C-02 | Dine-in手数料3.8% | ⏭️SKIP | 同上 |
 | C-03 | Takeout手数料4.0% | ⏭️SKIP | 同上 |
-| C-04 | Stripe手数料AIden負担 | ⏭️SKIP | 同上 |
+| C-04 | Stripe手数料Weir負担 | ⏭️SKIP | 同上 |
 | C-05 | RLS anon→orders制御 | ✅PASS | anon SELECT（非PII）許可、PII除外確認、INSERT/UPDATE/DELETE全拒否 |
 | C-06 | orders_public_view PII | ✅PASS | カラムレベルREVOKE適用済み。直接テーブルクエリでもPII取得不可 |
 | C-07 | confirm-order検証 | ✅PASS | 偽PaymentIntent→400エラー拒否 |
@@ -109,8 +109,8 @@
 | D-03 | 退会済みログインブロック | ✅PASS | 退会フロー実装確認 |
 | D-04 | メール認証再送 | ✅PASS | 再送バナー+API確認 |
 | D-05 | MO画面問い合わせ | ✅PASS | フッターにterms/privacyリンク |
-| D-06 | ダッシュボード問い合わせ | ✅PASS | フッターにsupport@aiden-jp.net |
-| D-07 | 管理マスタ問い合わせ | ✅PASS | フッターにsupport@aiden-jp.net |
+| D-06 | ダッシュボード問い合わせ | ✅PASS | フッターにsupport@weir.co.jp |
+| D-07 | 管理マスタ問い合わせ | ✅PASS | フッターにsupport@weir.co.jp |
 | D-08 | ブランドHP問い合わせ | ✅PASS | フッターにprivacy/termsリンク |
 | D-09 | Stripe Webhook | ✅PASS | APIルーティング正常 |
 | D-10 | 404ページ | ✅PASS | カスタム404表示 |
@@ -187,4 +187,4 @@ SKIP 4件はStripe Connect接続後に追加検証が必要だが、セキュリ
 
 *Generated: 2026-03-24 JST — QA Round 6 (Go判定テスト)*
 *検証コミット: b0551fc (escH() 5ファイル修正) / a000131 (¥50,000上限+customer-admin escH()) / 6fd9d97 (SEC-11 REVOKE)*
-*本番: https://aiden-jp.net (Vercel prod 2026-03-24)*
+*本番: https://weir.co.jp (Vercel prod 2026-03-24)*

@@ -1,4 +1,4 @@
-# AIden Day 4 テスト依頼書
+# Weir Day 4 テスト依頼書
 
 実行日: 2026-03-22
 前提: Day 1〜3完了済み（セキュリティ修正・金額照合・バリデーション・タイマー等PASS）
@@ -11,7 +11,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://aiden-jp.net
+- 本番URL: https://weir.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Supabase Legacy JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...（Edge Function認証用）

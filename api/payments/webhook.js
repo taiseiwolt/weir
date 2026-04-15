@@ -6,7 +6,7 @@ export const config = {
 };
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const ALERT_EMAIL = 'support@aiden-jp.net';
+const ALERT_EMAIL = 'support@weir.co.jp';
 
 async function sendAlertEmail(subject, htmlBody) {
   if (!RESEND_API_KEY) {
@@ -21,7 +21,7 @@ async function sendAlertEmail(subject, htmlBody) {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'AIden Alert <noreply@aiden-jp.net>',
+        from: 'Weir Alert <noreply@weir.co.jp>',
         to: [ALERT_EMAIL],
         subject,
         html: htmlBody,
@@ -160,7 +160,7 @@ export default async function handler(req, res) {
               .eq('id', order.id);
 
             await sendAlertEmail(
-              '【AIden 緊急】チャージバック発生',
+              '【Weir 緊急】チャージバック発生',
               `<h2>チャージバック発生通知</h2>
                <p><strong>Dispute ID:</strong> ${dispute.id}</p>
                <p><strong>注文ID:</strong> ${order.display_id || order.id}</p>
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
 
         // メール通知
         await sendAlertEmail(
-          '【AIden 警告】不正利用の疑い検知',
+          '【Weir 警告】不正利用の疑い検知',
           `<h2>Radar 不正利用警告</h2>
            <p><strong>Warning ID:</strong> ${warning.id}</p>
            <p><strong>Charge ID:</strong> ${chargeId}</p>

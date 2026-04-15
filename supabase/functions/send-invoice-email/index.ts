@@ -17,8 +17,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 
-const FROM_EMAIL = 'billing@aiden-jp.net'
-const FROM_NAME = 'AIden 請求管理'
+const FROM_EMAIL = 'billing@weir.co.jp'
+const FROM_NAME = 'Weir 請求管理'
 
 function formatCurrency(amount: number): string {
   return '¥' + amount.toLocaleString('ja-JP')
@@ -93,7 +93,7 @@ function buildInvoiceEmail(data: {
         <!-- Header -->
         <tr>
           <td style="background:#6c5ce7;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">AIden</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">Weir</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">月次請求書のお知らせ</p>
           </td>
         </tr>
@@ -106,7 +106,7 @@ function buildInvoiceEmail(data: {
               ${data.repName ? escapeHtml(data.repName) + ' 様' : '御中'}
             </p>
             <p style="font-size:14px;color:#555;margin:0 0 24px;line-height:1.8;">
-              いつもAIdenをご利用いただきありがとうございます。<br>
+              いつもWeirをご利用いただきありがとうございます。<br>
               ${periodLabel}分のご請求書をお送りいたします。
             </p>
 
@@ -160,7 +160,7 @@ function buildInvoiceEmail(data: {
                   <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#333;">お振込先</p>
                   <p style="margin:0;font-size:12px;color:#666;line-height:1.8;">
                     銀行名: （口座開設後にお知らせいたします）<br>
-                    口座名義: AIden株式会社
+                    口座名義: Weir株式会社
                   </p>
                 </td>
               </tr>
@@ -168,7 +168,7 @@ function buildInvoiceEmail(data: {
 
             <p style="font-size:12px;color:#999;line-height:1.6;margin:0;">
               ※ このメールは自動送信されています。<br>
-              ※ ご不明な点がございましたら billing@aiden-jp.net までお問い合わせください。
+              ※ ご不明な点がございましたら billing@weir.co.jp までお問い合わせください。
             </p>
           </td>
         </tr>
@@ -177,7 +177,7 @@ function buildInvoiceEmail(data: {
         <tr>
           <td style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #f0f0f0;">
             <p style="margin:0;font-size:11px;color:#aaa;">
-              &copy; AIden - 飲食店向けオールインワンSaaS
+              &copy; Weir - 飲食店向けオールインワンSaaS
             </p>
           </td>
         </tr>
@@ -269,7 +269,7 @@ serve(async (req) => {
     })
 
     // 5. Resend APIでメール送信
-    const subject = `【AIden】${periodLabel}分 ご請求書 - ${formatCurrency(invoice.total)}`
+    const subject = `【Weir】${periodLabel}分 ご請求書 - ${formatCurrency(invoice.total)}`
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',

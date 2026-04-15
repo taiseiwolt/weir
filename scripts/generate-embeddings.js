@@ -141,7 +141,7 @@ async function generateEmbeddings(chunks) {
 }
 
 async function main() {
-  console.log('=== AIden RAG Embedding Generator ===\n');
+  console.log('=== Weir RAG Embedding Generator ===\n');
 
   // 1. Read source files
   const faqPath = resolve(PROJECT_ROOT, 'docs/merchant-faq-v1.0.md');

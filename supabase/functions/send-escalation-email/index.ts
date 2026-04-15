@@ -9,9 +9,9 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
-const FROM_EMAIL = 'noreply@aiden-jp.net'
-const FROM_NAME = 'AIden CS'
-const TO_EMAIL = 'support@aiden-jp.net'
+const FROM_EMAIL = 'noreply@weir.co.jp'
+const FROM_NAME = 'Weir CS'
+const TO_EMAIL = 'support@weir.co.jp'
 
 interface ChatMessage {
   role: string
@@ -72,7 +72,7 @@ serve(async (req) => {
     const { session_id, store_name, session_type, recent_messages } = data
 
     const typeLabel = session_type === 'merchant' ? '事業者' : 'エンドユーザー'
-    const subject = `【AIden CS】エスカレーション - ${store_name}`
+    const subject = `【Weir CS】エスカレーション - ${store_name}`
 
     const html = `
 <!DOCTYPE html>
@@ -86,7 +86,7 @@ serve(async (req) => {
         <!-- Header -->
         <tr>
           <td style="background:#D32F2F;padding:24px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;letter-spacing:1px;">AIden CS</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;letter-spacing:1px;">Weir CS</h1>
             <p style="margin:6px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">エスカレーション通知</p>
           </td>
         </tr>
@@ -130,7 +130,7 @@ serve(async (req) => {
 
             <!-- Action -->
             <div style="text-align:center;margin-top:24px;">
-              <a href="https://aiden-jp.net/aiden-admin.html#cs"
+              <a href="https://weir.co.jp/aiden-admin.html#cs"
                  style="display:inline-block;background:#D32F2F;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
                 管理画面で確認する
               </a>
@@ -142,7 +142,7 @@ serve(async (req) => {
         <tr>
           <td style="padding:20px 32px;background:#fafafa;text-align:center;">
             <p style="margin:0;font-size:12px;color:#999;">
-              このメールはAIden CSシステムから自動送信されています。
+              このメールはWeir CSシステムから自動送信されています。
             </p>
           </td>
         </tr>

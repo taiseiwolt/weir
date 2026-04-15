@@ -223,7 +223,7 @@ brand.html line 486-506 のロジックをそのまま移植。`aiden-common.js`
 
     // 1. Custom domain (highest priority)
     var hostname = window.location.hostname;
-    if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+    if (hostname && hostname !== 'localhost' && hostname !== 'weir.co.jp' && !hostname.endsWith('.vercel.app')) {
       var { data: domainMatch } = await client.from('brands').select('id').eq('custom_domain', hostname).limit(1);
       if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
     }
@@ -647,7 +647,7 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
     var companyLinks = '';
     if (brand.company_url) companyLinks += '<a href="' + escH(brand.company_url) + '" target="_blank" rel="noopener">' + t('footer_company') + '</a>';
     if (brand.recruit_url) companyLinks += '<a href="' + escH(brand.recruit_url) + '" target="_blank" rel="noopener">' + t('f_recruit') + '</a>';
-    companyLinks += '<a href="mailto:support@aiden-jp.net" data-i18n="f_contact">' + t('f_contact') + '</a>';
+    companyLinks += '<a href="mailto:support@weir.co.jp" data-i18n="f_contact">' + t('f_contact') + '</a>';
     companyLinks += '<a href="javascript:void(0)" data-i18n="f_faq">' + t('f_faq') + '</a>';
 
     var year = new Date().getFullYear();
@@ -691,9 +691,9 @@ git commit -m "feat: add i18n system to aiden-common.js — 7-language dictionar
             '<a href="./legal/terms.html" data-i18n="f_terms">' + t('f_terms') + '</a>' +
             '<a href="./legal/refund.html">返金ポリシー</a>' +
             '<a href="./aiden-sitemap.html" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
-            '<a href="mailto:support@aiden-jp.net">' + t('f_contact') + '</a>' +
+            '<a href="mailto:support@weir.co.jp">' + t('f_contact') + '</a>' +
           '</div>' +
-          '<span class="powered">Powered by AIden</span>' +
+          '<span class="powered">Powered by Weir</span>' +
         '</div></div>' +
       '</footer>';
   }

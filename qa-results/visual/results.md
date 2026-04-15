@@ -1,7 +1,7 @@
 # Chrome Visual QA Results - R3
 - Date: 2026-03-23
 - Tester: chrome-visual
-- Target: https://aiden-jp.net
+- Target: https://weir.co.jp
 
 ## Summary
 - Total: 12 items
@@ -15,7 +15,7 @@
 
 ### A-01: MO画面メニュー表示
 - **Result: PASS**
-- URL: https://aiden-jp.net/aiden-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
+- URL: https://weir.co.jp/aiden-order-store.html?store_id=aaaa3333-0000-0000-0000-000000000002
 - Store name "新宿店" displayed correctly
 - 5 category tabs: 焼肉セット, 単品焼肉, サイドメニュー, ドリンク, デザート
 - Menu items show name, description, price, + button
@@ -25,7 +25,7 @@
 
 ### A-04: トラッキング画面構造
 - **Result: PASS**
-- URL: https://aiden-jp.net/aiden-order-tracking.html
+- URL: https://weir.co.jp/aiden-order-tracking.html
 - Map displayed (Leaflet/OpenStreetMap) with delivery route
 - Rider icon and store icon on map
 - Circular progress indicator: "10分 でお届け"
@@ -37,8 +37,8 @@
 
 ### A-05: 受注ダッシュボード表示
 - **Result: PASS**
-- URL: https://aiden-jp.net/aiden-order-dashboard.html
-- Left sidebar: AIden logo, 注文 (badge 3), 売上, メニュー, 設定, notification bell
+- URL: https://weir.co.jp/aiden-order-dashboard.html
+- Left sidebar: Weir logo, 注文 (badge 3), 売上, メニュー, 設定, notification bell
 - Header: store name "焼肉 炭火亭 渋谷店", 接続中 indicator, notification badge (3), 受付中 toggle
 - Status tabs: すべて 0 / 新規 0 / 調理中 0 / 受け渡し待ち 0 / 受渡済 0 / 取消 0
 - Two order sections: 店内注文 0件 / 店外注文（テイクアウト・デリバリー）0件
@@ -47,7 +47,7 @@
 
 ### A-14: マイページ構造
 - **Result: PASS**
-- URL: https://aiden-jp.net/aiden-mypage.html
+- URL: https://weir.co.jp/aiden-mypage.html
 - Header: "マイページ" with back arrow (red bar)
 - User avatar icon (generic profile silhouette)
 - "ログインしてください" heading
@@ -100,20 +100,20 @@
 - **Result: PASS**
 - 利用規約 link
 - プライバシーポリシー link
-- お問い合わせ: support@aiden-jp.net
-- Powered by AIden
+- お問い合わせ: support@weir.co.jp
+- Powered by Weir
 
 ### D-06: ダッシュボードフッター
 - **Result: PASS**
-- お問い合わせ: support@aiden-jp.net (clickable link)
+- お問い合わせ: support@weir.co.jp (clickable link)
 - 緊急時: 管理者に直接ご連絡ください
-- Powered by AIden
+- Powered by Weir
 
 ### D-07: 管理マスタフッター
 - **Result: PASS**
-- お問い合わせ: support@aiden-jp.net (clickable link)
+- お問い合わせ: support@weir.co.jp (clickable link)
 - 緊急時: 管理者に直接ご連絡ください
-- Powered by AIden
+- Powered by Weir
 
 ### D-08: ブランドHPフッター
 - **Result: PASS**
@@ -124,7 +124,7 @@
 - News section (ニュース一覧)
 - SNS buttons: LINE, X, Instagram
 - Bottom bar: copyright (2026 炭火亭), プライバシーポリシー, 利用規約, 返金ポリシー, サイトマップ, お問い合わせ
-- Powered by AIden
+- Powered by Weir
 
 ---
 

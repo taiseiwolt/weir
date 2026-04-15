@@ -223,7 +223,7 @@ In `brand.html`, replace the existing `resolveBrandId()` function (around line 4
 async function resolveBrandId() {
   // 1. Try custom domain detection (highest priority)
   var hostname = window.location.hostname;
-  if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+  if (hostname && hostname !== 'localhost' && hostname !== 'weir.co.jp' && !hostname.endsWith('.vercel.app')) {
     var { data: domainMatch } = await sb.from('brands').select('id').eq('custom_domain', hostname).limit(1);
     if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
   }

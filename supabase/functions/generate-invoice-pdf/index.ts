@@ -122,12 +122,12 @@ serve(async (req) => {
 
     let y = height - 50
 
-    // --- ヘッダー: AIdenロゴ ---
+    // --- ヘッダー: Weirロゴ ---
     page.drawRectangle({
       x: 0, y: y - 30, width, height: 60,
       color: purple,
     })
-    page.drawText('AIden', {
+    page.drawText('Weir', {
       x: 40, y: y - 12, size: 28, font: fontBold, color: white,
     })
     page.drawText('INVOICE', {
@@ -181,7 +181,7 @@ serve(async (req) => {
     page.drawText(corpName, {
       x: 40, y, size: 13, font: fontBold, color: black,
     })
-    page.drawText('AIden（運営: AIden株式会社）', {
+    page.drawText('Weir（運営: Weir株式会社）', {
       x: 320, y, size: 11, font: fontBold, color: black,
     })
 
@@ -191,7 +191,7 @@ serve(async (req) => {
         x: 40, y, size: 10, font: fontRegular, color: gray,
       })
     }
-    page.drawText('billing@aiden-jp.net', {
+    page.drawText('billing@weir.co.jp', {
       x: 320, y, size: 9, font: fontRegular, color: gray,
     })
 
@@ -246,7 +246,7 @@ serve(async (req) => {
     // 明細行: 手数料小計
     // 注文件数を概算（手数料率4%で逆算、あるいは表示上は「一式」）
     const rows: Array<{ label: string; qty: string; amount: number }> = [
-      { label: `AIdenプラットフォーム手数料（${getBillingPeriodLabel(invoice.billing_period)}）`, qty: '一式', amount: invoice.subtotal },
+      { label: `Weirプラットフォーム手数料（${getBillingPeriodLabel(invoice.billing_period)}）`, qty: '一式', amount: invoice.subtotal },
     ]
 
     // 調整項目
@@ -346,7 +346,7 @@ serve(async (req) => {
       x: 55, y: y - 5, size: 10, font: fontRegular, color: gray,
     })
     y -= 16
-    page.drawText('口座名義: AIden株式会社', {
+    page.drawText('口座名義: Weir株式会社', {
       x: 55, y: y - 5, size: 10, font: fontRegular, color: gray,
     })
 
@@ -362,7 +362,7 @@ serve(async (req) => {
     })
 
     // --- フッター ---
-    page.drawText('© AIden - 飲食店向けオールインワンSaaS', {
+    page.drawText('© Weir - 飲食店向けオールインワンSaaS', {
       x: 40, y: 30, size: 8, font: fontRegular, color: gray,
     })
 

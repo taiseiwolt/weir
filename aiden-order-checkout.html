@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>注文の最終確認 | AIden モバイルオーダー</title>
+<title>注文の最終確認 | Weir モバイルオーダー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -535,7 +535,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         </div>
         <div class="form-group" style="margin-bottom:12px">
           <label>建物名・部屋番号</label>
-          <input type="text" class="form-input" id="addrBuildingInput" placeholder="AIdenビル 301号室" oninput="updateNewAddress()">
+          <input type="text" class="form-input" id="addrBuildingInput" placeholder="Weirビル 301号室" oninput="updateNewAddress()">
         </div>
       </div>
 
@@ -728,7 +728,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
       </div>
 
       <div class="price-privacy">
-        この注文で提供された個人情報は、AIdenと<span id="privacyBrandName"></span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./aiden-privacy.html">AIdenのプライバシーポリシー</a>をご覧ください。
+        この注文で提供された個人情報は、Weirと<span id="privacyBrandName"></span>が共同で所有し処理します。個人情報の取り扱いについては、<a href="./aiden-privacy.html">Weirのプライバシーポリシー</a>をご覧ください。
       </div>
 
       <button class="btn-order incomplete" id="btnOrder" onclick="placeOrder()">
@@ -966,7 +966,7 @@ async function loadCheckoutData() {
 
   // 5. Load point transactions for FIFO consumption
   try {
-    const memberId = sessionStorage.getItem('aiden_member_id');
+    const memberId = sessionStorage.getItem('weir_member_id');
     if (memberId) {
       // 獲得トランザクションを created_at 昇順で取得（FIFO: 古い順）
       const { data: earnTxns } = await sb
@@ -1570,7 +1570,7 @@ let selectedAddressId = null; // 選択中の保存済み住所ID
 async function loadSavedAddresses() {
   initPrefectureSelect();
   try {
-    var memberId = sessionStorage.getItem('aiden_member_id');
+    var memberId = sessionStorage.getItem('weir_member_id');
     if (!memberId) {
       // 未ログイン: フォームを直接表示
       document.getElementById('newAddressForm').style.display = '';
@@ -1690,7 +1690,7 @@ function toggleSaveLabel() {
 
 async function saveAddressIfChecked() {
   if (!document.getElementById('chkSaveAddress') || !document.getElementById('chkSaveAddress').checked) return;
-  var memberId = sessionStorage.getItem('aiden_member_id');
+  var memberId = sessionStorage.getItem('weir_member_id');
   if (!memberId) return;
 
   var pref = document.getElementById('addrPrefecture').value;
@@ -1891,7 +1891,7 @@ function clearPoints() {
   recalcSubtotal();
 }
 
-// AIden 手数料率（チャネル別）- システム設定と同期
+// Weir 手数料率（チャネル別）- システム設定と同期
 
 
 function showBanBlockMessage(){
@@ -1908,7 +1908,7 @@ function showBanBlockMessage(){
 
 async function placeOrder() {
   // IR-07: セッション有効性チェック
-  if (typeof sb !== 'undefined' && sessionStorage.getItem('aiden_member_id')) {
+  if (typeof sb !== 'undefined' && sessionStorage.getItem('weir_member_id')) {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
       showToast('セッションの有効期限が切れました。ページを更新してください。', 'error');
@@ -1919,7 +1919,7 @@ async function placeOrder() {
   // === BAN CHECK (Edge Function経由) ===
   var banCheckEmail = document.getElementById('custEmail')?.value.trim();
   var banCheckPhone = document.getElementById('custPhone')?.value.trim();
-  var banCheckMemberId = sessionStorage.getItem('aiden_member_id') || null;
+  var banCheckMemberId = sessionStorage.getItem('weir_member_id') || null;
   if(banCheckEmail || banCheckPhone || banCheckMemberId){
     try{
       var banRes = await fetch(SUPABASE_URL + '/functions/v1/check-ban', {
@@ -2006,7 +2006,7 @@ async function placeOrder() {
         const cartSig = (CHECKOUT_DATA.cartItems || [])
           .map(i => (i.id || i.productId || '') + ':' + (i.qty || 1))
           .sort().join(',');
-        const rawKey = (CHECKOUT_DATA.storeId || '') + '|' + cartSig + '|' + (sessionStorage.getItem('aiden_member_id') || 'guest');
+        const rawKey = (CHECKOUT_DATA.storeId || '') + '|' + cartSig + '|' + (sessionStorage.getItem('weir_member_id') || 'guest');
         let h = 0;
         for (let i = 0; i < rawKey.length; i++) { h = Math.imul(31, h) + rawKey.charCodeAt(i) | 0; }
         sessionStorage.setItem('aiden_checkout_idem', 'idem_' + Math.abs(h).toString(36));
@@ -2045,7 +2045,7 @@ async function placeOrder() {
           points_used: appliedPoints || 0,
           aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
           normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
-          member_id: sessionStorage.getItem('aiden_member_id') || null,
+          member_id: sessionStorage.getItem('weir_member_id') || null,
           coupon_id: appliedCoupon ? (appliedCoupon.id || null) : null,
           coupon_discount: appliedCoupon ? (appliedCoupon.type === 'percent' ? Math.round(CHECKOUT_DATA.subtotal * appliedCoupon.discount / 100) : appliedCoupon.discount) : 0
         })
@@ -2145,7 +2145,7 @@ async function placeOrder() {
         // ── ポイント消費トランザクションを記録 ──
         if (appliedPoints > 0) {
           try {
-            const memberId = sessionStorage.getItem('aiden_member_id');
+            const memberId = sessionStorage.getItem('weir_member_id');
             if (memberId) {
               await sb.from('point_transactions').insert({
                 member_id: memberId,
@@ -2272,7 +2272,7 @@ async function placeOrder() {
         delivery_lng: mode === 'delivery' ? (addrData.lng || null) : null,
         aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
         normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
-        member_id: sessionStorage.getItem('aiden_member_id') || null,
+        member_id: sessionStorage.getItem('weir_member_id') || null,
       };
 
       const { data: orderRow, error: orderErr } = await sb
@@ -2298,7 +2298,7 @@ async function placeOrder() {
       // ポイント消費
       if (appliedPoints > 0) {
         try {
-          const memberId = sessionStorage.getItem('aiden_member_id');
+          const memberId = sessionStorage.getItem('weir_member_id');
           if (memberId) {
             await sb.from('point_transactions').insert({
               member_id: memberId,
@@ -2409,7 +2409,7 @@ async function handleSignin(e) {
       if (error) throw error;
       // ログイン成功: member_id をセッションに保存
       const { data: member } = await sb.from('members').select('id').eq('auth_user_id', data.user.id).single();
-      if (member) sessionStorage.setItem('aiden_member_id', member.id);
+      if (member) sessionStorage.setItem('weir_member_id', member.id);
       closeSigninModal();
       // UIを更新
       const signinBtn = document.querySelector('.btn-signin');
@@ -2510,7 +2510,7 @@ async function showTokushoho() {
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">販売事業者名</th>
-        <td style="padding:12px 8px;">個人事業主 前田 大生（屋号: AIden）</td>
+        <td style="padding:12px 8px;">個人事業主 前田 大生（屋号: Weir）</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">運営責任者</th>
@@ -2526,7 +2526,7 @@ async function showTokushoho() {
       </tr>
       <tr>
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">連絡先</th>
-        <td style="padding:12px 8px;">メール: support@aiden-jp.net</td>
+        <td style="padding:12px 8px;">メール: support@weir.co.jp</td>
       </tr>
     </table>
     <h3 style="font-size:14px;font-weight:bold;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d1d5db;">取引条件</h3>
@@ -2579,7 +2579,7 @@ document.addEventListener('keydown', function(e) {
       contextType: 'enduser',
       storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
-      apiBase: 'https://aiden-jp.net',
+      apiBase: 'https://weir.co.jp',
     });
   }
 })();

@@ -6,7 +6,7 @@ const { chromium, devices } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = 'https://aiden-jp.net';
+const BASE_URL = 'https://weir.co.jp';
 const SCREENSHOT_DIR = path.join(__dirname, 'qa-screenshots', 'mobile-uiux');
 
 const DEVICE_CONFIGS = [

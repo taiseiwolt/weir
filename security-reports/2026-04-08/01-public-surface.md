@@ -100,7 +100,7 @@
 
 #### P2-4: ゲストPIIのsessionStorage保存
 - **対象**: 複数ファイル
-- **内容**: `aiden_member_id`がsessionStorage/localStorageに保存。UUIDで直接PIIではないが、PII検索に使用可能
+- **内容**: `weir_member_id`がsessionStorage/localStorageに保存。UUIDで直接PIIではないが、PII検索に使用可能
 - **フェーズ影響**: Phase 1
 
 #### P3-1: CSRF保護なし（低リスク）

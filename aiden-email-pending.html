@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>認証メール送信完了 | AIden</title>
+<title>認証メール送信完了 | Weir</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -65,7 +65,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   <div><a href="./" class="home-link">トップページへ戻る</a></div>
 </div>
 <script>
-var API_BASE = 'https://aiden-jp.net';
+var API_BASE = 'https://weir.co.jp';
 var email = '';
 var resendCount = 0;
 var MAX_RESEND = 5;
@@ -139,7 +139,7 @@ async function resendEmail() {
         limitReached = true;
         btn.disabled = true;
         btn.textContent = '再送上限に達しました';
-        showMsg('再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 'error');
+        showMsg('再送上限に達しました。support@weir.co.jp までお問い合わせください。', 'error');
       } else {
         startCooldown(COOLDOWN_SECONDS);
       }
@@ -148,7 +148,7 @@ async function resendEmail() {
         limitReached = true;
         btn.disabled = true;
         btn.textContent = '再送上限に達しました';
-        showMsg('再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 'error');
+        showMsg('再送上限に達しました。support@weir.co.jp までお問い合わせください。', 'error');
       } else if (data.code === 'COOLDOWN_ACTIVE') {
         var match = (data.error || '').match(/(\d+)秒/);
         var remaining = match ? parseInt(match[1]) : COOLDOWN_SECONDS;

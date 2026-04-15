@@ -1,4 +1,4 @@
-# AIden 接続情報
+# Weir 接続情報
 
 ## Supabase
 - URL: https://iikwusprydaogzeslgdz.supabase.co
@@ -6,10 +6,10 @@
 - Access Token: sbp_81a590fbb22b5faf1647c9bf689b141012081563（期限: 2026-06-20）
 
 ## 本番URL
-- https://aiden-jp.net
+- https://weir.co.jp
 
 ## GitHub
 - https://github.com/taiseiwolt/aiden-demo
 
 ## API Base URL
-- https://aiden-jp.net/api
+- https://weir.co.jp/api

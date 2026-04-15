@@ -111,7 +111,7 @@ Stripe Connect Express による決済機能の実装・保守を担当するエ
 ### Rules
 - 決済フロー: authorize-on-order → capture-on-delivery
 - 手数料率: Dine-in 3.8%, Takeout/Delivery 4.0%
-- Stripe手数料 3.6% はAIden負担
+- Stripe手数料 3.6% はWeir負担
 - 手数料は割引前の合計金額に対して計算
 - 返金: プラットフォーム側90日上限
 - Webhook署名検証を必ず実施

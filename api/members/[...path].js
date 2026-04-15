@@ -231,7 +231,7 @@ async function handleRegister(req, res) {
   }
 
   try {
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html';
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -293,19 +293,19 @@ async function handleRegister(req, res) {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'AIden <noreply@aiden-jp.net>',
+            from: 'Weir <noreply@weir.co.jp>',
             to: [email],
-            subject: '【AIden】メールアドレスの確認',
+            subject: '【Weir】メールアドレスの確認',
             html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
               <h2 style="color:#333">メールアドレスの確認</h2>
               <p>${last_name} ${first_name} 様</p>
-              <p>AIdenへのご登録ありがとうございます。<br>以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
+              <p>Weirへのご登録ありがとうございます。<br>以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
               <div style="text-align:center;margin:30px 0">
                 <a href="${confirmLink}" style="background:#2563eb;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold">メールアドレスを確認する</a>
               </div>
               <p style="color:#666;font-size:14px">このリンクは60分間有効です。<br>心当たりがない場合は、このメールを無視してください。</p>
               <hr style="border:none;border-top:1px solid #eee;margin:30px 0">
-              <p style="color:#999;font-size:12px">AIden - 飲食店向けオールインワンSaaS</p>
+              <p style="color:#999;font-size:12px">Weir - 飲食店向けオールインワンSaaS</p>
             </div>`,
           }),
         });
@@ -450,7 +450,7 @@ async function ensureStripeCustomer(member) {
     email: fullMember?.email,
     name: (fullMember?.last_name || '') + ' ' + (fullMember?.first_name || ''),
     phone: fullMember?.phone,
-    metadata: { aiden_member_id: member.id },
+    metadata: { weir_member_id: member.id },
   });
 
   await supabase
@@ -564,7 +564,7 @@ async function handleLineLogin(req, res) {
       authUserId = existingMember.auth_user_id;
     } else {
       isNewUser = true;
-      const lineEmail = `line_${profile.userId}@aiden-line.local`;
+      const lineEmail = `line_${profile.userId}@weir-line.local`;
       const linePassword = crypto.randomUUID();
 
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -679,7 +679,7 @@ async function handleLineCallback(req, res) {
       authUserId = existingMember.auth_user_id;
     } else {
       isNewUser = true;
-      const lineEmail = `line_${profile.userId}@aiden-line.local`;
+      const lineEmail = `line_${profile.userId}@weir-line.local`;
       const linePassword = crypto.randomUUID();
 
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -771,7 +771,7 @@ async function handleResendVerification(req, res) {
     // Check resend count limit (max 5)
     const resendCount = member.email_verification_resend_count || 0;
     if (resendCount >= MAX_RESEND) {
-      return error(res, '再送上限に達しました。support@aiden-jp.net までお問い合わせください。', 429, 'RESEND_LIMIT_EXCEEDED');
+      return error(res, '再送上限に達しました。support@weir.co.jp までお問い合わせください。', 429, 'RESEND_LIMIT_EXCEEDED');
     }
 
     // Check cooldown (60 seconds since last send)
@@ -790,7 +790,7 @@ async function handleResendVerification(req, res) {
       type: 'signup',
       email: email,
       options: {
-        redirectTo: (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html',
+        redirectTo: (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html',
       },
     });
 
@@ -857,7 +857,7 @@ async function handleBulkSendVerification(req, res) {
     // Send verification emails via Supabase Auth generateLink
     let sentCount = 0;
     const errors = [];
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-email-verified.html';
 
     for (const member of unverified) {
       try {
@@ -949,7 +949,7 @@ async function handleResetPassword(req, res) {
 
   try {
     const anonClient = createAnonClient();
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://aiden-jp.net') + '/aiden-password-reset.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://weir.co.jp') + '/aiden-password-reset.html';
 
     const { error: resetError } = await anonClient.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,

@@ -10,8 +10,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
-const FROM_EMAIL = 'noreply@aiden-jp.net'
-const FROM_NAME = 'AIden'
+const FROM_EMAIL = 'noreply@weir.co.jp'
+const FROM_NAME = 'Weir'
 
 interface OrderItem {
   name: string
@@ -85,7 +85,7 @@ function buildConfirmationEmail(data: EmailRequest): string {
         <!-- Header -->
         <tr>
           <td style="background:#D32F2F;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">AIden</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">Weir</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">注文確認メール</p>
           </td>
         </tr>
@@ -173,7 +173,7 @@ function buildConfirmationEmail(data: EmailRequest): string {
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
               <tr>
                 <td align="center" style="padding:8px 0;">
-                  <a href="https://aiden-jp.net/aiden-order-tracking.html?token=${data.tracking_token}"
+                  <a href="https://weir.co.jp/aiden-order-tracking.html?token=${data.tracking_token}"
                      style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
                     注文状況を確認する
                   </a>
@@ -192,7 +192,7 @@ function buildConfirmationEmail(data: EmailRequest): string {
         <tr>
           <td style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #f0f0f0;">
             <p style="margin:0;font-size:11px;color:#aaa;">
-              &copy; AIden - 飲食店向けオールインワンSaaS
+              &copy; Weir - 飲食店向けオールインワンSaaS
             </p>
           </td>
         </tr>
@@ -217,7 +217,7 @@ function buildReceiptEmail(data: EmailRequest): string {
                   <p style="margin:0 0 16px;font-size:13px;color:#666;line-height:1.6;">
                     口コミを投稿していただくと、ポイントをプレゼント！
                   </p>
-                  <a href="https://aiden-jp.net/review?token=${data.review_token}"
+                  <a href="https://weir.co.jp/review?token=${data.review_token}"
                      style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">
                     口コミを投稿する
                   </a>
@@ -237,7 +237,7 @@ function buildReceiptEmail(data: EmailRequest): string {
         <!-- Header -->
         <tr>
           <td style="background:#D32F2F;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">AIden</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">Weir</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">領収書</p>
           </td>
         </tr>
@@ -342,7 +342,7 @@ function buildReceiptEmail(data: EmailRequest): string {
         <tr>
           <td style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #f0f0f0;">
             <p style="margin:0;font-size:11px;color:#aaa;">
-              &copy; AIden - 飲食店向けオールインワンSaaS
+              &copy; Weir - 飲食店向けオールインワンSaaS
             </p>
           </td>
         </tr>
@@ -386,8 +386,8 @@ serve(async (req) => {
     }
 
     const subject = data.type === 'receipt'
-      ? `【AIden】領収書 - ご注文 #${data.order_id}`
-      : `【AIden】ご注文確認 - #${data.order_id}`
+      ? `【Weir】領収書 - ご注文 #${data.order_id}`
+      : `【Weir】ご注文確認 - #${data.order_id}`
 
     const html = data.type === 'receipt'
       ? buildReceiptEmail(data)

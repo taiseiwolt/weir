@@ -1,4 +1,4 @@
-# AIden メール認証 + 退会フロー実装依頼
+# Weir メール認証 + 退会フロー実装依頼
 
 実行日: 2026-03-22
 前提: Day 1〜5テスト全完了。セキュリティ修正済み。
@@ -13,7 +13,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://aiden-jp.net
+- 本番URL: https://weir.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Access Token: sbp_0bc989fd83759e2909944e4a7117b341834c19b8（期限: 2026-04-15）
@@ -37,7 +37,7 @@
 
 ### A-2: 認証メールテンプレート
 1. Supabase Authのメールテンプレートをカスタマイズ
-2. 件名: 「【AIden】メールアドレスの認証をお願いします」
+2. 件名: 「【Weir】メールアドレスの認証をお願いします」
 3. 本文: 仕様書セクション6の内容に準拠
 4. 日本語で作成
 

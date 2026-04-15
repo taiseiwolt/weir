@@ -5,9 +5,9 @@
 //
 // 処理:
 // 1. 対象期間の全注文を法人別に集計
-// 2. AIden手数料 = 各注文の application_fee_amount の合計
-// 3. 調整: 返金かつAIden負担の注文分を控除
-// 4. AIden原資ポイント使用分を自動控除
+// 2. Weir手数料 = 各注文の application_fee_amount の合計
+// 3. 調整: 返金かつWeir負担の注文分を控除
+// 4. Weir原資ポイント使用分を自動控除
 // 5. 消費税10%加算
 // 6. invoices テーブルに INSERT
 
@@ -80,7 +80,7 @@ serve(async (req) => {
       return jsonResponse({ error: '注文取得に失敗: ' + sanitizeErrorMessage(ordersErr) }, 500)
     }
 
-    // 3. AIden原資ポイント消費を取得（source='aiden_compensation' かつ amount < 0 = 消費）
+    // 3. Weir原資ポイント消費を取得（source='aiden_compensation' かつ amount < 0 = 消費）
     const { data: pointTxns, error: ptErr } = await sbAdmin
       .from('point_transactions')
       .select('amount, order_id')
@@ -157,7 +157,7 @@ serve(async (req) => {
         fee = Math.round(order.total_amount * rate)
       }
 
-      // 返金済みかつAIden負担の場合は手数料を控除
+      // 返金済みかつWeir負担の場合は手数料を控除
       if (order.payment_status === 'refunded') {
         corpInvoices[corpId].adjustments -= fee
         corpInvoices[corpId].adjustmentDetails.push({
@@ -169,12 +169,12 @@ serve(async (req) => {
 
       corpInvoices[corpId].subtotal += fee
 
-      // AIden原資ポイント消費分の控除
+      // Weir原資ポイント消費分の控除
       const aidenPoints = aidenPointsByOrder[order.id] || 0
       if (aidenPoints > 0) {
         corpInvoices[corpId].adjustments -= aidenPoints
         corpInvoices[corpId].adjustmentDetails.push({
-          reason: `AIden原資ポイント控除 (注文: ${order.id})`,
+          reason: `Weir原資ポイント控除 (注文: ${order.id})`,
           amount: -aidenPoints,
         })
       }

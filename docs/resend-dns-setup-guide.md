@@ -1,7 +1,7 @@
 # Resend ドメイン検証 — お名前.com DNS設定手順書
 
 **作成日:** 2026-03-26
-**対象ドメイン:** aiden-jp.net
+**対象ドメイン:** weir.co.jp
 **目的:** Resend からのメール送信を有効にする（注文確認メール等）
 
 ---
@@ -12,7 +12,7 @@
 |------|------|
 | Resend ステータス | `failed`（SPF と MX が検出できず 72 時間経過） |
 | 原因 | Resend が求める SPF / MX レコードがルートドメインに誤設定されている |
-| 正しい設定先 | サブドメイン `send.aiden-jp.net` |
+| 正しい設定先 | サブドメイン `send.weir.co.jp` |
 | Google Workspace | ルートの MX（smtp.google.com）は残す必要あり |
 
 ---
@@ -31,7 +31,7 @@
 
 1. https://navi.onamae.com/ にログイン
 2. 上部メニュー「ネームサーバーの設定」→「ドメインのDNS設定」をクリック
-3. `aiden-jp.net` を選択
+3. `weir.co.jp` を選択
 4. 「DNSレコード設定を利用する」の「設定する」ボタンをクリック
 
 ---
@@ -102,7 +102,7 @@ v=spf1 include:_spf.google.com ~all
 ## Step 4: サブドメイン `send` に Resend 用レコードを追加（2件）
 
 「追加」ボタンをクリックして、以下の値を **1文字も変えずにコピペ** してください。
-ホスト名は `send` と入力します（`send.aiden-jp.net` ではなく `send` だけ）。
+ホスト名は `send` と入力します（`send.weir.co.jp` ではなく `send` だけ）。
 
 ### 追加② — send の MX（Resend バウンス受信用）
 
@@ -163,7 +163,7 @@ v=spf1 include:amazonses.com ~all
 |------|--------|
 | ホスト名 | `_dmarc` |
 | TYPE | TXT |
-| VALUE | `v=DMARC1; p=none; rua=mailto:taisei.maeda@aiden-jp.net` |
+| VALUE | `v=DMARC1; p=none; rua=mailto:taisei.maeda@weir.co.jp` |
 | TTL | 3600 |
 
 > `rua=mailto:...` を付けると、なりすまし検出レポートが届くようになります（任意）。
@@ -181,7 +181,7 @@ v=spf1 include:amazonses.com ~all
 ## Step 7: Resend ダッシュボードで再検証
 
 1. https://resend.com/domains にアクセス
-2. `aiden-jp.net` をクリック
+2. `weir.co.jp` をクリック
 3. 「Verify DNS Records」ボタンをクリック
 4. ステータスが `pending` → `verified` になるのを待つ（通常 5 分〜数時間）
 
@@ -192,7 +192,7 @@ v=spf1 include:amazonses.com ~all
 
 ## 最終確認：DNS レコード一覧（設定完了後の正しい状態）
 
-### ルートドメイン（aiden-jp.net）
+### ルートドメイン（weir.co.jp）
 
 | TYPE | ホスト名 | VALUE | 備考 |
 |------|----------|-------|------|
@@ -233,16 +233,16 @@ v=spf1 include:amazonses.com ~all
 ### DNS 変更後に Resend が verified にならない場合
 ```bash
 # ターミナルで確認コマンド（Mac）
-dig send.aiden-jp.net MX +short
+dig send.weir.co.jp MX +short
 # → 期待値: 10 feedback-smtp.ap-northeast-1.amazonses.com.
 
-dig send.aiden-jp.net TXT +short
+dig send.weir.co.jp TXT +short
 # → 期待値: "v=spf1 include:amazonses.com ~all"
 ```
 
 ### Gmail が届かなくなった場合
 ```bash
-dig aiden-jp.net MX +short
+dig weir.co.jp MX +short
 # → 期待値: 1 smtp.google.com.
 # ↑ これが消えていたら、ルートの MX を誤って削除している
 ```

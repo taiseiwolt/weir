@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>会員プログラム | AIden</title>
+<title>会員プログラム | Weir</title>
     <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="会員プログラム | AIden">
-    <meta property="og:description" content="AIden会員プログラム - お得な特典やポイントをご利用いただけます。">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-mypage-membership.html">
+    <meta property="og:title" content="会員プログラム | Weir">
+    <meta property="og:description" content="Weir会員プログラム - お得な特典やポイントをご利用いただけます。">
+    <meta property="og:image" content="https://weir.co.jp/ogp.png">
+    <meta property="og:url" content="https://weir.co.jp/aiden-mypage-membership.html">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
+    <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="会員プログラム | AIden">
-    <meta name="twitter:description" content="AIden会員プログラム - お得な特典やポイントをご利用いただけます。">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="AIden会員プログラム - お得な特典やポイントをご利用いただけます。">
+    <meta name="twitter:title" content="会員プログラム | Weir">
+    <meta name="twitter:description" content="Weir会員プログラム - お得な特典やポイントをご利用いただけます。">
+    <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
+    <meta name="description" content="Weir会員プログラム - お得な特典やポイントをご利用いただけます。">
 <style>
 :root {
   --primary: #D32F2F;
@@ -446,7 +446,7 @@ function switchHistory(el, type) {
 var addresses = [];
 
 async function loadAddresses() {
-  var memberId = sessionStorage.getItem('aiden_member_id');
+  var memberId = sessionStorage.getItem('weir_member_id');
   if (!memberId) { document.getElementById('addrEmpty').style.display = ''; return; }
   try {
     var { data, error } = await sb.from('member_addresses').select('id, member_id, label, postal_code, prefecture, city, street, building, phone, is_default, created_at').eq('member_id', memberId).order('is_default', { ascending: false });
@@ -501,7 +501,7 @@ function editAddress(id) {
 }
 
 async function saveAddress() {
-  var memberId = sessionStorage.getItem('aiden_member_id');
+  var memberId = sessionStorage.getItem('weir_member_id');
   if (!memberId) { alert('ログインが必要です'); return; }
   var id = document.getElementById('addrEditId').value;
   var postal = document.getElementById('addrPostal').value.trim();
@@ -531,7 +531,7 @@ async function saveAddress() {
 }
 
 async function setDefaultAddr(id) {
-  var memberId = sessionStorage.getItem('aiden_member_id');
+  var memberId = sessionStorage.getItem('weir_member_id');
   if (!memberId) return;
   try {
     await sb.from('member_addresses').update({ is_default: false }).eq('member_id', memberId);

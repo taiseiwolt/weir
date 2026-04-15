@@ -1,4 +1,4 @@
-# AIden Day 5 テスト依頼書
+# Weir Day 5 テスト依頼書
 
 実行日: 2026-03-22
 前提: Day 1〜4 完了済み
@@ -11,7 +11,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://aiden-jp.net
+- 本番URL: https://weir.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Access Token: sbp_0bc989fd83759e2909944e4a7117b341834c19b8（期限: 2026-04-15）
@@ -31,7 +31,7 @@
 
 ## Phase 1: 管理マスタ 基本動作テスト 🔴Critical
 
-管理マスタ（admin）がAIden運営（AO）として正しく動作するか確認。
+管理マスタ（admin）がWeir運営（AO）として正しく動作するか確認。
 
 ### AD-01: 管理マスタ ログイン+画面一覧確認
 1. 管理マスタ画面のURLを特定して開く

@@ -11,8 +11,8 @@ import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, escape
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const FROM_EMAIL = 'support@aiden-jp.net'
-const FROM_NAME = 'AIden'
+const FROM_EMAIL = 'support@weir.co.jp'
+const FROM_NAME = 'Weir'
 
 interface NotificationRequest {
   type: string
@@ -61,7 +61,7 @@ function buildEmailHtml(title: string, greeting: string, body: string): string {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:#D32F2F;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">AIden</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">Weir</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">${escapeHtml(title)}</p>
           </td>
         </tr>
@@ -77,7 +77,7 @@ function buildEmailHtml(title: string, greeting: string, body: string): string {
         </tr>
         <tr>
           <td style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #f0f0f0;">
-            <p style="margin:0;font-size:11px;color:#aaa;">&copy; AIden - 飲食店向けオールインワンSaaS</p>
+            <p style="margin:0;font-size:11px;color:#aaa;">&copy; Weir - 飲食店向けオールインワンSaaS</p>
           </td>
         </tr>
       </table>
@@ -153,7 +153,7 @@ serve(async (req) => {
           )
         }
 
-        subject = `【AIden】新規予約 - ${data.display_id}`
+        subject = `【Weir】新規予約 - ${data.display_id}`
         const guestInfo = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
             新しい予約が入りました。${data.status === 'pending' ? '承認をお願いします。' : ''}
@@ -207,8 +207,8 @@ serve(async (req) => {
 
         const isCancelRequest = data.type === 'cancel_requested_store'
         subject = isCancelRequest
-          ? `【AIden】キャンセルリクエスト - ${data.display_id}`
-          : `【AIden】予約キャンセル - ${data.display_id}`
+          ? `【Weir】キャンセルリクエスト - ${data.display_id}`
+          : `【Weir】予約キャンセル - ${data.display_id}`
 
         const body = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
@@ -231,7 +231,7 @@ serve(async (req) => {
       // --- 顧客向け ---
       case 'confirmed_customer': {
         toEmail = data.to || ''
-        subject = `【AIden】ご予約確定のお知らせ - ${data.display_id}`
+        subject = `【Weir】ご予約確定のお知らせ - ${data.display_id}`
         const body = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
             ご予約が確定しました。<br>
@@ -244,7 +244,7 @@ serve(async (req) => {
 
       case 'pending_customer': {
         toEmail = data.to || ''
-        subject = `【AIden】ご予約受付のお知らせ - ${data.display_id}`
+        subject = `【Weir】ご予約受付のお知らせ - ${data.display_id}`
         const body = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
             ご予約を受け付けました。<br>
@@ -257,7 +257,7 @@ serve(async (req) => {
 
       case 'cancelled_customer': {
         toEmail = data.to || ''
-        subject = `【AIden】ご予約キャンセルのお知らせ - ${data.display_id}`
+        subject = `【Weir】ご予約キャンセルのお知らせ - ${data.display_id}`
         const body = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
             ご予約がキャンセルされました。
@@ -273,7 +273,7 @@ serve(async (req) => {
 
       case 'cancel_requested_customer': {
         toEmail = data.to || ''
-        subject = `【AIden】キャンセルリクエスト受付 - ${data.display_id}`
+        subject = `【Weir】キャンセルリクエスト受付 - ${data.display_id}`
         const body = `
           <p style="font-size:14px;color:#555;margin:0 0 16px;line-height:1.8;">
             キャンセルリクエストを受け付けました。<br>

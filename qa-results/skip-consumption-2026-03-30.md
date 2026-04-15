@@ -94,7 +94,7 @@
 
 | 内容 | コミット | デプロイ |
 |---|---|---|
-| fix: add Authorization header to get-reservations fetch | `b11ffae` | ✅ aiden-jp.net |
-| fix: remove Authorization header (no-verify-jwt) | `3e30953` | ✅ aiden-jp.net |
+| fix: add Authorization header to get-reservations fetch | `b11ffae` | ✅ weir.co.jp |
+| fix: remove Authorization header (no-verify-jwt) | `3e30953` | ✅ weir.co.jp |
 | supabase functions deploy get-reservations --no-verify-jwt | — | ✅ Edge Function |
 | migration 20260330000002: authenticated SELECT policies for reservations + orders | — | ✅ 本番DB（run-migration Edge Function経由） |

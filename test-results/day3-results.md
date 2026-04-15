@@ -1,4 +1,4 @@
-# AIden Day 3 テスト結果
+# Weir Day 3 テスト結果
 
 実行日: 2026-03-21
 実行者: Claude Code (自動テスト)
@@ -262,7 +262,7 @@
 ### デプロイ内容
 - git push: `7747746` (fix: Day3テスト修正 - fee保存・価格検証・空カートバリデーション)
 - Edge Function deploy: `stripe-create-payment-intent` ✅, `confirm-order` ✅
-- Vercel deploy: `aiden-jp.net` ✅ (トラッキングページUI修正含む)
+- Vercel deploy: `weir.co.jp` ✅ (トラッキングページUI修正含む)
 
 ### 追加修正: トラッキングページUI（ボタン重なり解消）
 - **問題**: 💬/🧾ボタンが`position: fixed; bottom: 28px`で配達時間説明テキストと重なっていた
@@ -278,7 +278,7 @@
 | ER-02 | 空カートブロック | ✅ PASS | HTTP 400「カートが空です。商品を追加してください。」 |
 | E4-03 | 改ざん価格拒否 | ✅ PASS | 100円改ざん→HTTP 400「商品価格が正しくありません。」 |
 | E4-03+ | 正規価格通過 | ✅ PASS | 1280円→HTTP 200 PaymentIntent作成成功 |
-| UI | ボタン重なり | ✅ PASS | aiden-jp.net本番でスマホ表示確認済み |
+| UI | ボタン重なり | ✅ PASS | weir.co.jp本番でスマホ表示確認済み |
 
 ### DI-02 金額検算
 - 特選カルビ x1 = ¥1,280

@@ -18,7 +18,7 @@
 - `aiden-mypage.html` のログインプロンプトに「パスワードをお忘れですか？」リンク追加
 
 ### 4. Supabase Auth 設定
-- `resetPasswordForEmail()` の `redirectTo` を `https://aiden-jp.net/aiden-password-reset.html` に設定
+- `resetPasswordForEmail()` の `redirectTo` を `https://weir.co.jp/aiden-password-reset.html` に設定
 - Supabase Auth がリカバリートークン付きハッシュフラグメントでリダイレクト
 
 ## テスト項目

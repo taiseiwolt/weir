@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'https://aiden-jp.net/aiden-customer-admin.html';
+const BASE_URL = 'https://weir.co.jp/aiden-customer-admin.html';
 const SS_DIR = 'test-results/screenshots';
 
 const results = [];

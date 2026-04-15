@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Agent:** chrome-destructive
-**Environment:** Production (https://aiden-jp.net)
+**Environment:** Production (https://weir.co.jp)
 **Test Store:** Supabase store_id=aaaa3333-0000-0000-0000-000000000002
 
 ---
@@ -53,10 +53,10 @@
 - **Impact:** Price mismatch between UI and actual charge.
 - **Details:** subtotal ¥1,280 + service ¥150 + surcharge ¥220 = ¥1,650 (server). UI showed ¥1,280 + ¥150 = ¥1,430.
 
-### BUG-01: Mypage session requires both Supabase session AND sessionStorage `aiden_member_id`
+### BUG-01: Mypage session requires both Supabase session AND sessionStorage `weir_member_id`
 - **File:** `aiden-mypage.html` line 332
 - **Severity:** P1
-- **Description:** `if (!session || !memberId)` checks both `sb.auth.getSession()` and `sessionStorage.getItem('aiden_member_id')`. Login from checkout page sets Supabase auth but does not set `aiden_member_id` in sessionStorage.
+- **Description:** `if (!session || !memberId)` checks both `sb.auth.getSession()` and `sessionStorage.getItem('weir_member_id')`. Login from checkout page sets Supabase auth but does not set `weir_member_id` in sessionStorage.
 - **Impact:** Blocks all mypage-dependent flows.
 
 ### BUG-02: Password reset error message invisible

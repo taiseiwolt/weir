@@ -1,4 +1,4 @@
-# AIden Day 3 テスト依頼書
+# Weir Day 3 テスト依頼書
 
 実行日: 2026-03-22
 前提: Day 1（注文フロー+モバイルUI）、Day 2（決済+受注+営業時間+配達）完了済み
@@ -11,7 +11,7 @@
 - GitHub: https://github.com/taiseiwolt/aiden-demo
 - ローカルリポジトリ: ~/Desktop/aiden-demo
 - 作業ディレクトリ（HTML）: ~/Desktop/aiden.html/
-- 本番URL: https://aiden-jp.net
+- 本番URL: https://weir.co.jp
 - Supabase URL: https://iikwusprydaogzeslgdz.supabase.co
 - Supabase Anon Key: sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC
 - Supabase Legacy JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...（Edge Function認証用）
@@ -35,7 +35,7 @@
 SEC-01〜04の修正がデプロイ済み。既存機能が壊れていないことを確認する。
 
 ### SEC-R1: 注文フローE2Eリグレッション
-1. https://aiden-jp.net を開く（aiden-order-store.html）
+1. https://weir.co.jp を開く（aiden-order-store.html）
 2. 店舗を選択 → メニュー表示確認
 3. 商品をカートに追加 → チェックアウト画面遷移
 4. チェックアウト画面で金額表示が正しいか確認（小計、配達料、サービス料、合計）

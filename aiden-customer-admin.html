@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>顧客管理 | AIden</title>
+<title>顧客管理 | Weir</title>
     <!-- OGP / SNS Meta Tags -->
-    <meta property="og:title" content="AIden 顧客管理画面">
-    <meta property="og:description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-customer-admin.html">
+    <meta property="og:title" content="Weir 顧客管理画面">
+    <meta property="og:description" content="Weir顧客管理 - 店舗の顧客情報を一元管理">
+    <meta property="og:image" content="https://weir.co.jp/ogp.png">
+    <meta property="og:url" content="https://weir.co.jp/aiden-customer-admin.html">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
+    <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="AIden 顧客管理画面">
-    <meta name="twitter:description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
-    <meta name="description" content="AIden顧客管理 - 店舗の顧客情報を一元管理">
+    <meta name="twitter:title" content="Weir 顧客管理画面">
+    <meta name="twitter:description" content="Weir顧客管理 - 店舗の顧客情報を一元管理">
+    <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
+    <meta name="description" content="Weir顧客管理 - 店舗の顧客情報を一元管理">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -517,7 +517,7 @@ body { font-family:'Poppins','M PLUS Rounded 1c',sans-serif; background:var(--bg
     </form>
     <div class="demo-info">
       <strong>サポート:</strong><br>
-      <a href="mailto:support@aiden-jp.net">support@aiden-jp.net</a>
+      <a href="mailto:support@weir.co.jp">support@weir.co.jp</a>
     </div>
   </div>
 </div>
@@ -606,7 +606,7 @@ const NAV = [
     {id:'billing-csv', label:'CSVダウンロード'},
   ]},
   { id:'support', icon:'💬', label:'サポート', subs:[
-    {id:'support-aiden', label:'AIdenへの問い合わせ'},
+    {id:'support-aiden', label:'Weirへの問い合わせ'},
     {id:'support-enduser', label:'エンドユーザーからの問い合わせ'},
     {id:'support-faq', label:'FAQ管理'},
   ]},
@@ -1649,7 +1649,7 @@ content.innerHTML = `
   </div>
 
   <div style="background:#f0f7ff;padding:10px 14px;border-radius:8px;font-size:11px;color:#1565c0;line-height:1.6;margin-bottom:16px">
-    💡 「保存」はAIden内部のデータ保存のみです。「外部同期」は各デリバリーサービスへのメニュー・価格のAPI同期です（Coming Soon）。
+    💡 「保存」はWeir内部のデータ保存のみです。「外部同期」は各デリバリーサービスへのメニュー・価格のAPI同期です（Coming Soon）。
   </div>
 
   <div class="card" style="padding:0;overflow-x:auto">
@@ -1854,7 +1854,7 @@ content.innerHTML = `
         <div style="margin-bottom:8px" id="sdForecastBody">月: ¥168,000 / 火: ¥155,000 / 水: ¥159,000 / 木: ¥182,000 / 金: ¥234,000 / 土: ¥290,000 / 日: ¥262,000</div>
         <div style="font-size:11px;color:#666;border-top:1px solid #f0ecff;padding-top:10px;margin-top:6px">
           <div style="margin-bottom:8px"><b style="color:#6c5ce7">📐 売上予測の算出方法</b><span style="color:#aaa;font-size:10px">（※ 本番環境では実績データからリアルタイム算出）</span></div>
-          <div style="margin-bottom:8px">AIdenは以下の<b>5つの要素</b>を組み合わせて売上を予測しています。「寄与度」は、各要素が予測にどの程度影響しているかを示す割合です。</div>
+          <div style="margin-bottom:8px">Weirは以下の<b>5つの要素</b>を組み合わせて売上を予測しています。「寄与度」は、各要素が予測にどの程度影響しているかを示す割合です。</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
             <div style="background:#f8f6ff;padding:8px 10px;border-radius:6px"><b style="color:#6c5ce7">① 曜日パターン（42.0%）</b><br>過去12週間の曜日ごとの売上実績をもとに、「土曜は高く、月曜は低い」といった周期パターンを反映しています。全要素の中で最も影響が大きい要素です。</div>
             <div style="background:#f8f6ff;padding:8px 10px;border-radius:6px"><b style="color:#0984e3">② 直近のトレンド（28.0%）</b><br>直近4週間の売上推移から、上昇・下降の傾向を読み取っています。現在は前週比+12.3%の上昇基調にあり、予測にプラスの影響を与えています。</div>
@@ -2979,7 +2979,7 @@ content.innerHTML = `
     <div class="form-grid">
       <div class="form-group full">
         <label>ページタイトル（meta title）</label>
-        <input type="text" id="dpSeoTitle" placeholder="ブランド名 | AIden" maxlength="60" oninput="document.getElementById('dpSeoTitleCount').textContent=this.value.length+'/60';markDirty()">
+        <input type="text" id="dpSeoTitle" placeholder="ブランド名 | Weir" maxlength="60" oninput="document.getElementById('dpSeoTitleCount').textContent=this.value.length+'/60';markDirty()">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:2px"><span>推奨: 60文字以内</span><span id="dpSeoTitleCount">0/60</span></div>
       </div>
       <div class="form-group full">
@@ -4471,7 +4471,7 @@ content.innerHTML = `
   </div>
 
   <div class="card" id="stripeBillingStatusCard">
-    <div class="card-title">💳 AIden PRO / EXPERT プラン ご利用状況</div>
+    <div class="card-title">💳 Weir PRO / EXPERT プラン ご利用状況</div>
     <div style="font-size:11px;color:#888;margin-bottom:12px">法人ごとに1サブスクリプション、店舗ごとにサブスクリプション項目として管理</div>
     <table class="data-table" style="font-size:12px">
       <thead><tr><th>店舗</th><th>プラン</th><th>月額</th><th>ステータス</th><th>次回課金日</th></tr></thead>
@@ -4484,10 +4484,10 @@ content.innerHTML = `
   <div class="card">
     <div class="card-title">❓ Stripe Connectとは</div>
     <div style="font-size:13px;color:var(--text-light);line-height:1.8">
-      <p>Stripe Connectは、AIdenプラットフォーム上でお客様からのカード決済を受け付けるためのサービスです。</p>
+      <p>Stripe Connectは、Weirプラットフォーム上でお客様からのカード決済を受け付けるためのサービスです。</p>
       <ul style="margin:8px 0 8px 20px">
         <li>お客様がモバイルオーダーでカード決済した金額が、Stripeアカウントに直接入金されます</li>
-        <li>AIdenの手数料は自動的に差し引かれます（チャネル別手数料率が適用）</li>
+        <li>Weirの手数料は自動的に差し引かれます（チャネル別手数料率が適用）</li>
         <li>売上はStripeダッシュボードからいつでも確認・出金できます</li>
         <li>本人確認（KYC）が完了するとすぐに決済の受付が可能になります</li>
       </ul>
@@ -4560,12 +4560,12 @@ content.innerHTML = `
 </div>
 
 <!-- ============================== -->
-<!-- 💬 サポート - AIdenへの問い合わせ (CS-1) -->
+<!-- 💬 サポート - Weirへの問い合わせ (CS-1) -->
 <!-- ============================== -->
 <div class="page" id="page-support-aiden">
-  <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ AIdenへの問い合わせ</div>
-  <div class="page-title">AIdenサポート</div>
-  <div class="page-subtitle">AIden運営チームへの問い合わせを管理します</div>
+  <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ Weirへの問い合わせ</div>
+  <div class="page-title">Weirサポート</div>
+  <div class="page-subtitle">Weir運営チームへの問い合わせを管理します</div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div class="tab-group" id="supportAidenTabs">
@@ -4698,12 +4698,12 @@ content.innerHTML = `
 <div class="page" id="page-support-faq">
   <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ FAQ管理</div>
   <div class="page-title">FAQ管理</div>
-  <div class="page-subtitle">エンドユーザーに表示するFAQを管理します。AIden共通FAQは閲覧のみです。</div>
+  <div class="page-subtitle">エンドユーザーに表示するFAQを管理します。Weir共通FAQは閲覧のみです。</div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div class="tab-group">
       <button class="tab active" onclick="switchFaqTab('brand')">独自FAQ</button>
-      <button class="tab" onclick="switchFaqTab('common')">AIden共通FAQ</button>
+      <button class="tab" onclick="switchFaqTab('common')">Weir共通FAQ</button>
     </div>
     <button class="btn btn-primary" id="addFaqBtn" onclick="openFaqModal()">＋ FAQ追加</button>
   </div>
@@ -4839,7 +4839,7 @@ content.innerHTML = `
           <option value="brand">ブランド（このブランドの全店舗）</option>
           <option value="store">店舗（特定店舗のみ）</option>
           <option value="corporation">法人（全ブランド・全店舗）</option>
-          <option value="global">グローバル（AIden全体）</option>
+          <option value="global">グローバル（Weir全体）</option>
         </select>
       </div>
       <div class="form-group" id="banScopeStore" style="display:none"><label>対象店舗</label>
@@ -8944,7 +8944,7 @@ async function sdUpdateDashboard() {
 }
 
 // AI分析: 業界平均値（手動更新）— テキスト内の業界ベンチマーク数値は外部データ
-// 更新時期: 2026年3月 / 出典: AIden分析データベース
+// 更新時期: 2026年3月 / 出典: Weir分析データベース
 // ライブKPI値はパネル上部のバナーで表示。分析文中の個別数値は参考サンプル。
 async function sdAiAnalysis(type, btnEl) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '分析中...'; }
@@ -9054,7 +9054,7 @@ function paUpdate() { renderSalesCharts(); }
 
 // Benchmark ranking data
 // ベンチマーク: 業界平均値（手動更新）— 外部データのため動的化不可
-// 更新時期: 2026年3月 / 出典: AIden分析データベース（回転寿司チェーン328店舗）
+// 更新時期: 2026年3月 / 出典: Weir分析データベース（回転寿司チェーン328店舗）
 const _bmRankData = {
   area: [
     {name:'店舗A',sales:198500,orders:156,avg:1273,self:false},
@@ -9882,7 +9882,7 @@ function renderSalesCharts() {
       srcMap[src].count++;
       srcMap[src].sales += (o.total_amount || 0);
     });
-    var srcLabels = {'aiden_mo':'AIden MO','aiden_pos':'AIden POS','ubereats':'Uber Eats','demaecan':'出前館','menunet':'menu','other':'その他'};
+    var srcLabels = {'aiden_mo':'Weir MO','aiden_pos':'Weir POS','ubereats':'Uber Eats','demaecan':'出前館','menunet':'menu','other':'その他'};
     var keys = Object.keys(srcMap).sort(function(a,b){ return srcMap[b].sales - srcMap[a].sales; });
     if (keys.length === 0) {
       el.innerHTML = '<span class="empty-state">データなし</span>';
@@ -10282,7 +10282,7 @@ function exportSalesPdf() {
       '<div class="kpi-card"><div class="kpi-label">平均注文額</div><div class="kpi-value">' + escH(kpiAvg) + '</div></div>' +
       '<div class="kpi-card"><div class="kpi-label">キャンセル率</div><div class="kpi-value">' + escH(kpiCancel) + '</div></div>' +
     '</div>' +
-    '<div style="font-size:11px;color:#888;margin-top:24px;text-align:center">Powered by AIden</div>' +
+    '<div style="font-size:11px;color:#888;margin-top:24px;text-align:center">Powered by Weir</div>' +
     '</body></html>'
   );
   printWin.document.close();
@@ -15019,7 +15019,7 @@ function snsAccountSetting(name, account) {
       '<div class="form-group"><label>プロフィールURL</label><input type="text" placeholder="https://www.instagram.com/sushiro_official"></div>' +
       '<div class="form-group"><label>担当者名</label><input type="text" placeholder="例：田中 太郎"></div>' +
       '<div class="form-group"><label>運用開始日</label><input type="date" value="2024-04-01"></div>' +
-      '<div class="form-group"><label>自動投稿（AIden）</label>' +
+      '<div class="form-group"><label>自動投稿（Weir）</label>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-top:6px"><label class="toggle"><input type="checkbox" ' + (isLinked ? 'checked' : '') + '><span class="slider"></span></label>' +
         '<span style="font-size:12px" id="snsAutoLabel">' + (isLinked ? 'ON' : 'OFF') + '</span></div>' +
       '</div>' +
@@ -15182,8 +15182,8 @@ function snsAiSend() {
     if(/\u30d3\u30b8\u30cd\u30b9|\u696d\u52d9|\u6cd5\u4eba|\u30d7\u30ed|pro/.test(t)) {
       return '\u30d3\u30b8\u30cd\u30b9\u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u5207\u308a\u66ff\u3048\u308b\u3068\u3001\u6295\u7a3f\u306e\u5206\u6790\u30c7\u30fc\u30bf\u30fb\u5e83\u544a\u6a5f\u80fd\u30fb\u9023\u7d61\u5148\u30dc\u30bf\u30f3\u306a\u3069\u304c\u4f7f\u3048\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002\u500b\u4eba\u30a2\u30ab\u30a6\u30f3\u30c8\u4f5c\u6210\u5f8c\u3001\u300c\u8a2d\u5b9a\u300d\u2192\u300c\u30a2\u30ab\u30a6\u30f3\u30c8\u306e\u7a2e\u985e\u300d\u304b\u3089\u7121\u6599\u3067\u5207\u308a\u66ff\u3048\u3067\u304d\u307e\u3059\u3002';
     }
-    if(/\u9023\u643a|AIden|aiden|\u3064\u306a\u3050|\u63a5\u7d9a/.test(t)) {
-      return 'AIden\u3068\u306e\u9023\u643a\u306f\u3001' + platform + ' \u3067API\u30ad\u30fc\u3092\u767a\u884c\u3057\u305f\u5f8c\u3001AIden\u7ba1\u7406\u753b\u9762\u306e\u300c\u9023\u643a\u7ba1\u7406\u300d\u6b04\u306bAPI\u30ad\u30fc\u3092\u8cbc\u308a\u4ed8\u3051\u308b\u3060\u3051\u3067\u3059\u3002\u9023\u643a\u5f8c\u306fAIden\u304b\u3089\u76f4\u63a5\u6295\u7a3f\u306e\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406\u304c\u3067\u304d\u307e\u3059\u3002';
+    if(/\u9023\u643a|Weir|aiden|\u3064\u306a\u3050|\u63a5\u7d9a/.test(t)) {
+      return 'Weir\u3068\u306e\u9023\u643a\u306f\u3001' + platform + ' \u3067API\u30ad\u30fc\u3092\u767a\u884c\u3057\u305f\u5f8c\u3001Weir\u7ba1\u7406\u753b\u9762\u306e\u300c\u9023\u643a\u7ba1\u7406\u300d\u6b04\u306bAPI\u30ad\u30fc\u3092\u8cbc\u308a\u4ed8\u3051\u308b\u3060\u3051\u3067\u3059\u3002\u9023\u643a\u5f8c\u306fWeir\u304b\u3089\u76f4\u63a5\u6295\u7a3f\u306e\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406\u304c\u3067\u304d\u307e\u3059\u3002';
     }
     if(/\u30d5\u30a9\u30ed\u30ef\u30fc|\u5897\u3084\u3057|\u904b\u7528|\u6295\u7a3f|\u30b3\u30f3\u30c6\u30f3\u30c4|\u4f38\u3070\u3057/.test(t)) {
       return '\u98f2\u98df\u5e97\u306e ' + platform + ' \u904b\u7528\u3067\u30d5\u30a9\u30ed\u30ef\u30fc\u3092\u5897\u3084\u3059\u306b\u306f\u3001\u2460\u6599\u7406\u30fb\u5e97\u5185\u306e\u5199\u771f\u3092\u6bce\u65e5\u6295\u7a3f\u2461\u30cf\u30c3\u30b7\u30e5\u30bf\u30b0\u3092\u5730\u57df\u540d\uff0b\u30b8\u30e3\u30f3\u30eb\u3067\u8a2d\u5b9a\u2462\u30b3\u30e1\u30f3\u30c8\u3078\u306e\u8fd4\u4fe1\u3092\u4e01\u5be7\u306b\u884c\u3046\u3001\u306e3\u70b9\u304c\u52b9\u679c\u7684\u3067\u3059\u3002';
@@ -15210,7 +15210,7 @@ function snsAiSend() {
   } else if(matchedReply) {
     reply = matchedReply;
   } else {
-    reply = 'ご質問ありがとうございます。もう少し詳しく教えていただけますか？「登録手順」「APIキー取得」「ビジネスアカウント設定」「AIdenとの連携方法」など、知りたい内容を具体的に教えてください。';
+    reply = 'ご質問ありがとうございます。もう少し詳しく教えていただけますか？「登録手順」「APIキー取得」「ビジネスアカウント設定」「Weirとの連携方法」など、知りたい内容を具体的に教えてください。';
   }
 
   setTimeout(function() {
@@ -17229,7 +17229,7 @@ async function saveGuestConversionSettings() {
 }
 
 // ===================================================================
-// CS-1: AIdenへの問い合わせ（サポートチケット）
+// CS-1: Weirへの問い合わせ（サポートチケット）
 // ===================================================================
 var _supportAidenTab = 'open';
 var _currentTicketId = null;
@@ -18591,7 +18591,7 @@ async function submitPlanChangeRequest(plan, direction) {
   <a href="/aiden-tokushoho.html" style="color:#6c5ce7;margin:0 8px;text-decoration:underline">特定商取引法に基づく表示</a>
   <a href="./aiden-terms-client.html" style="color:#6c5ce7;margin:0 8px;text-decoration:underline">加盟店利用規約</a>
   <a href="./aiden-privacy-client.html" style="color:#6c5ce7;margin:0 8px;text-decoration:underline">プライバシーポリシー</a>
-  <div style="margin-top:8px;font-size:11px;color:#aaa">Powered by AIden</div>
+  <div style="margin-top:8px;font-size:11px;color:#aaa">Powered by Weir</div>
 </footer>
 <script src="aiden-chat-widget.js"></script>
 <script>
@@ -19276,7 +19276,7 @@ async function loadAiHistory() {
     storeId: params.get('store_id') || null,
     brandId: params.get('brand_id') || null,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://aiden-jp.net',
+    apiBase: 'https://weir.co.jp',
   });
 })();
 </script>

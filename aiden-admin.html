@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>管理マスタ | AIden</title>
+<title>管理マスタ | Weir</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -79,7 +79,7 @@
 </head>
 <body>
 <header class="header">
-  <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">AIden</span></div>
+  <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">Weir</span></div>
   <span class="header-badge">MASTER ADMIN</span>
   <div class="header-search"><span class="si">🔍</span><input type="text" id="globalSearch" placeholder="法人 / ブランド / 店舗を検索（名称 or ID）..." oninput="onSearch(this.value)" onfocus="onSearch(this.value)" autocomplete="off"><div class="sdd" id="searchResults"></div></div>
   <div class="header-right"><div class="header-user"><div class="avatar">T</div><span>Taisei</span></div><button class="btn-logout" onclick="doLogout()">ログアウト</button></div>
@@ -520,7 +520,7 @@ function renderDashboard(){
   var storeOpts='<option value="">店舗を選択</option>'+VENUES.map(function(s){return '<option value="'+s._uuid+'">'+escHtml(s.name)+'</option>';}).join('');
   var now=new Date();var monthVal=now.getFullYear()+'-'+(now.getMonth()+1<10?'0':'')+(now.getMonth()+1);
 
-  return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">AIdenプラットフォーム全体のKPI概要</div>'+
+  return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">Weirプラットフォーム全体のKPI概要</div>'+
   // セットアップ完了度チェックリスト（法人ごと）
   '<div class="card" style="margin-bottom:16px"><div class="card-title">🧩 セットアップ完了度 <span style="font-size:10px;color:var(--text-light);font-weight:400">（法人ごとの必須項目・未完了項目をクリックで該当画面へ）</span></div><div id="dashSetupChecklist" style="font-size:12px">読み込み中...</div></div>'+
   KPI_CATS.map(function(c){return renderSection(c);}).join('')+
@@ -670,7 +670,7 @@ async function renderDashGMV(){
 
 // ===== MERCHANTS LIST =====
 function renderCorpsList(){
-  return '<div class="page-title">法人管理</div><div class="page-subtitle">AIden利用法人の一覧（法人ID: 7桁英数字）</div>'+
+  return '<div class="page-title">法人管理</div><div class="page-subtitle">Weir利用法人の一覧（法人ID: 7桁英数字）</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 法人名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'corp\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'corp\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openCorpWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddCorpModal()">＋ 法人追加</button></div></div>'+
   '<table class="data-table" style="table-layout:fixed;width:100%"><colgroup><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:16%"></colgroup><thead><tr><th>法人ID</th><th>法人名</th><th>代表者</th><th>ブランド</th><th>店舗</th><th>ステータス</th><th></th></tr></thead><tbody>'+
   MERCHANTS.map(c=>{const bs=getBrandsForMerchant(c).length,ss=getVenuesForMerchant(c).length;return '<tr style="'+(c.status==='suspended'?'opacity:0.5;background:#f9f9f9':'')+'"><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+c.id+'</code></td><td style="font-weight:600">'+c.name+'</td><td>'+c.rep+'</td><td>'+bs+'</td><td>'+ss+'</td><td>'+statusBadge(c.status)+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openMerchantModal(\''+c.id+'\')">詳細</button><button class="btn btn-sm" style="background:'+(c.status==='active'?'#fab1a0':'#e6f9f0')+';color:'+(c.status==='active'?'#d63031':'#00b894')+'" onclick="toggleMerchantStatus(\''+c._uuid+'\',\''+c.status+'\')">'+(c.status==='active'?'停止':'再開')+'</button><button class="btn btn-sm" style="background:#d63031;color:#fff;margin-left:4px" onclick="deleteMerchant(\''+c._uuid+'\',\''+escHtml(c.id)+'\')">削除</button></td></tr>';}).join('')+
@@ -682,7 +682,7 @@ function renderBrandsList(){
   return '<div class="page-title">ブランド管理</div><div class="page-subtitle">全ブランドの一覧</div>'+
   '<div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)"><input class="menu-search" placeholder="🔍 ブランド名・IDで検索..." style="width:280px"><div style="margin-left:auto;display:flex;gap:8px"><button class="btn-outline btn-sm" onclick="downloadTemplate(\'brand\')">📋 テンプレート</button><button class="btn-outline btn-sm" onclick="openBulkUpload(\'brand\')">📥 一括登録</button><button class="btn-outline btn-sm" onclick="openBrandWizard()">🧭 ウィザードで登録</button><button class="btn btn-primary btn-sm" onclick="openAddBrandModal()">＋ ブランド追加</button></div></div>'+
   '<table class="data-table" style="table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:12%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:20%"></colgroup><thead><tr><th>ID</th><th>法人</th><th>ブランド名</th><th>スラッグ</th><th>店舗数</th><th>ステータス</th><th>ページ</th><th></th></tr></thead><tbody>'+
-  BRANDS.map(b=>{const cp=getMerchantForBrand(b),ss=getVenuesForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td>'+ss+'</td><td>'+statusBadge(b.status)+'</td><td>'+(b.slug?'<a href="https://aiden-jp.net/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🌐 HP</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')">削除</button></td></tr>';}).join('')+
+  BRANDS.map(b=>{const cp=getMerchantForBrand(b),ss=getVenuesForBrand(b).length;return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+b.id+'</code></td><td>'+cp.name+'</td><td style="font-weight:600">'+b.name+'</td><td><code style="font-size:11px;color:var(--accent)">'+b.slug+'</code></td><td>'+ss+'</td><td>'+statusBadge(b.status)+'</td><td>'+(b.slug?'<a href="https://weir.co.jp/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🌐 HP</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="goToBrand(\''+b.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteBrand(\''+b._uuid+'\',\''+escHtml(b.id)+'\')">削除</button></td></tr>';}).join('')+
   '</tbody></table></div>';
 }
 
@@ -708,7 +708,7 @@ function renderStoresRows(stores){
             +'background:#f0f0f0;color:#555;font-size:10px;font-weight:600;margin-right:2px">'+l+'</span>';
         }).join('')
       : '<span style="color:var(--text-light);font-size:11px">—</span>';
-    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+escHtml(br?br.name:'')+'</td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td>'+(s.slug?'<a href="https://aiden-jp.net/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🛒 MO</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openVenueModal(\''+s.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteVenue(\''+s._uuid+'\',\''+escHtml(s.id)+'\')">削除</button></td></tr>';
+    return '<tr><td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(s.id)+'</code></td><td style="font-weight:600">'+escHtml(s.name)+'</td><td>'+escHtml(br?br.name:'')+'</td><td>'+escHtml(cp?cp.name:'')+'</td><td>'+svcs+'</td><td>'+statusBadge(s.status)+'</td><td>'+(s.slug?'<a href="https://weir.co.jp/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">🛒 MO</a>':'<span style="color:var(--text-light);font-size:11px">未設定</span>')+'</td><td style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="openVenueModal(\''+s.id+'\')">詳細</button><button class="btn btn-sm" style="background:#d63031;color:#fff" onclick="deleteVenue(\''+s._uuid+'\',\''+escHtml(s.id)+'\')">削除</button></td></tr>';
   }).join('');
 }
 function filterStoresList(){
@@ -1801,8 +1801,8 @@ function renderSystem(){
   return '<div class="page-title">システム設定</div><div class="page-subtitle">プラットフォーム全体の設定・セキュリティ</div>'+
   '<div class="card"><div class="card-title">🌐 プラットフォーム設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="savePlatformSettingsForm()">保存</button></span></div>'+
     '<div class="form-grid">'+
-      '<div class="form-group"><label>プラットフォーム名</label><input type="text" id="psPlatformName" value="AIden" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
-      '<div class="form-group"><label>管理者メール</label><input type="email" id="psAdminEmail" placeholder="admin@aiden-jp.net"></div>'+
+      '<div class="form-group"><label>プラットフォーム名</label><input type="text" id="psPlatformName" value="Weir" readonly style="background:#f5f6fa;color:var(--text-light)"></div>'+
+      '<div class="form-group"><label>管理者メール</label><input type="email" id="psAdminEmail" placeholder="admin@weir.co.jp"></div>'+
       '<div class="form-group"><label>言語 <span style="font-size:10px;color:var(--text-light);font-weight:500">(Coming Soon)</span></label><select disabled style="background:#f5f6fa;color:var(--text-light);cursor:not-allowed"><option selected>日本語</option></select></div>'+
       '<div class="form-group"><label>タイムゾーン</label><select id="psTimezone"><option value="Asia/Tokyo" selected>Asia/Tokyo</option></select></div>'+
       '<div class="form-group"><label>Stripe環境 <span style="font-size:10px;color:var(--text-light);font-weight:500">(Coming Soon)</span></label><select disabled style="background:#f5f6fa;color:var(--text-light);cursor:not-allowed"><option selected>本番</option></select></div>'+
@@ -1819,9 +1819,9 @@ function renderSystem(){
 async function initSystemSettings(){
   await loadPlatformSettings();
   var nameEl=document.getElementById('psPlatformName');
-  if(nameEl)nameEl.value=getPS('platform_name','AIden');
+  if(nameEl)nameEl.value=getPS('platform_name','Weir');
   var emailEl=document.getElementById('psAdminEmail');
-  if(emailEl)emailEl.value=getPS('admin_email','admin@aiden-jp.net');
+  if(emailEl)emailEl.value=getPS('admin_email','admin@weir.co.jp');
   var tzEl=document.getElementById('psTimezone');
   if(tzEl)tzEl.value=getPS('timezone','Asia/Tokyo');
   // Security toggles from platform_settings (sec_mfa, sec_session_timeout, sec_ip_whitelist)
@@ -2352,7 +2352,7 @@ function renderCompensation(){
   const totalPoints=COMPENSATION_HISTORY.filter(function(h){return h.mode==='point';}).reduce(function(s,x){return s+(x.points||0);},0);
   const totalRefund=COMPENSATION_HISTORY.filter(function(h){return h.mode==='refund';}).reduce(function(s,x){return s+(x.amount||0);},0);
   const totalCancel=COMPENSATION_HISTORY.filter(function(h){return h.mode==='cancel';}).reduce(function(s,x){return s+(x.amount||0);},0);
-  return '<div class="page-title">補償管理</div><div class="page-subtitle">AIden負担のポイント補填・返金・決済キャンセルを統合管理</div>'+
+  return '<div class="page-title">補償管理</div><div class="page-subtitle">Weir負担のポイント補填・返金・決済キャンセルを統合管理</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">'+
     '<div class="stat-card purple"><div class="sc-label">補填ポイント（累計）</div><div class="sc-val">'+totalPoints.toLocaleString()+'pt</div></div>'+
     '<div class="stat-card orange"><div class="sc-label">返金総額</div><div class="sc-val">'+Y(totalRefund)+'</div></div>'+
@@ -2551,7 +2551,7 @@ function renderCompensationModal(o){
   if(compModalMode==='refund'&&refundOver90){
     caution='<div style="margin-bottom:12px;padding:12px;background:#ffe3e3;border:1px solid #d63031;border-radius:8px;font-size:11px;color:#d63031;font-weight:600">⚠️ Stripeの返金期限（90日）を超過しています</div>';
   }else if(compModalMode==='refund'&&refundOver60){
-    caution='<div style="margin-bottom:12px;padding:12px;background:#fff3e0;border:1px solid #e17055;border-radius:8px;font-size:11px;color:#e17055;font-weight:600">⚠️ 対象期間外です（AIden↔顧客間の返金ポリシー 60日超過）。技術的には実行可能です。</div>';
+    caution='<div style="margin-bottom:12px;padding:12px;background:#fff3e0;border:1px solid #e17055;border-radius:8px;font-size:11px;color:#e17055;font-weight:600">⚠️ 対象期間外です（Weir↔顧客間の返金ポリシー 60日超過）。技術的には実行可能です。</div>';
   }else if(compModalMode==='cancel'&&!canCancel&&!isAlreadyRefunded){
     caution='<div style="margin-bottom:12px;padding:12px;background:#fff3e0;border:1px solid #e17055;border-radius:8px;font-size:11px;color:#e17055;font-weight:600">⚠️ 決済キャンセルはauthorize済み+未capture状態の注文のみ実行可能です</div>';
   }else if(isAlreadyRefunded){
@@ -2666,7 +2666,7 @@ async function confirmAndExecuteCompensation(){
       }catch(e){}
       await writeAuditLog('compensation_point_grant',{order_id:o.id,amount:amount,reason:reason.trim(),executor:executor});
       COMPENSATION_HISTORY.unshift({createdAt:new Date().toISOString(),memberId:o.memberId||'',memberName:o.customer||'—',memberType:o.memberId?'member':'guest',brandName:o.brandName||'—',storeName:o.storeName||'—',mode:'point',detail:'ポイント付与',points:amount,amount:0,orderId:o.id,executedBy:executor});
-      showToast('✅ '+amount+'pt を付与しました（AIden原資）');
+      showToast('✅ '+amount+'pt を付与しました（Weir原資）');
 
     }else if(compModalMode==='refund'){
       const amount=parseInt((document.getElementById('compRefundAmount')||{}).value||'0');
@@ -2818,13 +2818,13 @@ function renderBrandPage(b){
   brandCorpHtml+='<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="openAddCorpRelationModal(\''+b._uuid+'\',\''+b.id+'\')">＋ FC法人を追加</button>';
   return '<div class="breadcrumb"><a onclick="goTo(\'brands\')">ブランド管理</a><span class="sep">></span><span>'+b.name+'</span></div>'+
   '<div class="page-header"><div class="page-title">'+b.name+'</div><span class="page-type-badge brand">ブランド</span></div>'+
-  '<div class="page-subtitle">'+b.id+' / '+b.slug+' / '+ss.length+'店舗 / '+statusBadge(b.status)+(b.slug?' <a href="https://aiden-jp.net/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--accent);text-decoration:none;margin-left:12px">🌐 ブランドHPを開く ↗</a>':'')+'</div>'+
+  '<div class="page-subtitle">'+b.id+' / '+b.slug+' / '+ss.length+'店舗 / '+statusBadge(b.status)+(b.slug?' <a href="https://weir.co.jp/'+escHtml(b.slug)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--accent);text-decoration:none;margin-left:12px">🌐 ブランドHPを開く ↗</a>':'')+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card purple"><div class="sc-label">店舗数</div><div class="sc-val">'+ss.length+'</div></div><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(tR)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+ss.reduce((s,x)=>s+x.orders,0).toLocaleString()+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'brand\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'brand\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'design\')">デザイン</div><div class="tab" onclick="switchTab(\'brand\',this,\'hp\')">HP設定</div><div class="tab" onclick="switchTab(\'brand\',this,\'news\')">ニュース</div><div class="tab" onclick="switchTab(\'brand\',this,\'campaign\')">キャンペーン</div><div class="tab" onclick="switchTab(\'brand\',this,\'coupon\')">クーポン</div><div class="tab" onclick="switchTab(\'brand\',this,\'member\')">会員・CRM</div><div class="tab" onclick="switchTab(\'brand\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'brand\',this,\'pii\')">個人情報アクセス</div><div class="tab" onclick="switchTab(\'brand\',this,\'related\')">法人・店舗</div></div>'+
   '<div class="tab-content active" id="brand-basic"><div class="card"><div class="card-title">ブランド基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandBasic(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ブランド名</label><input type="text" id="brandBasicName" value="'+escHtml(b.name)+'"></div><div class="form-group"><label>スラッグ</label><input type="text" id="brandBasicSlug" value="'+escHtml(b.slug)+'"></div><div class="form-group"><label>ID</label><input type="text" value="'+escHtml(b.id)+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>所属法人ID</label><input type="text" value="'+(cp?escHtml(cp.id+' / '+cp.name):'—')+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group"><label>フォント（複数選択可）</label><div id="brandFontChecks" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">'+['Noto Sans JP','Noto Serif JP','M PLUS Rounded 1c','Zen Maru Gothic','Kosugi Maru'].map(function(f){return '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" value="'+f+'"'+(b.fontFamilies.indexOf(f)>=0?' checked':'')+'>'+escHtml(f)+'</label>';}).join('')+'</div></div></div></div><div class="card"><div class="card-title">SNSリンク <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveBrandSocialLinks(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>Instagram</label><input type="url" id="brandSnsIg" value="'+escHtml(b.socialLinks.instagram||'')+'" placeholder="https://instagram.com/..."></div><div class="form-group"><label>X</label><input type="url" id="brandSnsX" value="'+escHtml(b.socialLinks.x||'')+'" placeholder="https://x.com/..."></div><div class="form-group"><label>LINE</label><input type="url" id="brandSnsLine" value="'+escHtml(b.socialLinks.line||'')+'" placeholder="https://line.me/..."></div><div class="form-group"><label>TikTok</label><input type="url" id="brandSnsTiktok" value="'+escHtml(b.socialLinks.tiktok||'')+'" placeholder="https://tiktok.com/..."></div></div></div></div>'+
   '<div class="tab-content" id="brand-services"><div class="card"><div class="card-title">サービス設定 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="showToast(\'✅ 保存\')">保存</button></span></div><p style="font-size:11px;color:var(--text-light);margin-bottom:16px">法人（'+cp.name+'）でONになっているサービスのみ選択可能です。ここでONにしたサービスは配下店舗で選択できます。</p><div class="svc-grid">'+renderServiceCards(b.id,'brand',cp.id)+'</div></div></div>'+
   '<div class="tab-content" id="brand-design"><div class="card"><div class="card-title">デザイン設定 <span class="ct-right"><button class="btn btn-secondary btn-sm" onclick="autofetchBrandColors(\''+b.id+'\',\''+b._uuid+'\')">🌐 URLから自動取得</button> <button class="btn btn-primary btn-sm" onclick="saveBrandDesign(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>メインカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignMainColor" value="'+escHtml(b.mainColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignMainColorText\').value=this.value"><input type="text" id="brandDesignMainColorText" value="'+escHtml(b.mainColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignMainColor\').value=this.value"></div></div><div class="form-group"><label>サブカラー</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignSubColor" value="'+escHtml(b.secondaryColor)+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignSubColorText\').value=this.value"><input type="text" id="brandDesignSubColorText" value="'+escHtml(b.secondaryColor)+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignSubColor\').value=this.value"></div></div><div class="form-group"><label>ヘッダー文字色</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="brandDesignHeaderText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:40px;height:36px;border:none;cursor:pointer" oninput="document.getElementById(\'brandDesignHeaderTextText\').value=this.value"><input type="text" id="brandDesignHeaderTextText" value="'+escHtml((b.designSettings.headerTextColor||'#FFFFFF'))+'" style="width:100px;font-family:monospace;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px" oninput="document.getElementById(\'brandDesignHeaderText\').value=this.value"></div></div></div></div><div class="card"><div class="card-title">ロゴ <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="document.getElementById(\'brandLogoInput_'+b._uuid+'\').click()">📁 アップロード</button></span></div><input type="file" id="brandLogoInput_'+b._uuid+'" accept="image/*" style="display:none" onchange="uploadBrandLogo(\''+b._uuid+'\',\''+b.id+'\',this)"><div id="brandLogoPreview_'+b._uuid+'" style="margin-top:8px;text-align:center">'+(b.logo_url?'<img src="'+escHtml(b.logo_url)+'" style="max-height:80px;max-width:200px;border-radius:6px">':'<div style="padding:24px;border:2px dashed var(--border);border-radius:10px;color:var(--text-light);font-size:12px">ロゴ未設定</div>')+'</div><div class="logo-dropzone" style="margin-top:8px;padding:20px;border:2px dashed var(--border);border-radius:8px;text-align:center;color:var(--text-light);font-size:12px;cursor:pointer" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\';this.style.background=\'rgba(0,0,0,0.03)\'" ondragleave="this.style.borderColor=\'var(--border)\';this.style.background=\'transparent\'" ondrop="handleLogoDrop(event,\''+b._uuid+'\',\''+b.id+'\')">📥 ロゴをここにドラッグ&ドロップ</div></div></div>'+
-  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right">'+((b.hpSettings.status||'draft')!=='published'?'<button class="btn btn-primary btn-sm" onclick="publishBrandHp(\''+b.id+'\')" style="background:#00b894">🌐 HP公開</button> ':'<button class="btn btn-secondary btn-sm" onclick="unpublishBrandHp(\''+b.id+'\')">📝 下書きに戻す</button> ')+'<button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="draft"'+((b.hpSettings.status||'draft')==='draft'?' selected':'')+'>準備中（非公開）</option><option value="published"'+(b.hpSettings.status==='published'?' selected':'')+'>公開中</option></select><div style="font-size:10px;color:var(--text-light);margin-top:4px">※「公開中」にすると https://aiden-jp.net/'+escHtml(b.slug||'')+' が一般公開されます</div></div><div class="form-group"><label>Meta Description</label><textarea id="brandHpMetaDesc" rows="3" style="font-size:13px">'+escHtml(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+escHtml(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>Favicon URL</label><input type="url" id="brandHpFavicon" value="'+escHtml(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+escHtml(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div class="hero-dropzone" style="margin-bottom:8px;padding:20px;border:2px dashed var(--border);border-radius:8px;text-align:center;color:var(--text-light);font-size:12px;cursor:pointer" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\';this.style.background=\'rgba(0,0,0,0.03)\'" ondragleave="this.style.borderColor=\'var(--border)\';this.style.background=\'transparent\'" ondrop="handleHeroDrop(event,\''+b._uuid+'\',\''+b.id+'\')">📎 画像・動画(mp4/mov)をここにドロップ（複数可）</div><div id="heroSlidesList-'+b.id+'" style="font-size:12px;color:var(--text-light)">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">複数枚登録可能。5秒間隔で自動スクロールします。</div></div></div>'+
+  '<div class="tab-content" id="brand-hp"><div class="card"><div class="card-title">HP公開設定 <span class="ct-right">'+((b.hpSettings.status||'draft')!=='published'?'<button class="btn btn-primary btn-sm" onclick="publishBrandHp(\''+b.id+'\')" style="background:#00b894">🌐 HP公開</button> ':'<button class="btn btn-secondary btn-sm" onclick="unpublishBrandHp(\''+b.id+'\')">📝 下書きに戻す</button> ')+'<button class="btn btn-primary btn-sm" onclick="saveBrandHpSettings(\''+b.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>ステータス</label><select id="brandHpStatus"><option value="draft"'+((b.hpSettings.status||'draft')==='draft'?' selected':'')+'>準備中（非公開）</option><option value="published"'+(b.hpSettings.status==='published'?' selected':'')+'>公開中</option></select><div style="font-size:10px;color:var(--text-light);margin-top:4px">※「公開中」にすると https://weir.co.jp/'+escHtml(b.slug||'')+' が一般公開されます</div></div><div class="form-group"><label>Meta Description</label><textarea id="brandHpMetaDesc" rows="3" style="font-size:13px">'+escHtml(b.hpSettings.metaDescription||'')+'</textarea></div><div class="form-group"><label>OGP画像URL</label><input type="url" id="brandHpOgImage" value="'+escHtml(b.hpSettings.ogImage||'')+'" placeholder="https://..."></div><div class="form-group"><label>Favicon URL</label><input type="url" id="brandHpFavicon" value="'+escHtml(b.hpSettings.favicon||'')+'" placeholder="https://..."></div></div></div><div class="card" style="margin-top:16px"><div class="card-title">カスタムドメイン</div><div class="form-grid"><div class="form-group"><label>ドメイン名</label><input type="text" id="brandHpDomain" value="'+escHtml(b.hpSettings.customDomain||'')+'" placeholder="例: www.example.com" style="font-size:13px"></div></div><div style="font-size:11px;color:var(--text-light);margin-top:4px">※ドメインのDNS設定とVercelのカスタムドメイン追加が別途必要です</div></div><div class="card" style="margin-top:16px"><div class="card-title">ヒーローバナー（カルーセル） <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddHeroSlideModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div class="hero-dropzone" style="margin-bottom:8px;padding:20px;border:2px dashed var(--border);border-radius:8px;text-align:center;color:var(--text-light);font-size:12px;cursor:pointer" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\';this.style.background=\'rgba(0,0,0,0.03)\'" ondragleave="this.style.borderColor=\'var(--border)\';this.style.background=\'transparent\'" ondrop="handleHeroDrop(event,\''+b._uuid+'\',\''+b.id+'\')">📎 画像・動画(mp4/mov)をここにドロップ（複数可）</div><div id="heroSlidesList-'+b.id+'" style="font-size:12px;color:var(--text-light)">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">複数枚登録可能。5秒間隔で自動スクロールします。</div></div></div>'+
   '<div class="tab-content" id="brand-news"><div class="card"><div class="card-title">ニュース管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddNewsModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandNewsList-'+b.id+'">読み込み中...</div><div style="font-size:11px;color:var(--text-light);margin-top:8px">記事本文はMarkdown記法で入力できます。</div></div></div>'+
   '<div class="tab-content" id="brand-campaign"><div class="card"><div class="card-title">キャンペーン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCampaignModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCampaignList-'+b.id+'">読み込み中...</div></div></div>'+
   '<div class="tab-content" id="brand-coupon"><div class="card"><div class="card-title">クーポン管理 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openAddCouponModal(\''+b._uuid+'\',\''+b.id+'\')">＋ 追加</button></span></div><div id="brandCouponList-'+b.id+'">読み込み中...</div></div></div>'+
@@ -3005,7 +3005,7 @@ function renderStorePage(s){
   const br=getBrandForVenue(s),cp=getMerchantForVenue(s);
   return '<div class="breadcrumb"><a onclick="goTo(\'stores\')">店舗管理</a><span class="sep">></span><span>'+(br?br.name+' ':'')+s.name+'</span></div>'+
   '<div class="page-header"><div class="page-title">'+(br?br.name+' ':'')+s.name+'</div><span class="page-type-badge store">店舗</span></div>'+
-  '<div class="page-subtitle">'+s.id+' / '+s.addr+' / '+statusBadge(s.status)+(s.slug?' <a href="https://aiden-jp.net/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--accent);text-decoration:none;margin-left:12px">🛒 モバイルオーダーを開く ↗</a>':'')+'</div>'+
+  '<div class="page-subtitle">'+s.id+' / '+s.addr+' / '+statusBadge(s.status)+(s.slug?' <a href="https://weir.co.jp/aiden-order-store.html?store='+escHtml(s.slug)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:var(--accent);text-decoration:none;margin-left:12px">🛒 モバイルオーダーを開く ↗</a>':'')+'</div>'+
   '<div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-card green"><div class="sc-label">月間売上</div><div class="sc-val">'+Y(s.revenue)+'</div></div><div class="stat-card blue"><div class="sc-label">月間注文</div><div class="sc-val">'+s.orders.toLocaleString()+'</div></div><div class="stat-card orange"><div class="sc-label">客単価</div><div class="sc-val">'+(s.orders>0?Y(Math.round(s.revenue/s.orders)):'—')+'</div></div></div>'+
   '<div class="tabs"><div class="tab active" onclick="switchTab(\'store\',this,\'basic\')">基本情報</div><div class="tab" onclick="switchTab(\'store\',this,\'services\')">サービス設定</div><div class="tab" onclick="switchTab(\'store\',this,\'hours\')">営業時間</div><div class="tab" onclick="switchTab(\'store\',this,\'facility\')">施設</div><div class="tab" onclick="switchTab(\'store\',this,\'reservation\')">予約</div><div class="tab" onclick="switchTab(\'store\',this,\'delivery\')">配達</div><div class="tab" onclick="switchTab(\'store\',this,\'cancel\')">キャンセル</div><div class="tab" onclick="switchTab(\'store\',this,\'media\')">メディア</div><div class="tab" onclick="switchTab(\'store\',this,\'flags\')">機能</div><div class="tab" onclick="switchTab(\'store\',this,\'reviews\')">口コミ</div><div class="tab" onclick="switchTab(\'store\',this,\'ai\')">AI利用</div><div class="tab" onclick="switchTab(\'store\',this,\'related\')">法人・ブランド</div></div>'+
   '<div class="tab-content active" id="store-basic"><div class="card"><div class="card-title">基本情報 <span class="ct-right"><button class="btn btn-primary btn-sm" onclick="saveStoreBasic(\''+s.id+'\')">保存</button></span></div><div class="form-grid"><div class="form-group"><label>店舗名</label><input type="text" value="'+(br?br.name+' ':'')+s.name+'"></div><div class="form-group"><label>店舗ID</label><input type="text" value="'+s.id+'" readonly style="background:#f5f6fa;color:var(--text-light)"></div><div class="form-group full"><label>住所</label><input type="text" value="'+s.addr+'"></div><div class="form-group"><label>電話</label><input type="tel" value="'+s.tel+'"></div><div class="form-group"><label>メール</label><input type="email" placeholder=""></div><div class="form-group"><label>最寄り駅</label><input type="text" placeholder=""></div><div class="form-group"><label>価格帯</label><input type="text" placeholder=""></div><div class="form-group"><label>運営法人</label><select id="storeCorpUuid"><option value="">未設定</option>'+MERCHANTS.map(function(c){return '<option value="'+escHtml(c._uuid)+'"'+(s.corpUuid===c._uuid?' selected':'')+'>'+escHtml(c.name)+'（'+escHtml(c.id)+'）</option>';}).join('')+'</select></div></div></div></div>'+
@@ -4031,7 +4031,7 @@ async function saveBrandDesign(brandDisplayId){
 async function publishBrandHp(brandDisplayId){
   var b=BRANDS.find(function(x){return x.id===brandDisplayId;});
   if(!b)return;
-  if(!confirm('このブランドのHPを一般公開します。https://aiden-jp.net/'+(b.slug||'')+' が誰でもアクセス可能になります。よろしいですか？'))return;
+  if(!confirm('このブランドのHPを一般公開します。https://weir.co.jp/'+(b.slug||'')+' が誰でもアクセス可能になります。よろしいですか？'))return;
   var hpSettings=Object.assign({},b.hpSettings||{},{status:'published'});
   try{
     var {error}=await sb.from('brands').update({hp_settings:hpSettings,hp_published:true}).eq('id',b._uuid);
@@ -4313,7 +4313,7 @@ async function deleteBrandCampaign(campId,brandUuid,brandDisplayId){
 
 // ===== COUPON CRUD =====
 var SVC_LABELS={dinein:'店内',takeout:'持帰',delivery:'配達'};
-var PLT_LABELS={aiden:'AIden',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
+var PLT_LABELS={aiden:'Weir',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
 
 function couponFormFields(prefix,d){
   d=d||{};
@@ -5689,7 +5689,7 @@ function downloadBulkTemplate(includeData){
       }
       if(sheet.flagCommentCol!=null){
         var fc=XLSX.utils.encode_cell({r:0,c:sheet.flagCommentCol});
-        if(mws[fc])mws[fc].c=[{a:'AIden',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
+        if(mws[fc])mws[fc].c=[{a:'Weir',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
       }
       XLSX.utils.book_append_sheet(wbM,mws,sheet.name);
     });
@@ -5718,7 +5718,7 @@ function downloadBulkTemplate(includeData){
         ws['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});
       });
       var genreHeaderCell=XLSX.utils.encode_cell({r:0,c:11});
-      if(ws[genreHeaderCell])ws[genreHeaderCell].c=[{a:'AIden',t:'例: 焼肉,居酒屋（カンマ区切りで複数指定可）'}];
+      if(ws[genreHeaderCell])ws[genreHeaderCell].c=[{a:'Weir',t:'例: 焼肉,居酒屋（カンマ区切りで複数指定可）'}];
       if(tmpl.categories&&tmpl.sample.length>0){
         tmpl.categories.forEach(function(cat){
           for(var ci=cat.cols[0];ci<=cat.cols[1];ci++){
@@ -5734,7 +5734,7 @@ function downloadBulkTemplate(includeData){
         ws['!dataValidation'].push({sqref:XLSX.utils.encode_cell({r:1,c:dv.col})+':'+XLSX.utils.encode_cell({r:1000,c:dv.col}),type:'list',formula1:dv.list,showDropDown:true});
       });
       var flagHeaderCell=XLSX.utils.encode_cell({r:0,c:9});
-      if(ws[flagHeaderCell])ws[flagHeaderCell].c=[{a:'AIden',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
+      if(ws[flagHeaderCell])ws[flagHeaderCell].c=[{a:'Weir',t:'おすすめ / 新商品 / 期間限定 / 人気（複数の場合は | で区切る。例: おすすめ|人気）'}];
     }
     XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
     if(type==='brand'){
@@ -6458,7 +6458,7 @@ function renderCostContentTable(){
     '</tbody></table></div>';
 }
 
-// Heavy user detection: 直近2ヶ月以上連続でAIden全店舗のトップ10に入っている
+// Heavy user detection: 直近2ヶ月以上連続でWeir全店舗のトップ10に入っている
 // Returns Set<storeId> of stores that qualify.
 function computeHeavyUserStores(){
   // Build month→store→cost map for the most recent 2 complete months
@@ -6692,7 +6692,7 @@ let billingDataLoaded=false;
 let adjFilter={targetMonth:'',category:'all',brandId:'all'};
 
 // Category labels
-const ADJ_CATEGORIES={compensation:'障害補填',fee_refund:'手数料返還',point_settlement:'AIden原資ポイント精算',other:'その他'};
+const ADJ_CATEGORIES={compensation:'障害補填',fee_refund:'手数料返還',point_settlement:'Weir原資ポイント精算',other:'その他'};
 const ADJ_CAT_COLORS={compensation:'#d63031',fee_refund:'#0984e3',point_settlement:'#e17055',other:'#636e72'};
 
 // Deadline check: 調整登録の締切 = 翌月の3営業日前
@@ -6891,7 +6891,7 @@ function exportSingleInvoiceCsv(invId){
   lines.push(['発行日','"'+(inv.issuedAt||'')+'"'].join(','));
   if(inv.orderLines&&inv.orderLines.length){
     lines.push('');
-    lines.push(['注文ID','注文金額','手数料率','AIden手数料'].join(','));
+    lines.push(['注文ID','注文金額','手数料率','Weir手数料'].join(','));
     inv.orderLines.forEach(function(ol){
       lines.push(['"'+ol.orderId+'"',(ol.orderTotal||0),(ol.feeRate||0)+'%',(ol.feeAmount||0)].join(','));
     });
@@ -7000,7 +7000,7 @@ function openAddAdjustmentModal(){
       '<div class="form-group"><label>種別 <span style="color:var(--danger)">*</span></label>'+
         '<select id="adjType"><option value="credit">控除（値引き・補填）</option><option value="debit">付加（追加請求）</option></select></div>'+
       '<div class="form-group"><label>カテゴリ <span style="color:var(--danger)">*</span></label>'+
-        '<select id="adjCategory"><option value="compensation">障害補填</option><option value="fee_refund">手数料返還</option><option value="point_settlement">AIden原資ポイント精算</option><option value="other">その他</option></select></div>'+
+        '<select id="adjCategory"><option value="compensation">障害補填</option><option value="fee_refund">手数料返還</option><option value="point_settlement">Weir原資ポイント精算</option><option value="other">その他</option></select></div>'+
       '<div class="form-group"><label>金額（円） <span style="color:var(--danger)">*</span></label>'+
         '<input type="number" id="adjAmount" min="1" placeholder="例: 500"></div>'+
       '<div class="form-group full"><label>理由 <span style="color:var(--danger)">*</span></label>'+
@@ -7100,8 +7100,8 @@ function showInvoiceDetail(invId){
       '<table class="dt" style="font-size:11px;margin:0"><thead><tr>'+
       '<th style="text-align:left">注文ID</th>'+
       '<th style="text-align:left">注文金額</th>'+
-      '<th style="text-align:left">AIden手数料率</th>'+
-      '<th style="text-align:left">AIden手数料</th>'+
+      '<th style="text-align:left">Weir手数料率</th>'+
+      '<th style="text-align:left">Weir手数料</th>'+
       '</tr></thead><tbody>'+
       orderLines.map(function(ol){
         return '<tr>'+
@@ -7436,7 +7436,7 @@ function openCorpWizard(){
         d.bank=wizVal('wCorpBank');d.branch=wizVal('wCorpBranch');d.accType=wizVal('wCorpAccType');d.accNum=wizVal('wCorpAccNum');d.accName=wizVal('wCorpAccName');
         if(!d.bank||!d.branch||!d.accNum||!d.accName)return {error:'口座情報の全ての必須項目を入力してください'};
       }},
-      {label:'担当者情報',help:'AIdenからの連絡先となる担当者',render:function(d){
+      {label:'担当者情報',help:'Weirからの連絡先となる担当者',render:function(d){
         return '<div class="form-grid">'+
           '<div class="form-group"><label>担当者名 <span style="color:var(--danger)">*</span></label><input type="text" id="wCorpPicName" value="'+esc(d.picName||'')+'" placeholder="田中花子"></div>'+
           '<div class="form-group"><label>担当者電話 <span style="color:var(--danger)">*</span></label><input type="tel" id="wCorpPicTel" value="'+esc(d.picTel||'')+'" placeholder="090-XXXX-XXXX"></div>'+

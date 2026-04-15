@@ -1,5 +1,5 @@
 /**
- * AIden Chat Widget v1.1
+ * Weir Chat Widget v1.1
  *
  * 共通チャットウィジェット。事業者向け / エンドユーザー向け 両対応。
  * v1.1: DB保存/復元、最小化/最大化、キーボードショートカット、AIフォールバック
@@ -14,7 +14,7 @@
  *       memberId: '...',       // optional (logged-in member)
  *       operatorId: '...',     // optional (merchant operator)
  *       supabaseClient: sb,    // existing Supabase client
- *       apiBase: 'https://aiden-jp.net',
+ *       apiBase: 'https://weir.co.jp',
  *     });
  *   </script>
  */
@@ -28,7 +28,7 @@ class AidenChatWidget {
     this.operatorId = options.operatorId || null;
     this.guestSessionId = options.guestSessionId || null;
     this.sb = options.supabaseClient || null;
-    this.apiBase = options.apiBase || 'https://aiden-jp.net';
+    this.apiBase = options.apiBase || 'https://weir.co.jp';
 
     this.sessionId = null;
     this.isOpen = false;
@@ -367,7 +367,7 @@ class AidenChatWidget {
     this.windowEl.className = 'acw-window';
 
     const isMerchant = this.contextType === 'merchant';
-    const titleText = isMerchant ? 'AIden サポート' : 'チャットサポート';
+    const titleText = isMerchant ? 'Weir サポート' : 'チャットサポート';
     const subText = isMerchant ? 'お困りのことがあればお気軽にどうぞ' : 'ご質問がありましたらお気軽にどうぞ';
 
     this.windowEl.innerHTML = `
@@ -384,9 +384,9 @@ class AidenChatWidget {
       <div class="acw-messages" id="acwMessages">
         <div class="acw-welcome">
           <div class="acw-welcome-icon">${isMerchant ? '💼' : '👋'}</div>
-          <div class="acw-welcome-title">${isMerchant ? 'AIden サポートへようこそ' : 'こんにちは！'}</div>
+          <div class="acw-welcome-title">${isMerchant ? 'Weir サポートへようこそ' : 'こんにちは！'}</div>
           <div class="acw-welcome-desc">${isMerchant
-            ? 'AIdenの使い方や設定についてお気軽にご質問ください。AIアシスタントがお答えします。'
+            ? 'Weirの使い方や設定についてお気軽にご質問ください。AIアシスタントがお答えします。'
             : 'ご注文やお店についてのご質問にお答えします。お気軽にどうぞ！'
           }</div>
         </div>
@@ -612,7 +612,7 @@ class AidenChatWidget {
 
       // Fallback: fixed response when API/EF is not deployed
       if (!aiReply) {
-        aiReply = 'AIサポートは準備中です。お問い合わせはsupport@aiden-jp.netまでメールでお願いします。';
+        aiReply = 'AIサポートは準備中です。お問い合わせはsupport@weir.co.jpまでメールでお願いします。';
       }
 
       // Save AI reply to DB
@@ -623,7 +623,7 @@ class AidenChatWidget {
 
     } catch (err) {
       this._appendMessage('system',
-        '送信に失敗しました。しばらくしてからお試しください。\n問題が続く場合: support@aiden-jp.net'
+        '送信に失敗しました。しばらくしてからお試しください。\n問題が続く場合: support@weir.co.jp'
       );
     } finally {
       this.isLoading = false;

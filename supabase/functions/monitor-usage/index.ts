@@ -22,14 +22,14 @@ const ALERT_EMAIL_TO = Deno.env.get('ALERT_EMAIL_TO') || ''
 
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
-const FROM_EMAIL = 'noreply@aiden-jp.net'
-const FROM_NAME = 'AIden監視'
+const FROM_EMAIL = 'noreply@weir.co.jp'
+const FROM_NAME = 'Weir監視'
 
 // Access Token の期限（固定値）
 const ACCESS_TOKEN_EXPIRY = new Date('2026-06-20T00:00:00Z')
 
 // 本番URL
-const PRODUCTION_URL = 'https://aiden-jp.net'
+const PRODUCTION_URL = 'https://weir.co.jp'
 
 // 主要Edge Functions一覧（デプロイ状態チェック用）
 const CRITICAL_EDGE_FUNCTIONS = [
@@ -661,7 +661,7 @@ async function sendAlertEmail(
   const icon = severity === 'critical' ? '🚨' : '⚠️'
   const urgency = severity === 'critical' ? '【要即対応】' : ''
 
-  const subject = `${icon} [AIden監視] ${label} が${severity === 'critical' ? 'Critical' : 'Warning'}閾値を超えました${urgency}`
+  const subject = `${icon} [Weir監視] ${label} が${severity === 'critical' ? 'Critical' : 'Warning'}閾値を超えました${urgency}`
 
   const riskNote = severity === 'critical'
     ? `<tr><td style="padding:16px;background:#FFF3F3;border-radius:8px;margin-top:16px;">
@@ -690,7 +690,7 @@ async function sendRecoveryEmail(label: string, currentValue: string): Promise<b
   if (!ALERT_EMAIL_TO || !RESEND_API_KEY) return false
 
   const now = formatJST(new Date())
-  const subject = `✅ [AIden監視] ${label} が正常に戻りました`
+  const subject = `✅ [Weir監視] ${label} が正常に戻りました`
 
   const html = buildAlertEmailHtml({
     title: '✅ 復旧通知',
@@ -742,7 +742,7 @@ function buildAlertEmailHtml(opts: {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:${opts.headerColor};padding:24px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:800;">AIden 監視システム</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:800;">Weir 監視システム</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:14px;">${opts.title}</p>
           </td>
         </tr>
@@ -763,7 +763,7 @@ function buildAlertEmailHtml(opts: {
         </tr>` : ''}
         <tr>
           <td style="background:#fafafa;padding:16px 32px;text-align:center;border-top:1px solid #f0f0f0;">
-            <p style="margin:0;font-size:11px;color:#aaa;">&copy; AIden監視システム - 自動送信</p>
+            <p style="margin:0;font-size:11px;color:#aaa;">&copy; Weir監視システム - 自動送信</p>
           </td>
         </tr>
       </table>

@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">店舗を探す | AIden</title>
+<title id="page-title">店舗を探す | Weir</title>
     <!-- OGP / SNS Meta Tags (brand-specific values are set in onBrandLoaded) -->
-    <meta property="og:title" content="店舗を探す | AIden">
+    <meta property="og:title" content="店舗を探す | Weir">
     <meta property="og:description" content="">
-    <meta property="og:image" content="https://aiden-jp.net/ogp.png">
-    <meta property="og:url" content="https://aiden-jp.net/aiden-brand-stores.html">
+    <meta property="og:image" content="https://weir.co.jp/ogp.png">
+    <meta property="og:url" content="https://weir.co.jp/aiden-brand-stores.html">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="AIden">
+    <meta property="og:site_name" content="Weir">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="店舗を探す | AIden">
+    <meta name="twitter:title" content="店舗を探す | Weir">
     <meta name="twitter:description" content="">
-    <meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+    <meta name="twitter:image" content="https://weir.co.jp/ogp.png">
     <meta name="description" content="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="./aiden-common.css">
@@ -214,7 +214,7 @@ AidenCommon.addTranslations({
 });
 
 /* =====================================================
-   店舗属性定義（AIdenが保持する標準属性）
+   店舗属性定義（Weirが保持する標準属性）
    管理画面の「店舗情報作成」時にチェックボックスで設定
    ===================================================== */
 var STORE_ATTRS = [
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     header: 'brand',
     footer: true,
     onBrandLoaded: async function(brand) {
-      var bname = brand.name || 'AIden';
+      var bname = brand.name || 'Weir';
       document.title = '店舗を探す | ' + bname;
       var ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.setAttribute('content', '店舗を探す | ' + bname);

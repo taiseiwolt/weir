@@ -10,8 +10,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, sanitizeErrorMessage } from '../_shared/auth.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
-const FROM_EMAIL = 'noreply@aiden-jp.net'
-const FROM_NAME = 'AIden'
+const FROM_EMAIL = 'noreply@weir.co.jp'
+const FROM_NAME = 'Weir'
 
 interface WithdrawalEmailRequest {
   type: 'requested' | 'reminder' | 'completed'
@@ -25,7 +25,7 @@ function escapeHtml(str: string): string {
 }
 
 function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; html: string } {
-  const subject = '【AIden】退会申請を受け付けました'
+  const subject = '【Weir】退会申請を受け付けました'
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Arial,'Hiragino Sans',sans-serif">
@@ -33,7 +33,7 @@ function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; h
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden">
   <tr><td style="background:#D32F2F;padding:24px;text-align:center">
-    <div style="color:#fff;font-size:20px;font-weight:700">AIden</div>
+    <div style="color:#fff;font-size:20px;font-weight:700">Weir</div>
   </td></tr>
   <tr><td style="padding:32px 24px">
     <p style="font-size:16px;font-weight:700;margin:0 0 16px">${escapeHtml(data.member_name)} 様</p>
@@ -49,11 +49,11 @@ function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; h
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://aiden-jp.net/aiden-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="https://weir.co.jp/aiden-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
-    <p style="font-size:11px;color:#999;margin:0">このメールは AIden から自動送信されています。</p>
+    <p style="font-size:11px;color:#999;margin:0">このメールは Weir から自動送信されています。</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -62,7 +62,7 @@ function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; h
 }
 
 function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; html: string } {
-  const subject = '【AIden】退会確定まであと7日です'
+  const subject = '【Weir】退会確定まであと7日です'
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Arial,'Hiragino Sans',sans-serif">
@@ -70,7 +70,7 @@ function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; ht
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden">
   <tr><td style="background:#D32F2F;padding:24px;text-align:center">
-    <div style="color:#fff;font-size:20px;font-weight:700">AIden</div>
+    <div style="color:#fff;font-size:20px;font-weight:700">Weir</div>
   </td></tr>
   <tr><td style="padding:32px 24px">
     <p style="font-size:16px;font-weight:700;margin:0 0 16px">${escapeHtml(data.member_name)} 様</p>
@@ -84,11 +84,11 @@ function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; ht
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://aiden-jp.net/aiden-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="https://weir.co.jp/aiden-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
-    <p style="font-size:11px;color:#999;margin:0">このメールは AIden から自動送信されています。</p>
+    <p style="font-size:11px;color:#999;margin:0">このメールは Weir から自動送信されています。</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -97,7 +97,7 @@ function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; ht
 }
 
 function buildCompletedEmail(data: WithdrawalEmailRequest): { subject: string; html: string } {
-  const subject = '【AIden】退会が確定しました'
+  const subject = '【Weir】退会が確定しました'
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Arial,'Hiragino Sans',sans-serif">
@@ -105,7 +105,7 @@ function buildCompletedEmail(data: WithdrawalEmailRequest): { subject: string; h
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden">
   <tr><td style="background:#D32F2F;padding:24px;text-align:center">
-    <div style="color:#fff;font-size:20px;font-weight:700">AIden</div>
+    <div style="color:#fff;font-size:20px;font-weight:700">Weir</div>
   </td></tr>
   <tr><td style="padding:32px 24px">
     <p style="font-size:16px;font-weight:700;margin:0 0 16px">${escapeHtml(data.member_name)} 様</p>
@@ -125,7 +125,7 @@ function buildCompletedEmail(data: WithdrawalEmailRequest): { subject: string; h
     </p>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
-    <p style="font-size:11px;color:#999;margin:0">このメールは AIden から自動送信されています。</p>
+    <p style="font-size:11px;color:#999;margin:0">このメールは Weir から自動送信されています。</p>
   </td></tr>
 </table>
 </td></tr></table>

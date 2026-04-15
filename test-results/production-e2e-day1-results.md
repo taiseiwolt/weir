@@ -31,7 +31,7 @@
 | C-01 | Dine-in注文: UI表示額 = DB記録額 = Stripe記録額 | ⏭️SKIP | 本番Dine-in注文がまだ存在しない。Taiseiの手動テスト待ち |
 | C-02 | Dine-in注文: 手数料 = 割引前金額 × 3.8% | ⏭️SKIP | 同上 |
 | C-03 | Takeout注文: 手数料 = 割引前金額 × 4.0% | ✅PASS | 既存delivery注文で検証: ORD-HdEfKXN (3630×4%=145 一致), ORD-MKkPYKs (4710×4%=188 一致) |
-| C-04 | Stripe手数料(3.6%)がAIden負担として正しく計算されている | ⏭️SKIP | stripe_payment_intent_id=null（テスト注文のため実Stripe照合不可） |
+| C-04 | Stripe手数料(3.6%)がWeir負担として正しく計算されている | ⏭️SKIP | stripe_payment_intent_id=null（テスト注文のため実Stripe照合不可） |
 
 **注記**: ORD-dOgvj4A で1円差あり（expected 94, actual 95）。ROUND vs FLOORの違いと推定。仕様確認推奨。
 

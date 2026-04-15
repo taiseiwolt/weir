@@ -34,7 +34,7 @@
 ### Rules
 - 請求書生成: generate-monthly-invoice Edge Function で毎月自動実行
 - 手数料計算: 割引前の合計金額 × 手数料率
-- Stripe手数料 3.6% はAIden負担として会計処理
+- Stripe手数料 3.6% はWeir負担として会計処理
 - インボイスPDF: generate-invoice-pdf Edge Function で生成
 - 請求メール: send-invoice-email Edge Function で送信
 - 金額の端数処理: 切り捨て（floor）
@@ -68,7 +68,7 @@
 手数料・決済の照合処理を担当するエージェント。
 
 ### Responsibilities
-- Stripe決済とAIden注文データの照合
+- Stripe決済とWeir注文データの照合
 - 手数料の正確な計算と検証
 - 決済失敗・返金の追跡と照合
 - 月次の収益レポート作成

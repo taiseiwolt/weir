@@ -14,7 +14,7 @@
 
 ## 決済フロー概要
 
-AIdenには2つの並行決済フローが存在:
+Weirには2つの並行決済フローが存在:
 
 1. **新フロー（主要）**: フロントエンド → Edge Function `stripe-create-payment-intent`（サーバーサイド価格再計算）→ Stripe Elements確認 → `confirm-order` Edge Function（PI検証）→ 注文レコード作成
 2. **レガシーフロー**: フロントエンド → Vercel API `POST /api/orders`（サーバーサイド価格検索）→ PI + 注文同時作成 → 別途`handleConfirm`でポイント・メール処理

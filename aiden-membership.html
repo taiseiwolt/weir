@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>会員プログラム | AIden</title>
-<meta property="og:title" content="会員プログラム | AIden">
+<title>会員プログラム | Weir</title>
+<meta property="og:title" content="会員プログラム | Weir">
 <meta property="og:description" content="お得な会員特典やポイントプログラムをご紹介します。">
-<meta property="og:image" content="https://aiden-jp.net/ogp.png">
-<meta property="og:url" content="https://aiden-jp.net/aiden-membership.html">
+<meta property="og:image" content="https://weir.co.jp/ogp.png">
+<meta property="og:url" content="https://weir.co.jp/aiden-membership.html">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="AIden">
+<meta property="og:site_name" content="Weir">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="会員プログラム | AIden">
+<meta name="twitter:title" content="会員プログラム | Weir">
 <meta name="twitter:description" content="お得な会員特典やポイントプログラムをご紹介します。">
-<meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+<meta name="twitter:image" content="https://weir.co.jp/ogp.png">
 <meta name="description" content="お得な会員特典やポイントプログラムをご紹介します。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="./aiden-common.css">
@@ -207,7 +207,7 @@ async function loadMembershipData(brandId) {
     // Check auth
     var sessionRes = await sb.auth.getSession();
     var session = sessionRes.data.session;
-    var memberId = sessionStorage.getItem('aiden_member_id');
+    var memberId = sessionStorage.getItem('weir_member_id');
     var currentMember = null;
 
     if (session && memberId) {

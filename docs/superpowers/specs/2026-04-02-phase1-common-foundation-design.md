@@ -170,7 +170,7 @@ font_color       → --brand-font-color
 ### 下部バー
 - コピーライト `© {year} {brandName}`
 - 法務リンク: 特定商取引法 / プライバシーポリシー / 利用規約 / 返金ポリシー / サイトマップ / お問い合わせ
-- Powered by AIden バッジ
+- Powered by Weir バッジ
 
 ### 注意
 - フッターのメニューリンクはブランド固有のカテゴリ名になる可能性があるが、Phase 1ではbrand.htmlの現在のハードコード値を維持。Phase 2でDB連動に変更。

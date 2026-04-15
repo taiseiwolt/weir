@@ -1,7 +1,7 @@
 # 手動確認チェックリスト
 
 ## 前提条件
-- テスト環境: https://aiden-jp.net
+- テスト環境: https://weir.co.jp
 - Supabase ダッシュボード: https://supabase.com/dashboard
 
 ---

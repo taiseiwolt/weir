@@ -2,7 +2,7 @@
 
 ## 調査日: 2026-03-18
 ## 対象ファイル
-- `aiden-admin.html` (AIden管理マスタ)
+- `aiden-admin.html` (Weir管理マスタ)
 - `aiden-customer-admin.html` (顧客管理画面)
 - `aiden-order-dashboard.html` (受注ダッシュボード)
 - `aiden-order-checkout.html` (チェックアウト)

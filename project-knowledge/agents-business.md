@@ -55,7 +55,7 @@
 ### Rules
 - プラン料金: STD ¥0/月, PRO ¥4,980/月/店舗, EXPERT ¥9,800/月/店舗
 - 手数料率: Dine-in 3.8%, Takeout/Delivery 4.0%
-- Stripe手数料 3.6% はAIden負担（実質マージン: dine-in 0.2%, takeout/delivery 0.4%）
+- Stripe手数料 3.6% はWeir負担（実質マージン: dine-in 0.2%, takeout/delivery 0.4%）
 - 手数料は割引前の合計金額に対して計算
 - プラン変更: アップグレード=オペレーター承認+日割り、ダウングレード=翌月1日適用
 - AI機能の無料枠: レビュー返信10件/月, SNS投稿10件/月, POP画像1件/月, 月次AIコメント1件

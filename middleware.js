@@ -10,7 +10,7 @@ export default function middleware(request) {
   const hostname = request.headers.get('host') || '';
 
   const SHARED_DOMAIN = 'xorder.co.jp';
-  const ADMIN_DOMAIN = 'aiden-jp.net';
+  const ADMIN_DOMAIN = 'weir.co.jp';
 
   // 管理ドメイン・localhost・vercel.app はスルー
   if (

@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>マイページ | AIden</title>
-<meta property="og:title" content="マイページ | AIden">
+<title>マイページ | Weir</title>
+<meta property="og:title" content="マイページ | Weir">
 <meta property="og:description" content="会員ランク・ポイント残高・クーポンを確認できます。">
-<meta property="og:image" content="https://aiden-jp.net/ogp.png">
-<meta property="og:url" content="https://aiden-jp.net/aiden-mypage.html">
+<meta property="og:image" content="https://weir.co.jp/ogp.png">
+<meta property="og:url" content="https://weir.co.jp/aiden-mypage.html">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="AIden">
+<meta property="og:site_name" content="Weir">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="マイページ | AIden">
+<meta name="twitter:title" content="マイページ | Weir">
 <meta name="twitter:description" content="会員ランク・ポイント残高・クーポンを確認できます。">
-<meta name="twitter:image" content="https://aiden-jp.net/ogp.png">
+<meta name="twitter:image" content="https://weir.co.jp/ogp.png">
 <meta name="description" content="会員ランク・ポイント残高・クーポンを確認できます。">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -346,14 +346,14 @@ function fmtDate(d) {
   try {
     // Check auth
     const { data: { session } } = await sb.auth.getSession();
-    let memberId = sessionStorage.getItem('aiden_member_id');
+    let memberId = sessionStorage.getItem('weir_member_id');
 
     // sessionStorageにmember_idがなくてもauth sessionがあればDBから取得
     if (session && !memberId) {
       const { data: memberRow } = await sb.from('members').select('id').eq('auth_user_id', session.user.id).maybeSingle();
       if (memberRow) {
         memberId = memberRow.id;
-        sessionStorage.setItem('aiden_member_id', memberId);
+        sessionStorage.setItem('weir_member_id', memberId);
       }
     }
 
@@ -556,7 +556,7 @@ async function checkWithdrawalStatus() {
     var session = (await sb.auth.getSession()).data.session;
     if (!session) return;
 
-    var resp = await fetch('https://aiden-jp.net/api/members/withdraw/status', {
+    var resp = await fetch('https://weir.co.jp/api/members/withdraw/status', {
       headers: { 'Authorization': 'Bearer ' + session.access_token },
     });
     if (!resp.ok) return;
@@ -609,7 +609,7 @@ async function executeWithdraw() {
       return;
     }
 
-    var resp = await fetch('https://aiden-jp.net/api/members/withdraw', {
+    var resp = await fetch('https://weir.co.jp/api/members/withdraw', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -649,7 +649,7 @@ async function cancelWithdraw() {
       return;
     }
 
-    var resp = await fetch('https://aiden-jp.net/api/members/withdraw/cancel', {
+    var resp = await fetch('https://weir.co.jp/api/members/withdraw/cancel', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -748,12 +748,12 @@ async function resendVerificationFromBanner() {
 <script>
 (function(){
   // Get member ID from localStorage if available
-  const memberId = localStorage.getItem('aiden_member_id') || null;
+  const memberId = localStorage.getItem('weir_member_id') || null;
   window._aidenChat = new AidenChatWidget({
     contextType: 'enduser',
     memberId: memberId,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://aiden-jp.net',
+    apiBase: 'https://weir.co.jp',
   });
 })();
 </script>

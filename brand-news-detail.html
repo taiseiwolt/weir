@@ -130,7 +130,7 @@ footer{background:#222;color:rgba(255,255,255,.7);margin-top:40px}
         <a href="./legal/privacy.html">プライバシーポリシー</a>
         <a href="./legal/terms.html">利用規約</a>
       </div>
-      <span class="powered">Powered by AIden</span>
+      <span class="powered">Powered by Weir</span>
     </div>
   </div>
 </footer>
@@ -150,7 +150,7 @@ var NEWS_CAT_MAP = {store:'お店情報', corp:'会社情報', menu:'メニュ�
 
 async function resolveBrandId() {
   var hostname = window.location.hostname;
-  if (hostname && hostname !== 'localhost' && hostname !== 'aiden-jp.net' && !hostname.endsWith('.vercel.app')) {
+  if (hostname && hostname !== 'localhost' && hostname !== 'weir.co.jp' && !hostname.endsWith('.vercel.app')) {
     var { data: domainMatch } = await sb.from('brands').select('id').eq('custom_domain', hostname).limit(1);
     if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
   }

@@ -1114,7 +1114,7 @@ async function loadFromSupabase() {
     }
     if (!patternId) {
       // パターン未設定の場合は ITEMS を空のまま（ハードコードフォールバックなし）
-      console.warn('[AIden MO] No menu pattern found for this venue');
+      console.warn('[Weir MO] No menu pattern found for this venue');
       return;
     }
 
@@ -1141,7 +1141,7 @@ async function loadFromSupabase() {
       .order('sort_order');
 
     if (!itemRows || itemRows.length === 0) {
-      console.warn('[AIden MO] No menu items found for pattern:', patternId);
+      console.warn('[Weir MO] No menu items found for pattern:', patternId);
       return; // ITEMS=[] のまま（ハードコードフォールバックなし）
     }
 
@@ -1269,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Service subscription check: verify this store supports the current order mode
   // D-83: service_subscriptionsが空の場合はvenues.has_takeout/has_deliveryでfallback判定
   function showUnavailablePage(modeName) {
-    document.title = STORE_DATA.storeName + ' | AIden モバイルオーダー';
+    document.title = STORE_DATA.storeName + ' | Weir モバイルオーダー';
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' では現在「' + escH(modeName) + '」サービスをご利用いただけません。</p><a href="./aiden-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
   }
   var modeNameMap = { delivery: 'デリバリー', takeout: 'テイクアウト', dinein: '店内注文', dine: '店内注文' };
@@ -1351,7 +1351,7 @@ function initStoreData() {
 
   // Page title (updated by onBrandLoaded callback, but also set from store data)
   if (S.storeName) {
-    document.title = S.storeName + ' | AIden モバイルオーダー';
+    document.title = S.storeName + ' | Weir モバイルオーダー';
   }
 
   // Address modal pre-fill
@@ -2430,7 +2430,7 @@ function toggleHeroDesc() {
 // ===================================================================
 // Voice Assistant POC
 // Current: Browser Web Speech API (click to talk)
-// Future: Picovoice Porcupine wake word ("Hey AIden") + STT
+// Future: Picovoice Porcupine wake word ("Hey Weir") + STT
 // Requires: PICOVOICE_ACCESS_KEY env var (set up at console.picovoice.ai)
 //
 // To enable Porcupine wake word detection:
@@ -2461,7 +2461,7 @@ async function initVoiceAssistant() {
   //   try {
   //     porcupineInstance = await PorcupineWeb.PorcupineWorker.create(
   //       PICOVOICE_KEY,
-  //       [{ builtin: 'Hey Google', sensitivity: 0.7 }], // Replace with custom "Hey AIden" .ppn
+  //       [{ builtin: 'Hey Google', sensitivity: 0.7 }], // Replace with custom "Hey Weir" .ppn
   //       (detection) => {
   //         if (detection.index >= 0) {
   //           // Wake word detected
@@ -2578,7 +2578,7 @@ function updateVoiceStatus(text) {
     contextType: 'enduser',
     storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://aiden-jp.net',
+    apiBase: 'https://weir.co.jp',
   });
 })();
 </script>
@@ -2637,7 +2637,7 @@ async function showTokushoho() {
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;width:140px;color:#6b7280;font-weight:500;vertical-align:top;">販売事業者名</th>
-        <td style="padding:12px 8px;">個人事業主 前田 大生（屋号: AIden）</td>
+        <td style="padding:12px 8px;">個人事業主 前田 大生（屋号: Weir）</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">運営責任者</th>
@@ -2653,7 +2653,7 @@ async function showTokushoho() {
       </tr>
       <tr>
         <th style="padding:12px 8px;text-align:left;color:#6b7280;font-weight:500;vertical-align:top;">連絡先</th>
-        <td style="padding:12px 8px;">メール: support@aiden-jp.net</td>
+        <td style="padding:12px 8px;">メール: support@weir.co.jp</td>
       </tr>
     </table>
     <h3 style="font-size:14px;font-weight:bold;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d1d5db;">取引条件</h3>

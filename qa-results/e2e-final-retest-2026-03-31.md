@@ -42,7 +42,7 @@
 
 | # | テスト | 判定 | 根拠 |
 |---|---|---|---|
-| **D-06** | ダッシュボード問い合わせ・緊急 | **PASS** | dashboard.html L1493-1494: `mailto:support@aiden-jp.net` + 緊急時テキスト表示 |
+| **D-06** | ダッシュボード問い合わせ・緊急 | **PASS** | dashboard.html L1493-1494: `mailto:support@weir.co.jp` + 緊急時テキスト表示 |
 | **IR-11** | クーポン適用ボタン連打 | **PASS** | checkout.html: `applyCouponCode()`はクライアントサイドUI操作のみ（冪等）。繰り返しクリックで同じcouponオブジェクト再代入 |
 | **IR-12** | クーポン2タブ同時利用 | **PASS** | stripe-create-payment-intent L233-269: サーバーサイドでis_active/usage_limit/min_order_amount検証 + discount再計算。coupon_idなしのdiscount送信は無視 |
 | **IR-13** | 予約確定ボタン連打 | **PASS** | checkout.html L1980-1983: `orderBtn.disabled=true` + `opacity:0.6` + テキスト"決済処理中..."で再クリック防止 |
@@ -90,7 +90,7 @@
 
 | 内容 | 対象 |
 |---|---|
-| vercel --prod | aiden-jp.net |
+| vercel --prod | weir.co.jp |
 | supabase functions deploy | confirm-order, stripe-create-refund, compensation-point-grant |
 | DBマイグレーション | 20260331000000_e2e_fail_fixes.sql（run-migration EF経由） |
 | pg_cronジョブ追加 | auto-noshow-reservations (毎時) |

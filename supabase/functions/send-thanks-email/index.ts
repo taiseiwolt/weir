@@ -11,8 +11,8 @@ import { getCorsHeaders, corsPreflightResponse, requireAuthOrServiceRole, escape
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const FROM_EMAIL = 'support@aiden-jp.net'
-const FROM_NAME = 'AIden'
+const FROM_EMAIL = 'support@weir.co.jp'
+const FROM_NAME = 'Weir'
 
 function buildThanksHtml(customerName: string, storeName: string): string {
   return `
@@ -25,7 +25,7 @@ function buildThanksHtml(customerName: string, storeName: string): string {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:#D32F2F;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">AIden</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:1px;">Weir</h1>
             <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:13px;">ご来店ありがとうございました</p>
           </td>
         </tr>
@@ -47,7 +47,7 @@ function buildThanksHtml(customerName: string, storeName: string): string {
         <tr>
           <td style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #f0f0f0;">
             <p style="margin:0;font-size:12px;color:#888;font-weight:600;">${escapeHtml(storeName)}</p>
-            <p style="margin:4px 0 0;font-size:11px;color:#aaa;">Powered by AIden</p>
+            <p style="margin:4px 0 0;font-size:11px;color:#aaa;">Powered by Weir</p>
           </td>
         </tr>
       </table>

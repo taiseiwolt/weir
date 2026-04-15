@@ -87,7 +87,7 @@ Lines 3520-3530を削除:
   new AidenChatWidget({
     contextType: 'merchant',
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
-    apiBase: 'https://aiden-jp.net',
+    apiBase: 'https://weir.co.jp',
   });
   if(location.hash === '#cs') goTo('cs');
 })();
@@ -291,7 +291,7 @@ function renderDashboard(){
       ['\u6CD5\u4EBA\u6570','\u30D6\u30E9\u30F3\u30C9\u6570','\u5E97\u8217\u6570','\u6708\u9593\u6CE8\u6587\u6570','\u6708\u9593GMV','\u624B\u6570\u6599\u53CE\u5165','MRR'].map(l=>kpiCard(l,'—',cat.color,disabled)).join('')+
       '</div></div>';
   }
-  return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">AIdenプラットフォーム全体のKPI概要</div>'+
+  return '<div class="page-title">ダッシュボード</div><div class="page-subtitle">Weirプラットフォーム全体のKPI概要</div>'+
   KPI_CATS.map(c=>renderSection(c)).join('')+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'+
     '<div class="card"><div class="card-title">🎯 プロダクトKPI</div><table class="data-table"><thead><tr><th>指標</th><th>値</th><th>備考</th></tr></thead><tbody id="dashProductKPI"></tbody></table></div>'+
@@ -831,7 +831,7 @@ git pull --rebase origin main
 
 - [ ] **Step 3: ブラウザ動作確認（本番URL）**
 
-https://aiden-jp.net/aiden-admin.html で以下を確認:
+https://weir.co.jp/aiden-admin.html で以下を確認:
 - [ ] ダッシュボード: KPIカード4カテゴリ×7指標が表示、追加サービスはグレーアウト
 - [ ] ダッシュボード: 直近アクティビティがDB取得
 - [ ] ダッシュボード: 法人別GMVが表示
