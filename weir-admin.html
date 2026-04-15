@@ -3078,8 +3078,8 @@ async function saveAdminReservation(storeId){
     logAudit('update_reservation_settings','stores',storeId,{confMode,local_only:true});
   }
 }
-const DAYS_MAP={0:'日曜',1:'月曜',2:'火曜',3:'水曜',4:'木曜',5:'金曜',6:'土曜'};
-const DAYS_ORDER=[1,2,3,4,5,6,0];
+const DAYS_MAP={0:'日曜',1:'月曜',2:'火曜',3:'水曜',4:'木曜',5:'金曜',6:'土曜',7:'祝日'};
+const DAYS_ORDER=[1,2,3,4,5,6,0,7];
 
 async function initStoreTabs(){
   var s=VENUES.find(x=>x.id===currentView.id);
@@ -3133,7 +3133,7 @@ async function loadStoreHours(storeUuid){
     var closed=!!h.is_closed;
     var row1Attr=closed?' disabled style="opacity:0.4"':'';
     var row2Attr=closed?' disabled style="opacity:0.4"':'';
-    return '<div class="day-label">'+DAYS_MAP[day]+'</div>'+
+    var rowHtml='<div class="day-label">'+DAYS_MAP[day]+'</div>'+
       '<input type="time" id="storeHour_'+day+'_open" min="00:00" max="23:59" value="'+o1+'"'+row1Attr+'>'+
       '<input type="time" id="storeHour_'+day+'_close" min="00:00" max="23:59" value="'+c1+'"'+row1Attr+'>'+
       '<label class="closed-check" style="justify-content:flex-end"><input type="checkbox" id="storeHour_'+day+'_closed"'+(closed?' checked':'')+' onchange="toggleDayClosed('+day+')"> 定休</label>'+
@@ -3141,6 +3141,10 @@ async function loadStoreHours(storeUuid){
       '<input type="time" id="storeHour_'+day+'_open2" min="00:00" max="23:59" value="'+o2+'"'+row2Attr+'>'+
       '<input type="time" id="storeHour_'+day+'_close2" min="00:00" max="23:59" value="'+c2+'"'+row2Attr+'>'+
       '<div></div>';
+    if(day===7){
+      return '<div class="hours-divider" style="grid-column:1/-1;border-top:1px dashed var(--border);margin:4px 0;font-size:10px;color:var(--text-light);padding-top:4px">祝日設定（未設定の場合は当日の曜日設定を適用）</div>'+rowHtml;
+    }
+    return rowHtml;
   }).join('');
 }
 

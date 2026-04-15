@@ -1034,6 +1034,29 @@ let prodOptionState = {};
 // INIT
 // ===================================================================
 // ===================================================================
+// HOLIDAY HELPERS (Japan public holidays via holidays-jp API)
+// ===================================================================
+let _holidayMap = null;
+async function fetchJapanHolidays() {
+  if (_holidayMap !== null) return _holidayMap;
+  try {
+    const res = await fetch('https://holidays-jp.github.io/api/v1/date.json');
+    _holidayMap = await res.json();
+  } catch(e) {
+    _holidayMap = {};
+  }
+  return _holidayMap;
+}
+async function isTodayHoliday() {
+  const today = new Date();
+  const key = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  const holidays = await fetchJapanHolidays();
+  return key in holidays;
+}
+
+// ===================================================================
 // SUPABASE DATA LOADER
 // ===================================================================
 async function loadFromSupabase() {
@@ -1066,7 +1089,20 @@ async function loadFromSupabase() {
       .order('day_of_week');
 
     const DAYS = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
-    const hoursFormatted = (hoursRows || [])
+    const allRows = hoursRows || [];
+    const todayDow = new Date().getDay();
+    const holidayRows = allRows.filter(h => h.day_of_week === 7);
+    const useHoliday = holidayRows.length > 0 && (await isTodayHoliday());
+    const effectiveRows = [];
+    allRows.forEach(h => {
+      if (h.day_of_week === 7) return;
+      if (useHoliday && h.day_of_week === todayDow) return;
+      effectiveRows.push(h);
+    });
+    if (useHoliday) {
+      holidayRows.forEach(h => effectiveRows.push({ ...h, day_of_week: todayDow }));
+    }
+    const hoursFormatted = effectiveRows
       .filter(h => !h.is_closed)
       .map(h => ({
         day: DAYS[h.day_of_week],
