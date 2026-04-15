@@ -237,7 +237,7 @@ brand.html line 486-506 のロジックをそのまま移植。`weir-common.js` 
 
     if (!brandParam) {
       // 3. sessionStorage fallback
-      var stored = sessionStorage.getItem('aiden_brand_id');
+      var stored = sessionStorage.getItem('weir_brand_id');
       if (stored) return stored;
       return DEFAULT_BRAND_ID;
     }
@@ -273,7 +273,7 @@ brand.html line 486-506 のロジックをそのまま移植。`weir-common.js` 
 
     var b = res.data;
     // Store brand_id in sessionStorage for cross-page persistence
-    sessionStorage.setItem('aiden_brand_id', b.id);
+    sessionStorage.setItem('weir_brand_id', b.id);
     return b;
   }
 
@@ -460,7 +460,7 @@ git commit -m "feat: create weir-common.js core — escH, resolveBrandId, loadBr
   function changeLang(lang) {
     if (!I18N[lang]) return;
     AidenCommon.lang = lang;
-    sessionStorage.setItem('aiden_lang', lang);
+    sessionStorage.setItem('weir_lang', lang);
 
     var dict = I18N[lang];
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
@@ -736,7 +736,7 @@ git commit -m "feat: add i18n system to weir-common.js — 7-language dictionary
     AidenCommon._options = options || {};
 
     // Restore language from sessionStorage
-    var savedLang = sessionStorage.getItem('aiden_lang');
+    var savedLang = sessionStorage.getItem('weir_lang');
     if (savedLang && I18N[savedLang]) AidenCommon.lang = savedLang;
 
     // Race: brand load vs timeout

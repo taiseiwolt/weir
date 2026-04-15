@@ -1684,7 +1684,7 @@ function useAddress(){
   userLng = pinLng !== null ? pinLng : pendingLng;
   // Save address data to sessionStorage for order-store/checkout pages
   try {
-    sessionStorage.setItem('aiden_user_address', JSON.stringify({
+    sessionStorage.setItem('weir_user_address', JSON.stringify({
       address: userAddress,
       lat: userLat,
       lng: userLng,
@@ -1815,7 +1815,7 @@ function onOrderBtnClick(btn){
 
   // Save selected store info to sessionStorage for weir-order-store.html
   try {
-    sessionStorage.setItem('aiden_selected_store', JSON.stringify({
+    sessionStorage.setItem('weir_selected_store', JSON.stringify({
       storeId: s.id,
       storeName: s.name,
       storeAddr: s.addr,

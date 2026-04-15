@@ -7,7 +7,7 @@
  * Usage:
  *   <script src="weir-chat-widget.js"></script>
  *   <script>
- *     new AidenChatWidget({
+ *     new WeirChatWidget({
  *       contextType: 'merchant', // or 'enduser'
  *       storeId: '...',
  *       brandId: '...',
@@ -19,7 +19,7 @@
  *   </script>
  */
 
-class AidenChatWidget {
+class WeirChatWidget {
   constructor(options = {}) {
     this.contextType = options.contextType || 'enduser';
     this.storeId = options.storeId || null;
@@ -37,18 +37,18 @@ class AidenChatWidget {
     this.realtimeChannel = null;
 
     // Restore session from localStorage
-    const storageKey = `aiden_chat_session_${this.contextType}_${this.storeId || 'global'}`;
+    const storageKey = `weir_chat_session_${this.contextType}_${this.storeId || 'global'}`;
     this.sessionId = localStorage.getItem(storageKey) || null;
     this.storageKey = storageKey;
 
     // Restore minimize state from localStorage
-    this.minimizeKey = `aiden_chat_minimized_${this.contextType}_${this.storeId || 'global'}`;
+    this.minimizeKey = `weir_chat_minimized_${this.contextType}_${this.storeId || 'global'}`;
     this.isMinimized = localStorage.getItem(this.minimizeKey) === 'true';
 
     // Generate guest session ID if needed
     if (!this.memberId && !this.operatorId && !this.guestSessionId) {
-      this.guestSessionId = localStorage.getItem('aiden_guest_session') || this._generateGuestId();
-      localStorage.setItem('aiden_guest_session', this.guestSessionId);
+      this.guestSessionId = localStorage.getItem('weir_guest_session') || this._generateGuestId();
+      localStorage.setItem('weir_guest_session', this.guestSessionId);
     }
 
     this._injectStyles();
@@ -784,5 +784,5 @@ class AidenChatWidget {
 
 // Export for module usage
 if (typeof window !== 'undefined') {
-  window.AidenChatWidget = AidenChatWidget;
+  window.WeirChatWidget = WeirChatWidget;
 }

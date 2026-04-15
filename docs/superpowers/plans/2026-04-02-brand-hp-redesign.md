@@ -655,7 +655,7 @@ let orderMode = 'delivery'; // 'takeout' or 'delivery'
   }
   // Also check sessionStorage for mode passed from order page
   try {
-    var stored = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+    var stored = JSON.parse(sessionStorage.getItem('weir_selected_store') || '{}');
     if (stored.orderMode && !typeParam) orderMode = stored.orderMode;
   } catch(e) {}
 })();

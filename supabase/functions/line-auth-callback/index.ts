@@ -107,7 +107,7 @@ serve(async (req) => {
     })
 
     // LINE user ID をメールライクな識別子に変換
-    const lineEmail = email || `line_${lineUserId}@line.aiden.local`
+    const lineEmail = email || `line_${lineUserId}@line.weir.local`
 
     // 既存ユーザーを検索（user_metadataのline_user_idで）
     const { data: { users: existingUsers } } = await sbAdmin.auth.admin.listUsers()

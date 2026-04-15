@@ -996,7 +996,7 @@ let orderMode = 'delivery'; // 'takeout' or 'delivery'
   }
   // Also check sessionStorage for mode passed from order page
   try {
-    var stored = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+    var stored = JSON.parse(sessionStorage.getItem('weir_selected_store') || '{}');
     if (stored.orderMode && !typeParam) orderMode = stored.orderMode;
   } catch(e) {}
 })();
@@ -1004,8 +1004,8 @@ let orderMode = 'delivery'; // 'takeout' or 'delivery'
 var _addrData = {};
 var _storedData = {};
 try {
-  _addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
-  _storedData = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+  _addrData = JSON.parse(sessionStorage.getItem('weir_user_address') || '{}');
+  _storedData = JSON.parse(sessionStorage.getItem('weir_selected_store') || '{}');
 } catch(e) {}
 let userAddress = _addrData.address || _storedData.userAddress || '';
 let userLat = _addrData.lat || _storedData.userLat || null;
@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   var urlParams = new URLSearchParams(window.location.search);
   var hasStoreParam = urlParams.has('venue_id') || urlParams.has('store_id') || urlParams.has('sid');
   var hasSessionStore = false;
-  try { hasSessionStore = !!sessionStorage.getItem('aiden_selected_store'); } catch(e) {}
+  try { hasSessionStore = !!sessionStorage.getItem('weir_selected_store'); } catch(e) {}
   if (!hasStoreParam && !hasSessionStore) {
     window.location.href = './weir-order.html';
     return;
@@ -1319,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ===================================================================
 function restoreCartFromCheckout() {
   try {
-    const saved = sessionStorage.getItem('aiden_cart_restore');
+    const saved = sessionStorage.getItem('weir_cart_restore');
     if(!saved) return;
     const restoredCart = JSON.parse(saved);
     if(!Array.isArray(restoredCart) || restoredCart.length === 0) return;
@@ -1336,7 +1336,7 @@ function restoreCartFromCheckout() {
     }
 
     // Clear sessionStorage after restore
-    sessionStorage.removeItem('aiden_cart_restore');
+    sessionStorage.removeItem('weir_cart_restore');
 
     // Re-render menu to show qty badges
     renderMenu();
@@ -1949,10 +1949,10 @@ function updateCartUI() {
   const count = getCartCount();
 
   // Update weir-common header cart badge
-  var aidenBadge = document.getElementById('weir-cart-badge');
-  if (aidenBadge) {
-    aidenBadge.textContent = count;
-    aidenBadge.style.display = count > 0 ? '' : 'none';
+  var weirBadge = document.getElementById('weir-cart-badge');
+  if (weirBadge) {
+    weirBadge.textContent = count;
+    weirBadge.style.display = count > 0 ? '' : 'none';
   }
 
   // Free delivery progress
@@ -2410,7 +2410,7 @@ function goToCheckout() {
   };
 
   try {
-    sessionStorage.setItem('aiden_checkout_data', JSON.stringify(checkoutPayload));
+    sessionStorage.setItem('weir_checkout_data', JSON.stringify(checkoutPayload));
   } catch(e) { /* ignored */ }
 
   // Navigate to checkout page (versionless)
@@ -2574,7 +2574,7 @@ function updateVoiceStatus(text) {
 <script>
 (function(){
   const params = new URLSearchParams(location.search);
-  window._aidenChat = new AidenChatWidget({
+  window._weirChat = new WeirChatWidget({
     contextType: 'enduser',
     storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,

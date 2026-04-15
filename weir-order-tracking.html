@@ -248,7 +248,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min
 const API_BASE = 'https://weir.co.jp'; // Production domain
 
 async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('aiden_token');
+  const token = localStorage.getItem('weir_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });

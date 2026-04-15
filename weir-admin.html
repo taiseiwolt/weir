@@ -144,7 +144,7 @@ function roleBadge(r){const c={owner:'#6c5ce7',admin:'#0984e3',staff:'#636e72'};
 function rankBadge(r){const c={'ゴールド':'#e17055','シルバー':'#636e72','レギュラー':'#0984e3'};return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(c[r]||'#999')+'20;color:'+(c[r]||'#999')+'">'+r+'</span>';}
 function escHtml(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('aidenPopList');window.location.href='/';}
+async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('weirPopList');window.location.href='/';}
 // bfcache防止: ブラウザバックで復元された場合はリロード
 window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
 function openModal(h,wide){const mb=document.getElementById('modalBody');mb.innerHTML=h;if(wide)mb.classList.add('modal-wide');else mb.classList.remove('modal-wide');document.getElementById('modalOverlay').classList.add('show');}
@@ -2640,7 +2640,7 @@ function getCurrentExecutorEmail(){
   }catch(e){}
   // フォールバック: sessionStorageから
   const cached=sessionStorage.getItem('adminEmail');
-  return cached||'admin@aiden.local';
+  return cached||'admin@weir.local';
 }
 
 async function confirmAndExecuteCompensation(){
@@ -4313,12 +4313,12 @@ async function deleteBrandCampaign(campId,brandUuid,brandDisplayId){
 
 // ===== COUPON CRUD =====
 var SVC_LABELS={dinein:'店内',takeout:'持帰',delivery:'配達'};
-var PLT_LABELS={aiden:'Weir',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
+var PLT_LABELS={weir:'Weir',uber_eats:'UE',demaecan:'出前館',menu:'menu',rakuten:'楽天'};
 
 function couponFormFields(prefix,d){
   d=d||{};
   var svcs=['dinein','takeout','delivery'];
-  var plts=['aiden','uber_eats','demaecan','menu','rakuten'];
+  var plts=['weir','uber_eats','demaecan','menu','rakuten'];
   var ts=d.target_services||[];
   var tp=d.target_platforms||[];
   return '<div class="form-grid"><div class="form-group"><label>クーポンコード *</label><input type="text" id="'+prefix+'CpnCode" value="'+escHtml(d.code||'')+'" required style="text-transform:uppercase"></div>'+
@@ -4447,7 +4447,7 @@ async function saveStoreBasic(storeDisplayId){
 
 // ===== CSV/EXCEL TEMPLATE DOWNLOAD =====
 const TEMPLATES={
-  corp:{filename:'aiden_merchant_template.xlsx',format:'xlsx',sheetName:'法人登録',
+  corp:{filename:'weir_merchant_template.xlsx',format:'xlsx',sheetName:'法人登録',
     headers:[
       '法人名*','代表者名*','代表メールアドレス*','会社HP','採用ページ',
       '法人番号','銀行名*','支店番号*','口座番号*','本部住所*','本部電話番号*','代表メール*','担当者氏名*','担当者メールアドレス*',
@@ -4489,18 +4489,18 @@ const TEMPLATES={
       {cols:[26,40],color:'fff0e0',label:'営業時間・定休日'},
       {cols:[41,42],color:'fff8e1',label:'アカウント情報'}
     ]},
-  brand:{filename:'aiden_brand_template.xlsx',format:'xlsx',sheetName:'ブランド登録',
+  brand:{filename:'weir_brand_template.xlsx',format:'xlsx',sheetName:'ブランド登録',
     headers:['ブランド名*','スラッグ*','所属法人ID*','メインカラー','サブカラー','ヘッダー背景色','ヘッダー文字色','フォントカラー','フォント','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙','ジャンル（カンマ区切り）','ブランドホームページURL','ブランド担当者氏名','ブランド担当者メール'],
     sample:[['焼肉サンプル','sample-yakiniku','CRP-xxxxxxx','','','','','','Noto Sans JP','ON','OFF','OFF','全席禁煙','焼肉,和食','https://example.co.jp','担当太郎','tanto@example.co.jp']],
     comment:'※カラー欄は空白でもOK。登録後に管理画面で自動取得できます。',
     dvDefs:[{col:9,list:'"ON,OFF"'},{col:10,list:'"ON,OFF"'},{col:11,list:'"ON,OFF"'},{col:12,list:'"'+_SMOKING_OPTS.join(',')+'"'}],
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,8],color:'f0ecff',label:'デザイン（任意）'},{cols:[9,13],color:'e6f9f0',label:'サービス設定'},{cols:[14,16],color:'fff8e1',label:'担当者'}]},
-  store:{filename:'aiden_venue_template.xlsx',format:'xlsx',sheetName:'店舗登録',
+  store:{filename:'weir_venue_template.xlsx',format:'xlsx',sheetName:'店舗登録',
     headers:['店舗名*','所属法人ID','所属ブランドID*','住所','電話番号','メール','最寄り駅','座席数','喫煙(全席禁煙/喫煙可/分煙)','子連れ(同伴可/同伴不可/要相談)','ペット(同伴可/同伴不可/テラスのみ可)','駐車場(なし/あり（無料）/あり（有料）)','店舗担当者メール','店舗担当者電話','座席数','営業形態','ランチ開始','ランチ終了','ディナー開始','ディナー終了','定休日','昼の価格帯','夜の価格帯','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','来店予約(ON/OFF)','喫煙'],
     sample:[['渋谷店','CRP-xxxxxxx','BRD-xxxxxxx','東京都渋谷区道玄坂1-12-5','03-1234-5678','shibuya@example.com','渋谷駅 徒歩5分','40','全席禁煙','同伴不可','同伴不可','なし','tanto@example.com','090-1234-5678','40','中休みあり','11:00','14:00','17:00','22:00','日曜日','¥1,000~¥1,999','¥4,000~¥4,999','ON','OFF','ON','全席禁煙']],
     comment:'※営業時間は全日共通で入力してください。曜日別設定は登録後に管理画面で行えます。',
     categories:[{cols:[0,2],color:'e8f4fd',label:'基本情報'},{cols:[3,7],color:'e6f9f0',label:'店舗情報'},{cols:[8,11],color:'fff8e1',label:'施設情報'},{cols:[12,13],color:'f0ecff',label:'担当者'},{cols:[14,20],color:'fff0e0',label:'営業時間'},{cols:[21,26],color:'fce4ec',label:'サービス設定'}]},
-  account:{filename:'aiden_account_template.csv',
+  account:{filename:'weir_account_template.csv',
     headers:['氏名*','メールアドレス*','権限(owner/admin/staff)*','所属法人ID*','電話番号'],
     sample:[['代表者名','yamada@example.com','staff','CRP-xxxxxxx','090-1234-5678']]}
 };
@@ -4870,13 +4870,13 @@ const BULK_PRODUCT_FLAGS=['おすすめ','新商品','期間限定','人気'];
 
 const BULK_TEMPLATES={
   corporation:{
-    filename:'aiden_corp_template.csv',format:'csv',
+    filename:'weir_corp_template.csv',format:'csv',
     headers:['法人名*','代表者','ステータス(active/trial)','会社HP URL','採用ページURL'],
     keys:['name','representative','status','website_url','recruit_url'],
     sample:[['株式会社サンプル','代表者名','active','https://example.co.jp','https://example.co.jp/recruit']],
   },
   brand:{
-    filename:'aiden_brand_template.xlsx',format:'xlsx',
+    filename:'weir_brand_template.xlsx',format:'xlsx',
     headers:[
       '法人名*','ブランド名*','スラッグ*','キャッチコピー',
       'メインカラー(hex)','サブカラー(hex)','ロゴ絵文字','カスタムドメイン',
@@ -4900,7 +4900,7 @@ const BULK_TEMPLATES={
     ]
   },
   store:{
-    filename:'aiden_store_template.xlsx',format:'xlsx',
+    filename:'weir_store_template.xlsx',format:'xlsx',
     headers:[
       'ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度',
       'テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)',
@@ -4919,7 +4919,7 @@ const BULK_TEMPLATES={
       'ON','OFF','ON','1500','30','24','no_smoking','not_allowed','percent','10','manual','OFF','0','72','OFF']],
   },
   menu_category:{
-    filename:'aiden_menu_category_template.xlsx',format:'xlsx',
+    filename:'weir_menu_category_template.xlsx',format:'xlsx',
     headers:['ブランドスラッグ*','カテゴリ名*','表示順'],
     keys:['brand_slug','name','sort_order'],
     sample:[
@@ -4929,7 +4929,7 @@ const BULK_TEMPLATES={
     ],
   },
   menu_product:{
-    filename:'aiden_menu_product_template.xlsx',format:'xlsx',
+    filename:'weir_menu_product_template.xlsx',format:'xlsx',
     headers:[
       'ブランドスラッグ*','カテゴリ名*','商品名*','説明','価格(税込)','画像URL','表示順','利用可能(ON/OFF)',
       'メニューパターンコード(MP-xxx)','商品フラグ(複数は|区切り)'
@@ -4942,7 +4942,7 @@ const BULK_TEMPLATES={
     ],
   },
   menu_size:{
-    filename:'aiden_menu_size_template.xlsx',format:'xlsx',
+    filename:'weir_menu_size_template.xlsx',format:'xlsx',
     headers:['ブランドスラッグ*','商品名*','サイズラベル*','価格(税込)*','表示順'],
     keys:['brand_slug','product_name','label','price','sort_order'],
     sample:[
@@ -4952,7 +4952,7 @@ const BULK_TEMPLATES={
     ],
   },
   menu_full:{
-    filename:'aiden_menu_full_template.xlsx',format:'xlsx',
+    filename:'weir_menu_full_template.xlsx',format:'xlsx',
     _isMultiSheet:true,
     _downloadOnly:true,
     sheets:[
@@ -6565,7 +6565,7 @@ function downloadCostCSV(){
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download='aiden_cost_report_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.href=url;a.download='weir_cost_report_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();URL.revokeObjectURL(url);
   showToast('📥 CSVをダウンロードしました');
 }

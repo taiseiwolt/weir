@@ -92,11 +92,11 @@ serve(async (req) => {
     }
 
     // order_id → aiden_compensation 消費ポイント額（負値）のマップ
-    const aidenPointsByOrder: Record<string, number> = {}
+    const weirPointsByOrder: Record<string, number> = {}
     if (pointTxns) {
       for (const pt of pointTxns) {
         if (pt.order_id) {
-          aidenPointsByOrder[pt.order_id] = (aidenPointsByOrder[pt.order_id] || 0) + Math.abs(pt.amount)
+          weirPointsByOrder[pt.order_id] = (weirPointsByOrder[pt.order_id] || 0) + Math.abs(pt.amount)
         }
       }
     }
@@ -170,12 +170,12 @@ serve(async (req) => {
       corpInvoices[corpId].subtotal += fee
 
       // Weir原資ポイント消費分の控除
-      const aidenPoints = aidenPointsByOrder[order.id] || 0
-      if (aidenPoints > 0) {
-        corpInvoices[corpId].adjustments -= aidenPoints
+      const weirPoints = weirPointsByOrder[order.id] || 0
+      if (weirPoints > 0) {
+        corpInvoices[corpId].adjustments -= weirPoints
         corpInvoices[corpId].adjustmentDetails.push({
           reason: `Weir原資ポイント控除 (注文: ${order.id})`,
-          amount: -aidenPoints,
+          amount: -weirPoints,
         })
       }
     }

@@ -606,7 +606,7 @@ const NAV = [
     {id:'billing-csv', label:'CSVダウンロード'},
   ]},
   { id:'support', icon:'💬', label:'サポート', subs:[
-    {id:'support-aiden', label:'Weirへの問い合わせ'},
+    {id:'support-weir', label:'Weirへの問い合わせ'},
     {id:'support-enduser', label:'エンドユーザーからの問い合わせ'},
     {id:'support-faq', label:'FAQ管理'},
   ]},
@@ -4562,7 +4562,7 @@ content.innerHTML = `
 <!-- ============================== -->
 <!-- 💬 サポート - Weirへの問い合わせ (CS-1) -->
 <!-- ============================== -->
-<div class="page" id="page-support-aiden">
+<div class="page" id="page-support-weir">
   <div class="breadcrumb"><a href="#" onclick="return false">サポート</a> ＞ Weirへの問い合わせ</div>
   <div class="page-title">Weirサポート</div>
   <div class="page-subtitle">Weir運営チームへの問い合わせを管理します</div>
@@ -15182,7 +15182,7 @@ function snsAiSend() {
     if(/\u30d3\u30b8\u30cd\u30b9|\u696d\u52d9|\u6cd5\u4eba|\u30d7\u30ed|pro/.test(t)) {
       return '\u30d3\u30b8\u30cd\u30b9\u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u5207\u308a\u66ff\u3048\u308b\u3068\u3001\u6295\u7a3f\u306e\u5206\u6790\u30c7\u30fc\u30bf\u30fb\u5e83\u544a\u6a5f\u80fd\u30fb\u9023\u7d61\u5148\u30dc\u30bf\u30f3\u306a\u3069\u304c\u4f7f\u3048\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002\u500b\u4eba\u30a2\u30ab\u30a6\u30f3\u30c8\u4f5c\u6210\u5f8c\u3001\u300c\u8a2d\u5b9a\u300d\u2192\u300c\u30a2\u30ab\u30a6\u30f3\u30c8\u306e\u7a2e\u985e\u300d\u304b\u3089\u7121\u6599\u3067\u5207\u308a\u66ff\u3048\u3067\u304d\u307e\u3059\u3002';
     }
-    if(/\u9023\u643a|Weir|aiden|\u3064\u306a\u3050|\u63a5\u7d9a/.test(t)) {
+    if(/\u9023\u643a|Weir|weir|\u3064\u306a\u3050|\u63a5\u7d9a/.test(t)) {
       return 'Weir\u3068\u306e\u9023\u643a\u306f\u3001' + platform + ' \u3067API\u30ad\u30fc\u3092\u767a\u884c\u3057\u305f\u5f8c\u3001Weir\u7ba1\u7406\u753b\u9762\u306e\u300c\u9023\u643a\u7ba1\u7406\u300d\u6b04\u306bAPI\u30ad\u30fc\u3092\u8cbc\u308a\u4ed8\u3051\u308b\u3060\u3051\u3067\u3059\u3002\u9023\u643a\u5f8c\u306fWeir\u304b\u3089\u76f4\u63a5\u6295\u7a3f\u306e\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406\u304c\u3067\u304d\u307e\u3059\u3002';
     }
     if(/\u30d5\u30a9\u30ed\u30ef\u30fc|\u5897\u3084\u3057|\u904b\u7528|\u6295\u7a3f|\u30b3\u30f3\u30c6\u30f3\u30c4|\u4f38\u3070\u3057/.test(t)) {
@@ -16667,7 +16667,7 @@ var _popFinished = false;
 var _popImages = [];          // 素材画像 [{dataUrl, name}]
 var _popRevisionImages = [];  // 修正時に追加した画像（次の送信で反映）
 var _popSavedList = [];
-try { _popSavedList = JSON.parse(localStorage.getItem('aidenPopList') || '[]'); } catch(e) {}
+try { _popSavedList = JSON.parse(localStorage.getItem('weirPopList') || '[]'); } catch(e) {}
 
 function popSelectType(type, el) {
   _popType = type;
@@ -17042,7 +17042,7 @@ function popSave() {
   if(!name) return;
   var saved = {id:Date.now(), name:name, version:_popVersion, savedAt:new Date().toLocaleString('ja-JP'), data:JSON.parse(JSON.stringify(_popCurrentData))};
   _popSavedList.unshift(saved);
-  try { localStorage.setItem('aidenPopList', JSON.stringify(_popSavedList)); } catch(e) {}
+  try { localStorage.setItem('weirPopList', JSON.stringify(_popSavedList)); } catch(e) {}
   popRefreshSavedList();
   alert('\u300c' + name + '\u300d\u3068\u3057\u3066\u4fdd\u5b58\u3057\u307e\u3057\u305f');
 }
@@ -17817,7 +17817,7 @@ async function saveEscalationSettings() {
 var _origShowPageSupport = showPage;
 showPage = function(pageId, catId) {
   _origShowPageSupport(pageId, catId);
-  if (pageId === 'support-aiden') loadSupportTickets();
+  if (pageId === 'support-weir') loadSupportTickets();
   if (pageId === 'support-enduser') loadEndUserChats();
   if (pageId === 'support-faq') { loadFaqTable(); loadEscalationSettings(); }
   if (pageId === 'brand-news' && typeof loadBrandContents === 'function') loadBrandContents();
@@ -17873,7 +17873,7 @@ function floatNewTicket(category) {
 
 function goToSupportPage() {
   document.getElementById('supportFloatPopup').style.display = 'none';
-  showPage('support-aiden', 'support');
+  showPage('support-weir', 'support');
 }
 
 // ===================================================================
@@ -19271,7 +19271,7 @@ async function loadAiHistory() {
 
 (function(){
   const params = new URLSearchParams(location.search);
-  new AidenChatWidget({
+  new WeirChatWidget({
     contextType: 'merchant',
     storeId: params.get('store_id') || null,
     brandId: params.get('brand_id') || null,

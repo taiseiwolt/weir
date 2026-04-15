@@ -1,8 +1,8 @@
-# Weir 決定事項インデックス
+# AIden 決定事項インデックス
 
 > 詳細は `.claude/decisions/` フォルダ内の各ファイルを参照
 > **このファイルがProject Knowledgeにアップロードされる唯一のdecisionsファイル**
-> 最終更新: 2026-04-14
+> 最終更新: 2026-04-15
 >
 > **【Claudeの必須ルール】このファイルを更新した場合、Claudeは必ず以下を実行すること:**
 > **① ローカルファイル（`/Users/taisei/Desktop/aiden-demo/aiden-decisions-index.md`）を更新する**
@@ -68,7 +68,7 @@
 
 ---
 
-## 開発・運用ルール（D-01〜D-19、D-77〜D-115）
+## 開発・運用ルール（D-01〜D-19、D-77〜D-119）
 - D-01 [feedback] CC依頼: 本番URL確認必須。スキップ時は「未確認」と明記
 - D-02 [feedback] CC依頼・方針決定時のエージェント横断レビュー必須
 - D-03 [feedback] アップロード用mdファイルはワンクリックDL可能なファイル形式で渡す
@@ -90,9 +90,9 @@
 - D-19 [feedback] CC完了報告フォーマット: status/summary/changes/verification/manual_actions
 - D-77 [project] DBに存在しないテーブル: brand_contents/crm_templates/sns_account_settings。migration SQLで参照禁止
 - D-78 [project] staff_accounts RLS: 現在USING(true)に一時緩和中。POC後にbrand_idスコープに再制限
-- D-79 [project] 管理マスタ+顧客管理ログイン: taisei.maeda@weir.co.jp / AidenTest2026!（role: owner）
+- D-79 [project] 管理マスタ+顧客管理ログイン: taisei.maeda@aiden-jp.net / AidenTest2026!（role: owner）
 - D-80 [reference] Vercelデプロイ方法: source ~/.nvm/nvm.sh && cd /Users/taisei/Desktop/aiden-demo && vercel --prod --yes 2>&1
-- D-81 [project] ✅ L-10 admin@weir.co.jpエイリアス作成完了(2026-04-05)
+- D-81 [project] ✅ L-10 admin@aiden-jp.netエイリアス作成完了(2026-04-05)
 - D-82 [reference] staff_accounts.role CHECK制約: owner/editor/viewerのみ許可
 - D-83 [project] ハードコードでのデータ生成・表示は一切禁止。nullの方がマシ。フロント・バックエンド問わず全コードに適用(2026-04-10確定)
 - D-84 [project] 用語統一(2026-04-10): 法人=merchant、店舗=venue。コード変数名・ドキュメント・会話内・DB含め完全統一
@@ -122,17 +122,33 @@
 - D-108 [project] HPテンプレートシステム実装済み(2026-04-09): templates/brand_templatesテーブル・public/templates/template-a〜e完備。ブランド登録時にテンプレート選択必須化 commit 6a086aa
 - D-109 [project] brand_hero_slides RLS追加(2026-04-14): authenticated INSERT/DELETEポリシー追加。mediaバケット統合（ロゴ: {brand_id}/logo/、ヒーロー: {brand_id}/hero/）commit e59fe48
 - D-110 [project] weir-common.js slug解決バグ修正(2026-04-14): venues.slug→brands.slug参照に変更。誤コメント削除。commit 2f32508
-- D-111 [project] テンプレートファイル名変更(2026-04-14): aiden_corp_template→aiden_merchant_template、aiden_store_template→aiden_venue_template。commit 84320a7
-- D-112 [project] 店舗一括登録ヘッダー検証追加(2026-04-14): BULK_TEMPLATESとTEMPLATESの混同防止。誤ったファイルアップロード時に「データ一括管理ページを使用してください」と誘導。commit 2534582
+- D-111 [project] テンプレートファイル名変更(2026-04-14): weir_corp_template→weir_merchant_template、weir_store_template→weir_venue_template。commit 84320a7
+- D-112 [project] 店舗一括登録ヘッダー検証追加(2026-04-14): BULK_TEMPLATESとTEMPLATESの混同防止。commit 2534582
 - D-113 [project] ブランド管理UI修正(2026-04-14): 法人詳細ブランド一覧タブ・ブランド詳細法人ID表示・サービス設定デリバリー/予約追加・HP準備中制御・テンプレート選択必須化。commits 352daf0 + 6a086aa
 - D-114 [project] デザイン/HP設定修正(2026-04-14): D-83違反是正（初期値null化）・カスタムドメインaidenドメイン表記削除・brand_templates.customization.colors同期バグ修正・ロゴ+ヒーローバナードロップゾーン追加。commits 5a76990 + e59fe48
-- D-115 [feedback] 店舗テンプレートの「価格帯」列（col 7）は未使用のため削除済み（APIのPOSTボディに含まれない。「昼の価格帯」「夜の価格帯」で完全カバー）。ヘッダー検証の「店舗名*」一致チェックのバグも同時修正。commit c9ee65c(2026-04-14)
+- D-115 [feedback] 店舗テンプレートの「価格帯」列（col 7）は未使用のため削除済み（APIのPOSTボディに含まれない）。ヘッダー検証の「店舗名*」一致チェックのバグも同時修正。commit c9ee65c(2026-04-14)
+- D-116 [project] 店舗一括登録0件バグ修正(2026-04-15): venuesテーブルの実カラムはhas_takeout/has_delivery/reservation_enabled（delivery_enabled等は存在しない）。API normalizeStoresBody()追加。commit 3c846cb
+- D-117 [project] サービス名をAIden→Weirに変更決定(2026-04-15): 商標調査済み（J-PlatPat: 第09類・42類に登録・出願なし）。weir.co.jpドメイン取得済み
+- D-118 [project] Weir リネームフェーズ1完了(2026-04-15): コード内文字列一括置換150ファイル・881箇所。EF再デプロイ11本・Vercel再デプロイ・DB platform_settings更新完了。commit 064b18f
+- D-119 [project] Weir リネームフェーズ2完了(2026-04-15): ファイルリネーム40本（weir-*.html/js/css）・内部リンク968箇所置換・vercel.json/robots.txt更新。Vercel再デプロイ完了。commit 82f95dd
 
 ---
 
-## 命名規則（2026-04-10確定）
-- 受注アプリ: Flutter製受注管理アプリの社内外共通名称。GitHubリポジトリ名aiden-posは維持
-- Weir Hub: Uber Eats/出前館等マーケットプレイス注文受注サービス開始時のサービス名（将来）
+## Weir リネーム残対応（Taisei手動作業）
+- W-01 [project] ⏳ weir.co.jp → Vercelカスタムドメイン追加（DNS反映待ち）
+- W-02 [project] ⏳ ResendにWeir用ドメイン追加・DNS設定
+- W-03 [project] ⏳ GitHubリポジトリ名変更（aiden-demo → weir）
+- W-04 [project] ⏳ Supabaseプロジェクト名変更
+- W-05 [project] ⏳ Vercelプロジェクト名変更
+- W-06 [project] ⏳ Stripeの会社名・説明文変更
+- W-07 [project] ⏳ Flutter受注アプリ（aiden-pos → weir-pos）CCに別途依頼
+
+---
+
+## 命名規則（2026-04-15更新）
+- サービス名: **Weir**（旧: AIden）
+- ドメイン: **weir.co.jp**（旧: aiden-jp.net）
+- 受注アプリ: Flutter製受注管理アプリの社内外共通名称。GitHubリポジトリ名aiden-posは移行予定
 - merchant: 法人（DB: merchants）
 - venue: 店舗（DB: venues）
 
@@ -148,7 +164,7 @@
 ---
 
 ## 来店予約仕様（R-01〜R-10）
-- R-01〜R-08: 基本仕様確定済み（詳細はdecisions/reservations.md）
+- R-01〜R-08: 基本仕様確定済み
 - R-09 [project] ✅ バックエンド全完了(2026-03-27)
 - R-10 [user] 来店予約は課金対象外・全プラン無償提供(2026-04-11確定)
 
@@ -173,20 +189,6 @@
 
 ---
 
-## Uber Direct連携仕様（UD-01〜UD-07）— 仕様確定・実装はPOC後
-
-| # | 項目 | 決定内容 |
-|---|---|---|
-| UD-01 | デリバリーパートナー | Uber Directのみ（Wolt日本撤退） |
-| UD-02 | APIアカウント管理 | Weirが一括保有・Mxに代わってAPIを呈請 |
-| UD-03 | 実装タイミング | POC後 |
-| UD-04 | 配送料方式① | UDの見積もり料金をそのままエンドユーザーに表示・負担 |
-| UD-05 | 配送料方式② | Mxが任意に設定（固定/無料閾値/将来:距離帯別）。delivery_fee_settingsテーブルで管理 |
-| UD-06 | 配達員手配 | confirm-order EF内で自動手配 |
-| UD-07 | 自社配達との切替 | 店舗設定でデフォルト決め、受注アプリで注文単位に変更可能 |
-
----
-
 ## products.sale_status CHECK制約（2026-04-12確認）
 有効値: 'on_sale' / 'sold_out' / 'discontinued' / 'sold_out_today'
 ※ 'available' は無効（使用不可）
@@ -205,4 +207,4 @@
 - L-01 [reference] 事業者名: 個人事業主 前田 大生（屋号: Weir）
 - L-02 [reference] 所在地: 渋谷道玄坂東急ビル2F-C（GMOバーチャルオフィス）
 - L-09 [reference] PP・利用規約の公開URL作成完了
-- L-10 [project] ✅ admin@weir.co.jpエイリアス作成完了(2026-04-05)
+- L-10 [project] ✅ admin@aiden-jp.netエイリアス作成完了(2026-04-05)

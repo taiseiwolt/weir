@@ -155,13 +155,13 @@ async function resolveBrandId() {
     if (domainMatch && domainMatch.length > 0) return domainMatch[0].id;
   }
   if (_brandIdParam) return _brandIdParam;
-  if (!_brandParam) return sessionStorage.getItem('aiden_brand_id');
+  if (!_brandParam) return sessionStorage.getItem('weir_brand_id');
   var { data: brandBySlug } = await sb.from('brands').select('id').eq('slug', _brandParam).limit(1);
   if (brandBySlug && brandBySlug.length > 0) return brandBySlug[0].id;
   var prefix = _brandParam.split('-')[0];
   var { data } = await sb.from('venues').select('brand_id').ilike('slug', prefix + '-%').limit(1);
   if (data && data.length > 0) return data[0].brand_id;
-  return sessionStorage.getItem('aiden_brand_id');
+  return sessionStorage.getItem('weir_brand_id');
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

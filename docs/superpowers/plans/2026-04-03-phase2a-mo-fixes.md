@@ -103,7 +103,7 @@ function useAddress(){
 
   // Save address data to sessionStorage for order-store/checkout pages
   try {
-    sessionStorage.setItem('aiden_user_address', JSON.stringify({
+    sessionStorage.setItem('weir_user_address', JSON.stringify({
       address: userAddress,
       lat: userLat,
       lng: userLng,
@@ -118,10 +118,10 @@ function useAddress(){
 
 - [ ] **Step 3: onOrderBtnClick()のsessionStorageに住所情報を追加**
 
-`onOrderBtnClick()` (line 1750-1762) の `sessionStorage.setItem('aiden_selected_store', ...)` に住所フィールドを追加:
+`onOrderBtnClick()` (line 1750-1762) の `sessionStorage.setItem('weir_selected_store', ...)` に住所フィールドを追加:
 
 ```javascript
-sessionStorage.setItem('aiden_selected_store', JSON.stringify({
+sessionStorage.setItem('weir_selected_store', JSON.stringify({
   storeId: s.id,
   storeName: s.name,
   storeAddr: s.addr,
@@ -196,9 +196,9 @@ JS側の `checkDeliveryZone()` でテキストを設定する際に `display:blo
 ページ初期化部分（line 1014付近）に住所読み込みを追加:
 
 ```javascript
-var stored = JSON.parse(sessionStorage.getItem('aiden_selected_store') || '{}');
+var stored = JSON.parse(sessionStorage.getItem('weir_selected_store') || '{}');
 // Read user address from sessionStorage
-var addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
+var addrData = JSON.parse(sessionStorage.getItem('weir_user_address') || '{}');
 let userAddress = addrData.address || stored.userAddress || '';
 let userLat = addrData.lat || stored.userLat || null;
 let userLng = addrData.lng || stored.userLng || null;
@@ -208,7 +208,7 @@ let userLng = addrData.lng || stored.userLng || null;
 
 - [ ] **Step 3: checkout遷移時に住所をsessionStorageに含める**
 
-`goToCheckout()` 関数内の `aiden_checkout_data` sessionStorage保存に `userAddress`, `userLat`, `userLng` を追加。
+`goToCheckout()` 関数内の `weir_checkout_data` sessionStorage保存に `userAddress`, `userLat`, `userLng` を追加。
 
 - [ ] **Step 4: Commit**
 
@@ -319,7 +319,7 @@ git commit -m "fix: replace hardcoded store fallback with generic defaults and e
 
 ```javascript
 // Prefill address from sessionStorage
-var addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
+var addrData = JSON.parse(sessionStorage.getItem('weir_user_address') || '{}');
 if (addrData.address) {
   // Show new address form (not saved address dropdown)
   var newAddrForm = document.getElementById('newAddressForm');
@@ -448,8 +448,8 @@ git commit -m "fix: rename coupon section, add 'none' option as default, hide co
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
-  if (typeof AidenChatWidget !== 'undefined') {
-    window._aidenChat = new AidenChatWidget({
+  if (typeof WeirChatWidget !== 'undefined') {
+    window._weirChat = new WeirChatWidget({
       contextType: 'enduser',
       storeId: params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
@@ -460,7 +460,7 @@ git commit -m "fix: rename coupon section, add 'none' option as default, hide co
 </script>
 ```
 
-order-store.html line 2741-2751 と同じパターン。`typeof AidenChatWidget !== 'undefined'` チェックを追加して、ファイル読込失敗時のエラーを防止。
+order-store.html line 2741-2751 と同じパターン。`typeof WeirChatWidget !== 'undefined'` チェックを追加して、ファイル読込失敗時のエラーを防止。
 
 - [ ] **Step 2: Commit**
 

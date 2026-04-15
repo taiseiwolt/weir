@@ -575,42 +575,42 @@ Replace/extend the existing `TEMPLATES` object and add `BULK_TEMPLATES`:
 ```javascript
 const BULK_TEMPLATES = {
   corporation: {
-    filename: 'aiden_corp_template.csv',
+    filename: 'weir_corp_template.csv',
     format: 'csv',
     headers: ['法人名*', '代表者*', 'ステータス(active/trial)', '会社HP URL', '採用ページURL'],
     keys: ['name', 'representative', 'status', 'website_url', 'recruit_url'],
     sample: [['株式会社サンプル', '山田太郎', 'active', 'https://example.co.jp', 'https://example.co.jp/recruit']],
   },
   brand: {
-    filename: 'aiden_brand_template.csv',
+    filename: 'weir_brand_template.csv',
     format: 'csv',
     headers: ['法人名*', 'ブランド名*', 'スラッグ*', 'キャッチコピー', 'メインカラー(hex)', 'ロゴ絵文字', 'フォント'],
     keys: ['corp_name', 'name', 'slug', 'tagline', 'main_color', 'logo_emoji', 'font'],
     sample: [['株式会社サンプル', '焼肉サンプル', 'sample-yakiniku', '最高の一品', '#DC3232', '🥩', 'Noto Sans JP']],
   },
   store: {
-    filename: 'aiden_store_template.xlsx',
+    filename: 'weir_store_template.xlsx',
     format: 'xlsx',
     headers: ['ブランドスラッグ*', '店舗名*', 'スラッグ', '住所', '電話番号', 'メール', 'ジャンル', '緯度', '経度', 'テイクアウト(ON/OFF)', 'デリバリー(ON/OFF)', '席予約(ON/OFF)', '最低注文金額', '準備時間(分)'],
     keys: ['brand_slug', 'name', 'slug', 'address', 'phone', 'email', 'genre', 'lat', 'lng', 'has_takeout', 'has_delivery', 'reservation_enabled', 'min_order_amount', 'prep_time_minutes'],
     sample: [['sumibite', '渋谷店', 'shibuya', '東京都渋谷区道玄坂1-12-5', '03-6452-1234', 'shibuya@example.com', '焼肉', '35.6595', '139.7005', 'ON', 'OFF', 'ON', '1500', '30']],
   },
   menu_category: {
-    filename: 'aiden_menu_category_template.xlsx',
+    filename: 'weir_menu_category_template.xlsx',
     format: 'xlsx',
     headers: ['ブランドスラッグ*', 'カテゴリ名*', '表示順'],
     keys: ['brand_slug', 'name', 'sort_order'],
     sample: [['sumibite', '焼肉', '1']],
   },
   menu_product: {
-    filename: 'aiden_menu_product_template.xlsx',
+    filename: 'weir_menu_product_template.xlsx',
     format: 'xlsx',
     headers: ['ブランドスラッグ*', 'カテゴリ名*', '商品名*', '説明', '基本価格', '表示順', '利用可能(ON/OFF)'],
     keys: ['brand_slug', 'category_name', 'name', 'description', 'base_price', 'sort_order', 'sale_status'],
     sample: [['sumibite', '焼肉', '特選カルビ', '厳選A5ランク黒毛和牛', '1280', '1', 'ON']],
   },
   menu_size: {
-    filename: 'aiden_menu_size_template.xlsx',
+    filename: 'weir_menu_size_template.xlsx',
     format: 'xlsx',
     headers: ['ブランドスラッグ*', '商品名*', 'サイズラベル*', '価格*', '表示順'],
     keys: ['brand_slug', 'product_name', 'label', 'price', 'sort_order'],
@@ -991,19 +991,19 @@ The customer-admin version reuses the same BULK_TEMPLATES definition and API cal
 // BULK IMPORT (Customer Admin)
 const CA_BULK_TEMPLATES = {
   corporation: {
-    filename: 'aiden_corp_template.csv', format: 'csv',
+    filename: 'weir_corp_template.csv', format: 'csv',
     headers: ['法人名*','代表者*','ステータス(active/trial)','会社HP URL','採用ページURL'],
     keys: ['name','representative','status','website_url','recruit_url'],
     sample: [['株式会社サンプル','山田太郎','active','https://example.co.jp','https://example.co.jp/recruit']],
   },
   brand: {
-    filename: 'aiden_brand_template.csv', format: 'csv',
+    filename: 'weir_brand_template.csv', format: 'csv',
     headers: ['法人名*','ブランド名*','スラッグ*','キャッチコピー','メインカラー(hex)','ロゴ絵文字','フォント'],
     keys: ['corp_name','name','slug','tagline','main_color','logo_emoji','font'],
     sample: [['株式会社サンプル','焼肉サンプル','sample-yakiniku','最高の一品','#DC3232','🥩','Noto Sans JP']],
   },
   store: {
-    filename: 'aiden_store_template.xlsx', format: 'xlsx',
+    filename: 'weir_store_template.xlsx', format: 'xlsx',
     headers: ['ブランドスラッグ*','店舗名*','スラッグ','住所','電話番号','メール','ジャンル','緯度','経度','テイクアウト(ON/OFF)','デリバリー(ON/OFF)','席予約(ON/OFF)','最低注文金額','準備時間(分)'],
     keys: ['brand_slug','name','slug','address','phone','email','genre','lat','lng','has_takeout','has_delivery','reservation_enabled','min_order_amount','prep_time_minutes'],
     sample: [['sumibite','渋谷店','shibuya','東京都渋谷区道玄坂1-12-5','03-6452-1234','shibuya@example.com','焼肉','35.6595','139.7005','ON','OFF','ON','1500','30']],

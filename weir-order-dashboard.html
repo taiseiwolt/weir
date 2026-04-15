@@ -638,7 +638,7 @@ const STORE_SLUG = new URLSearchParams(location.search).get('store_slug') || '';
 let STORE_ID = null; // Set after initial load
 
 async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('aiden_token');
+  const token = localStorage.getItem('weir_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, { ...options, headers });
@@ -655,7 +655,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 // Channel mapping: Supabase value -> display name
-const CH_MAP = {aiden:'Weir', aiden_qr:'Weir QR', ubereats:'Uber Eats', demaecan:'出前館', wolt:'Wolt', menu:'menu'};
+const CH_MAP = {weir:'Weir', weir_qr:'Weir QR', ubereats:'Uber Eats', demaecan:'出前館', wolt:'Wolt', menu:'menu'};
 // Order type mapping: Supabase value -> dashboard value
 const OT_MAP = {dinein:'dine', pickup:'takeout', delivery:'delivery'};
 
@@ -1075,13 +1075,13 @@ function renderMenu(){
 }
 function toggleStock(id,v){const m=MENU.find(x=>x.id===id);if(m){m.avail=v;showToast(v?`✅ ${m.name} 販売再開`:`🚫 ${m.name} 品切れ`);renderMenu();}}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('aiden_token');window.location.href='/';}
+async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('weir_token');window.location.href='/';}
 window.addEventListener('pageshow',function(e){if(e.persisted){window.location.reload();}});
 
 // ===== SETTINGS =====
 const CHANNELS=[
-  {id:'aiden',name:'Weir（自社デリバリー）',icon:'🔴',active:true},
-  {id:'aiden_qr',name:'Weir QR（店内注文）',icon:'📱',active:true},
+  {id:'weir',name:'Weir（自社デリバリー）',icon:'🔴',active:true},
+  {id:'weir_qr',name:'Weir QR（店内注文）',icon:'📱',active:true},
   {id:'demaecan',name:'出前館',icon:'🟠',active:true},
   {id:'ubereats',name:'Uber Eats',icon:'🟢',active:true},
   {id:'wolt',name:'Wolt',icon:'🔵',active:true},
@@ -1507,7 +1507,7 @@ function startReservationRealtime(){
 <script>
 (function(){
   const params = new URLSearchParams(location.search);
-  new AidenChatWidget({
+  new WeirChatWidget({
     contextType: 'merchant',
     storeId: params.get('venue_id') || params.get('store_id') || null,
     brandId: params.get('brand_id') || null,

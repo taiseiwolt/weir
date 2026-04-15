@@ -7,7 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const ALLOWED_ORIGINS = [
   'https://weir.co.jp',
   'https://www.weir.co.jp',
-  'https://aiden-demo.vercel.app',
+  'https://weir.vercel.app',
 ]
 
 // 開発環境ではlocalhostも許可

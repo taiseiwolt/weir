@@ -1,7 +1,7 @@
 const ALLOWED_ORIGINS = [
   'https://weir.co.jp',
   'https://taiseiwolt.github.io',
-  'https://aiden-demo.vercel.app',
+  'https://weir.vercel.app',
   'http://localhost:3000',
   'http://localhost:5500',
   'http://127.0.0.1:5500',

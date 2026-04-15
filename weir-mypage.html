@@ -749,7 +749,7 @@ async function resendVerificationFromBanner() {
 (function(){
   // Get member ID from localStorage if available
   const memberId = localStorage.getItem('weir_member_id') || null;
-  window._aidenChat = new AidenChatWidget({
+  window._weirChat = new WeirChatWidget({
     contextType: 'enduser',
     memberId: memberId,
     supabaseClient: typeof sb !== 'undefined' ? sb : null,

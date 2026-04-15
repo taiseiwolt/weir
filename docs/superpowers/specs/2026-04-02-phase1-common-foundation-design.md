@@ -84,7 +84,7 @@ window.AidenCommon = {
 1. カスタムドメイン照合 (`brands.custom_domain`)
 2. `?brand=` URLパラメータ (slug)
 3. store slugプレフィックス照合
-4. `sessionStorage.getItem('aiden_brand_id')`
+4. `sessionStorage.getItem('weir_brand_id')`
 5. `DEFAULT_BRAND_ID` (炭火亭)
 
 ### loadBrand(brandId) — 取得カラム
@@ -187,13 +187,13 @@ font_color       → --brand-font-color
 - 言語: ja / en / zh / ko / fr / it / id
 
 ### 言語の永続化
-- `sessionStorage.setItem('aiden_lang', lang)` で保存
-- ページ読込時に `sessionStorage.getItem('aiden_lang')` を参照
+- `sessionStorage.setItem('weir_lang', lang)` で保存
+- ページ読込時に `sessionStorage.getItem('weir_lang')` を参照
 - デフォルト: `ja`
 
 ### changeLang(lang) 統一実装
 1. `AidenCommon.lang = lang`
-2. `sessionStorage.setItem('aiden_lang', lang)`
+2. `sessionStorage.setItem('weir_lang', lang)`
 3. `document.querySelectorAll('[data-i18n]')` を走査 → `textContent` or `innerHTML` を設定
 4. `document.querySelectorAll('[data-i18n-placeholder]')` を走査 → `placeholder` を設定
 5. `document.getElementById('html-root').lang = lang` (html-root IDがある場合)

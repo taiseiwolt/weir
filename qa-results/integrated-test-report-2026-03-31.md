@@ -96,7 +96,7 @@
 ### テストセレクタ偽陽性（実機能は存在）
 | ID | 内容 | 実際の状態 |
 |---|---|---|
-| D-05 | チャットFAB未検出 | `window._aidenChat.open()` で実装済み |
+| D-05 | チャットFAB未検出 | `window._weirChat.open()` で実装済み |
 | E-01 | 予約モーダル未表示 | `#res-modal-bg` + `openResModal()` で実装済み |
 
 ### コミット

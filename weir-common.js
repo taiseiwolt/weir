@@ -77,7 +77,7 @@
     }
 
     // 3. sessionStorage
-    var stored = sessionStorage.getItem('aiden_brand_id');
+    var stored = sessionStorage.getItem('weir_brand_id');
     if (stored) return { type: 'id', value: stored };
 
     // D-83: no hardcoded default. Caller must handle null.
@@ -99,7 +99,7 @@
       if (res.error) throw res.error;
       var brand = res.data;
       if (brand && brand.id) {
-        sessionStorage.setItem('aiden_brand_id', brand.id);
+        sessionStorage.setItem('weir_brand_id', brand.id);
       }
       return brand;
     });
@@ -255,7 +255,7 @@
   function changeLang(lang) {
     if (!I18N[lang]) return;
     AidenCommon.lang = lang;
-    sessionStorage.setItem('aiden_lang', lang);
+    sessionStorage.setItem('weir_lang', lang);
 
     var dict = I18N[lang];
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
@@ -563,7 +563,7 @@
     var showFooter = options.footer !== undefined ? options.footer : true;
 
     // Restore language from sessionStorage
-    var savedLang = sessionStorage.getItem('aiden_lang');
+    var savedLang = sessionStorage.getItem('weir_lang');
     if (savedLang && I18N[savedLang]) {
       AidenCommon.lang = savedLang;
     }

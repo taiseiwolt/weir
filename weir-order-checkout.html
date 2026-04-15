@@ -751,7 +751,7 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const _urlParams = new URLSearchParams(window.location.search);
-const STORE_ID     = _urlParams.get('venue_id') || _urlParams.get('store_id') || sessionStorage.getItem('aiden_store_id') || '';
+const STORE_ID     = _urlParams.get('venue_id') || _urlParams.get('store_id') || sessionStorage.getItem('weir_store_id') || '';
 const STORE_SLUG   = _urlParams.get('store_slug') || '';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -898,7 +898,7 @@ let CHECKOUT_DATA = {
 async function loadCheckoutData() {
   // 1. sessionStorageからカートデータ取得（store画面から渡される）
   try {
-    const saved = sessionStorage.getItem('aiden_checkout_data');
+    const saved = sessionStorage.getItem('weir_checkout_data');
     if (saved) {
       const parsed = JSON.parse(saved);
       CHECKOUT_DATA = { ...CHECKOUT_DATA, ...parsed };
@@ -1047,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSavedAddresses();
 
     // Prefill address from sessionStorage
-    var addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}');
+    var addrData = JSON.parse(sessionStorage.getItem('weir_user_address') || '{}');
     if (addrData.street || addrData.address) {
       var newAddrForm = document.getElementById('newAddressForm');
       if (newAddrForm) newAddrForm.style.display = '';
@@ -1466,13 +1466,13 @@ function updatePriceSummary() {
 
   // FIFO ポイント消費: source 別の内訳を計算（古いポイントから消費）
   let _fifoRemaining = pointDiscount;
-  let _aidenPointsUsed = 0, _normalPointsUsed = 0;
+  let _weirPointsUsed = 0, _normalPointsUsed = 0;
   if(CHECKOUT_DATA.pointTransactions && CHECKOUT_DATA.pointTransactions.length > 0) {
     for(var _i = 0; _i < CHECKOUT_DATA.pointTransactions.length; _i++) {
       if(_fifoRemaining <= 0) break;
       var _txn = CHECKOUT_DATA.pointTransactions[_i];
       var _consume = Math.min(_txn.remaining_balance, _fifoRemaining);
-      if(_txn.source === 'aiden_compensation') _aidenPointsUsed += _consume;
+      if(_txn.source === 'aiden_compensation') _weirPointsUsed += _consume;
       else _normalPointsUsed += _consume;
       _fifoRemaining -= _consume;
     }
@@ -1480,7 +1480,7 @@ function updatePriceSummary() {
     // フォールバック（トランザクション未ロード時は全て通常ポイント扱い）
     _normalPointsUsed = pointDiscount;
   }
-  CHECKOUT_DATA.aidenPointsUsed = _aidenPointsUsed;
+  CHECKOUT_DATA.weirPointsUsed = _weirPointsUsed;
   CHECKOUT_DATA.normalPointsUsed = _normalPointsUsed;
   // DI-01: 手数料内訳を保存（注文INSERT時に使用）
   CHECKOUT_DATA.lastDeliveryFee = delivery;
@@ -1535,7 +1535,7 @@ function goBackToMenu() {
     unitPrice: item.price
   }));
   try {
-    sessionStorage.setItem('aiden_cart_restore', JSON.stringify(storeCart));
+    sessionStorage.setItem('weir_cart_restore', JSON.stringify(storeCart));
   } catch(e) { /* ignored */ }
   let menuUrl = CHECKOUT_DATA.menuPageUrl || './weir-order-store.html';
   const _params = new URLSearchParams(window.location.search);
@@ -2002,16 +2002,16 @@ async function placeOrder() {
 
       // 冪等性キー生成（カート内容+ユーザーIDのハッシュ — 同一カートからの重複決済防止 IR-06）
       // sessionStorageに保存し、同一チェックアウトセッション中は同じキーを再利用
-      if (!sessionStorage.getItem('aiden_checkout_idem')) {
+      if (!sessionStorage.getItem('weir_checkout_idem')) {
         const cartSig = (CHECKOUT_DATA.cartItems || [])
           .map(i => (i.id || i.productId || '') + ':' + (i.qty || 1))
           .sort().join(',');
         const rawKey = (CHECKOUT_DATA.storeId || '') + '|' + cartSig + '|' + (sessionStorage.getItem('weir_member_id') || 'guest');
         let h = 0;
         for (let i = 0; i < rawKey.length; i++) { h = Math.imul(31, h) + rawKey.charCodeAt(i) | 0; }
-        sessionStorage.setItem('aiden_checkout_idem', 'idem_' + Math.abs(h).toString(36));
+        sessionStorage.setItem('weir_checkout_idem', 'idem_' + Math.abs(h).toString(36));
       }
-      const idempotencyKey = sessionStorage.getItem('aiden_checkout_idem');
+      const idempotencyKey = sessionStorage.getItem('weir_checkout_idem');
 
       // 1. Edge Function で PaymentIntent 作成 + 注文レコード作成（サーバー側で金額再計算）
       const res = await fetch(SUPABASE_URL + '/functions/v1/stripe-create-payment-intent', {
@@ -2043,7 +2043,7 @@ async function placeOrder() {
           } : null,
           idempotency_key: idempotencyKey,
           points_used: appliedPoints || 0,
-          aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+          aiden_points_used: CHECKOUT_DATA.weirPointsUsed || 0,
           normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
           member_id: sessionStorage.getItem('weir_member_id') || null,
           coupon_id: appliedCoupon ? (appliedCoupon.id || null) : null,
@@ -2161,11 +2161,11 @@ async function placeOrder() {
         }
 
         // ── 冪等性キーをクリア（次回注文用） ──
-        sessionStorage.removeItem('aiden_order_idempotency');
+        sessionStorage.removeItem('weir_order_idempotency');
 
         // ── sessionStorage にトラッキング情報を保存 ──
-        sessionStorage.setItem('aiden_tracking_token', trackingToken);
-        sessionStorage.setItem('aiden_last_order_id', displayId);
+        sessionStorage.setItem('weir_tracking_token', trackingToken);
+        sessionStorage.setItem('weir_last_order_id', displayId);
 
         // ── beforeunload 解除 ──
         window.removeEventListener('beforeunload', preventUnload);
@@ -2229,7 +2229,7 @@ async function placeOrder() {
             total_amount: totalAmount || null,
             payment_intent_id: piData?.payment_intent_id || null,
             failure_reason: e.message || 'Unknown error',
-            idempotency_key: sessionStorage.getItem('aiden_order_idempotency') || null,
+            idempotency_key: sessionStorage.getItem('weir_order_idempotency') || null,
             card_last4: e.payment_method?.card?.last4 || null,
             card_brand: e.payment_method?.card?.brand || null
           })
@@ -2250,7 +2250,7 @@ async function placeOrder() {
       const customerPhone = document.getElementById('custPhone').value.trim();
 
       var addrData = {};
-      try { addrData = JSON.parse(sessionStorage.getItem('aiden_user_address') || '{}'); } catch(e) {}
+      try { addrData = JSON.parse(sessionStorage.getItem('weir_user_address') || '{}'); } catch(e) {}
 
       const orderPayload = {
         venue_id: CHECKOUT_DATA.storeId || null,
@@ -2270,7 +2270,7 @@ async function placeOrder() {
         delivery_address: mode === 'delivery' ? (CHECKOUT_DATA.userAddress || null) : null,
         delivery_lat: mode === 'delivery' ? (addrData.lat || null) : null,
         delivery_lng: mode === 'delivery' ? (addrData.lng || null) : null,
-        aiden_points_used: CHECKOUT_DATA.aidenPointsUsed || 0,
+        aiden_points_used: CHECKOUT_DATA.weirPointsUsed || 0,
         normal_points_used: CHECKOUT_DATA.normalPointsUsed || 0,
         member_id: sessionStorage.getItem('weir_member_id') || null,
       };
@@ -2337,8 +2337,8 @@ async function placeOrder() {
         });
       } catch(emailErr) { console.warn('Order email skipped:', emailErr); }
 
-      sessionStorage.setItem('aiden_tracking_token', orderRow.tracking_token);
-      sessionStorage.setItem('aiden_last_order_id', orderRow.display_id);
+      sessionStorage.setItem('weir_tracking_token', orderRow.tracking_token);
+      sessionStorage.setItem('weir_last_order_id', orderRow.display_id);
       // IR-03/IR-04: 決済後ブラウザバック防止
       const trackingUrl = 'weir-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
       history.replaceState(null, '', trackingUrl);
@@ -2574,8 +2574,8 @@ document.addEventListener('keydown', function(e) {
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
-  if (typeof AidenChatWidget !== 'undefined') {
-    window._aidenChat = new AidenChatWidget({
+  if (typeof WeirChatWidget !== 'undefined') {
+    window._weirChat = new WeirChatWidget({
       contextType: 'enduser',
       storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,

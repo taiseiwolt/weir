@@ -84,7 +84,7 @@ Lines 3520-3530を削除:
 <script src="weir-chat-widget.js"></script>
 <script>
 (function(){
-  new AidenChatWidget({
+  new WeirChatWidget({
     contextType: 'merchant',
     supabaseClient: typeof sb !== 'undefined' ? sb : null,
     apiBase: 'https://weir.co.jp',

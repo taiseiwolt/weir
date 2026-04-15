@@ -64,7 +64,7 @@
 
 #### P1-4: 認証トークンがlocalStorageに保存
 - **対象**: `weir-order-dashboard.html` line 641, `weir-store.html` line 1036, `weir-order-tracking.html` line 251
-- **内容**: `localStorage.getItem('aiden_token')` — XSSが存在する場合、トークンが容易に窃取可能
+- **内容**: `localStorage.getItem('weir_token')` — XSSが存在する場合、トークンが容易に窃取可能
 - **影響**: セッションハイジャック（XSSとの組み合わせ）
 - **修正方針**: Supabase組み込みのセッション管理を使用する
 - **フェーズ影響**: Phase 1
