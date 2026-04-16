@@ -748,7 +748,7 @@ content.innerHTML = `
       <button class="btn btn-primary btn-sm" id="storeBasicBulkBtn" style="display:none" onclick="openStoreEdit('storeBasicSelector','storeBasicEdit')">選択した店舗を一括編集 →</button>
     </div>
     <table class="store-table" id="storeBasicTable">
-      <thead><tr><th style="width:3%"><input type="checkbox" onchange="toggleAllStores(this,'storeBasicTable')"></th><th style="width:25%">店舗名</th><th style="width:20%">住所</th><th style="width:12%">電話番号</th><th style="width:8%">ジャンル</th><th style="width:8%">テイクアウト</th><th style="width:8%">デリバリー</th><th style="width:8%">席予約</th><th style="width:8%">ステータス</th><th style="width:50px"></th></tr></thead>
+      <thead><tr><th style="width:3%"><input type="checkbox" onchange="toggleAllStores(this,'storeBasicTable')"></th><th style="width:22%">店舗名</th><th style="width:17%">住所</th><th style="width:10%">電話番号</th><th style="width:7%">ジャンル</th><th style="width:6%">テイクアウト</th><th style="width:6%">デリバリー</th><th style="width:6%">席予約</th><th style="width:7%">受注状態</th><th style="width:7%">ステータス</th><th style="width:50px"></th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -5852,6 +5852,29 @@ async function loadAdminFromSupabase() {
       }));
     }
 
+    // 2b. Load venue_channels for order status
+    if (STORES.length > 0) {
+      const storeIds = STORES.map(function(s){ return s.id; });
+      const {data: allChannels} = await sb.from('venue_channels')
+        .select('venue_id, channel_type, is_active, is_paused, paused_until')
+        .in('venue_id', storeIds);
+      if (allChannels) {
+        var now = new Date();
+        STORES.forEach(function(s) {
+          var chs = allChannels.filter(function(c){ return c.venue_id === s.id; });
+          if (chs.length === 0) { s._orderStatus = 'none'; return; }
+          var activeChs = chs.filter(function(c){ return c.is_active; });
+          if (activeChs.length === 0) { s._orderStatus = 'none'; return; }
+          var pausedCount = activeChs.filter(function(c){
+            return c.is_paused && (!c.paused_until || new Date(c.paused_until) > now);
+          }).length;
+          if (pausedCount === 0) s._orderStatus = 'normal';
+          else if (pausedCount < activeChs.length) s._orderStatus = 'partial';
+          else s._orderStatus = 'all_paused';
+        });
+      }
+    }
+
     // 3. Categories (RLS: filtered by brand)
     const {data: cats, error: catErr} = await sb.from('categories').select('id, brand_id, name, sort_order').order('sort_order');
     if (catErr) errors.push('カテゴリ: ' + catErr.message);
@@ -6107,6 +6130,13 @@ function statusBadge(s) {
   const map = {'営業中':'success','営業時間外':'warning','休業中':'danger','閉店':'secondary'};
   return badge(s, map[s]||'secondary');
 }
+function orderStatusBadge(s) {
+  var st = s._orderStatus || 'none';
+  if (st === 'normal') return badge('正常','success');
+  if (st === 'partial') return badge('一部停止','warning');
+  if (st === 'all_paused') return badge('全停止','danger');
+  return badge('—','secondary');
+}
 
 function isAddressLike(val) {
   if(!val) return false;
@@ -6123,6 +6153,7 @@ const TABLE_CONFIGS = {
     <td class="store-name">${escH(storeBrandName(s.name))}</td><td style="font-size:11px">${escH(s.address)}</td><td>${escH(s.phone)}</td>
     <td style="font-size:10px">${s.genres&&s.genres.length?s.genres.slice(0,2).map(function(g){return escH(g);}).join(', ')+(s.genres.length>2?' +':''):escH(isAddressLike(s.genre)?'—':(s.genre||'—'))}</td>
     <td>${yesNo(s.takeout)}</td><td>${yesNo(s.delivery)}</td><td>${yesNo(s.reservation)}</td>
+    <td>${orderStatusBadge(s)}</td>
     <td>${statusBadge(s.status)}</td>
     <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openSingleStoreEditById('${escH(s.id)}')">編集</button></td>`,
   storeHoursTable: s => `

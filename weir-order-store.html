@@ -1248,6 +1248,12 @@ async function loadFromSupabase() {
       STORE_DATA._enabledServices = svcRows.map(r => r.service_key);
     }
 
+    // 10. Load venue_channels for pause/active state
+    var { data: channelRows } = await sb.from('venue_channels')
+      .select('channel_type, is_active, is_paused, paused_until')
+      .eq('venue_id', storeRows.id);
+    STORE_DATA._channels = channelRows || [];
+
   } catch(e) {
     var noticeEl = document.getElementById('infoBarNotice');
     if (noticeEl) {
@@ -1308,6 +1314,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.title = STORE_DATA.storeName + ' | Weir モバイルオーダー';
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' では現在「' + escH(modeName) + '」サービスをご利用いただけません。</p><a href="./weir-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
   }
+  function showPausedPage(modeName) {
+    document.title = STORE_DATA.storeName + ' | Weir モバイルオーダー';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">⏸️</div><h2 style="margin-bottom:8px">現在受付停止中です</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' の「' + escH(modeName) + '」は現在受付を停止しております。<br>しばらくしてから再度お試しください。</p><a href="./weir-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+  }
+  // venue_channels の受付可否判定
+  function isChannelAccepting(channelType) {
+    var channels = STORE_DATA._channels || [];
+    var now = new Date();
+    var ch = channels.find(function(c) { return c.channel_type && c.channel_type.includes(channelType); });
+    if (!ch) return true; // チャンネル未登録 = 制限なし
+    if (!ch.is_active) return false;
+    if (ch.is_paused) {
+      if (ch.paused_until && new Date(ch.paused_until) <= now) return true; // 期限切れ = 自動解除
+      return false; // 手動停止 or 期限内
+    }
+    return true;
+  }
   var modeNameMap = { delivery: 'デリバリー', takeout: 'テイクアウト', dinein: '店内注文', dine: '店内注文' };
   if (STORE_DATA._enabledServices && STORE_DATA._enabledServices.length > 0) {
     const modeMap = { delivery: 'mo_delivery', takeout: 'mo_takeout', dinein: 'mo_dinein', dine: 'mo_dinein' };
@@ -1326,6 +1349,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       showUnavailablePage('デリバリー');
       return;
     }
+  }
+
+  // venue_channels の is_paused チェック（サービス判定を通過後に受注停止を確認）
+  if (!isChannelAccepting(orderMode === 'dinein' || orderMode === 'dine' ? 'dinein' : orderMode)) {
+    showPausedPage(modeNameMap[orderMode] || orderMode);
+    return;
   }
 
   // 営業時間チェック
