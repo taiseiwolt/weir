@@ -2462,29 +2462,22 @@ function toggleHeroDesc() {
   toggle.textContent = desc.classList.contains('expanded') ? '閉じる ▲' : 'もっと見る ▼';
 }
 
-// VOICE ASSISTANT POC
+// VOICE ASSISTANT
 // ===================================================================
-// Voice Assistant POC
-// Current: Browser Web Speech API (click to talk)
-// Future: Picovoice Porcupine wake word ("Hey Weir") + STT
-// Requires: PICOVOICE_ACCESS_KEY env var (set up at console.picovoice.ai)
-//
-// To enable Porcupine wake word detection:
-// 1. Add SDK: [picovoice-porcupine-web@3.0 script tag]
-// 2. Set PICOVOICE_ACCESS_KEY
-// 3. Uncomment the porcupine init code below
+// Wake word ("ウィア") + voice command via Web Speech API.
+// On page load, starts background listening for the wake word;
+// detection switches to active voice command mode.
 // -------------------------------------------------------------------
 
-const PICOVOICE_KEY = ''; // Set via env or leave empty for demo mode
-let porcupineInstance = null;
 let isListening = false;
 let recognition = null;
+let wakeWordRecognition = null;
+let wakeWordActive = false;
 
 async function initVoiceAssistant() {
   const micBtn = document.getElementById('voice-mic-btn');
   if (!micBtn) return;
 
-  // Check for SpeechRecognition support
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     document.getElementById('voice-assistant').style.display = 'none';
     return;
@@ -2492,25 +2485,12 @@ async function initVoiceAssistant() {
 
   micBtn.addEventListener('click', toggleVoiceSearch);
 
-  // --- Porcupine wake word (commented out until Access Key is available) ---
-  // if (PICOVOICE_KEY && typeof PorcupineWeb !== 'undefined') {
-  //   try {
-  //     porcupineInstance = await PorcupineWeb.PorcupineWorker.create(
-  //       PICOVOICE_KEY,
-  //       [{ builtin: 'Hey Google', sensitivity: 0.7 }], // Replace with custom "Hey Weir" .ppn
-  //       (detection) => {
-  //         if (detection.index >= 0) {
-  //           // Wake word detected
-  //           startListening();
-  //         }
-  //       }
-  //     );
-  //     await porcupineInstance.start();
-
-  //   } catch (err) {
-  //     console.warn('[Voice] Porcupine init failed, falling back to click-to-talk', err);
-  //   }
-  // }
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    startWakeWordListening();
+  } catch(e) {
+    // マイク不許可時はクリックのみで動作（ウェイクワードなし）
+  }
 }
 
 function toggleVoiceSearch() {
@@ -2575,10 +2555,65 @@ function handleVoiceCommand(text) {
 function stopListening() {
   isListening = false;
   if (recognition) {
-    recognition.abort();
+    try { recognition.stop(); } catch(e) {}
     recognition = null;
   }
   updateMicUI('idle');
+  if (!wakeWordActive) {
+    setTimeout(startWakeWordListening, 300);
+  }
+}
+
+function startWakeWordListening() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  wakeWordRecognition = new SR();
+  wakeWordRecognition.lang = 'ja-JP';
+  wakeWordRecognition.continuous = false;
+  wakeWordRecognition.interimResults = false;
+
+  wakeWordRecognition.onresult = function(event) {
+    var transcript = event.results[0][0].transcript.toLowerCase().trim();
+    var isWakeWord =
+      transcript.includes('ウィア') ||
+      transcript.includes('ういあ') ||
+      transcript.includes('weir');
+    if (isWakeWord) {
+      startListening();
+    }
+  };
+
+  wakeWordRecognition.onend = function() {
+    if (!isListening && wakeWordActive) {
+      setTimeout(startWakeWordListening, 500);
+    }
+  };
+
+  wakeWordRecognition.onerror = function(e) {
+    if (e.error === 'not-allowed') {
+      wakeWordActive = false;
+      return;
+    }
+    if (wakeWordActive) {
+      setTimeout(startWakeWordListening, 1000);
+    }
+  };
+
+  wakeWordActive = true;
+  try {
+    wakeWordRecognition.start();
+  } catch(e) {
+    // 既に起動中の場合は無視
+  }
+}
+
+function stopWakeWordListening() {
+  wakeWordActive = false;
+  if (wakeWordRecognition) {
+    try { wakeWordRecognition.stop(); } catch(e) {}
+    wakeWordRecognition = null;
+  }
 }
 
 function updateMicUI(state) {
