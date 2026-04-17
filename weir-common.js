@@ -65,6 +65,31 @@
     if (brandIdParam) return { type: 'id', value: brandIdParam };
 
     var brandSlug = params.get('brand');
+
+    // 2b. Pathname fallback: Vercel rewrite (vercel.json:25) strips destination
+    //     query, so `/izakaya-ushio` arrives as pathname='/izakaya-ushio',
+    //     search=''. Derive the slug from the first path segment.
+    //     Phase 2-a forward-compat: '/izakaya-ushio/ra6DXDh' →
+    //     firstSegment='izakaya-ushio' is still correct.
+    //     NOTE: brand slugs are assumed ASCII (hyphenated english). Multibyte
+    //     slugs would need decodeURIComponent — out of Phase 1 scope.
+    if (!brandSlug) {
+      var pathname = window.location.pathname;
+      if (pathname && pathname !== '/') {
+        var firstSegment = pathname.slice(1).split('/')[0];
+        // Skip static files (favicon.ico, robots.txt, sitemap.xml, *.html, etc.)
+        var hasExtension = firstSegment.indexOf('.') !== -1;
+        // Mirror vercel.json:25 negative lookahead for reserved prefixes
+        var EXCLUDED_PREFIXES = ['api', 'legal', 'weir-', 'brand', '404', 'index', 'test-', 'e2e-', 'playwright', 'seed-', 'qa-', 'docs', 'public'];
+        var isExcluded = EXCLUDED_PREFIXES.some(function(p) {
+          return firstSegment === p || firstSegment.startsWith(p);
+        });
+        if (!hasExtension && !isExcluded && firstSegment) {
+          brandSlug = firstSegment;
+        }
+      }
+    }
+
     if (brandSlug) {
       var client = getSb();
       if (client) {
