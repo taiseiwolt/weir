@@ -287,30 +287,17 @@ img{max-width:100%}
           <input type="text" class="store-search-input" id="store-search-q" placeholder="エリア・駅名・店舗名で検索" data-i18n-placeholder="store_search_placeholder">
           <button class="store-search-btn" onclick="goStoreSearch()">🔍 <span data-i18n="search_btn">検索</span></button>
         </div>
-        <div class="area-links">
-          <button class="area-link" onclick="goStoreSearch('東京')" data-i18n="area_tokyo">東京</button>
-          <button class="area-link" onclick="goStoreSearch('神奈川')" data-i18n="area_kanagawa">神奈川</button>
-          <button class="area-link" onclick="goStoreSearch('大阪')" data-i18n="area_osaka">大阪</button>
-          <button class="area-link" onclick="goStoreSearch('愛知')" data-i18n="area_aichi">愛知</button>
-          <button class="area-link" onclick="goStoreSearch('福岡')" data-i18n="area_fukuoka">福岡</button>
-          <button class="area-link" onclick="goStoreSearch('北海道')" data-i18n="area_hokkaido">北海道</button>
-          <button class="area-link" onclick="goStoreSearch()" data-i18n="area_all">全国一覧</button>
-        </div>
+        <div class="area-links" id="area-links" style="display:none"></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ===== ブランドからのご案内 ===== -->
-<section class="guide-section">
+<section class="guide-section" id="guide-section" style="display:none">
   <div class="guide-inner">
     <div class="sec-title" data-i18n="guide_title">ご案内</div>
-    <div class="guide-scroll" id="guide-scroll">
-      <div class="guide-item"><div class="guide-item-img" style="background:linear-gradient(135deg,#0a2800,#1a5200)">📱</div><div class="guide-item-title" data-i18n="guide1">LINE公式アカウント<br>友だち募集中！</div></div>
-      <div class="guide-item"><div class="guide-item-img" style="background:linear-gradient(135deg,#2d0a00,#7a2200)">🎁</div><div class="guide-item-title" data-i18n="guide2">デジタルギフト<br>贈り物に最適</div></div>
-      <div class="guide-item"><div class="guide-item-img" style="background:linear-gradient(135deg,#001a2d,#004a7a)">🥇</div><div class="guide-item-title" data-i18n="guide3">60歳以上のお客様対象<br>シニアカード配布中</div></div>
-      <div class="guide-item"><div class="guide-item-img" style="background:linear-gradient(135deg,#1a1a00,#5a5a00)">✨</div><div class="guide-item-title" data-i18n="guide4">キャッシュレス決済が<br>さらに便利になりました！</div></div>
-    </div>
+    <div class="guide-scroll" id="guide-scroll"></div>
   </div>
 </section>
 
@@ -577,7 +564,7 @@ async function loadFromSupabase() {
     }
 
     // 3. Load venues for reservation dropdown
-    var storesRes = await sb.from('venues').select('id,name').eq('brand_id', brandId).order('name');
+    var storesRes = await sb.from('venues').select('id,name,address').eq('brand_id', brandId).order('name');
     if (storesRes.data && storesRes.data.length > 0) {
       var sel = document.getElementById('rm-store');
       if (sel) {
@@ -585,6 +572,25 @@ async function loadFromSupabase() {
         storesRes.data.forEach(function(s) {
           sel.innerHTML += '<option value="' + escH(s.name) + '">' + escH(s.name) + '</option>';
         });
+      }
+
+      // Area links — extract prefectures from venue addresses (JIS X 0401 order)
+      var PREF_ORDER = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+      var prefSet = {};
+      storesRes.data.forEach(function(s) {
+        if (!s.address) return;
+        var m = s.address.match(/^(.+?[都道府県])/);
+        if (m && PREF_ORDER.indexOf(m[1]) !== -1) prefSet[m[1]] = true;
+      });
+      var prefs = Object.keys(prefSet).sort(function(a,b){ return PREF_ORDER.indexOf(a) - PREF_ORDER.indexOf(b); });
+      if (prefs.length > 1) {
+        var al = document.getElementById('area-links');
+        if (al) {
+          al.innerHTML = prefs.map(function(p) {
+            return '<button class="area-link" onclick="goStoreSearch(\'' + escH(p) + '\')">' + escH(p) + '</button>';
+          }).join('') + '<button class="area-link" onclick="goStoreSearch()" data-i18n="area_all">全国一覧</button>';
+          al.style.display = '';
+        }
       }
     }
 
@@ -636,6 +642,8 @@ async function loadFromSupabase() {
             return '<div class="guide-item"><div class="guide-item-img" style="background:url(' + encodeURI(m.url) + ') center/cover no-repeat"></div><div class="guide-item-title">' + escH(m.title || '') + (m.description ? '<br>' + escH(m.description) : '') + '</div></div>';
           }).join('');
         }
+        var gsect = document.getElementById('guide-section');
+        if (gsect) gsect.style.display = '';
       }
     }
 
@@ -682,121 +690,81 @@ function renderDemoNews() {
 // Page-specific translations
 AidenCommon.addTranslations({
   ja: {
-    hero_catch:'', hero_btn:'🔥 こだわり',
+    hero_catch:'',
     sec_campaign:'キャンペーン',
-    season_title:'🌸 春の定番商品', season_sub:'季節限定の絶品メニューが登場', season_more:'季節の定番商品を見る',
     cta_reserve_sub:'空席確認・来店予約', cta_takeout_sub:'テイクアウト注文', cta_delivery_sub:'自宅に届けます',
     store_search_title:'店舗を探す', store_search_placeholder:'エリア・駅名・店舗名で検索', search_btn:'検索',
     guide_title:'からのご案内', news_title:'ニュース', news_more:'ニュース一覧',
     sns_title:'公式SNS', sns_sub:'フォローして最新情報をゲットしよう',
     guide1:'LINE公式アカウント<br>友だち募集中！', guide2:'デジタルギフト<br>贈り物に最適',
     guide3:'60歳以上のお客様対象<br>シニアカード配布中', guide4:'キャッシュレス決済が<br>さらに便利になりました！',
-    cat_store:'お店情報', cat_corp:'会社情報', cat_menu:'メニュー',
-    sidebar_job:'アルバイト採用情報', sidebar_job_sub:'一緒に働きませんか？',
-    sidebar_land:'出店用地募集中', sidebar_land_sub:'物件をお持ちの方はこちら',
-    nav_campaign:'🎉 おすすめ',
     area_tokyo:'東京', area_kanagawa:'神奈川', area_osaka:'大阪',
     area_aichi:'愛知', area_fukuoka:'福岡', area_hokkaido:'北海道', area_all:'全国一覧'
   },
   en: {
-    hero_catch:'Great meat, charcoal-grilled.\nGreat meat, full hearts.', hero_btn:'🔥 Our Commitment',
     sec_campaign:'Campaigns',
-    season_title:'🌸 Spring Classics', season_sub:'Seasonal limited menu now available', season_more:'See Seasonal Items',
     cta_reserve_sub:'Check availability', cta_takeout_sub:'Order for pickup', cta_delivery_sub:'Delivered to your door',
     store_search_title:'Find a Store', store_search_placeholder:'Search by area, station, or store name', search_btn:'Search',
     guide_title:' — News & Information', news_title:'News', news_more:'See All News',
     sns_title:'Official SNS', sns_sub:'Follow us for the latest updates',
     guide1:'Official LINE Account<br>Now Accepting Friends!', guide2:'Digital Gift Card<br>Perfect for Presents',
     guide3:'For Customers 60+<br>Senior Card Available', guide4:'Cashless Payment<br>Now Even More Convenient!',
-    cat_store:'Store Info', cat_corp:'Company', cat_menu:'Menu',
-    sidebar_job:'Part-time Jobs', sidebar_job_sub:'Join our team!',
-    sidebar_land:'Site Wanted', sidebar_land_sub:'If you have a property, click here',
-    nav_campaign:'🎉 Featured',
     area_tokyo:'Tokyo', area_kanagawa:'Kanagawa', area_osaka:'Osaka',
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'All Stores'
   },
   zh: {
-    hero_catch:'好肉，炭火烤。\n好肉，满足每一刻。', hero_btn:'🔥 我们的坚持',
     sec_campaign:'活动',
-    season_title:'🌸 春季限定', season_sub:'季节限定精品菜单', season_more:'查看季节菜单',
     cta_reserve_sub:'查询空位・席位预约', cta_takeout_sub:'自取点餐', cta_delivery_sub:'送到您家',
     store_search_title:'查找门店', store_search_placeholder:'按地区・车站・门店名搜索', search_btn:'搜索',
     guide_title:'最新资讯', news_title:'新闻', news_more:'查看全部新闻',
     sns_title:'官方社交媒体', sns_sub:'关注我们获取最新信息',
     guide1:'LINE官方账号<br>欢迎加好友！', guide2:'数字礼品券<br>送礼首选',
     guide3:'60岁以上顾客专享<br>老年卡发放中', guide4:'无现金支付<br>更加便利！',
-    cat_store:'门店信息', cat_corp:'公司信息', cat_menu:'菜单',
-    sidebar_job:'招募兼职', sidebar_job_sub:'欢迎加入我们！',
-    sidebar_land:'招募选址', sidebar_land_sub:'有物业的朋友请点击',
-    nav_campaign:'🎉 推荐',
     area_tokyo:'东京', area_kanagawa:'神奈川', area_osaka:'大阪',
     area_aichi:'爱知', area_fukuoka:'福冈', area_hokkaido:'北海道', area_all:'全国门店'
   },
   ko: {
-    hero_catch:'', hero_btn:'🔥 우리의 고집',
+    hero_catch:'',
     sec_campaign:'캠페인',
-    season_title:'🌸 봄 한정 메뉴', season_sub:'계절 한정 특별 메뉴 등장', season_more:'계절 메뉴 보기',
     cta_reserve_sub:'빈 자리 확인・예약', cta_takeout_sub:'테이크아웃 주문', cta_delivery_sub:'집까지 배달',
     store_search_title:'매장 찾기', store_search_placeholder:'지역・역・매장명으로 검색', search_btn:'검색',
     guide_title:'안내 정보', news_title:'뉴스', news_more:'뉴스 전체 보기',
     sns_title:'공식 SNS', sns_sub:'팔로우하고 최신 정보를 받아보세요',
     guide1:'LINE 공식 계정<br>친구 추가 모집 중!', guide2:'디지털 선물권<br>선물로 제격',
     guide3:'60세 이상 고객 대상<br>시니어 카드 배포 중', guide4:'캐시리스 결제<br>더욱 편리해졌습니다!',
-    cat_store:'매장 정보', cat_corp:'회사 정보', cat_menu:'메뉴',
-    sidebar_job:'아르바이트 모집', sidebar_job_sub:'함께 일하지 않으시겠어요?',
-    sidebar_land:'출점 부지 모집', sidebar_land_sub:'물건을 보유하신 분은 여기',
-    nav_campaign:'🎉 추천',
     area_tokyo:'도쿄', area_kanagawa:'가나가와', area_osaka:'오사카',
     area_aichi:'아이치', area_fukuoka:'후쿠오카', area_hokkaido:'홋카이도', area_all:'전국 매장'
   },
   fr: {
-    hero_catch:'Bonne viande, au charbon de bois.\nBonne viande, cœur comblé.', hero_btn:'🔥 Notre engagement',
     sec_campaign:'Campagnes',
-    season_title:'🌸 Spécialités de saison', season_sub:'Menu limité disponible', season_more:'Voir le menu saisonnier',
     cta_reserve_sub:'Vérifier la disponibilité', cta_takeout_sub:'Commander à emporter', cta_delivery_sub:'Livré chez vous',
     store_search_title:'Trouver un restaurant', store_search_placeholder:'Rechercher par zone, station ou nom', search_btn:'Rechercher',
     guide_title:'Informations', news_title:'Actualités', news_more:'Voir toutes les actualités',
     sns_title:'SNS Officiels', sns_sub:'Suivez-nous pour les dernières nouvelles',
     guide1:'Compte LINE Officiel<br>Rejoignez-nous!', guide2:'Bon cadeau numérique<br>Idéal en cadeau',
     guide3:'Pour les 60 ans et plus<br>Carte Senior disponible', guide4:'Paiement sans espèces<br>Plus pratique que jamais!',
-    cat_store:'Info magasin', cat_corp:'Entreprise', cat_menu:'Menu',
-    sidebar_job:"Offres d'emploi", sidebar_job_sub:'Rejoignez notre équipe!',
-    sidebar_land:'Recherche de locaux', sidebar_land_sub:'Vous avez un bien? Cliquez ici',
-    nav_campaign:'🎉 À la une',
     area_tokyo:'Tokyo', area_kanagawa:'Kanagawa', area_osaka:'Osaka',
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'Tous les restaurants'
   },
   it: {
-    hero_catch:'Carne buona, alla brace.\nCarne buona, cuore pieno.', hero_btn:'🔥 Il nostro impegno',
     sec_campaign:'Campagne',
-    season_title:'🌸 Stagionale', season_sub:'Menu stagionale disponibile', season_more:'Vedi menu stagionale',
     cta_reserve_sub:'Controlla disponibilità', cta_takeout_sub:'Ordina da asporto', cta_delivery_sub:'Consegnato a casa tua',
     store_search_title:'Trova un ristorante', store_search_placeholder:'Cerca per zona, stazione o nome', search_btn:'Cerca',
     guide_title:'Informazioni', news_title:'Notizie', news_more:'Tutte le notizie',
     sns_title:'SNS Ufficiali', sns_sub:'Seguici per le ultime novità',
     guide1:'Account LINE Ufficiale<br>Seguici!', guide2:'Gift Card Digitale<br>Perfetto come regalo',
     guide3:'Per clienti 60+<br>Carta Senior disponibile', guide4:'Pagamento cashless<br>Ancora più comodo!',
-    cat_store:'Info negozio', cat_corp:'Azienda', cat_menu:'Menu',
-    sidebar_job:'Offerte di lavoro', sidebar_job_sub:'Unisciti al nostro team!',
-    sidebar_land:'Ricerca location', sidebar_land_sub:'Hai un immobile? Clicca qui',
-    nav_campaign:'🎉 In evidenza',
     area_tokyo:'Tokyo', area_kanagawa:'Kanagawa', area_osaka:'Osaka',
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'Tutti i ristoranti'
   },
   id: {
-    hero_catch:'Daging enak, dibakar arang.\nDaging enak, hati penuh.', hero_btn:'🔥 Komitmen Kami',
     sec_campaign:'Kampanye',
-    season_title:'🌸 Menu Musiman', season_sub:'Menu musiman terbatas tersedia', season_more:'Lihat Menu Musiman',
     cta_reserve_sub:'Cek ketersediaan meja', cta_takeout_sub:'Pesan untuk dibawa', cta_delivery_sub:'Diantar ke rumah Anda',
     store_search_title:'Cari Restoran', store_search_placeholder:'Cari berdasarkan area atau nama', search_btn:'Cari',
     guide_title:'Informasi', news_title:'Berita', news_more:'Lihat Semua Berita',
     sns_title:'SNS Resmi', sns_sub:'Ikuti kami untuk informasi terbaru',
     guide1:'Akun LINE Resmi<br>Daftar Sekarang!', guide2:'Gift Card Digital<br>Hadiah Sempurna',
     guide3:'Untuk Pelanggan 60+<br>Kartu Senior Tersedia', guide4:'Pembayaran Cashless<br>Semakin Mudah!',
-    cat_store:'Info Toko', cat_corp:'Perusahaan', cat_menu:'Menu',
-    sidebar_job:'Lowongan Part-time', sidebar_job_sub:'Bergabunglah dengan kami!',
-    sidebar_land:'Cari Lokasi', sidebar_land_sub:'Punya properti? Klik di sini',
-    nav_campaign:'🎉 Pilihan',
     area_tokyo:'Tokyo', area_kanagawa:'Kanagawa', area_osaka:'Osaka',
     area_aichi:'Aichi', area_fukuoka:'Fukuoka', area_hokkaido:'Hokkaido', area_all:'Semua Restoran'
   }
