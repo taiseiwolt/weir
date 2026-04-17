@@ -5733,9 +5733,9 @@ async function logAudit(action, targetTable, targetId, details) {
 
 // ===== AUTH STATE =====
 let CURRENT_AUTH_USER = null; // auth.users record
-let CURRENT_STAFF = null;    // staff_accounts record
-let BRAND_ID = null;         // set after login from staff_accounts
-let CORP_ID = null;          // set after login from staff_accounts
+let CURRENT_STAFF = null;    // weir_staff or merchant_accounts record
+let BRAND_ID = null;         // set after login (weir_staff: first brand / merchant_accounts: own brand_id)
+let CORP_ID = null;          // set after login (weir_staff: first merchant / merchant_accounts: own merchant_id)
 
 // ===== LOGIN HANDLER =====
 async function handleLogin(e) {
@@ -5774,9 +5774,34 @@ window.addEventListener('pageshow', function(e) { if(e.persisted) { window.locat
 // ===== AUTH SUCCESS: load staff profile & show app =====
 async function onAuthSuccess(user) {
   CURRENT_AUTH_USER = user;
-  // Get staff account (RLS: own record only)
-  const { data: staffRows, error: staffErr } = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id:merchant_id, display_name, role, email, created_at').eq('auth_user_id', user.id);
-  if (staffErr || !staffRows || staffRows.length === 0) {
+  // 1. Check weir_staff first (Weir internal super access)
+  const { data: weirStaff } = await sb.from('weir_staff').select('id, user_id, display_name, role, email, created_at').eq('user_id', user.id).eq('status','active').maybeSingle();
+  let staffRecord = null;
+  if (weirStaff) {
+    // Weir staff: default to first merchant/brand for super-access testing
+    const { data: firstMerchant } = await sb.from('merchants').select('id').limit(1).maybeSingle();
+    const { data: firstBrand } = await sb.from('brands').select('id').limit(1).maybeSingle();
+    staffRecord = {
+      id: weirStaff.id, auth_user_id: weirStaff.user_id,
+      display_name: weirStaff.display_name, email: weirStaff.email,
+      role: 'owner', brand_id: firstBrand?.id || null, corp_id: firstMerchant?.id || null,
+      created_at: weirStaff.created_at
+    };
+  } else {
+    // Fallback: merchant_accounts (RLS: own record only)
+    const { data: maRows } = await sb.from('merchant_accounts').select('id, user_id, brand_id, corp_id:merchant_id, display_name, role, email, created_at').eq('user_id', user.id).eq('status','active');
+    if (maRows && maRows.length > 0) {
+      const r = maRows[0];
+      staffRecord = {
+        id: r.id, auth_user_id: r.user_id,
+        display_name: r.display_name, email: r.email,
+        role: r.role === 'merchant_owner' ? 'owner' : 'manager',
+        brand_id: r.brand_id, corp_id: r.corp_id,
+        created_at: r.created_at
+      };
+    }
+  }
+  if (!staffRecord) {
     document.getElementById('loginError').textContent = 'このアカウントに紐づく加盟店情報が見つかりません。管理者にお問い合わせください。';
     document.getElementById('loginError').style.display = 'block';
     document.getElementById('loginBtn').disabled = false;
@@ -5784,7 +5809,7 @@ async function onAuthSuccess(user) {
     await sb.auth.signOut();
     return;
   }
-  CURRENT_STAFF = staffRows[0];
+  CURRENT_STAFF = staffRecord;
   BRAND_ID = CURRENT_STAFF.brand_id;
   CORP_ID = CURRENT_STAFF.corp_id;
 
@@ -10347,9 +10372,9 @@ var STAFF_ACCOUNTS = [];
 async function loadStaffAccounts() {
   if (!BRAND_ID) return;
   try {
-    var res = await sb.from('staff_accounts').select('id, auth_user_id, brand_id, corp_id:merchant_id, store_id:venue_id, display_name, email, role, status, last_login, created_at').eq('brand_id', BRAND_ID).order('created_at', {ascending: false});
-    if (res.data) STAFF_ACCOUNTS = res.data;
-  } catch(e) { console.warn('staff_accounts load:', e); }
+    var res = await sb.from('merchant_accounts').select('id, auth_user_id:user_id, brand_id, corp_id:merchant_id, display_name, email, role, status, last_login, created_at').eq('brand_id', BRAND_ID).order('created_at', {ascending: false});
+    if (res.data) STAFF_ACCOUNTS = res.data.map(function(r){ r.store_id = null; return r; });
+  } catch(e) { console.warn('merchant_accounts load:', e); }
 }
 
 function staffRoleBadge(role) {
@@ -10415,16 +10440,10 @@ async function saveStaffAccount() {
   var storeId = storeIds.length === 1 ? storeIds[0] : (storeIds.length > 1 ? storeIds[0] : null);
   showToast('保存中...');
   try {
-    var res = await sb.from('staff_accounts').insert({
-      display_name: name, email: email, role: role,
-      brand_id: BRAND_ID, merchant_id: CORP_ID, venue_id: storeId, status: 'active'
-    }).select().single();
-    if (res.error) throw res.error;
-    STAFF_ACCOUNTS.unshift(res.data);
+    // Phase 2 scope: merchant_accounts creation is deferred to the next CC request.
+    showToast('ℹ️ スタッフ追加はフェーズ2で実装予定です');
     closeModal();
-    showToast('スタッフを追加しました');
-    logAudit('add_account', 'staff_accounts', res.data.id, {name: name, email: email, role: role});
-    renderStaffAccountsTable();
+    return;
   } catch(e) {
     showToast('エラー: ' + (e.message || e));
   }
@@ -10448,49 +10467,13 @@ function openEditStaffModal(staffId) {
 }
 
 async function updateStaffAccount(staffId) {
-  var name = document.getElementById('editStaffName').value.trim();
-  if (!name) { showToast('氏名は必須です'); return; }
-  var role = document.getElementById('editStaffRole').value;
-  var editCheckedStores = document.querySelectorAll('.editStaffStoreCheck:checked');
-  var editStoreIds = [];
-  editCheckedStores.forEach(function(cb) { editStoreIds.push(cb.value); });
-  var storeId = editStoreIds.length === 1 ? editStoreIds[0] : (editStoreIds.length > 1 ? editStoreIds[0] : null);
-  var status = document.getElementById('editStaffStatus').value;
-  showToast('保存中...');
-  try {
-    var res = await sb.from('staff_accounts').update({
-      display_name: name, role: role, venue_id: storeId, status: status
-    }).eq('id', staffId);
-    if (res.error) throw res.error;
-    var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
-    if (sa) { sa.display_name = name; sa.role = role; sa.store_id = storeId; sa.status = status; }
-    closeModal();
-    showToast('スタッフ情報を更新しました');
-    logAudit('update_account', 'staff_accounts', staffId, {name: name, role: role, storeId: storeId, status: status});
-    renderStaffAccountsTable();
-  } catch(e) {
-    showToast('エラー: ' + (e.message || e));
-  }
+  showToast('ℹ️ スタッフ編集はフェーズ2で実装予定です');
+  closeModal();
+  return;
 }
 
 async function deleteStaffAccount(staffId) {
-  var sa = STAFF_ACCOUNTS.find(function(x){ return x.id === staffId; });
-  if (!sa) return;
-  if (!confirm('「' + (sa.display_name || sa.email) + '」を削除しますか？\nこの操作は取り消せません。')) return;
-  var btn = document.querySelector('button[onclick*="deleteStaffAccount(\'' + staffId + '\')"]');
-  if (btn) btn.disabled = true;
-  showToast('削除中...');
-  try {
-    var res = await sb.from('staff_accounts').delete().eq('id', staffId);
-    if (res.error) throw res.error;
-    STAFF_ACCOUNTS = STAFF_ACCOUNTS.filter(function(x){ return x.id !== staffId; });
-    showToast('スタッフを削除しました');
-    logAudit('delete_account', 'staff_accounts', staffId, {name: sa.display_name, email: sa.email});
-    renderStaffAccountsTable();
-  } catch(e) {
-    showToast('エラー: ' + (e.message || e));
-    if (btn) btn.disabled = false;
-  }
+  showToast('ℹ️ スタッフ削除はフェーズ2で実装予定です');
 }
 
 // ===== BAN MANAGEMENT (D-35) =====
@@ -10684,15 +10667,20 @@ async function initAdminAfterAuth() {
 (async function checkExistingSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session && session.user) {
-    // SEC: staff_accountsでロールチェック (01-P0-2)
-    const{data:staff}=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',session.user.id).single();
+    // SEC: weir_staff (super access) or merchant_accounts でロールチェック (01-P0-2)
+    const{data:ws}=await sb.from('weir_staff').select('id,role').eq('user_id',session.user.id).eq('status','active').maybeSingle();
+    let staff = ws ? {id:ws.id, role:ws.role, source:'weir_staff'} : null;
+    if(!staff){
+      const{data:ma}=await sb.from('merchant_accounts').select('id,role').eq('user_id',session.user.id).eq('status','active').maybeSingle();
+      if(ma)staff={id:ma.id, role:ma.role, source:'merchant_accounts'};
+    }
     if(!staff){
       alert('管理者権限がありません');
       await sb.auth.signOut();
       return;
     }
     // SEC: 管理者ログイン記録 (05-P1-3)
-    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'customer-admin'},user_email:session.user.email});}catch(_){}
+    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:staff.source,target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'customer-admin'},user_email:session.user.email});}catch(_){}
     document.getElementById('loginOverlay').innerHTML = '<div style="color:#fff;font-size:14px">読み込み中...</div>';
     await onAuthSuccess(session.user);
   }

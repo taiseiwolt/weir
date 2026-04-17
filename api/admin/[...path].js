@@ -30,9 +30,21 @@ const ENTITY_CONFIG = {
     selectList: '*, brands(name, slug)',
     selectDetail: '*',
   },
-  'staff-accounts': {
-    table: 'staff_accounts',
-    displayIdPrefix: 'ACC-',
+  'merchant-accounts': {
+    table: 'merchant_accounts',
+    displayIdPrefix: 'MAC-',
+    selectList: '*',
+    selectDetail: '*',
+  },
+  'weir-staff': {
+    table: 'weir_staff',
+    displayIdPrefix: 'WST-',
+    selectList: '*',
+    selectDetail: '*',
+  },
+  'venue-accounts': {
+    table: 'venue_accounts',
+    displayIdPrefix: 'VAC-',
     selectList: '*',
     selectDetail: '*',
   },
@@ -55,12 +67,13 @@ const ENTITY_CONFIG = {
 
 // ── Admin check ───────────────────────────────────────────
 async function isAdmin(user) {
-  // SEC: staff_accountsのロールベースチェックのみに依存 (04-P1-3)
+  // SEC: weir_staff テーブルで Weir 社員のみ admin API アクセス許可
   const { data } = await supabase
-    .from('staff_accounts')
+    .from('weir_staff')
     .select('id, role')
-    .eq('auth_user_id', user.id)
-    .in('role', ['owner', 'platform_admin', 'corp_admin'])
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .in('role', ['weir_admin', 'weir_support'])
     .limit(1);
 
   return !!(data && data.length > 0);

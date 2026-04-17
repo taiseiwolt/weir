@@ -48,8 +48,9 @@ export async function requireAuth(req, res) {
 
 /**
  * Check if authenticated user is a staff member of the given store.
- * Uses the service-role Supabase client to query staff_accounts.
- * Returns true if user is staff/manager/owner of the store.
+ * Returns true if:
+ *  - user is in weir_staff (Weir internal, super access), or
+ *  - user is in merchant_accounts with matching brand_id
  */
 export async function isStoreStaffMember(authUserId, storeId) {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -58,21 +59,27 @@ export async function isStoreStaffMember(authUserId, storeId) {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-  // Get store's brand_id
+  const { data: weirStaff } = await adminClient
+    .from('weir_staff')
+    .select('id')
+    .eq('user_id', authUserId)
+    .eq('status', 'active')
+    .limit(1);
+  if (weirStaff && weirStaff.length > 0) return true;
+
   const { data: store } = await adminClient
     .from('venues')
-    .select('brand_id')
+    .select('brand_id, merchant_id')
     .eq('id', storeId)
     .single();
-
   if (!store) return false;
 
-  // Check if user is staff for this brand
   const { data: staff } = await adminClient
-    .from('staff_accounts')
+    .from('merchant_accounts')
     .select('id')
-    .eq('auth_user_id', authUserId)
-    .eq('brand_id', store.brand_id)
+    .eq('user_id', authUserId)
+    .eq('status', 'active')
+    .eq('merchant_id', store.merchant_id)
     .limit(1);
 
   return staff && staff.length > 0;

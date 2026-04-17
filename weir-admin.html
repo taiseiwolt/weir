@@ -233,8 +233,8 @@ async function loadAllData(){
   // Load corporation_brand_relations
   const {data:cbrRaw}=await sb.from('merchant_brand_relations').select('corp_id:merchant_id,brand_id,role');
   CBR=cbrRaw||[];
-  // Load staff accounts
-  const {data:accRaw}=await sb.from('staff_accounts').select('id,display_id,display_name,email,role,corp_id:merchant_id,status,last_login,created_at');
+  // Load merchant accounts
+  const {data:accRaw}=await sb.from('merchant_accounts').select('id,display_id,display_name,email,role,corp_id:merchant_id,status,last_login,created_at');
   ACCOUNTS=(accRaw||[]).map(r=>{
     const corpDid=MERCHANTS.find(c=>c._uuid===r.corp_id);
     return {
@@ -270,13 +270,13 @@ async function getToken(){return(await sb.auth.getSession()).data.session?.acces
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(!session){window.location.href='/';return;}
-    // SEC: staff_accountsでロールチェック — platform_admin/corp_adminのみ許可
-    const{data:staff}=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',session.user.id).single();
-    if(!staff||!['platform_admin','corp_admin','owner','admin'].includes(staff.role)){
+    // SEC: weir_staff でロールチェック — Weir社員のみ許可
+    const{data:staff}=await sb.from('weir_staff').select('id,role').eq('user_id',session.user.id).eq('status','active').single();
+    if(!staff||!['weir_admin','weir_support'].includes(staff.role)){
       alert('管理者権限がありません');window.location.href='/';return;
     }
     // SEC: 管理者ログイン記録 (05-P1-3)
-    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'weir-admin'},user_email:session.user.email});}catch(_){}
+    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'weir_staff',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'weir-admin'},user_email:session.user.email});}catch(_){}
   }catch(e){window.location.href='/';return;}
   sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')window.location.href='/';});
 })();
@@ -3807,11 +3807,10 @@ async function saveCorpWizard(){
     }
     if(hoursInserts.length){var {error:hErr}=await sb.from('venue_hours').insert(hoursInserts);if(hErr)showToast('⚠️ 営業時間の保存に一部失敗');}
     VENUES.push({_uuid:storeUuid,id:storeD.data.display_id,brandId:brandDisplayId,name:d.storeName.trim(),status:'active',addr:d.storeAddr.trim(),tel:d.storeTel.trim(),orders:0,revenue:0,deliveryRadius:5,deliveryFee:0,minOrder:0,minOrderPolicy:'surcharge',surchargeMax:0,prepTime:30,minOrderApplyTypes:{dinein:false,takeout:true,delivery:true}});
-    // 4. Account (if provided)
+    // 4. Account creation is deferred to Phase 2 (next CC request)
+    // Phase 1 scope is DB redesign only; the corp/brand/store are created without an account.
     if(d.accName.trim()&&d.accEmail.trim()){
-      const {data:accData,error:accErr}=await sb.from('staff_accounts').insert({display_name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',merchant_id:corpUuid,status:'active'}).select().single();
-      if(accErr)throw accErr;
-      ACCOUNTS.push({_uuid:accData.id,id:accData.display_id||accData.id.substring(0,8),name:d.accName.trim(),email:d.accEmail.trim(),role:d.accRole||'owner',corpId:corpDisplayId,status:'active',lastLogin:'—'});
+      showToast('ℹ️ アカウント発行はフェーズ2で実装予定（法人・ブランド・店舗は作成済み）');
     }
     _corpWizCache={};
     closeModal();showToast('✅ 法人・ブランド・店舗を追加しました');renderPage();
@@ -3900,22 +3899,8 @@ function openAddAccountModal(){
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveAccount()">追加</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
 async function saveAccount(){
-  const name=document.getElementById('addAccName').value.trim();
-  const email=document.getElementById('addAccEmail').value.trim();
-  if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  const role=document.getElementById('addAccRole').value;
-  const corpId=document.getElementById('addAccCorp').value;
-  const corp=MERCHANTS.find(c=>c.id===corpId);
-  try{
-    const {data,error}=await sb.from('staff_accounts').insert({
-      display_name:name, email:email, role:role,
-      merchant_id:corp?corp._uuid:null, status:'active'
-    }).select().single();
-    if(error)throw error;
-    ACCOUNTS.push({_uuid:data.id,id:data.display_id||data.id.substring(0,8),name:name,email:email,role:role,corpId:corpId,status:'active',lastLogin:'—'});
-    logAudit('add_account','staff_accounts',data.id,{name,email,role,corpId});
-    closeModal();showToast('✅ アカウントを追加しました');renderPage();
-  }catch(e){showToast('⚠️ '+e.message);}
+  showToast('ℹ️ アカウント管理機能はフェーズ2で実装予定です');
+  closeModal();
 }
 function openEditAccountModal(accId){
   const a=ACCOUNTS.find(x=>x.id===accId);
@@ -3929,40 +3914,22 @@ function openEditAccountModal(accId){
   '<div class="btn-group"><button class="btn btn-primary" onclick="saveEditAccount(\''+a.id+'\')">保存</button><button class="btn btn-secondary" onclick="closeModal()">キャンセル</button></div>');
 }
 async function saveEditAccount(accId){
-  const a=ACCOUNTS.find(x=>x.id===accId);
-  if(!a)return;
-  const name=document.getElementById('editAccName').value.trim();
-  const email=document.getElementById('editAccEmail').value.trim();
-  const role=document.getElementById('editAccRole').value;
-  if(!name||!email){showToast('⚠️ 氏名とメールは必須です');return;}
-  try{
-    const {error}=await sb.from('staff_accounts').update({display_name:name,email:email,role:role}).eq('id',a._uuid);
-    if(error)throw error;
-    a.name=name;a.email=email;a.role=role;
-    logAudit('edit_account','staff_accounts',a._uuid,{name,email,role});
-    closeModal();showToast('✅ アカウントを更新しました');renderPage();
-  }catch(e){showToast('⚠️ '+e.message);}
+  showToast('ℹ️ アカウント管理機能はフェーズ2で実装予定です');
+  closeModal();
 }
 async function deleteAccount(accId){
-  const a=ACCOUNTS.find(x=>x.id===accId);
-  if(!a)return;
-  if(!confirm(a.name+'のアカウントを削除しますか？'))return;
-  try{
-    const {error}=await sb.from('staff_accounts').delete().eq('id',a._uuid);
-    if(error)throw error;
-    ACCOUNTS.splice(ACCOUNTS.indexOf(a),1);
-    logAudit('delete_account','staff_accounts',a._uuid,{name:a.name});
-    showToast('✅ アカウントを削除しました');renderPage();
-  }catch(e){showToast('⚠️ '+e.message);}
+  showToast('ℹ️ アカウント管理機能はフェーズ2で実装予定です');
 }
 
 async function checkOwnerRole(){
   try{
     var sess=await sb.auth.getSession();
-    var email=sess.data.session?.user?.email;
-    if(!email)return false;
-    var {data}=await sb.from('staff_accounts').select('role').eq('email',email).single();
-    return data&&data.role==='owner';
+    if(!sess.data.session)return false;
+    var uid=sess.data.session.user.id;
+    var {data:ws}=await sb.from('weir_staff').select('role').eq('user_id',uid).eq('status','active').maybeSingle();
+    if(ws&&['weir_admin','weir_support'].includes(ws.role))return true;
+    var {data:ma}=await sb.from('merchant_accounts').select('role').eq('user_id',uid).eq('status','active').maybeSingle();
+    return ma&&ma.role==='merchant_owner';
   }catch(e){return false;}
 }
 async function toggleMerchantStatus(uuid,currentStatus){
