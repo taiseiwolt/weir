@@ -995,7 +995,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 async function loadStoreFromSupabase() {
   if (!STORE_SLUG) return; // URLパラメータ未指定時は何もしない
   // Direct Supabase（D-89: stores→venues rename済み。is_active/hero_image_url/logo_image_url/description は venues に存在しないため削除）
-  var {data: storeData} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, lat, lng, status, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
+  var {data: storeData} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, lat, lng, status, seats, smoking_policy, children_policy, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
   STORE.storeId = storeData.id;
   STORE.name = storeData.name;
@@ -1007,6 +1007,9 @@ async function loadStoreFromSupabase() {
   if (storeData.cancel_no_show != null) STORE.cancel.cancelNoShow = storeData.cancel_no_show;
   if (storeData.cancel_same_day != null) STORE.cancel.cancelSameDay = storeData.cancel_same_day;
   if (storeData.cancel_3days != null) STORE.cancel.cancel3days = storeData.cancel_3days;
+  if (storeData.seats != null) STORE.seats = storeData.seats;
+  if (storeData.smoking_policy) STORE.smoking = storeData.smoking_policy;
+  if (storeData.children_policy) STORE.children = storeData.children_policy;
 
   var {data: cats} = await sb.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', storeData.brand_id).order('sort_order');
   var {data: products} = await sb.from('products').select('id, brand_id, category_id, name, description, price, image_url, is_available, sort_order').eq('brand_id', storeData.brand_id);

@@ -64,7 +64,7 @@ body.weir-ready { opacity: 1; transition: opacity .3s ease; }
 .weir-order-body{padding-top:56px}
 
 /* ===== Footer ===== */
-footer.weir-footer{background:#222;color:rgba(255,255,255,.7)}
+.weir-footer{background:#222;color:rgba(255,255,255,.7)}
 .weir-footer .footer-main{max-width:1100px;margin:0 auto;padding:40px 20px 24px;display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr;gap:24px}
 .weir-footer .footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .weir-footer .footer-logo-text{font-size:18px;font-weight:700;color:white;font-family:'Noto Serif JP',serif}
