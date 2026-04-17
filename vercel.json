@@ -13,21 +13,6 @@
     { "source": "/weir-store-v5.4.html", "destination": "/weir-store.html", "permanent": true }
   ],
   "rewrites": [
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "admin.weir.co.jp" }],
-      "destination": "/weir-admin.html"
-    },
-    {
-      "source": "/customer",
-      "has": [{ "type": "host", "value": "admin.weir.co.jp" }],
-      "destination": "/weir-customer-admin.html"
-    },
-    {
-      "source": "/(.*)",
-      "has": [{ "type": "host", "value": "admin.weir.co.jp" }],
-      "destination": "/$1"
-    },
     { "source": "/api/admin/:path*", "destination": "/api/admin/__root?path=:path*" },
     { "source": "/api/orders", "destination": "/api/orders/__root" },
     { "source": "/api/orders/:id/:action", "destination": "/api/orders/__root?id=:id&action=:action" },

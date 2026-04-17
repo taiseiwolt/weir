@@ -1,5 +1,8 @@
 // middleware.js - Vercel Edge Middleware
-// xorder.co.jp のワイルドカードサブドメインルーティング
+// - admin.weir.co.jp の host-based routing（/ → 管理マスタ、/customer → 顧客管理）
+// - xorder.co.jp のワイルドカードサブドメインルーティング
+
+import { rewrite } from '@vercel/functions';
 
 export const config = {
   matcher: '/(.*)',
@@ -8,6 +11,18 @@ export const config = {
 export default function middleware(request) {
   const url = new URL(request.url);
   const hostname = request.headers.get('host') || '';
+  const pathname = url.pathname;
+
+  // admin.weir.co.jp: filesystem優先で vercel.json rewrite が効かないため middleware で対応
+  if (hostname === 'admin.weir.co.jp') {
+    if (pathname === '/') {
+      return rewrite(new URL('/weir-admin.html', request.url));
+    }
+    if (pathname === '/customer' || pathname.startsWith('/customer/')) {
+      return rewrite(new URL('/weir-customer-admin.html', request.url));
+    }
+    return;
+  }
 
   const SHARED_DOMAIN = 'xorder.co.jp';
   const ADMIN_DOMAIN = 'xorder.co.jp';
