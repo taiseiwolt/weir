@@ -345,6 +345,7 @@
   function renderHeaderBrand(brand) {
     var el = document.getElementById('weir-header');
     if (!el) return;
+    if (!brand) return;
 
     var bp = buildBrandParam(brand);
     var active = detectActivePage();
@@ -439,11 +440,24 @@
   }
 
   /* =============================================================
+     17a. showNotFound() — Phase 1 暫定 404 表示
+          (Phase 2-a で正式な 404.html に置き換え予定)
+     ============================================================= */
+  function showNotFound() {
+    document.body.innerHTML =
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;background:#f5f5f5;padding:20px;text-align:center">' +
+        '<h1 style="font-size:28px;color:#333;margin-bottom:16px;font-weight:600">お店が見つかりません</h1>' +
+        '<p style="color:#666;font-size:14px;line-height:1.7;max-width:400px">URL を再度ご確認ください。</p>' +
+      '</div>';
+  }
+
+  /* =============================================================
      18. renderFooter(brand) — footer generation
      ============================================================= */
   function renderFooter(brand) {
     var el = document.getElementById('weir-footer');
     if (!el) return;
+    if (!brand) return;
 
     var bp = buildBrandParam(brand);
     var brandName = escH(brand.name || '');
@@ -586,6 +600,13 @@
       brandLoaded = true;
       clearTimeout(timer);
 
+      // brand=null: ブランド解決失敗 → 404 的表示
+      if (!brand) {
+        showNotFound();
+        document.body.classList.add('weir-ready');
+        return;
+      }
+
       // Apply brand CSS
       applyBrandCSS(brand);
 
@@ -621,7 +642,8 @@
       brandLoaded = true;
       clearTimeout(timer);
 
-      // On error, show with neutral colors
+      // エラー時（RLS拒否・ネットワーク障害等）も 404 的表示で安全側
+      showNotFound();
       document.body.classList.add('weir-ready');
     });
   }
