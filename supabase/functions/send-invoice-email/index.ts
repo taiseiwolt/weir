@@ -229,23 +229,23 @@ serve(async (req) => {
       .single()
 
     // 3. 送信先メールアドレスの決定
-    // 優先度: merchants.contact_email → merchant_accounts(role=merchant_owner, merchant_id一致).email
-    let toEmail = corp?.rep_email || corp?.email || corp?.contact_email || ''
-    let repName = corp?.rep || corp?.representative || corp?.contact_name || ''
+    // 優先度: corps.rep_email → accounts(role=owner, corp_id一致).email
+    let toEmail = corp?.rep_email || corp?.email || ''
+    let repName = corp?.rep || corp?.representative || ''
 
     if (!toEmail) {
+      // accountsテーブルからオーナーを探す
       const { data: ownerAccount } = await sbAdmin
-        .from('merchant_accounts')
-        .select('email, display_name')
+        .from('accounts')
+        .select('email, name')
         .eq('merchant_id', invoice.merchant_id)
-        .eq('role', 'merchant_owner')
-        .eq('status', 'active')
+        .eq('role', 'owner')
         .limit(1)
         .single()
 
       if (ownerAccount) {
         toEmail = ownerAccount.email
-        if (!repName) repName = ownerAccount.display_name || ''
+        if (!repName) repName = ownerAccount.name || ''
       }
     }
 

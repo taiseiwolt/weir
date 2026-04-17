@@ -68,7 +68,7 @@ export default async function handler(req, res) {
   const auth = await requireAuth(req, res);
   if (!auth) return;
 
-  // Require Weir staff role (weir_staff with weir_admin or weir_support role)
+  // Require admin/owner role (staff_accounts with owner or admin role)
   const isAdmin = await checkAdminRole(auth.user);
   if (!isAdmin) return error(res, '管理者権限が必要です', 403);
 
@@ -504,11 +504,10 @@ function validateInput(type, rows) {
 // ---------------------------------------------------------------------------
 async function checkAdminRole(user) {
   const { data } = await supabase
-    .from('weir_staff')
+    .from('staff_accounts')
     .select('id')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .in('role', ['weir_admin', 'weir_support'])
+    .eq('auth_user_id', user.id)
+    .in('role', ['owner', 'admin'])
     .limit(1);
   return data && data.length > 0;
 }

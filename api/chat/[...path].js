@@ -501,12 +501,7 @@ async function handleSessions(req, res) {
   // SEC: 認証 + staffロールチェック (04-P1-4)
   const auth = await authenticateRequest(req);
   if (!auth) return error(res, '認証が必要です', 401);
-  const { data: ws } = await supabase.from('weir_staff').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-  let staff = ws;
-  if (!staff || staff.length === 0) {
-    const { data: ma } = await supabase.from('merchant_accounts').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-    staff = ma;
-  }
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
   if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   const {
@@ -583,12 +578,7 @@ async function handleResolve(req, res) {
   // SEC: 認証 + staffロールチェック (04-P1-4)
   const auth = await authenticateRequest(req);
   if (!auth) return error(res, '認証が必要です', 401);
-  const { data: ws } = await supabase.from('weir_staff').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-  let staff = ws;
-  if (!staff || staff.length === 0) {
-    const { data: ma } = await supabase.from('merchant_accounts').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-    staff = ma;
-  }
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
   if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   const { session_id } = req.body || {};
@@ -616,12 +606,7 @@ async function handleAnalytics(req, res) {
   // SEC: 認証 + staffロールチェック (04-P1-4)
   const auth = await authenticateRequest(req);
   if (!auth) return error(res, '認証が必要です', 401);
-  const { data: ws } = await supabase.from('weir_staff').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-  let staff = ws;
-  if (!staff || staff.length === 0) {
-    const { data: ma } = await supabase.from('merchant_accounts').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-    staff = ma;
-  }
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
   if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   const { store_id, brand_id, period } = req.query;
@@ -684,12 +669,7 @@ async function handlePolicies(req, res) {
   // SEC: 認証 + staffロールチェック (04-P1-4)
   const auth = await authenticateRequest(req);
   if (!auth) return error(res, '認証が必要です', 401);
-  const { data: ws } = await supabase.from('weir_staff').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-  let staff = ws;
-  if (!staff || staff.length === 0) {
-    const { data: ma } = await supabase.from('merchant_accounts').select('id').eq('user_id', auth.user.id).eq('status','active').limit(1);
-    staff = ma;
-  }
+  const { data: staff } = await supabase.from('staff_accounts').select('id').eq('auth_user_id', auth.user.id).limit(1);
   if (!staff || staff.length === 0) return error(res, 'スタッフ権限が必要です', 403);
 
   if (req.method === 'GET') {
