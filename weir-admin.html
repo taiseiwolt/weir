@@ -75,9 +75,39 @@
 .spinner{width:28px;height:28px;border:3px solid #e0e0e0;border-top:3px solid #6c5ce7;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 .bulk-warn-tip::after{content:attr(data-tip);display:none;position:absolute;left:0;top:100%;background:#2d3436;color:#fff;font-size:11px;font-weight:400;padding:6px 10px;border-radius:6px;white-space:pre-line;min-width:200px;max-width:320px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1.6}
 .bulk-warn-tip:hover::after{display:block}
+.login-overlay{position:fixed;inset:0;background:rgba(26,26,46,.96);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px}
+.login-card{background:#fff;border-radius:12px;padding:36px 32px;width:380px;max-width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.login-card h1{margin:0 0 6px;font-size:22px;text-align:center;font-weight:700}
+.login-card .login-sub{margin:0 0 22px;color:var(--text-light);text-align:center;font-size:12px}
+.login-card .form-group{margin-bottom:14px}
+.login-card label{display:block;font-size:12px;margin-bottom:6px;color:var(--text)}
+.login-card input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;box-sizing:border-box}
+.login-card input:focus{outline:none;border-color:var(--accent)}
+.login-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:0;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.login-btn:hover:not(:disabled){background:var(--accent-hover)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-error{color:var(--danger);font-size:12px;margin-bottom:12px;padding:8px 10px;background:rgba(214,48,49,.08);border-radius:6px;display:none}
 </style>
 </head>
 <body>
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h1>Weir 管理マスタ</h1>
+    <p class="login-sub">Weir社員のみアクセス可能</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="loginEmail" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">ログイン</button>
+    </form>
+  </div>
+</div>
 <header class="header">
   <div class="header-logo"><div class="logo-icon"><div class="logo-dot"></div></div><span class="logo-text">Weir</span></div>
   <span class="header-badge">MASTER ADMIN</span>
@@ -265,20 +295,57 @@ async function loadAllData(){
 
 async function getToken(){return(await sb.auth.getSession()).data.session?.access_token||'';}
 
-// AUTH CHECK — redirect if not authenticated + role check (01-P0-2)
-(async()=>{
+// AUTH — inline login form + session-based role check (no redirect loops)
+async function handleLogin(e){
+  e.preventDefault();
+  var email=document.getElementById('loginEmail').value.trim();
+  var pw=document.getElementById('loginPassword').value;
+  var btn=document.getElementById('loginBtn');
+  var errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  btn.disabled=true;btn.textContent='ログイン中...';
   try{
-    const{data:{session}}=await sb.auth.getSession();
-    if(!session){window.location.href='/';return;}
-    // SEC: staff_accountsでロールチェック — platform_admin/corp_adminのみ許可
-    const{data:staff}=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',session.user.id).single();
+    var res=await sb.auth.signInWithPassword({email:email,password:pw});
+    if(res.error)throw res.error;
+    await proceedAfterAuth(res.data.user);
+  }catch(err){
+    errEl.textContent=err.message==='Invalid login credentials'?'メールアドレスまたはパスワードが正しくありません':'ログインエラー: '+(err.message||'不明なエラー');
+    errEl.style.display='block';
+    btn.disabled=false;btn.textContent='ログイン';
+  }
+}
+async function proceedAfterAuth(user){
+  var errEl=document.getElementById('loginError');
+  var btn=document.getElementById('loginBtn');
+  function showErr(msg){errEl.textContent=msg;errEl.style.display='block';if(btn){btn.disabled=false;btn.textContent='ログイン';}}
+  try{
+    var sr=await sb.from('staff_accounts').select('id,role').eq('auth_user_id',user.id).maybeSingle();
+    var staff=sr.data;
     if(!staff||!['platform_admin','corp_admin','owner','admin'].includes(staff.role)){
-      alert('管理者権限がありません');window.location.href='/';return;
+      showErr('管理者権限がありません');
+      try{await sb.auth.signOut();}catch(_){}
+      return;
     }
-    // SEC: 管理者ログイン記録 (05-P1-3)
-    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:session.user.email,role:staff.role,page:'weir-admin'},user_email:session.user.email});}catch(_){}
-  }catch(e){window.location.href='/';return;}
-  sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')window.location.href='/';});
+    try{await sb.from('audit_logs').insert({action:'admin_login',target_table:'staff_accounts',target_id:staff.id,details:{email:user.email,role:staff.role,page:'weir-admin'},user_email:user.email});}catch(_){}
+    document.getElementById('loginOverlay').style.display='none';
+    sb.auth.onAuthStateChange(function(event){if(event==='SIGNED_OUT')location.reload();});
+    document.getElementById('content').innerHTML='<div style="text-align:center;padding:60px"><div class="spinner" style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div><div style="margin-top:12px;font-size:13px;color:#999">データを読み込み中...</div></div>';
+    try{await loadAllData();}catch(e){console.error('loadAllData error',e);}
+    renderPage();
+    handleHashNavigation();
+  }catch(e){
+    console.error('proceedAfterAuth error',e);
+    showErr('セッション検証エラー');
+    try{await sb.auth.signOut();}catch(_){}
+  }
+}
+(async function checkExistingSession(){
+  try{
+    var s=await sb.auth.getSession();
+    if(s&&s.data&&s.data.session&&s.data.session.user){
+      await proceedAfterAuth(s.data.session.user);
+    }
+  }catch(e){console.error('session check error:',e);}
 })();
 
 // AUDIT LOG
@@ -7952,13 +8019,7 @@ window.addEventListener('hashchange',function(){
   handleHashNavigation();
 });
 
-// INIT
-(async()=>{
-  document.getElementById('content').innerHTML='<div style="text-align:center;padding:60px"><div class="spinner" style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div><div style="margin-top:12px;font-size:13px;color:#999">データを読み込み中...</div></div>';
-  try{await loadAllData();}catch(e){console.error('loadAllData error',e);}
-  renderPage();
-  handleHashNavigation();
-})();
+// INIT — handled by proceedAfterAuth() after successful session check (see AUTH block above)
 </script>
 
 </body>
