@@ -751,8 +751,19 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 const _urlParams = new URLSearchParams(window.location.search);
+// Phase 2-a URL helpers: derive brand/venue slugs from pathname segments
+// pathname like /{brand_slug}/{venue_slug}/checkout → segs = ['', brand, venue, 'checkout']
+function getCurrentBrandSlug() {
+  var segs = window.location.pathname.split('/');
+  return segs[1] || '';
+}
+function getCurrentVenueSlug() {
+  var segs = window.location.pathname.split('/');
+  return segs[2] || '';
+}
+// Phase 2-a: brand_id deprecated in URL, prefer venue_slug (pathname) over legacy venue_id/store_id query
 const STORE_ID     = _urlParams.get('venue_id') || _urlParams.get('store_id') || sessionStorage.getItem('weir_store_id') || '';
-const STORE_SLUG   = _urlParams.get('store_slug') || '';
+const STORE_SLUG   = _urlParams.get('venue_slug') || _urlParams.get('store_slug') || getCurrentVenueSlug() || '';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================================================================
@@ -921,6 +932,7 @@ async function loadCheckoutData() {
       CHECKOUT_DATA.storeName  = storeRow.name || CHECKOUT_DATA.storeName;
       CHECKOUT_DATA.brandName  = storeRow.brands?.name || CHECKOUT_DATA.brandName;
       CHECKOUT_DATA.storeId    = storeRow.id;
+      CHECKOUT_DATA.storeSlug  = storeRow.slug || '';
 
       // Delivery settings from store
       if (storeRow.delivery_fee !== null && storeRow.delivery_fee !== undefined) CHECKOUT_DATA.deliveryFee = storeRow.delivery_fee;
@@ -1027,7 +1039,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     header: 'order',
     footer: true,
     onBack: function() {
-      window.location.href = './weir-order-store.html' + window.location.search;
+      // Phase 2-a: navigate back to order page at /{brand_slug}/{venue_slug}/order
+      var venueSlug = (CHECKOUT_DATA && CHECKOUT_DATA.storeSlug) || getCurrentVenueSlug();
+      // Strip legacy brand_id from search; keep other params (e.g., mode)
+      var cleanSearch = window.location.search
+        .replace(/([?&])brand_id=[^&#]*&?/g, '$1')
+        .replace(/\?&/g, '?').replace(/&&/g, '&').replace(/[?&]$/, '');
+      if (venueSlug) {
+        window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/' + venueSlug + '/order') + cleanSearch;
+      } else {
+        window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/order') + cleanSearch;
+      }
     },
     onBrandLoaded: function(brand) {
       document.title = (brand.name || '') + ' | お会計';
@@ -1537,12 +1559,12 @@ function goBackToMenu() {
   try {
     sessionStorage.setItem('weir_cart_restore', JSON.stringify(storeCart));
   } catch(e) { /* ignored */ }
-  let menuUrl = CHECKOUT_DATA.menuPageUrl || './weir-order-store.html';
-  const _params = new URLSearchParams(window.location.search);
-  const sid = CHECKOUT_DATA.storeId || _params.get('venue_id') || _params.get('store_id');
-  if (sid && !menuUrl.includes('venue_id=') && !menuUrl.includes('store_id=')) {
-    menuUrl += (menuUrl.includes('?') ? '&' : '?') + 'venue_id=' + encodeURIComponent(sid);
-  }
+  // Phase 2-a: menu (= order-store) is at /{brand_slug}/{venue_slug}/order
+  // TODO(phase2a): verify venue_slug derivation — relies on storeSlug or pathname
+  var venueSlug = (CHECKOUT_DATA && CHECKOUT_DATA.storeSlug) || getCurrentVenueSlug();
+  let menuUrl = venueSlug
+    ? window.Phase2aHrefRewriter.buildBrandPath('/' + venueSlug + '/order')
+    : window.Phase2aHrefRewriter.buildBrandPath('/order');
   window.location.href = menuUrl;
 }
 
@@ -2172,13 +2194,14 @@ async function placeOrder() {
 
         // ── トラッキングページにリダイレクト ──
         // IR-03/IR-04: 決済後ブラウザバック防止
+        // Phase 2-a: /{brand_slug}/tracking?token=...
         if (trackingToken) {
-          const trackingUrl = 'weir-order-tracking.html?token=' + encodeURIComponent(trackingToken);
+          const trackingUrl = window.Phase2aHrefRewriter.buildBrandPath('/tracking') + '?token=' + encodeURIComponent(trackingToken);
           history.replaceState(null, '', trackingUrl);
           window.location.href = trackingUrl;
         } else {
           // 最終フォールバック: payment_intent_id でtracking.htmlに渡す
-          const trackingUrl = 'weir-order-tracking.html?pi=' + encodeURIComponent(piId);
+          const trackingUrl = window.Phase2aHrefRewriter.buildBrandPath('/tracking') + '?pi=' + encodeURIComponent(piId);
           history.replaceState(null, '', trackingUrl);
           window.location.href = trackingUrl;
         }
@@ -2340,7 +2363,8 @@ async function placeOrder() {
       sessionStorage.setItem('weir_tracking_token', orderRow.tracking_token);
       sessionStorage.setItem('weir_last_order_id', orderRow.display_id);
       // IR-03/IR-04: 決済後ブラウザバック防止
-      const trackingUrl = 'weir-order-tracking.html?token=' + encodeURIComponent(orderRow.tracking_token);
+      // Phase 2-a: /{brand_slug}/tracking?token=...
+      const trackingUrl = window.Phase2aHrefRewriter.buildBrandPath('/tracking') + '?token=' + encodeURIComponent(orderRow.tracking_token);
       history.replaceState(null, '', trackingUrl);
       window.location.href = trackingUrl;
 
@@ -2431,7 +2455,10 @@ async function handleForgotPassword() {
   const successEl = document.getElementById('signinSuccess');
   const errEl = document.getElementById('signinError');
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/weir-mypage.html' });
+    // Phase 2-a: password reset email link lands on /reset-password, which reads
+    // #access_token=...&type=recovery from hash and shows the reset-password form.
+    // Previously pointed to /weir-mypage.html which is not the reset landing page.
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' });
     if (error) throw error;
     successEl.textContent = 'パスワードリセットメールを送信しました。メールをご確認ください。';
     successEl.style.display = 'block';
@@ -2471,14 +2498,19 @@ async function showTokushoho() {
   modal.style.alignItems = 'flex-start';
 
   const params = new URLSearchParams(window.location.search);
-  const storeId = params.get('venue_id') || params.get('store_id') || params.get('sid');
+  // Phase 2-a: prefer venue_slug (from pathname or query); legacy venue_id/store_id/sid fallback
+  const venueSlug = params.get('venue_slug') || getCurrentVenueSlug();
+  const storeId = venueSlug || params.get('venue_id') || params.get('store_id') || params.get('sid');
   if (!storeId) {
     content.innerHTML = '<p>店舗情報が見つかりません。</p>';
     return;
   }
 
-  // display_id (STR-xxx) か UUID か自動判別
-  const storeCol = typeof storeId === 'string' && storeId.startsWith('STR-') ? 'display_id' : 'id';
+  // slug → 'slug'、display_id (STR-xxx) → 'display_id'、UUID → 'id' を自動判別
+  let storeCol;
+  if (venueSlug) storeCol = 'slug';
+  else if (typeof storeId === 'string' && storeId.startsWith('STR-')) storeCol = 'display_id';
+  else storeCol = 'id';
   const { data: store, error } = await sb
     .from('venues')
     .select('id, name, address, phone, brand_id')
@@ -2574,15 +2606,21 @@ document.addEventListener('keydown', function(e) {
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
+  // Phase 2-a: prefer venue_slug (query or pathname) over legacy venue_id/store_id/sid
+  var venueSegs = window.location.pathname.split('/');
+  var venueSlugFromPath = venueSegs[2] || '';
+  var storeIdent = params.get('venue_slug') || venueSlugFromPath
+                || params.get('venue_id') || params.get('store_id') || params.get('sid') || null;
   if (typeof WeirChatWidget !== 'undefined') {
     window._weirChat = new WeirChatWidget({
       contextType: 'enduser',
-      storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
+      storeId: storeIdent,
       supabaseClient: typeof sb !== 'undefined' ? sb : null,
       apiBase: 'https://xorder.co.jp',
     });
   }
 })();
 </script>
+<script src="/phase2a-href-rewriter.js"></script>
 </body>
 </html>

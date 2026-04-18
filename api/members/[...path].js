@@ -231,7 +231,7 @@ async function handleRegister(req, res) {
   }
 
   try {
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/verify-email';
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -627,6 +627,11 @@ async function handleLineCallback(req, res) {
   const { code } = req.query;
   const frontendUrl = process.env.FRONTEND_URL || 'https://taiseiwolt.github.io/aiden-demo';
 
+  // TODO(phase2b): LINE OAuth callback currently redirects to /weir-order-checkout.html
+  // (legacy path, served by Vercel filesystem) because brand/venue context isn't available
+  // here. Future: add `state` param to LINE OAuth start + extract brand/venue slug in this
+  // callback to build /{brand}/{venue}/checkout#fragment. Same consideration applies if
+  // additional OAuth providers (Google/Apple) are added.
   if (!code) return res.redirect(302, frontendUrl + '/weir-order-checkout.html#error=missing_code');
 
   const channelId = process.env.LINE_CHANNEL_ID;
@@ -790,7 +795,7 @@ async function handleResendVerification(req, res) {
       type: 'signup',
       email: email,
       options: {
-        redirectTo: (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html',
+        redirectTo: (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/verify-email',
       },
     });
 
@@ -857,7 +862,7 @@ async function handleBulkSendVerification(req, res) {
     // Send verification emails via Supabase Auth generateLink
     let sentCount = 0;
     const errors = [];
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-email-verified.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/verify-email';
 
     for (const member of unverified) {
       try {
@@ -949,7 +954,7 @@ async function handleResetPassword(req, res) {
 
   try {
     const anonClient = createAnonClient();
-    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/weir-password-reset.html';
+    const redirectUrl = (process.env.FRONTEND_URL || 'https://xorder.co.jp') + '/reset-password';
 
     const { error: resetError } = await anonClient.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,

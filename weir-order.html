@@ -1257,8 +1257,8 @@ window.addEventListener('load', async function(){
     header: 'order',
     footer: true,
     onBack: function() {
-      var bid = AidenCommon.brand ? AidenCommon.brand.id : '';
-      window.location.href = './brand.html' + (bid ? '?brand_id=' + bid : '');
+      // Phase 2-a: brand root resolved from pathname (buildBrandPath derives brand_slug)
+      window.location.href = window.Phase2aHrefRewriter.buildBrandPath('');
     },
     onBrandLoaded: function(brand) {
       document.title = (brand.name || '') + ' | モバイルオーダー';
@@ -1830,8 +1830,15 @@ function onOrderBtnClick(btn){
     }));
   } catch(e) { /* ignored */ }
 
-  // Navigate to order-store page (versionless)
-  window.location.href = './weir-order-store.html';
+  // Navigate to order-store page (Phase 2-a: /{brand_slug}/{venue_slug}/order)
+  // TODO(phase2a): verify venue_slug derivation — requires s.slug populated from venues.slug
+  var venueSlug = s.slug || '';
+  if (venueSlug) {
+    window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/' + venueSlug + '/order');
+  } else {
+    // Fallback when venue slug unavailable — stay on legacy path; rewriter won't catch JS-set href
+    window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/order');
+  }
 }
 
 /* ============================================================
@@ -2472,5 +2479,6 @@ var etaInterval = null;
 var trackingStepIdx = 0;
 </script>
 <div id="weir-footer"></div>
+<script src="/phase2a-href-rewriter.js"></script>
 </body>
 </html>

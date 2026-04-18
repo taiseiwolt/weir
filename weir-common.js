@@ -305,11 +305,15 @@
   }
 
   /* =============================================================
-     11. buildBrandParam(brand) — helper to build URL query param
+     11. buildBrandPath(brand, sub) — build brand-scoped path
+          Returns "/{brand.slug}{sub}" or just sub if no slug.
      ============================================================= */
-  function buildBrandParam(brand) {
-    if (brand && brand.id) return '?brand_id=' + encodeURIComponent(brand.id);
-    return '';
+  function buildBrandPath(brand, sub) {
+    sub = sub || '';
+    if (brand && brand.slug) {
+      return '/' + brand.slug + sub;
+    }
+    return sub;
   }
 
   /* =============================================================
@@ -372,7 +376,6 @@
     if (!el) return;
     if (!brand) return;
 
-    var bp = buildBrandParam(brand);
     var active = detectActivePage();
     var brandName = escH(brand.name || '');
 
@@ -384,7 +387,7 @@
     var html = '<header class="header">' +
       '<div class="header-main">' +
         '<div class="header-logo">' +
-          '<a href="./brand.html' + bp + '">' +
+          '<a href="' + buildBrandPath(brand) + '">' +
             '<span style="display:flex;align-items:center;gap:10px">' +
               renderLogoMark(brand) +
               renderLogoText(brand) +
@@ -392,11 +395,11 @@
           '</a>' +
         '</div>' +
         '<nav class="header-nav">' +
-          '<a href="./weir-brand-menu.html' + bp + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-          '<a href="./weir-brand-stores.html' + bp + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
-          '<a href="./weir-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" class="' + membershipClass + '" data-i18n="nav_membership" id="nav-membership-link">' + t('nav_membership') + '</a>' +
+          '<a href="' + buildBrandPath(brand, '/menu') + '" class="' + menuClass + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
+          '<a href="' + buildBrandPath(brand, '/stores') + '" class="' + storesClass + '" data-i18n="nav_stores">' + t('nav_stores') + '</a>' +
+          '<a href="' + buildBrandPath(brand, '/membership') + '" class="' + membershipClass + '" data-i18n="nav_membership" id="nav-membership-link">' + t('nav_membership') + '</a>' +
           '<a href="javascript:void(0)" class="header-nav-link cta" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
-          '<a href="./weir-order.html' + bp + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
+          '<a href="' + buildBrandPath(brand, '/order') + '" class="header-nav-link cta" data-i18n="nav_order">' + t('nav_order') + '</a>' +
         '</nav>' +
         buildLangSelect() +
         '<button class="header-hamburger" id="hamburger" onclick="AidenCommon.toggleNav()">☰</button>' +
@@ -405,12 +408,12 @@
     '<div class="mobile-nav" id="mobile-nav">' +
       '<div class="mobile-nav-cta">' +
         '<a href="javascript:void(0)" data-i18n="nav_reserve" onclick="if(window.openResModal)openResModal()">' + t('nav_reserve') + '</a>' +
-        '<a href="./weir-order.html' + bp + '" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
-        '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery">' + t('cta_delivery') + '</a>' +
+        '<a href="' + buildBrandPath(brand, '/order') + '" data-i18n="nav_order_short">' + t('nav_order_short') + '</a>' +
+        '<a href="' + buildBrandPath(brand, '/order') + '?mode=delivery">' + t('cta_delivery') + '</a>' +
       '</div>' +
-      '<a href="./weir-brand-menu.html' + bp + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
-      '<a href="./weir-brand-stores.html' + bp + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
-      '<a href="./weir-membership.html' + (brand.id ? '?brand_id=' + encodeURIComponent(brand.id) : bp) + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
+      '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="nav_menu">' + t('nav_menu') + '</a>' +
+      '<a href="' + buildBrandPath(brand, '/stores') + '" data-i18n="nav_stores">📍 ' + t('nav_stores') + '</a>' +
+      '<a href="' + buildBrandPath(brand, '/membership') + '" data-i18n="nav_membership">🏆 ' + t('nav_membership') + '</a>' +
     '</div>';
 
     el.innerHTML = html;
@@ -869,7 +872,6 @@
     if (!el) return;
     if (!brand) return;
 
-    var bp = buildBrandParam(brand);
     var brandName = escH(brand.name || '');
     var brandDesc = escH(brand.brand_description || '');
 
@@ -906,11 +908,11 @@
         '<div>' +
           '<div class="footer-nav-title" data-i18n="footer_menu">' + t('footer_menu') + '</div>' +
           '<div class="footer-nav-list">' +
-            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
-            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
-            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
-            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
-            '<a href="./weir-brand-menu.html' + bp + '" data-i18n="f_course">' + t('f_course') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="f_grand_menu">' + t('f_grand_menu') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="f_yakiniku">' + t('f_yakiniku') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="f_rice">' + t('f_rice') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="f_drink">' + t('f_drink') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/menu') + '" data-i18n="f_course">' + t('f_course') + '</a>' +
           '</div>' +
         '</div>' +
         // Column 3: Service
@@ -918,8 +920,8 @@
           '<div class="footer-nav-title" data-i18n="footer_service">' + t('footer_service') + '</div>' +
           '<div class="footer-nav-list">' +
             '<a href="javascript:void(0)" data-i18n="cta_reserve" onclick="if(window.openResModal)openResModal()">' + t('cta_reserve') + '</a>' +
-            '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
-            '<a href="./weir-order.html' + bp + (bp ? '&' : '?') + 'mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/order') + '?mode=takeout" data-i18n="cta_takeout">' + t('cta_takeout') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/order') + '?mode=delivery" data-i18n="cta_delivery">' + t('cta_delivery') + '</a>' +
           '</div>' +
         '</div>' +
         // Column 4: Company + News
@@ -927,14 +929,14 @@
           '<div class="footer-nav-title" data-i18n="footer_company">' + t('footer_company') + '</div>' +
           '<div class="footer-nav-list" id="footer-company-links">' + companyLinksHtml + '</div>' +
           '<div class="footer-nav-title" style="margin-top:16px" data-i18n="footer_news">' + t('footer_news') + '</div>' +
-          '<div class="footer-nav-list"><a href="./weir-brand-news.html' + bp + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
+          '<div class="footer-nav-list"><a href="' + buildBrandPath(brand, '/news') + '" data-i18n="news_more_link">' + t('news_more_link') + '</a></div>' +
         '</div>' +
         // Column 5: FAQ/Contact
         '<div>' +
           '<div class="footer-nav-title">' + t('footer_service') + '</div>' +
           '<div class="footer-nav-list">' +
-            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_faq">' + t('f_faq') + '</a>' +
-            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_contact">' + t('f_contact') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/sitemap') + '" data-i18n="f_faq">' + t('f_faq') + '</a>' +
+            '<a href="' + buildBrandPath(brand, '/sitemap') + '" data-i18n="f_contact">' + t('f_contact') + '</a>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -943,9 +945,9 @@
         '<div class="footer-bottom-inner">' +
           '<span class="footer-copyright">&copy; ' + year + ' ' + brandName + ' All rights reserved.</span>' +
           '<div class="footer-bottom-links">' +
-            '<a href="./weir-privacy.html' + bp + '" data-i18n="f_privacy">' + t('f_privacy') + '</a>' +
-            '<a href="./weir-terms.html' + bp + '" data-i18n="f_terms">' + t('f_terms') + '</a>' +
-            '<a href="./weir-sitemap.html' + bp + '" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
+            '<a href="/legal/privacy" data-i18n="f_privacy">' + t('f_privacy') + '</a>' +
+            '<a href="/legal/terms" data-i18n="f_terms">' + t('f_terms') + '</a>' +
+            '<a href="/legal/sitemap" data-i18n="f_sitemap">' + t('f_sitemap') + '</a>' +
           '</div>' +
           '<span class="powered">Powered by Weir</span>' +
         '</div>' +
@@ -1074,6 +1076,7 @@
     resolveBrandId: resolveBrandId,
     loadBrand: loadBrand,
     applyBrandCSS: applyBrandCSS,
+    buildBrandPath: buildBrandPath,
 
     // i18n
     I18N: I18N,

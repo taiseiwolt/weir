@@ -18,10 +18,20 @@ interface WithdrawalEmailRequest {
   to: string
   member_name: string
   scheduled_date?: string // YYYY-MM-DD format
+  brand_slug?: string  // Phase 2-a: if present, mypage URL uses /{brand_slug}/mypage; else legacy fallback
 }
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function buildMypageUrl(brandSlug: string | undefined): string {
+  const baseUrl = 'https://xorder.co.jp'
+  if (brandSlug) {
+    return `${baseUrl}/${encodeURIComponent(brandSlug)}/mypage`
+  }
+  // Phase 2-a fallback: legacy URL still works via Vercel filesystem serving
+  return `${baseUrl}/weir-mypage.html`
 }
 
 function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; html: string } {
@@ -49,7 +59,7 @@ function buildRequestedEmail(data: WithdrawalEmailRequest): { subject: string; h
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://xorder.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="${buildMypageUrl(data.brand_slug)}" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
@@ -84,7 +94,7 @@ function buildReminderEmail(data: WithdrawalEmailRequest): { subject: string; ht
       </p>
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="https://xorder.co.jp/weir-mypage.html" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
+      <a href="${buildMypageUrl(data.brand_slug)}" style="display:inline-block;padding:14px 36px;background:#D32F2F;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">マイページを確認する</a>
     </div>
   </td></tr>
   <tr><td style="background:#f9f9f9;padding:16px 24px;text-align:center">
