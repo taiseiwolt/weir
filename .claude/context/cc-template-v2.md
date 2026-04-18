@@ -29,6 +29,12 @@
 - WHYが自明でない場合のみ追加（隠れた制約、特定バグの回避策）
 - WHATの説明コメント禁止（良い命名で代替）
 
+## 実行前必須 view（省略厳禁）
+- [ ] `.claude/context/index.md`（決定事項・優先度）
+- [ ] `.claude/context/cc-template-v2.md`（テンプレ本体）
+- [ ] `.claude/context/agents-project-execution.md`（運用ルール）
+- [ ] 依頼に関連する `.claude/context/archive.md` 該当セクション
+
 ## 実行前チェック（省略厳禁）
 - [ ] information_schema.columnsで対象テーブルの全カラム確認
 - [ ] CHECK制約の有効値確認（pg_constraint）
