@@ -2455,7 +2455,10 @@ async function handleForgotPassword() {
   const successEl = document.getElementById('signinSuccess');
   const errEl = document.getElementById('signinError');
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/weir-mypage.html' });
+    // Phase 2-a: password reset email link lands on /reset-password, which reads
+    // #access_token=...&type=recovery from hash and shows the reset-password form.
+    // Previously pointed to /weir-mypage.html which is not the reset landing page.
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' });
     if (error) throw error;
     successEl.textContent = 'パスワードリセットメールを送信しました。メールをご確認ください。';
     successEl.style.display = 'block';
