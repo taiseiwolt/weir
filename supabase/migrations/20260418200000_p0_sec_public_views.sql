@@ -8,6 +8,7 @@
 --   3. anon / authenticated は新ビュー経由でアクセス
 --   4. service_role は従来通り元テーブル直接アクセス可能
 --   5. suspended / is_paused 行は venues_public から完全除外
+--   6. hp_published != true 行は brands_public から完全除外（NULL も除外）
 -- ============================================================
 
 -- ============================================================
@@ -61,7 +62,11 @@ SELECT 'venues active & not-paused rows (venues_public 予定件数)', COUNT(*):
   FROM public.venues
   WHERE status = 'active' AND (is_paused IS NULL OR is_paused = false)
 UNION ALL
-SELECT 'brands total rows (brands_public 予定件数)', COUNT(*)::text FROM public.brands;
+SELECT 'brands total rows', COUNT(*)::text FROM public.brands
+UNION ALL
+SELECT 'brands hp_published=true rows (brands_public 予定件数)', COUNT(*)::text
+  FROM public.brands
+  WHERE hp_published = true;
 
 
 -- ============================================================
@@ -218,10 +223,11 @@ SELECT
   cancel_3days,
   cancel_policy,
   created_at
-FROM public.brands;
+FROM public.brands
+WHERE hp_published = true;
 
 COMMENT ON VIEW public.brands_public IS
-  'P0 セキュリティ対策(2026-04-18): anon 向け公開 OK 列のみ。除外=merchant_id/memo/pii_access_settings/escalation_*/contact_*。';
+  'P0 セキュリティ対策(2026-04-18): anon 向け公開 OK 列のみ。除外=merchant_id/memo/pii_access_settings/escalation_*/contact_*。hp_published=true の行のみ（NULL/false は除外）。';
 
 -- STEP 2a: anon / authenticated に SELECT 権限付与
 GRANT SELECT ON public.brands_public TO anon, authenticated;
@@ -273,7 +279,9 @@ FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'brands_public';
 
 -- 3-2. 新ビューの件数（service_role 実行）
--- 期待: STEP 0-5 の「active & not-paused rows」と一致
+-- 期待:
+--   venues_public rows = STEP 0-5 の「venues active & not-paused rows」と一致
+--   brands_public rows = STEP 0-5 の「brands hp_published=true rows」と一致
 SELECT 'venues_public rows' AS item, COUNT(*)::text AS value FROM public.venues_public
 UNION ALL
 SELECT 'brands_public rows', COUNT(*)::text FROM public.brands_public;
