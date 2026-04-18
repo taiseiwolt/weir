@@ -807,8 +807,8 @@ function renderMenusPage(){
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
         '<input type="text" id="menusSearchInput" placeholder="display_id を入力" style="flex:1;min-width:240px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-family:monospace;font-size:13px" onkeydown="if(event.key===\'Enter\')menusSearch()">'+
         '<button class="btn btn-primary" onclick="menusSearch()">🔍 検索</button>'+
-        '<button class="btn btn-secondary" onclick="menusReset()">リセット</button>'+
-        '<button class="btn btn-secondary" onclick="goToMenuBulk()">📥 一括インポート</button>'+
+        '<button class="btn btn-secondary" onclick="downloadBulkTemplate(false,\'menu_full\')">📋 テンプレートDL</button>'+
+        '<button class="btn btn-secondary" onclick="goToMenuBulk()">インポート</button>'+
       '</div>'+
       '<div style="font-size:11px;color:var(--text-light);margin-top:8px">例: CRP-a1b2c3d（法人）/ BRD-a1b2c3d（ブランド）/ STR-a1b2c3d（店舗）</div>'+
     '</div>'+
@@ -820,15 +820,6 @@ function initMenusPage(){
   menusImageUploadState={file:null,currentUrl:null};
   var input=document.getElementById('menusSearchInput');
   if(input)setTimeout(function(){input.focus();},50);
-}
-
-function menusReset(){
-  menusState={brandId:null,brandDisplayId:null,brandName:null,venues:[],highlightVenueId:null,patterns:[],selectedPatternId:null,products:[],productSizesMap:{},categories:[]};
-  menusImageUploadState={file:null,currentUrl:null};
-  var input=document.getElementById('menusSearchInput');
-  if(input){input.value='';input.focus();}
-  var result=document.getElementById('menusResult');
-  if(result){result.style.display='none';result.innerHTML='';}
 }
 
 async function menusSearch(){
@@ -5859,8 +5850,8 @@ function renderBulkPage(){
           '</div>'+
         '</div>'+
       '</div>'+
-      '<div id="bulkTemplateArea" style="display:'+(_bulkDbType?'':'none')+';padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:16px">'+
-        '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px">テンプレートをダウンロードして編集してください</div>'+
+      '<div id="bulkTemplateArea" style="padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:16px">'+
+        '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px">'+(_bulkDbType?'テンプレートをダウンロードして編集してください':'↑ まずデータ種別を選択してからテンプレートを取得してください')+'</div>'+
         '<div class="btn-group">'+
           '<button class="btn btn-s btn-sm" onclick="downloadBulkTemplate(false)">📋 空テンプレート</button>'+
           (_bulkDbType&&BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly?'':
@@ -5936,8 +5927,8 @@ function onBulkTypeChange_brand(){
   },100);
 }
 
-function downloadBulkTemplate(includeData){
-  var type=_bulkDbType;if(!type)return;
+function downloadBulkTemplate(includeData,typeOverride){
+  var type=typeOverride||_bulkDbType;if(!type){showToast('⚠️ データ種別を選択してください');return;}
   var tmpl=BULK_TEMPLATES[type];
   if(includeData){
     if(tmpl._downloadOnly){showToast('ℹ️ このテンプレートはダウンロード専用です。既存データ付きには対応していません');return;}
