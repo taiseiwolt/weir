@@ -918,7 +918,7 @@ async function loadCheckoutData() {
 
   // 2. Supabaseから店舗設定を取得して上書き
   try {
-    let storeQuery = sb.from('venues').select('*, brands(id, name, merchant_id)');
+    let storeQuery = sb.from('venues_public').select('*, brands_public(id, name)');
     if (STORE_ID) {
       // display_id (STR-xxx) か UUID か自動判別
       const storeCol = typeof STORE_ID === 'string' && STORE_ID.startsWith('STR-') ? 'display_id' : 'id';
@@ -930,7 +930,7 @@ async function loadCheckoutData() {
 
     if (storeRow) {
       CHECKOUT_DATA.storeName  = storeRow.name || CHECKOUT_DATA.storeName;
-      CHECKOUT_DATA.brandName  = storeRow.brands?.name || CHECKOUT_DATA.brandName;
+      CHECKOUT_DATA.brandName  = storeRow.brands_public?.name || CHECKOUT_DATA.brandName;
       CHECKOUT_DATA.storeId    = storeRow.id;
       CHECKOUT_DATA.storeSlug  = storeRow.slug || '';
 
@@ -942,17 +942,14 @@ async function loadCheckoutData() {
       if (storeRow.prep_time_minutes !== null) CHECKOUT_DATA.prepTimeMinutes = storeRow.prep_time_minutes;
       CHECKOUT_DATA.serviceChargeRate = parseFloat(storeRow.service_charge_rate) || 0;
 
-      // 2b. 法人の stripe_account_id を取得（Stripe Connect 決済用）
-      const corpId = storeRow.brands?.merchant_id;
-      if (corpId) {
-        const { data: corpRow } = await sb.from('merchants').select('stripe_account_id').eq('id', corpId).single();
-        if (corpRow && corpRow.stripe_account_id) {
-          CHECKOUT_DATA.stripeAccountId = corpRow.stripe_account_id;
-        }
-      }
+      // 2b. 法人の stripe_account_id 取得は廃止（brands_public に merchant_id 非含有のため）
+      // WHY: P0 sec migration で merchant_id を brands_public から除外。
+      // checkout 側の stripe_account_id は後続の環境分離プロジェクトで
+      // サーバーサイド（Edge Function）取得に移管予定。
+      // CHECKOUT_DATA.stripeAccountId は未設定のまま Stripe Connect へ進む。
 
       // 3. Load coupons from Supabase
-      const brandId = storeRow.brands?.id;
+      const brandId = storeRow.brands_public?.id;
       if (brandId) {
         const { data: coupons } = await sb.from('coupons').select('id, brand_id, code, name, discount_value, discount_type, expires_at, min_order_amount, is_active').eq('brand_id', brandId).eq('is_active', true);
         if (coupons && coupons.length > 0) {
@@ -2512,7 +2509,7 @@ async function showTokushoho() {
   else if (typeof storeId === 'string' && storeId.startsWith('STR-')) storeCol = 'display_id';
   else storeCol = 'id';
   const { data: store, error } = await sb
-    .from('venues')
+    .from('venues_public')
     .select('id, name, address, phone, brand_id')
     .eq(storeCol, storeId)
     .single();

@@ -812,12 +812,7 @@ document.addEventListener('DOMContentLoaded', async function(){
       // Update page hero subtitle with brand name
       var heroSub = document.querySelector('.page-hero p');
       if (heroSub) heroSub.textContent = (brand.name || '') + 'のグランドメニュー';
-      // Price notes - show if brand has price annotation data (populated from admin when available)
-      if (brand.memo) {
-        var pn = document.getElementById('price-notes');
-        var pnt = document.getElementById('price-notes-text');
-        if (pn && pnt) { pnt.textContent = brand.memo; pn.style.display = ''; }
-      }
+      // Price notes: brand.memo display removed (memo column excluded from brands_public for privacy)
       // Load menu data from DB, then rebuild
       Promise.all([
         loadMenuFromSupabase().catch(function(){})

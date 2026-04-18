@@ -1079,7 +1079,7 @@ async function loadFromSupabase() {
     //    レガシー互換: venue_id / store_id / sid クエリがあれば ID で検索。
     var urlParams = new URLSearchParams(window.location.search);
     var storeIdParam = urlParams.get('venue_id') || urlParams.get('store_id') || urlParams.get('sid');
-    var query = sb.from('venues').select('*, brands(id, name), menu_pattern_id');
+    var query = sb.from('venues_public').select('*, brands_public(id, name), menu_pattern_id');
     if (STORE_SLUG) {
       query = query.eq('slug', STORE_SLUG);
     } else if (storeIdParam) {
@@ -1129,7 +1129,7 @@ async function loadFromSupabase() {
     // 3. STORE_DATA を上書き（固定設定値は既存のまま保持）
     STORE_DATA = {
       ...STORE_DATA,
-      brandName:    storeRows.brands?.name || STORE_DATA.brandName,
+      brandName:    storeRows.brands_public?.name || STORE_DATA.brandName,
       storeName:    storeRows.name,
       address:      storeRows.address || STORE_DATA.address,
       phone:        storeRows.phone   || STORE_DATA.phone,
@@ -2753,7 +2753,7 @@ async function showTokushoho() {
     lookupVal = storeId;
   }
   const { data: store, error } = await sb
-    .from('venues')
+    .from('venues_public')
     .select('id, name, address, phone, brand_id')
     .eq(lookupCol, lookupVal)
     .single();

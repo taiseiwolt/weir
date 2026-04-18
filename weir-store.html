@@ -995,7 +995,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 async function loadStoreFromSupabase() {
   if (!STORE_SLUG) return; // URLパラメータ未指定時は何もしない
   // Direct Supabase（D-89: stores→venues rename済み。is_active/hero_image_url/logo_image_url/description は venues に存在しないため削除）
-  var {data: storeData} = await sb.from('venues').select('id, name, slug, brand_id, address, phone, lat, lng, status, seats, smoking_policy, children_policy, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
+  var {data: storeData} = await sb.from('venues_public').select('id, name, slug, brand_id, address, phone, lat, lng, seats, smoking_policy, children_policy, seat_only_reservation, has_takeout, has_delivery, cancel_no_show, cancel_same_day, cancel_3days, created_at, updated_at').eq('slug', STORE_SLUG).single();
   if (!storeData) return;
   STORE.storeId = storeData.id;
   STORE.name = storeData.name;

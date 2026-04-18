@@ -14,7 +14,7 @@
   var SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
   var TIMEOUT_MS = 3000;
 
-  var BRAND_COLUMNS = 'id,name,display_id,memo,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain,hp_settings';
+  var BRAND_COLUMNS = 'id,name,display_id,font_family,font_color,primary_color,primary_dark,primary_light,header_bg,header_text_color,logo_mark_type,logo_mark_emoji,logo_mark_src,logo_text_type,logo_text_value,sns_line,sns_x,sns_instagram,sns_facebook,sns_tiktok,sns_youtube,sns_threads,company_url,recruit_url,hero_catchphrase,brand_description,custom_domain,hp_settings';
 
   /* =============================================================
      2. escH() — XSS escape helper
@@ -53,7 +53,7 @@
       var client = getSb();
       if (client) {
         try {
-          var res = await client.from('brands').select('id').eq('custom_domain', hostname).limit(1);
+          var res = await client.from('brands_public').select('id').eq('custom_domain', hostname).limit(1);
           if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].id };
         } catch (e) { /* fall through */ }
       }
@@ -94,7 +94,7 @@
       var client = getSb();
       if (client) {
         try {
-          var res = await client.from('brands').select('id').eq('slug', brandSlug).limit(1);
+          var res = await client.from('brands_public').select('id').eq('slug', brandSlug).limit(1);
           if (res.data && res.data.length > 0) return { type: 'id', value: res.data[0].id };
         } catch (e) { /* fall through to default */ }
       }
@@ -118,7 +118,7 @@
 
     if (!resolved || !resolved.value) return Promise.resolve(null);
 
-    var query = client.from('brands').select(BRAND_COLUMNS).eq('id', resolved.value);
+    var query = client.from('brands_public').select(BRAND_COLUMNS).eq('id', resolved.value);
 
     return query.single().then(function(res) {
       if (res.error) throw res.error;
@@ -675,7 +675,7 @@
     var client = getSb();
     if (!client) return;
     try {
-      var res = await client.from('venues').select('id, name').eq('brand_id', brand.id).order('name');
+      var res = await client.from('venues_public').select('id, name').eq('brand_id', brand.id).order('name');
       var sel = document.getElementById('rm-store');
       if (!sel || !res.data) return;
       sel.innerHTML = '<option value="">店舗を選択してください</option>';
@@ -818,7 +818,7 @@
         if (brand && brand.id) {
           var client = getSb();
           if (client) {
-            var rv = await client.from('venues').select('id').eq('brand_id', brand.id).eq('name', rmPresetStore).limit(1);
+            var rv = await client.from('venues_public').select('id').eq('brand_id', brand.id).eq('name', rmPresetStore).limit(1);
             storeId = (rv.data && rv.data[0]) ? rv.data[0].id : '';
           }
         }

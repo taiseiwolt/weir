@@ -301,7 +301,7 @@ function getUrlParam(key) {
 var BRAND_ID = null;
 
 async function loadStoresFromSupabase() {
-  var {data: stores} = await sb.from('venues').select('id, display_id, name, slug, brand_id, address, phone, lat, lng, status, is_paused, has_takeout, has_delivery, reservation_enabled, genres, regular_holiday, price_range_lunch, price_range_dinner').eq('brand_id', BRAND_ID).order('name');
+  var {data: stores} = await sb.from('venues_public').select('id, display_id, name, slug, brand_id, address, phone, lat, lng, has_takeout, has_delivery, reservation_enabled, genres, regular_holiday, price_range_lunch, price_range_dinner').eq('brand_id', BRAND_ID).order('name');
   if (!stores || stores.length === 0) return;
 
   // Fetch thumbnails
@@ -351,7 +351,7 @@ async function loadStoresFromSupabase() {
       genres: s.genres || [], holiday: s.regular_holiday || '', priceText: formatPriceRange(s),
       bg: thumbMap[s.id] ? 'url('+thumbMap[s.id]+') center/cover no-repeat' : bgs[i % bgs.length],
       thumbUrl: thumbMap[s.id] || null,
-      avail: s.is_paused ? 'full' : (s.status === 'closed' ? 'full' : 'ok'),
+      avail: 'ok',
       hasTakeout: !!s.has_takeout,
       hasDelivery: !!s.has_delivery,
       reservationEnabled: !!s.reservation_enabled,
