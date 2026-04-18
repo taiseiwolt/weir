@@ -229,7 +229,7 @@ const _brandParam = new URLSearchParams(window.location.search).get('brand');
 
 async function loadBrandFromSupabase() {
   if (!BRAND_ID) return;
-  var {data: brand} = await sb.from('brands').select('*').eq('id', BRAND_ID).maybeSingle();
+  var {data: brand} = await sb.from('brands_public').select('*').eq('id', BRAND_ID).maybeSingle();
   if (!brand) return;
   BRAND_CONFIG.name = brand.name || '';
   if (brand.primary_color) BRAND_CONFIG.primaryColor = brand.primary_color;

@@ -950,8 +950,8 @@ async function loadStores(){
     var client = AidenCommon.getSb && AidenCommon.getSb();
     if (!client) return;
     var brandId = (AidenCommon.brand && AidenCommon.brand.id) || null;
-    var q = client.from('venues')
-      .select('id, display_id, name, slug, address, lat, lng, status, is_paused, has_takeout, has_delivery, brand_id');
+    var q = client.from('venues_public')
+      .select('id, display_id, name, slug, address, lat, lng, has_takeout, has_delivery, brand_id');
     if (brandId) q = q.eq('brand_id', brandId);
     var { data: venueRows } = await q;
     if (!venueRows || !venueRows.length) return;
@@ -983,7 +983,7 @@ async function loadStores(){
         addr: v.address || '',
         station: '',
         hours: formatToday(v.id),
-        avail: v.is_paused ? 'full' : (v.status === 'closed' ? 'full' : 'ok'),
+        avail: 'ok',
         hasTakeout: !!v.has_takeout,
         hasDelivery: !!v.has_delivery,
         lat: (v.lat != null) ? Number(v.lat) : null,
