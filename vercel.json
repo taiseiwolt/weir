@@ -9,6 +9,14 @@
       "destination": "https://xorder.co.jp/:path",
       "permanent": true
     },
+    { "source": "/weir-email-verified.html", "destination": "/verify-email", "permanent": true },
+    { "source": "/weir-email-pending.html", "destination": "/verify-email/pending", "permanent": true },
+    { "source": "/weir-password-reset.html", "destination": "/reset-password", "permanent": true },
+    { "source": "/weir-guest-order.html", "destination": "/", "permanent": true },
+    { "source": "/weir-terms.html", "destination": "/legal/terms", "permanent": true },
+    { "source": "/weir-privacy.html", "destination": "/legal/privacy", "permanent": true },
+    { "source": "/weir-privacy-policy.html", "destination": "/legal/privacy", "permanent": true },
+    { "source": "/weir-tokushoho.html", "destination": "/legal/tokushoho", "permanent": true },
     { "source": "/weir-brand-stores-v1.4.html", "destination": "/weir-brand-stores.html", "permanent": true },
     { "source": "/weir-store-v5.4.html", "destination": "/weir-store.html", "permanent": true }
   ],

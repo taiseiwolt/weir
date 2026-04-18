@@ -26,9 +26,58 @@ const RESERVED_PREFIXES = [
   'weir-', 'aiden-', 'test-', 'e2e-', 'playwright-', 'seed-', 'qa-',
 ];
 
+// Phase 2-a Task 12: legacy /weir-*.html → new brand-scoped subpath
+const LEGACY_BRAND_PATH_MAP = {
+  '/brand.html': '',
+  '/weir-brand-menu.html': '/menu',
+  '/weir-brand-stores.html': '/stores',
+  '/weir-membership.html': '/membership',
+  '/weir-brand-news.html': '/news',
+  '/weir-order.html': '/order',
+  '/weir-mypage.html': '/mypage',
+  '/weir-order-tracking.html': '/tracking',
+  '/weir-sitemap.html': '/sitemap',
+};
+
 // Edge Runtime の module-scope cache。インスタンス生存中は保持される
 const brandSlugCache = new Map();
 const BRAND_CACHE_TTL_MS = 60 * 1000;
+
+// Phase 2-a Task 12: brand_id → slug cache for legacy URL 301 redirects
+const brandIdToSlugCache = new Map();
+
+async function brandSlugById(brandId) {
+  const now = Date.now();
+  const cached = brandIdToSlugCache.get(brandId);
+  if (cached && now - cached.ts < BRAND_CACHE_TTL_MS) {
+    return cached.slug;
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(
+      supabaseUrl + '/rest/v1/brands?select=slug&id=eq.' + encodeURIComponent(brandId) + '&limit=1',
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: 'Bearer ' + supabaseAnonKey,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const slug = (Array.isArray(rows) && rows.length > 0 && rows[0].slug) ? rows[0].slug : null;
+    if (slug) brandIdToSlugCache.set(brandId, { slug, ts: now });
+    return slug;
+  } catch {
+    return null;
+  }
+}
 
 async function brandSlugExists(slug) {
   const now = Date.now();
@@ -124,6 +173,27 @@ export default async function middleware(request) {
   // Phase 2-a: メインドメインでの path-based brand slug チェック
   // first segment が reserved でなければ brands.slug の存在を確認し、不在なら /404.html
   if (isMainApex) {
+    // Phase 2-a Task 12: legacy /weir-*.html?brand_id=X → 301 /{slug}/{subpath}
+    if (LEGACY_BRAND_PATH_MAP.hasOwnProperty(pathname)) {
+      const brandId = url.searchParams.get('brand_id');
+      if (brandId) {
+        const slug = await brandSlugById(brandId);
+        if (slug) {
+          const newPath = '/' + slug + LEGACY_BRAND_PATH_MAP[pathname];
+          // Preserve other query params (strip brand_id) and fragment
+          const preservedParams = new URLSearchParams();
+          url.searchParams.forEach((v, k) => {
+            if (k !== 'brand_id') preservedParams.append(k, v);
+          });
+          const qs = preservedParams.toString();
+          const newUrl = newPath + (qs ? '?' + qs : '') + (url.hash || '');
+          return Response.redirect(new URL(newUrl, request.url).toString(), 301);
+        }
+        // brand_id provided but lookup failed — fall through to 404 logic below
+      }
+      // No brand_id — legacy URL still served by Vercel filesystem, OK to let it through
+    }
+
     const slug = shouldCheckBrandSlug(pathname);
     if (slug) {
       const exists = await brandSlugExists(slug);
