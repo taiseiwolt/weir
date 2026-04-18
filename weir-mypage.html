@@ -376,7 +376,8 @@ function fmtDate(d) {
     checkVerificationStatus(session.access_token, member.email);
 
     const brandId = member.brand_id;
-    document.getElementById('membershipLink').href = './weir-membership.html?brand_id=' + brandId;
+    // Phase 2-a: membership path derived from pathname brand_slug (brand_id dropped from URL)
+    document.getElementById('membershipLink').href = window.Phase2aHrefRewriter.buildBrandPath('/membership');
 
     // Member name
     if (member.last_name || member.first_name) {
@@ -488,8 +489,9 @@ function fmtDate(d) {
         var icon = o.order_type === 'delivery' ? '🚚' : '🛍️';
         var iconCls = o.order_type === 'delivery' ? 'delivery' : 'pickup';
         var modeLabel = o.order_type === 'delivery' ? 'デリバリー' : 'テイクアウト';
+        // Phase 2-a: tracking path derived from pathname brand_slug
         var trackBtn = o.tracking_token
-          ? '<a href="./weir-order-tracking.html?token=' + encodeURIComponent(o.tracking_token) + '" class="order-hist-track">追跡</a>'
+          ? '<a href="' + window.Phase2aHrefRewriter.buildBrandPath('/tracking') + '?token=' + encodeURIComponent(o.tracking_token) + '" class="order-hist-track">追跡</a>'
           : '';
         return '<div class="order-hist-item">'
           + '<div class="order-hist-icon ' + iconCls + '">' + icon + '</div>'
