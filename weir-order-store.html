@@ -923,14 +923,27 @@ img { max-width:100%; display:block; }
 </div>
 
 <script>
+// TODO(phase2a): Guest order flow (unauthenticated purchasing) was originally
+// planned for Phase 2-a Task 8 but descoped — no existing backend (no guests
+// table, no auth scaffold in this file). See weir-guest-order.html deletion
+// in commit history; a separate feature CC request should implement:
+//   - "ログイン" vs "ゲストとして続ける" selector UI at page top
+//   - Guest info form (name/phone/email) before order submission
+//   - guests table migration + INSERT before orders INSERT
 // ===================================================================
 // SUPABASE CONFIG
 // ===================================================================
 const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
 // STORE_SLUG: URLパラメータから動的取得（ハードコード禁止 D-83）
+// Phase 2-a: URL pathname /{brand_slug}/{venue_slug}/order → segs[2] is venue_slug.
+// Legacy query params (slug/store_slug/venue_slug) kept as fallbacks for backward compat.
 const _slugParams = new URLSearchParams(window.location.search);
-const STORE_SLUG   = _slugParams.get('slug') || _slugParams.get('store_slug') || '';
+function getCurrentVenueSlug() {
+  var segs = window.location.pathname.split('/');
+  return segs[2] || '';
+}
+const STORE_SLUG   = getCurrentVenueSlug() || _slugParams.get('venue_slug') || _slugParams.get('slug') || _slugParams.get('store_slug') || '';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Use shared escH from weir-common.js
@@ -987,17 +1000,17 @@ let STORE_DATA = {
 
 // Current order mode (passed from weir-order-v17)
 let orderMode = 'delivery'; // 'takeout' or 'delivery'
-// Read type from URL parameter
+// Read mode from URL parameter (Phase 2-a: mode=, legacy: type=)
 (function() {
   var urlParams = new URLSearchParams(window.location.search);
-  var typeParam = urlParams.get('type');
-  if (typeParam === 'takeout' || typeParam === 'delivery' || typeParam === 'dinein') {
-    orderMode = typeParam;
+  var modeParam = urlParams.get('mode') || urlParams.get('type');
+  if (modeParam === 'takeout' || modeParam === 'delivery' || modeParam === 'dinein') {
+    orderMode = modeParam;
   }
   // Also check sessionStorage for mode passed from order page
   try {
     var stored = JSON.parse(sessionStorage.getItem('weir_selected_store') || '{}');
-    if (stored.orderMode && !typeParam) orderMode = stored.orderMode;
+    if (stored.orderMode && !modeParam) orderMode = stored.orderMode;
   } catch(e) {}
 })();
 // Read address from sessionStorage (set by weir-order.html)
@@ -1061,16 +1074,20 @@ async function isTodayHoliday() {
 // ===================================================================
 async function loadFromSupabase() {
   try {
-    // 1. 店舗情報取得（URLのvenue_id/store_idパラメータがあればIDで検索、なければslugで検索）
+    // 1. 店舗情報取得
+    //    Phase 2-a: STORE_SLUG (pathname /{brand}/{venue}/order) を第一優先。
+    //    レガシー互換: venue_id / store_id / sid クエリがあれば ID で検索。
     var urlParams = new URLSearchParams(window.location.search);
     var storeIdParam = urlParams.get('venue_id') || urlParams.get('store_id') || urlParams.get('sid');
     var query = sb.from('venues').select('*, brands(id, name), menu_pattern_id');
-    if (storeIdParam) {
+    if (STORE_SLUG) {
+      query = query.eq('slug', STORE_SLUG);
+    } else if (storeIdParam) {
       // display_id (STR-xxx) or UUID
       var col = storeIdParam.startsWith('STR-') ? 'display_id' : 'id';
       query = query.eq(col, storeIdParam);
     } else {
-      query = query.eq('slug', STORE_SLUG);
+      query = query.eq('slug', STORE_SLUG); // no slug, no id: will return null
     }
     const { data: storeRows } = await query.single();
 
@@ -1267,13 +1284,16 @@ async function loadFromSupabase() {
 // INIT
 // ===================================================================
 document.addEventListener('DOMContentLoaded', async () => {
-  // venue_id / store_id パラメータまたは sessionStorage がない場合はリダイレクト
+  // Phase 2-a: pathname /{brand_slug}/{venue_slug}/order が正しく venue を指していれば OK。
+  // 旧 URL の互換のため venue_id / store_id / sid / venue_slug クエリも許容。
   var urlParams = new URLSearchParams(window.location.search);
-  var hasStoreParam = urlParams.has('venue_id') || urlParams.has('store_id') || urlParams.has('sid');
+  var hasStoreParam = !!getCurrentVenueSlug()
+    || urlParams.has('venue_id') || urlParams.has('store_id') || urlParams.has('sid')
+    || urlParams.has('venue_slug') || urlParams.has('store_slug') || urlParams.has('slug');
   var hasSessionStore = false;
   try { hasSessionStore = !!sessionStorage.getItem('weir_selected_store'); } catch(e) {}
   if (!hasStoreParam && !hasSessionStore) {
-    window.location.href = './weir-order.html';
+    window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/order');
     return;
   }
 
@@ -1282,7 +1302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     header: 'order',
     footer: true,
     onBack: function() {
-      window.location.href = './weir-order.html' + window.location.search;
+      // Phase 2-a: brand-level order page lives at /{brand_slug}/order
+      // Strip legacy brand_id from search; keep other params (e.g., mode)
+      var cleanSearch = window.location.search
+        .replace(/([?&])brand_id=[^&#]*&?/g, '$1')
+        .replace(/\?&/g, '?').replace(/&&/g, '&').replace(/[?&]$/, '');
+      window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/order') + cleanSearch;
     },
     onBrandLoaded: function(brand) {
       document.title = (brand.name || '') + ' | メニュー';
@@ -1304,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Supabase からデータが取得できなかった場合（ITEMS空＝メニューなし）かつ sessionStorage もない場合リダイレクト
   if (ITEMS.length === 0 && !hasSessionStore && !hasStoreParam) {
-    window.location.href = './weir-order.html';
+    window.location.href = window.Phase2aHrefRewriter.buildBrandPath('/order');
     return;
   }
 
@@ -1312,11 +1337,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // D-83: service_subscriptionsが空の場合はvenues.has_takeout/has_deliveryでfallback判定
   function showUnavailablePage(modeName) {
     document.title = STORE_DATA.storeName + ' | Weir モバイルオーダー';
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' では現在「' + escH(modeName) + '」サービスをご利用いただけません。</p><a href="./weir-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+    // Phase 2-a: brand-level order page /{brand_slug}/order
+    var backHref = (window.Phase2aHrefRewriter && typeof window.Phase2aHrefRewriter.buildBrandPath === 'function')
+      ? window.Phase2aHrefRewriter.buildBrandPath('/order') : '/';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">🚫</div><h2 style="margin-bottom:8px">このサービスはご利用いただけません</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' では現在「' + escH(modeName) + '」サービスをご利用いただけません。</p><a href="' + escH(backHref) + '" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
   }
   function showPausedPage(modeName) {
     document.title = STORE_DATA.storeName + ' | Weir モバイルオーダー';
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">⏸️</div><h2 style="margin-bottom:8px">現在受付停止中です</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' の「' + escH(modeName) + '」は現在受付を停止しております。<br>しばらくしてから再度お試しください。</p><a href="./weir-order.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
+    var backHref = (window.Phase2aHrefRewriter && typeof window.Phase2aHrefRewriter.buildBrandPath === 'function')
+      ? window.Phase2aHrefRewriter.buildBrandPath('/order') : '/';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:sans-serif;padding:20px"><div><div style="font-size:48px;margin-bottom:16px">⏸️</div><h2 style="margin-bottom:8px">現在受付停止中です</h2><p style="color:#636e72;font-size:14px">' + escH(STORE_DATA.storeName || '') + ' の「' + escH(modeName) + '」は現在受付を停止しております。<br>しばらくしてから再度お試しください。</p><a href="' + escH(backHref) + '" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#D32F2F;color:white;border-radius:8px;text-decoration:none;font-weight:700">店舗ページへ戻る</a></div></div>';
   }
   // venue_channels の受付可否判定
   function isChannelAccepting(channelType) {
@@ -2478,8 +2508,12 @@ function goToCheckout() {
     sessionStorage.setItem('weir_checkout_data', JSON.stringify(checkoutPayload));
   } catch(e) { /* ignored */ }
 
-  // Navigate to checkout page (versionless)
-  window.location.href = './weir-order-checkout.html';
+  // Navigate to checkout page (Phase 2-a: /{brand_slug}/{venue_slug}/checkout)
+  // Fall back to brand-level order page if venue_slug unavailable (safer than broken checkout).
+  var venueSlug = window.location.pathname.split('/')[2] || '';
+  window.location.href = venueSlug
+    ? window.Phase2aHrefRewriter.buildBrandPath('/' + venueSlug + '/checkout')
+    : window.Phase2aHrefRewriter.buildBrandPath('/order');
 }
 
 // ===================================================================
@@ -2674,6 +2708,8 @@ function updateVoiceStatus(text) {
 <script>
 (function(){
   const params = new URLSearchParams(location.search);
+  // Phase 2-a: storeId を venue_id/store_id/sid クエリから読む（Chat widget は UUID/display_id 両対応）。
+  // pathname-derived slug は DB ルックアップ後に STORE_DATA から伝わるため、ここでは起動時 hint のみ。
   window._weirChat = new WeirChatWidget({
     contextType: 'enduser',
     storeId: params.get('venue_id') || params.get('store_id') || params.get('sid') || null,
@@ -2697,19 +2733,29 @@ async function showTokushoho() {
   modal.style.display = 'flex';
   modal.style.alignItems = 'flex-start';
 
+  // Phase 2-a: pathname の venue_slug を第一優先、レガシー互換で venue_id/store_id/sid も許容
   const params = new URLSearchParams(window.location.search);
+  const venueSlug = (typeof getCurrentVenueSlug === 'function' ? getCurrentVenueSlug() : '')
+    || params.get('venue_slug') || params.get('slug') || params.get('store_slug') || '';
   const storeId = params.get('venue_id') || params.get('store_id') || params.get('sid');
-  if (!storeId) {
+  if (!venueSlug && !storeId) {
     content.innerHTML = '<p>店舗情報が見つかりません。</p>';
     return;
   }
 
-  // display_id (STR-xxx) か UUID か自動判別
-  const storeCol = typeof storeId === 'string' && storeId.startsWith('STR-') ? 'display_id' : 'id';
+  // slug 優先 → display_id (STR-xxx) か UUID か自動判別
+  let lookupCol, lookupVal;
+  if (venueSlug) {
+    lookupCol = 'slug';
+    lookupVal = venueSlug;
+  } else {
+    lookupCol = (typeof storeId === 'string' && storeId.startsWith('STR-')) ? 'display_id' : 'id';
+    lookupVal = storeId;
+  }
   const { data: store, error } = await sb
     .from('venues')
     .select('id, name, address, phone, brand_id')
-    .eq(storeCol, storeId)
+    .eq(lookupCol, lookupVal)
     .single();
 
   if (error || !store) {
@@ -2797,5 +2843,6 @@ document.addEventListener('keydown', function(e) {
   }
 });
 </script>
+<script src="/phase2a-href-rewriter.js"></script>
 </body>
 </html>
