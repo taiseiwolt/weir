@@ -477,6 +477,391 @@
   }
 
   /* =============================================================
+     17b. RESERVATION_MODAL_CSS — 来店予約モーダル CSS
+     ============================================================= */
+  var RESERVATION_MODAL_CSS = ''
+    + '.res-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center}'
+    + '.res-modal-bg.open{display:flex}'
+    + '.res-modal{background:white;border-radius:12px;width:92%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}'
+    + '.res-modal-header{padding:18px 22px;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;border-radius:12px 12px 0 0;z-index:1}'
+    + '.res-modal-title{font-size:16px;font-weight:700}'
+    + '.res-modal-close{background:none;border:none;font-size:22px;color:#999;line-height:1;padding:4px;cursor:pointer}'
+    + '.res-modal-body{padding:22px}'
+    + '.rm-steps{display:flex;margin-bottom:24px}'
+    + '.rm-step{flex:1;text-align:center;position:relative}'
+    + '.rm-step::after{content:"";position:absolute;top:13px;left:50%;right:-50%;height:1px;background:#e8e8e8}'
+    + '.rm-step:last-child::after{display:none}'
+    + '.rm-step-dot{width:26px;height:26px;border-radius:50%;background:#f5f5f5;border:1px solid #ddd;color:#999;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;position:relative;z-index:1;transition:all .2s}'
+    + '.rm-step.active .rm-step-dot{background:#1a1a1a;border-color:#1a1a1a;color:white}'
+    + '.rm-step.done .rm-step-dot{background:#27ae60;border-color:#27ae60;color:white}'
+    + '.rm-step-label{font-size:10px;color:#999}'
+    + '.rm-step.active .rm-step-label{color:#1a1a1a;font-weight:600}'
+    + '.rf-field{margin-bottom:16px}'
+    + '.rf-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}'
+    + '.rf-label{font-size:11px;font-weight:700;color:#666;margin-bottom:5px;display:flex;align-items:center;gap:4px}'
+    + '.rf-req{color:var(--brand-primary)}'
+    + '.rf-input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-family:var(--brand-font);font-size:14px;color:#1a1a1a;outline:none;transition:border-color .15s;background:white}'
+    + '.rf-input:focus{border-color:#888}'
+    + '.rf-input.error{border-color:var(--brand-primary);background:#FFF8F8}'
+    + '.rf-error{font-size:11px;color:var(--brand-primary);margin-top:4px;display:none}'
+    + '.rf-error.show{display:block}'
+    + '.rm-slot-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}'
+    + '.rm-slot-title{font-size:12px;font-weight:700;color:#666}'
+    + '.rm-slot-note{font-size:11px;color:#999}'
+    + '.rm-slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px}'
+    + '.rm-slot-b{padding:9px 4px;text-align:center;border:1px solid #e0e0e0;border-radius:5px;font-size:12px;cursor:pointer;transition:all .12s;background:white;width:100%;font-family:var(--brand-font)}'
+    + '.rm-slot-b:hover{border-color:#333}'
+    + '.rm-slot-b.on{background:#1a1a1a;color:white;border-color:#1a1a1a}'
+    + '.rm-slot-b.slot-full{background:#f5f5f5;color:#bbb;cursor:default}'
+    + '.rm-slot-b.slot-full:hover{border-color:var(--brand-primary);background:#fff5f5}'
+    + '.rm-cap-alert{padding:10px 14px;border-radius:5px;margin-bottom:14px;font-size:13px;display:none}'
+    + '.rm-cap-alert.ok{background:#f0faf5;border:1px solid rgba(39,174,96,.3);color:#27ae60;display:block}'
+    + '.rm-cap-alert.err{background:#fff5f5;border:1px solid rgba(211,47,47,.25);color:var(--brand-primary);display:block}'
+    + '.rm-btn{width:100%;padding:13px;border:none;border-radius:6px;font-size:14px;font-weight:700;background:var(--brand-primary);color:white;cursor:pointer;font-family:var(--brand-font);transition:opacity .15s}'
+    + '.rm-btn:hover{opacity:.88}'
+    + '.rm-btn:disabled{opacity:.35;cursor:not-allowed}'
+    + '.rm-btn-back{width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:none;color:#666;cursor:pointer;font-family:var(--brand-font)}'
+    + '.rm-confirm-box{background:#f8f8f8;border-radius:8px;padding:16px;margin-bottom:16px}'
+    + '.rm-confirm-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee;font-size:13px}'
+    + '.rm-confirm-row:last-child{border-bottom:none}'
+    + '.rm-confirm-label{color:#666}'
+    + '.rm-complete-box{text-align:center;padding:28px 10px}'
+    + '.rm-store-preset{padding:10px 12px;border:1px solid #ddd;border-radius:6px;background:#f8f8f8;font-size:14px;color:#333;font-weight:600}'
+    + '@media(max-width:480px){.rf-row{grid-template-columns:1fr}.rm-slot-grid{grid-template-columns:repeat(3,1fr)}}';
+
+  function injectReservationModalCSS() {
+    if (document.getElementById('weir-res-modal-css')) return;
+    var s = document.createElement('style');
+    s.id = 'weir-res-modal-css';
+    s.textContent = RESERVATION_MODAL_CSS;
+    document.head.appendChild(s);
+  }
+
+  /* =============================================================
+     17c. injectReservationModalDOM — モーダル本体を body に append
+     ============================================================= */
+  var RESERVATION_MODAL_HTML = ''
+    + '<div class="res-modal-bg" id="res-modal-bg">'
+    +   '<div class="res-modal">'
+    +     '<div class="res-modal-header">'
+    +       '<div class="res-modal-title">ご予約</div>'
+    +       '<button class="res-modal-close" onclick="closeResModal()">×</button>'
+    +     '</div>'
+    +     '<div class="res-modal-body">'
+    +       '<div class="rm-steps">'
+    +         '<div class="rm-step active" id="rms1"><div class="rm-step-dot">1</div><div class="rm-step-label">日時・人数</div></div>'
+    +         '<div class="rm-step" id="rms2"><div class="rm-step-dot">2</div><div class="rm-step-label">お客様情報</div></div>'
+    +         '<div class="rm-step" id="rms3"><div class="rm-step-dot">3</div><div class="rm-step-label">確認</div></div>'
+    +       '</div>'
+    +       '<div id="rmstep-1">'
+    +         '<div class="rf-field" id="rm-store-field">'
+    +           '<div class="rf-label">予約店舗 <span class="rf-req">*</span></div>'
+    +           '<select id="rm-store" class="rf-input" onchange="rmOnStoreChange()">'
+    +             '<option value="">店舗を選択してください</option>'
+    +           '</select>'
+    +           '<div class="rf-error" id="err-rm-store">店舗を選択してください</div>'
+    +         '</div>'
+    +         '<div class="rf-field" id="rm-store-preset-field" style="display:none">'
+    +           '<div class="rf-label">予約店舗</div>'
+    +           '<div class="rm-store-preset" id="rm-store-preset-text"></div>'
+    +         '</div>'
+    +         '<div class="rf-row" style="margin-bottom:16px">'
+    +           '<div class="rf-field" style="margin-bottom:0">'
+    +             '<div class="rf-label">日付 <span class="rf-req">*</span></div>'
+    +             '<input type="date" id="rm-date" class="rf-input">'
+    +           '</div>'
+    +           '<div class="rf-field" style="margin-bottom:0">'
+    +             '<div class="rf-label">人数 <span class="rf-req">*</span></div>'
+    +             '<select id="rm-guests" class="rf-input" onchange="rmCheckCap()">'
+    +               '<option value="1">1名</option><option value="2">2名</option>'
+    +               '<option value="3" selected>3名</option><option value="4">4名</option>'
+    +               '<option value="5">5名</option><option value="6">6名</option><option value="8">8名</option>'
+    +             '</select>'
+    +           '</div>'
+    +         '</div>'
+    +         '<div class="rm-slot-header">'
+    +           '<div class="rm-slot-title">時間を選択</div>'
+    +           '<div class="rm-slot-note">🔔 から空席通知が可能</div>'
+    +         '</div>'
+    +         '<div class="rm-slot-grid">'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'17:00\')">17:00</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'17:15\')">17:15</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'17:30\')">17:30</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'17:45\')">17:45</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'18:00\')">18:00</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'18:15\')">18:15</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'18:30\')">18:30</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'18:45\')">18:45</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'19:00\')">19:00</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'19:30\')">19:30</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'20:00\')">20:00</button>'
+    +           '<button class="rm-slot-b" onclick="rmSelSlot(this,\'20:30\')">20:30</button>'
+    +         '</div>'
+    +         '<div class="rm-cap-alert" id="rm-cap-alert"></div>'
+    +         '<button id="rm-step1-btn" class="rm-btn" onclick="rmGoStep(2)" disabled style="opacity:.35">次へ：お客様情報を入力</button>'
+    +       '</div>'
+    +       '<div id="rmstep-2" style="display:none">'
+    +         '<div class="rf-row">'
+    +           '<div class="rf-field">'
+    +             '<div class="rf-label">お名前 <span class="rf-req">*</span></div>'
+    +             '<input id="rm-name" type="text" placeholder="山田 花子" class="rf-input" oninput="rmClearErr(\'rm-name\')">'
+    +             '<div class="rf-error" id="err-rm-name"></div>'
+    +           '</div>'
+    +           '<div class="rf-field">'
+    +             '<div class="rf-label">電話番号 <span class="rf-req">*</span></div>'
+    +             '<input id="rm-phone" type="tel" placeholder="09012345678" class="rf-input" oninput="rmClearErr(\'rm-phone\')">'
+    +             '<div class="rf-error" id="err-rm-phone"></div>'
+    +           '</div>'
+    +         '</div>'
+    +         '<div class="rf-field">'
+    +           '<div class="rf-label">メールアドレス <span class="rf-req">*</span></div>'
+    +           '<input id="rm-email" type="email" placeholder="example@email.com" class="rf-input" oninput="rmClearErr(\'rm-email\')">'
+    +           '<div class="rf-error" id="err-rm-email"></div>'
+    +         '</div>'
+    +         '<div class="rf-field">'
+    +           '<div class="rf-label">ご要望・アレルギー</div>'
+    +           '<textarea id="rm-notes" rows="3" placeholder="アレルギー情報、記念日の演出ご希望などご自由にお書きください。" class="rf-input" style="resize:vertical"></textarea>'
+    +         '</div>'
+    +         '<div style="display:flex;gap:10px">'
+    +           '<button class="rm-btn-back" onclick="rmGoStep(1)" style="flex:1">← 戻る</button>'
+    +           '<button class="rm-btn" onclick="rmValidateStep2()" style="flex:2">確認へ進む</button>'
+    +         '</div>'
+    +       '</div>'
+    +       '<div id="rmstep-3" style="display:none">'
+    +         '<div class="rm-confirm-box" id="rm-confirm-box"></div>'
+    +         '<div style="font-size:12px;color:#666;margin-bottom:14px;line-height:1.9">上記内容でご予約を確定します。確定後、ご登録のメールアドレス宛に確認メールをお送りします。</div>'
+    +         '<div style="display:flex;gap:10px">'
+    +           '<button class="rm-btn-back" onclick="rmGoStep(2)" style="flex:1">← 戻る</button>'
+    +           '<button class="rm-btn" onclick="rmSubmit()" style="flex:2">予約を確定する</button>'
+    +         '</div>'
+    +       '</div>'
+    +       '<div id="rmstep-complete" style="display:none">'
+    +         '<div class="rm-complete-box">'
+    +           '<div style="font-size:52px;margin-bottom:14px">✅</div>'
+    +           '<div id="rm-res-id" style="font-size:22px;font-weight:700;margin-bottom:10px;color:var(--brand-primary)">RES-000000</div>'
+    +           '<div style="font-size:13px;color:#666;line-height:1.9">ご予約ありがとうございます。<br>確認メールをお送りしました。</div>'
+    +           '<button class="rm-btn" onclick="closeResModal()" style="margin-top:22px;max-width:200px">閉じる</button>'
+    +         '</div>'
+    +       '</div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+  function injectReservationModalDOM() {
+    if (document.getElementById('res-modal-bg')) return;
+    var wrap = document.createElement('div');
+    wrap.innerHTML = RESERVATION_MODAL_HTML;
+    document.body.appendChild(wrap.firstChild);
+    document.getElementById('res-modal-bg').addEventListener('click', function(e){
+      if (e.target === this) closeResModal();
+    });
+  }
+
+  /* =============================================================
+     17d. 来店予約モーダル — JS 関数群
+          source of truth: weir-brand-stores.html の rmSubmit (real impl)
+     ============================================================= */
+  var rmSelTime = null;
+  var rmPresetStore = null;
+  var rmStoresLoaded = false;
+
+  async function loadReservationStoresIfNeeded() {
+    if (rmStoresLoaded) return;
+    var brand = window.AidenCommon && window.AidenCommon.brand;
+    if (!brand || !brand.id) return;
+    var client = getSb();
+    if (!client) return;
+    try {
+      var res = await client.from('venues').select('id, name').eq('brand_id', brand.id).order('name');
+      var sel = document.getElementById('rm-store');
+      if (!sel || !res.data) return;
+      sel.innerHTML = '<option value="">店舗を選択してください</option>';
+      res.data.forEach(function(v) {
+        sel.innerHTML += '<option value="' + escH(v.id) + '">' + escH(v.name) + '</option>';
+      });
+      rmStoresLoaded = true;
+    } catch (e) { /* 失敗時は dropdown 空のまま */ }
+  }
+
+  function openResModal(storeValue) {
+    if (!document.getElementById('res-modal-bg')) {
+      injectReservationModalCSS();
+      injectReservationModalDOM();
+    }
+    rmSelTime = null;
+    rmPresetStore = storeValue || null;
+    var dropdown = document.getElementById('rm-store-field');
+    var preset   = document.getElementById('rm-store-preset-field');
+    if (rmPresetStore) {
+      dropdown.style.display = 'none';
+      preset.style.display   = 'block';
+      document.getElementById('rm-store-preset-text').textContent = rmPresetStore;
+    } else {
+      dropdown.style.display = 'block';
+      preset.style.display   = 'none';
+      document.getElementById('rm-store').selectedIndex = 0;
+    }
+    document.getElementById('rm-date').value = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('.rm-slot-b').forEach(function(b){ b.classList.remove('on'); });
+    document.getElementById('rm-cap-alert').className = 'rm-cap-alert';
+    document.getElementById('rm-step1-btn').disabled = true;
+    document.getElementById('rm-step1-btn').style.opacity = '.35';
+    rmGoStep(1);
+    document.getElementById('res-modal-bg').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (!rmPresetStore) loadReservationStoresIfNeeded();
+  }
+
+  function closeResModal() {
+    var bg = document.getElementById('res-modal-bg');
+    if (bg) bg.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function rmOnStoreChange() { rmCheckCap(); }
+
+  function rmSelSlot(el, t) {
+    if (!rmPresetStore && !document.getElementById('rm-store').value) {
+      document.getElementById('err-rm-store').classList.add('show');
+      document.getElementById('rm-store').focus();
+      return;
+    }
+    rmSelTime = t;
+    document.querySelectorAll('.rm-slot-b:not(.slot-full)').forEach(function(b){ b.classList.remove('on'); });
+    el.classList.add('on');
+    var btn = document.getElementById('rm-step1-btn');
+    btn.disabled = false; btn.style.opacity = '1';
+    rmCheckCap();
+  }
+
+  function rmCheckCap() {
+    if (!rmSelTime) return;
+    var g  = parseInt(document.getElementById('rm-guests').value);
+    var ok = [{s:2,n:4},{s:4,n:3},{s:6,n:2},{s:8,n:1}].some(function(t){ return t.s>=g&&t.n>0; });
+    var el = document.getElementById('rm-cap-alert');
+    el.className = 'rm-cap-alert ' + (ok ? 'ok' : 'err');
+    el.textContent = ok ? '✅ ' + g + '名様のご予約が可能です' : '⚠️ 満席です。時間帯を変更してください。';
+    document.getElementById('rm-step1-btn').disabled = !ok;
+    document.getElementById('rm-step1-btn').style.opacity = ok ? '1' : '.4';
+  }
+
+  function rmOpenVacancy(time) {
+    alert('🔔 ' + time + ' の空席通知は近日対応予定です');
+  }
+
+  function rmGoStep(n) {
+    [1,2,3,'complete'].forEach(function(s){
+      var el = document.getElementById('rmstep-' + s);
+      if (el) el.style.display = (s === n) ? 'block' : 'none';
+    });
+    ['rms1','rms2','rms3'].forEach(function(id, i){
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('active','done');
+      if (i+1 < n) el.classList.add('done');
+      else if (i+1 === n) el.classList.add('active');
+    });
+    if (n === 3) {
+      var storeEl = document.getElementById('rm-store');
+      var storeName = rmPresetStore
+        ? rmPresetStore
+        : (storeEl.options[storeEl.selectedIndex] ? storeEl.options[storeEl.selectedIndex].text : '—');
+      var rows = [
+        ['店舗',  storeName],
+        ['日時',  (document.getElementById('rm-date').value || '—') + ' ' + (rmSelTime || '—')],
+        ['人数',  document.getElementById('rm-guests').value + '名'],
+        ['お名前', document.getElementById('rm-name').value || '—'],
+        ['電話',  document.getElementById('rm-phone').value || '—'],
+        ['メール', document.getElementById('rm-email').value || '—'],
+        ['ご要望', document.getElementById('rm-notes').value || 'なし']
+      ];
+      document.getElementById('rm-confirm-box').innerHTML = rows.map(function(r){
+        return '<div class="rm-confirm-row"><span class="rm-confirm-label">' + escH(r[0]) + '</span><span>' + escH(r[1]) + '</span></div>';
+      }).join('');
+    }
+  }
+
+  function rmValidateStep2() {
+    var ok = true;
+    var name  = document.getElementById('rm-name').value.trim();
+    var phone = document.getElementById('rm-phone').value.trim();
+    var email = document.getElementById('rm-email').value.trim();
+    if (!name)  { rmShowErr('rm-name',  'お名前を入力してください'); ok=false; }
+    if (!phone || !/^[0-9\-+]{7,15}$/.test(phone)) { rmShowErr('rm-phone', '正しい電話番号を入力してください'); ok=false; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { rmShowErr('rm-email', '正しいメールアドレスを入力してください'); ok=false; }
+    if (ok) rmGoStep(3);
+  }
+
+  function rmShowErr(id, msg) {
+    var el = document.getElementById('err-' + id);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function rmClearErr(id) {
+    var el = document.getElementById('err-' + id);
+    if (el) el.classList.remove('show');
+  }
+
+  async function rmSubmit() {
+    var submitBtn = document.querySelector('#rmstep-3 .rm-btn:last-child');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '送信中...'; }
+    try {
+      var storeSelect = document.getElementById('rm-store');
+      var storeId = storeSelect.value;
+      if (rmPresetStore) {
+        var brand = window.AidenCommon && window.AidenCommon.brand;
+        if (brand && brand.id) {
+          var client = getSb();
+          if (client) {
+            var rv = await client.from('venues').select('id').eq('brand_id', brand.id).eq('name', rmPresetStore).limit(1);
+            storeId = (rv.data && rv.data[0]) ? rv.data[0].id : '';
+          }
+        }
+      }
+      var res = await fetch(SUPABASE_URL + '/functions/v1/create-reservation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: storeId,
+          date: document.getElementById('rm-date').value,
+          time: rmSelTime,
+          guest_count: parseInt(document.getElementById('rm-guests').value, 10),
+          name: document.getElementById('rm-name').value.trim(),
+          phone: document.getElementById('rm-phone').value.trim(),
+          email: document.getElementById('rm-email').value.trim(),
+          notes: document.getElementById('rm-notes').value.trim() || undefined
+        })
+      });
+      var json = await res.json();
+      if (!res.ok || !json.success) {
+        alert('予約の送信に失敗しました: ' + (json.error || '不明なエラー'));
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+        return;
+      }
+      document.getElementById('rmstep-3').style.display = 'none';
+      document.getElementById('rm-res-id').textContent = json.reservation.display_id;
+      document.getElementById('rmstep-complete').style.display = 'block';
+    } catch (e) {
+      alert('予約の送信に失敗しました。通信状況をご確認ください。');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '予約を確定する'; }
+    }
+  }
+
+  window.openResModal = openResModal;
+  window.closeResModal = closeResModal;
+  window.rmOnStoreChange = rmOnStoreChange;
+  window.rmSelSlot = rmSelSlot;
+  window.rmCheckCap = rmCheckCap;
+  window.rmOpenVacancy = rmOpenVacancy;
+  window.rmGoStep = rmGoStep;
+  window.rmValidateStep2 = rmValidateStep2;
+  window.rmShowErr = rmShowErr;
+  window.rmClearErr = rmClearErr;
+  window.rmSubmit = rmSubmit;
+
+  /* =============================================================
      18. renderFooter(brand) — footer generation
      ============================================================= */
   function renderFooter(brand) {
@@ -638,6 +1023,9 @@
       // Render header
       if (headerType === 'brand') {
         renderHeaderBrand(brand);
+        // 来店予約モーダル auto-inject (brand header のあるページのみ)
+        injectReservationModalCSS();
+        injectReservationModalDOM();
       } else if (headerType === 'order') {
         renderHeaderOrder(brand, options);
       }
