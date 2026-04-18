@@ -4,7 +4,8 @@
 -- 目的: D-157 で判明した anon への PII・決済ID 露出を解消する
 -- 方針:
 --   1. venues_public / brands_public ビューを作成（公開 OK 列のみ）
---   2. 元テーブル venues / brands への anon SELECT を完全削除
+--   2. 元テーブル venues / brands への anon アクセスを完全削除（全権限 REVOKE）
+--      ※ authenticated の staff_accounts 経由 ALL policy（brands_by_staff / stores_by_brand）は保全
 --   3. anon / authenticated は新ビュー経由でアクセス
 --   4. service_role は従来通り元テーブル直接アクセス可能
 --   5. suspended / is_paused 行は venues_public から完全除外
@@ -142,8 +143,10 @@ GRANT SELECT ON public.venues_public TO anon, authenticated;
 -- STEP 1b: venues 元テーブルから anon SELECT を完全除去
 -- ============================================================
 
--- anon に付与されている policy を全削除（SELECT / ALL 系）
--- WHY: D-157 で anon が全列 SELECT 可能な状態を解消するため
+-- anon/public の SELECT policy のみ削除
+-- WHY: D-157 の anon 列 SELECT 可能な状態を解消する。
+-- ALL policy（stores_by_brand など）は staff_accounts 経由の auth.uid() 判定で
+-- authenticated 操作に使用中のため保全する。
 DO $$
 DECLARE
   pol record;
@@ -157,15 +160,17 @@ BEGIN
         'anon' = ANY(roles)
         OR 'public' = ANY(roles)
       )
-      AND cmd IN ('SELECT', 'ALL')
+      AND cmd = 'SELECT'
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.venues', pol.policyname);
     RAISE NOTICE 'Dropped policy % on venues', pol.policyname;
   END LOOP;
 END $$;
 
--- テーブル GRANT レベルでも anon への SELECT を剥奪
-REVOKE SELECT ON public.venues FROM anon;
+-- テーブル GRANT レベルで anon の全権限を剥奪
+-- WHY: STEP 0-3 で anon に DELETE/INSERT/UPDATE/TRIGGER/TRUNCATE/REFERENCES/SELECT
+-- が付与されている状態を解消する。REVOKE ALL で全部除去（権限なしはエラーにならない）。
+REVOKE ALL ON public.venues FROM anon;
 REVOKE SELECT ON public.venues FROM PUBLIC;
 
 -- RLS が無効な場合は有効化（anon への default allow を止める）
@@ -237,6 +242,8 @@ GRANT SELECT ON public.brands_public TO anon, authenticated;
 -- STEP 2b: brands 元テーブルから anon SELECT を完全除去
 -- ============================================================
 
+-- anon/public の SELECT policy のみ削除
+-- ALL policy（brands_by_staff）は authenticated 操作に使用中のため保全する
 DO $$
 DECLARE
   pol record;
@@ -250,14 +257,14 @@ BEGIN
         'anon' = ANY(roles)
         OR 'public' = ANY(roles)
       )
-      AND cmd IN ('SELECT', 'ALL')
+      AND cmd = 'SELECT'
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.brands', pol.policyname);
     RAISE NOTICE 'Dropped policy % on brands', pol.policyname;
   END LOOP;
 END $$;
 
-REVOKE SELECT ON public.brands FROM anon;
+REVOKE ALL ON public.brands FROM anon;
 REVOKE SELECT ON public.brands FROM PUBLIC;
 
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
@@ -286,8 +293,10 @@ SELECT 'venues_public rows' AS item, COUNT(*)::text AS value FROM public.venues_
 UNION ALL
 SELECT 'brands_public rows', COUNT(*)::text FROM public.brands_public;
 
--- 3-3. 削除された anon policy 確認
--- 期待: venues / brands に anon role を含むポリシーが残っていないこと（0 件）
+-- 3-3a. anon/public SELECT policy が削除されていることを確認
+-- 期待: 0 件（brands_select_public, stores_select_public, brands_select_authenticated
+--   は削除対象だったが、ここでは anon/public roles のみ対象にしているので
+--   authenticated のものは別途残存）
 SELECT tablename, policyname, roles, cmd
 FROM pg_policies
 WHERE schemaname = 'public'
@@ -295,16 +304,24 @@ WHERE schemaname = 'public'
   AND (
     'anon' = ANY(roles) OR 'public' = ANY(roles)
   )
-  AND cmd IN ('SELECT', 'ALL');
+  AND cmd = 'SELECT';
 
--- 3-4. anon の GRANT が剥奪されていることを確認
--- 期待: venues / brands への anon SELECT が 0 件
+-- 3-3b. ALL policy（staff_accounts 経由）が保全されていることを確認
+-- 期待: venues = stores_by_brand / brands = brands_by_staff が残存
+SELECT tablename, policyname, roles, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('venues', 'brands')
+  AND cmd = 'ALL';
+
+-- 3-4. anon の全 GRANT が剥奪されていることを確認
+-- 期待: venues / brands への anon の権限が 0 件
+-- （SELECT/INSERT/UPDATE/DELETE/TRIGGER/TRUNCATE/REFERENCES 全て消えていること）
 SELECT grantee, table_name, privilege_type
 FROM information_schema.role_table_grants
 WHERE table_schema = 'public'
   AND table_name IN ('venues', 'brands')
-  AND grantee = 'anon'
-  AND privilege_type = 'SELECT';
+  AND grantee = 'anon';
 
 -- 3-5. anon role で実際にアクセス試行（Tasei が SQL Editor で実行）
 -- WHY: anon の実挙動を確認するため SET ROLE で一時的に切り替える
