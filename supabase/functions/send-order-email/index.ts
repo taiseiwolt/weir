@@ -27,6 +27,7 @@ interface EmailRequest {
   order_id: string
   store_name: string
   brand_name: string
+  brand_slug?: string  // Phase 2-a: if present, tracking URL uses /{brand_slug}/tracking; else legacy fallback
   items: OrderItem[]
   subtotal: number
   delivery_fee?: number
@@ -68,6 +69,15 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function buildTrackingUrl(brandSlug: string | undefined, token: string): string {
+  const baseUrl = 'https://xorder.co.jp'
+  if (brandSlug) {
+    return `${baseUrl}/${encodeURIComponent(brandSlug)}/tracking?token=${encodeURIComponent(token)}`
+  }
+  // Phase 2-a fallback: legacy URL still works via Vercel filesystem serving
+  return `${baseUrl}/weir-order-tracking.html?token=${encodeURIComponent(token)}`
 }
 
 function buildConfirmationEmail(data: EmailRequest): string {
@@ -173,7 +183,7 @@ function buildConfirmationEmail(data: EmailRequest): string {
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
               <tr>
                 <td align="center" style="padding:8px 0;">
-                  <a href="https://xorder.co.jp/weir-order-tracking.html?token=${data.tracking_token}"
+                  <a href="${buildTrackingUrl(data.brand_slug, data.tracking_token)}"
                      style="display:inline-block;background:#D32F2F;color:#fff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
                     注文状況を確認する
                   </a>
@@ -208,6 +218,8 @@ function buildReceiptEmail(data: EmailRequest): string {
   const modeLabel = data.order_mode === 'delivery' ? 'デリバリー' : data.order_mode === 'dinein' ? '店内飲食' : 'テイクアウト'
   const paidAt = data.paid_at ? new Date(data.paid_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
+  // TODO(phase2a): /review?token route not defined in current vercel.json; verify in a
+  // follow-up whether reviews should be brand-scoped (/{brand_slug}/review) or Weir-unified.
   const reviewSection = data.review_token ? `
             <!-- Review CTA -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#FFF5F5,#FFEBEE);border-radius:12px;margin-bottom:24px;">
