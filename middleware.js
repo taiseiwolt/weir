@@ -20,8 +20,10 @@ const RESERVED_FIRST_SEGMENTS = new Set([
 ]);
 
 // これらの prefix で始まる first segment も DB チェックをスキップ
+// 注: 'brand' は含めない。brand.html は includes('.') でスキップされ、
+//     'brand' 始まりの正規ブランドslugの 404 チェックは通すため。
 const RESERVED_PREFIXES = [
-  'weir-', 'aiden-', 'test-', 'e2e-', 'playwright-', 'seed-', 'qa-', 'brand',
+  'weir-', 'aiden-', 'test-', 'e2e-', 'playwright-', 'seed-', 'qa-',
 ];
 
 // Edge Runtime の module-scope cache。インスタンス生存中は保持される
