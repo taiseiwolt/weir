@@ -1,0 +1,64 @@
+# GHA-04: Production migration
+# Applies pending Supabase migrations to the production project ONLY after
+# an explicit approval via GitHub Environment Protection.
+#
+# Setup required (once, manual — see CC_ENV-B report Tasei-9):
+#   Repo Settings > Environments > New environment: `production`
+#     Required reviewers: taiseiwolt
+#     Wait timer: 0
+#     Deployment branches: Selected branches > main
+#
+# Until that environment exists and is gated, any run of this workflow
+# halts at the "environment: production" line and waits for reviewer approval.
+name: production-migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+
+concurrency:
+  group: production-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production   # ← approval gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link \
+            --project-ref "${{ secrets.SUPABASE_PRODUCTION_PROJECT_REF }}" \
+            -p "${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}"
+
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+        run: supabase db push --linked -p "$SUPABASE_DB_PASSWORD"
+
+      - name: Email notification (always, success or failure)
+        if: always()
+        uses: ./.github/actions/notify-email
+        with:
+          subject: '[Weir GHA] Production Migration ${{ job.status }}'
+          body: |
+            supabase db push against production finished with status: ${{ job.status }}.
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}

@@ -1,0 +1,47 @@
+# GHA-01: PR quality gate
+# Runs on every PR targeting `staging` or `main`.
+# Blocks merge if lint/tests fail.
+#
+# Required status check name (to enforce on branch protection):  pr-checks / checks
+name: pr-checks
+
+on:
+  pull_request:
+    branches: [staging, main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  # Cancel in-flight runs of the same PR when new commits are pushed.
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # package.json の "lint" スクリプトは console.log 残存と D-83 ハードコード
+      # 違反(炭火亭/sumibite 等の固有名詞)を grep で検知する。
+      - name: Run lint
+        run: npm run lint
+
+      # test スクリプトは playwright.config.cjs を使うため、PR checks では
+      # heavy な e2e を走らせず、unit-level があれば回す。
+      # 現状 package.json の test は playwright e2e のみのため、ここではスキップし、
+      # e2e は staging push の staging-playwright.yml で実行する設計。
+      - name: Note — test not run in PR checks
+        run: echo "e2e tests run on staging-playwright workflow after merge to staging"

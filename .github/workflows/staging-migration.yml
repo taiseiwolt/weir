@@ -1,0 +1,59 @@
+# GHA-03: Staging migration
+# When a migration SQL lands on the `staging` branch, apply it to the
+# weir-dev Supabase project via `supabase db push`.
+#
+# Guards:
+#   - `paths:` filter so this only runs when migrations change
+#   - Idempotent: `supabase db push` skips migrations already applied
+name: staging-migration
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'supabase/migrations/**'
+
+concurrency:
+  # Sequential migrations — never run two db push in parallel on the same project.
+  group: staging-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to weir-dev project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link \
+            --project-ref "${{ secrets.SUPABASE_STAGING_PROJECT_REF }}" \
+            -p "${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}"
+
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+        run: supabase db push --linked -p "$SUPABASE_DB_PASSWORD"
+
+      - name: Email notification on failure
+        if: failure()
+        uses: ./.github/actions/notify-email
+        with:
+          subject: '[Weir GHA] Staging Migration FAILED'
+          body: |
+            supabase db push against weir-dev failed.
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}

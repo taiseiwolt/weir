@@ -1,0 +1,38 @@
+# GHA-06: Dependabot
+# Weekly PRs for npm dependencies. Major bumps are ignored (manual bumping
+# required) to prevent surprise breakage.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: direct
+      - dependency-type: indirect
+    ignore:
+      # Major version bumps require manual review.
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
+    labels:
+      - dependencies
+      - security
+    target-branch: staging
+
+  # GitHub Actions self-updates (the workflows themselves).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci
+    target-branch: staging
