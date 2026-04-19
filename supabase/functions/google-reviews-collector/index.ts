@@ -315,11 +315,49 @@ serve(async (req) => {
       }
     }
 
+    // ai_usage_logs にバッチサマリ記録 (Google Places Details: ~$17/1000 req)
+    try {
+      // API 呼出回数の概算: 自店ごとに Details 1 + Nearby 1、各近隣店舗ごとに Details 1
+      const apiCallEstimate = results.stores_processed * 2 + results.competitors_found
+      const costUsd = apiCallEstimate * 0.017
+      await supabase.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'google_reviews_collect',
+        model: 'google-places-api',
+        cost_usd: Math.round(costUsd * 1000000) / 1000000,
+        status: results.errors.length > 0 ? 'error' : 'success',
+        error_message: results.errors.length > 0 ? results.errors.slice(0, 3).join(' | ').slice(0, 500) : null,
+        metadata: {
+          stores_processed: results.stores_processed,
+          reviews_inserted: results.reviews_inserted,
+          competitors_found: results.competitors_found,
+          alerts_created: results.alerts_created,
+          api_call_estimate: apiCallEstimate,
+          error_count: results.errors.length,
+        },
+      })
+    } catch (logErr) {
+      console.error('[google-reviews-collector] ai_usage_logs insert failed:', logErr)
+    }
+
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('google-reviews-collector error:', error)
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+      await sb.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'google_reviews_collect',
+        model: 'google-places-api',
+        status: 'error',
+        error_message: String(error).slice(0, 500),
+        metadata: { fatal: true },
+      })
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: sanitizeErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

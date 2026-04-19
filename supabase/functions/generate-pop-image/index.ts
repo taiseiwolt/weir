@@ -10,6 +10,7 @@ import {
   sanitizeErrorMessage,
 } from '../_shared/auth.ts'
 import { checkAiQuota, logAiInteraction, getStoreContext } from '../_shared/ai-quota.ts'
+import { logAiUsage } from '../_shared/ai-usage-log.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -90,7 +91,8 @@ Requirements:
     })
 
     if (!dalleRes.ok) {
-      console.error('DALL-E API error:', await dalleRes.text())
+      const errText = await dalleRes.text()
+      console.error('DALL-E API error:', errText)
       await logAiInteraction(sbAdmin, {
         store_id,
         brand_id: ctx.brandId,
@@ -98,6 +100,20 @@ Requirements:
         input_data: { prompt_text, style: selectedStyle },
         status: 'failed',
         model: 'dall-e-3',
+      })
+      const { data: vRowErr } = await sbAdmin
+        .from('venues')
+        .select('id')
+        .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+        .maybeSingle()
+      await logAiUsage(sbAdmin, {
+        venue_id: vRowErr?.id || null,
+        brand_id: ctx.brandId,
+        feature: 'pop_image',
+        model: 'dall-e-3',
+        status: 'error',
+        error_message: errText,
+        metadata: { style: selectedStyle },
       })
       return new Response(JSON.stringify({ error: 'POP画像の生成に失敗しました' }), {
         status: 502,
@@ -151,6 +167,22 @@ Requirements:
       input_data: { prompt_text, style: selectedStyle },
       output_data: { image_url: imageUrl, revised_prompt: revisedPrompt },
       model: 'dall-e-3',
+    })
+
+    // ai_usage_logs にも記録（DALL-E 3 standard 1024x1024 = $0.04/枚）
+    const { data: vRow } = await sbAdmin
+      .from('venues')
+      .select('id')
+      .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+      .maybeSingle()
+    await logAiUsage(sbAdmin, {
+      venue_id: vRow?.id || null,
+      brand_id: ctx.brandId,
+      feature: 'pop_image',
+      model: 'dall-e-3',
+      cost_usd: 0.04,
+      status: 'success',
+      metadata: { style: selectedStyle, image_url: imageUrl },
     })
 
     return new Response(

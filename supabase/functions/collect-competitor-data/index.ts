@@ -382,6 +382,30 @@ serve(async (req) => {
     const totalApiCalls = results.nearby_api_calls + results.details_api_calls
     console.log(`Completed: ${results.stores_upserted} stores, ${results.reviews_inserted} reviews, ${totalApiCalls} API calls, ${results.errors.length} errors`)
 
+    // ai_usage_logs にバッチサマリ記録 (Google Places API: $32/1000 req)
+    try {
+      const costUsd = totalApiCalls * 0.032
+      await supabase.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'collect_competitor_data',
+        model: 'google-places-api',
+        cost_usd: Math.round(costUsd * 1000000) / 1000000,
+        status: results.errors.length > 0 ? 'error' : 'success',
+        error_message: results.errors.length > 0 ? results.errors.slice(0, 3).join(' | ').slice(0, 500) : null,
+        metadata: {
+          configs_processed: results.configs_processed,
+          stores_upserted: results.stores_upserted,
+          reviews_inserted: results.reviews_inserted,
+          metrics_inserted: results.metrics_inserted,
+          total_api_calls: totalApiCalls,
+          error_count: results.errors.length,
+        },
+      })
+    } catch (logErr) {
+      console.error('[collect-competitor-data] ai_usage_logs insert failed:', logErr)
+    }
+
     return new Response(JSON.stringify({
       ...results,
       total_api_calls: totalApiCalls,
@@ -390,6 +414,19 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('collect-competitor-data error:', error)
+    // エラー記録 (ベストエフォート)
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+      await sb.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'collect_competitor_data',
+        model: 'google-places-api',
+        status: 'error',
+        error_message: String(error).slice(0, 500),
+        metadata: { fatal: true },
+      })
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: sanitizeErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -15,6 +15,7 @@ import {
   sanitizeErrorMessage,
 } from '../_shared/auth.ts'
 import { checkAiQuota, logAiInteraction } from '../_shared/ai-quota.ts'
+import { logAiUsage } from '../_shared/ai-usage-log.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -68,44 +69,6 @@ async function resolvePrimaryVenue(sbAdmin: ReturnType<typeof createClient>, bra
     .limit(1)
     .maybeSingle()
   return data
-}
-
-async function logUsage(
-  sbAdmin: ReturnType<typeof createClient>,
-  params: {
-    venue_id: string | null
-    brand_id: string | null
-    type: string
-    status: 'success' | 'error'
-    input_tokens?: number
-    output_tokens?: number
-    error_message?: string
-  },
-) {
-  try {
-    let merchant_id: string | null = null
-    if (params.brand_id) {
-      const { data: bRow } = await sbAdmin
-        .from('brands')
-        .select('merchant_id')
-        .eq('id', params.brand_id)
-        .maybeSingle()
-      merchant_id = bRow?.merchant_id || null
-    }
-    await sbAdmin.from('ai_usage_logs').insert({
-      venue_id: params.venue_id,
-      merchant_id,
-      feature: 'analyze_store_performance',
-      model: 'claude-sonnet-4-20250514',
-      input_tokens: params.input_tokens,
-      output_tokens: params.output_tokens,
-      status: params.status,
-      error_message: params.error_message?.slice(0, 500),
-      metadata: { analysis_type: params.type },
-    })
-  } catch (err) {
-    console.error('[analyze-store-performance] logUsage failed:', err)
-  }
 }
 
 serve(async (req) => {
@@ -267,12 +230,14 @@ ${dailySummary.slice().sort((a, b) => a.gmv - b.gmv).slice(0, 5).map(d => `- ${d
         status: 'failed',
         model: 'claude-sonnet-4-20250514',
       })
-      await logUsage(sbAdmin, {
+      await logAiUsage(sbAdmin, {
         venue_id: venue.id as string,
         brand_id,
-        type,
+        feature: 'analyze_store_performance',
+        model: 'claude-sonnet-4-20250514',
         status: 'error',
         error_message: errText,
+        metadata: { analysis_type: type },
       })
       return new Response(JSON.stringify({ error: 'AI 分析に失敗しました' }), {
         status: 502,
@@ -295,13 +260,15 @@ ${dailySummary.slice().sort((a, b) => a.gmv - b.gmv).slice(0, 5).map(d => `- ${d
       model: 'claude-sonnet-4-20250514',
     })
 
-    await logUsage(sbAdmin, {
+    await logAiUsage(sbAdmin, {
       venue_id: venue.id as string,
       brand_id,
-      type,
-      status: 'success',
+      feature: 'analyze_store_performance',
+      model: 'claude-sonnet-4-20250514',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
+      status: 'success',
+      metadata: { analysis_type: type },
     })
 
     return new Response(

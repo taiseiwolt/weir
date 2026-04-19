@@ -10,6 +10,7 @@ import {
   sanitizeErrorMessage,
 } from '../_shared/auth.ts'
 import { checkAiQuota, logAiInteraction, getStoreContext } from '../_shared/ai-quota.ts'
+import { logAiUsage } from '../_shared/ai-usage-log.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -198,26 +199,21 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
         status: 'failed',
         model: 'claude-sonnet-4-20250514',
       })
-      // ai_usage_logs にエラー記録 (ベストエフォート)
-      try {
-        const { data: vRow } = await sbAdmin
-          .from('venues')
-          .select('id, brand_id')
-          .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
-          .maybeSingle()
-        const { data: bRow } = vRow?.brand_id
-          ? await sbAdmin.from('brands').select('merchant_id').eq('id', vRow.brand_id).maybeSingle()
-          : { data: null }
-        await sbAdmin.from('ai_usage_logs').insert({
-          venue_id: vRow?.id || null,
-          merchant_id: bRow?.merchant_id || null,
-          feature: 'monthly_comment',
-          model: 'claude-sonnet-4-20250514',
-          status: 'error',
-          error_message: errText.slice(0, 500),
-          metadata: { month },
-        })
-      } catch (logErr) { console.error('[generate-monthly-comment] error log failed:', logErr) }
+      // ai_usage_logs にエラー記録
+      const { data: vRowErr } = await sbAdmin
+        .from('venues')
+        .select('id, brand_id')
+        .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+        .maybeSingle()
+      await logAiUsage(sbAdmin, {
+        venue_id: vRowErr?.id || null,
+        brand_id: vRowErr?.brand_id || ctx.brandId,
+        feature: 'monthly_comment',
+        model: 'claude-sonnet-4-20250514',
+        status: 'error',
+        error_message: errText,
+        metadata: { month },
+      })
       return new Response(JSON.stringify({ error: 'AI生成に失敗しました' }), {
         status: 502,
         headers: jsonHeaders,
@@ -269,26 +265,17 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
       if (cacheErr) console.error('[generate-monthly-comment] ai_monthly_comments upsert failed:', cacheErr)
     }
 
-    // ai_usage_logs にも記録 (ベストエフォート)
-    if (venueUuid) {
-      const { data: brandRow } = await sbAdmin
-        .from('brands')
-        .select('merchant_id')
-        .eq('id', ctx.brandId)
-        .maybeSingle()
-      const merchantUuid = brandRow?.merchant_id || null
-      const { error: usageErr } = await sbAdmin.from('ai_usage_logs').insert({
-        venue_id: venueUuid,
-        merchant_id: merchantUuid,
-        feature: 'monthly_comment',
-        model: 'claude-sonnet-4-20250514',
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        status: 'success',
-        metadata: { month },
-      })
-      if (usageErr) console.error('[generate-monthly-comment] ai_usage_logs insert failed:', usageErr)
-    }
+    // ai_usage_logs にも記録
+    await logAiUsage(sbAdmin, {
+      venue_id: venueUuid,
+      brand_id: ctx.brandId,
+      feature: 'monthly_comment',
+      model: 'claude-sonnet-4-20250514',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      status: 'success',
+      metadata: { month },
+    })
 
     return new Response(
       JSON.stringify({

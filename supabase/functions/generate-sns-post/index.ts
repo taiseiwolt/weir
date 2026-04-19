@@ -10,6 +10,7 @@ import {
   sanitizeErrorMessage,
 } from '../_shared/auth.ts'
 import { checkAiQuota, logAiInteraction, getStoreContext } from '../_shared/ai-quota.ts'
+import { logAiUsage } from '../_shared/ai-usage-log.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('AIDEN_SERVICE_ROLE_JWT') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -120,7 +121,8 @@ JSON形式で出力してください:
     })
 
     if (!claudeRes.ok) {
-      console.error('Claude API error:', await claudeRes.text())
+      const errText = await claudeRes.text()
+      console.error('Claude API error:', errText)
       await logAiInteraction(sbAdmin, {
         store_id,
         brand_id: ctx.brandId,
@@ -128,6 +130,20 @@ JSON形式で出力してください:
         input_data: { platform, topic },
         status: 'failed',
         model: 'claude-sonnet-4-20250514',
+      })
+      const { data: vRowErr } = await sbAdmin
+        .from('venues')
+        .select('id')
+        .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+        .maybeSingle()
+      await logAiUsage(sbAdmin, {
+        venue_id: vRowErr?.id || null,
+        brand_id: ctx.brandId,
+        feature: 'sns_post',
+        model: 'claude-sonnet-4-20250514',
+        status: 'error',
+        error_message: errText,
+        metadata: { platform, topic },
       })
       return new Response(JSON.stringify({ error: 'AI生成に失敗しました' }), {
         status: 502,
@@ -137,7 +153,9 @@ JSON形式で出力してください:
 
     const claudeData = await claudeRes.json()
     const content = claudeData.content?.[0]?.text || ''
-    const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0)
+    const inputTokens = claudeData.usage?.input_tokens || 0
+    const outputTokens = claudeData.usage?.output_tokens || 0
+    const tokensUsed = inputTokens + outputTokens
 
     let variants
     try {
@@ -155,6 +173,23 @@ JSON形式で出力してください:
       output_data: { variants },
       tokens_used: tokensUsed,
       model: 'claude-sonnet-4-20250514',
+    })
+
+    // ai_usage_logs にも記録
+    const { data: vRow } = await sbAdmin
+      .from('venues')
+      .select('id')
+      .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+      .maybeSingle()
+    await logAiUsage(sbAdmin, {
+      venue_id: vRow?.id || null,
+      brand_id: ctx.brandId,
+      feature: 'sns_post',
+      model: 'claude-sonnet-4-20250514',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      status: 'success',
+      metadata: { platform, topic },
     })
 
     return new Response(

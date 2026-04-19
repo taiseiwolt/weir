@@ -239,11 +239,44 @@ serve(async (req) => {
 
     results.api_requests = requestCount
 
+    // ai_usage_logs にバッチサマリ記録 (Google Places Nearby Search: $32/1000 req)
+    try {
+      const costUsd = requestCount * 0.032
+      await supabase.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'google_places_collect',
+        model: 'google-places-api',
+        cost_usd: Math.round(costUsd * 1000000) / 1000000,
+        status: 'success',
+        metadata: {
+          api_requests: requestCount,
+          grids_completed: results.grids_completed,
+          places_upserted: results.places_upserted,
+          ward: currentWard,
+        },
+      })
+    } catch (logErr) {
+      console.error('[google-places-background-collector] ai_usage_logs insert failed:', logErr)
+    }
+
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('google-places-background-collector error:', error)
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+      await sb.from('ai_usage_logs').insert({
+        venue_id: null,
+        merchant_id: null,
+        feature: 'google_places_collect',
+        model: 'google-places-api',
+        status: 'error',
+        error_message: String(error).slice(0, 500),
+        metadata: { fatal: true },
+      })
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: sanitizeErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
