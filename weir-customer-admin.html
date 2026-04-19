@@ -10287,17 +10287,79 @@ function renderSalesCharts() {
 
 async function loadMonthlyAiComment() {
   var el = document.getElementById('sdMonthlyAiComment');
-  if (!el) return;
+  if (!el || !BRAND_ID) return;
+
+  // 1. DB から最新のキャッシュを取得
   try {
-    var { data, error } = await sb.from('ai_monthly_comments').select('*').eq('brand_id', BRAND_ID).order('created_at', { ascending: false }).limit(1);
+    var { data, error } = await sb.from('ai_monthly_comments')
+      .select('comment_text, generated_at, year, month')
+      .eq('brand_id', BRAND_ID)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(1);
     if (error) throw error;
+
     if (data && data.length > 0) {
       var c = data[0];
-      el.innerHTML = '<div style="font-size:13px;line-height:1.8">' + escH(c.comment || c.content || '') + '</div>' +
-        '<div style="font-size:10px;color:#888;margin-top:8px">' + (c.created_at ? c.created_at.slice(0,10) : '') + '</div>';
+      var dateLabel = c.year + '/' + String(c.month).padStart(2,'0');
+      el.innerHTML = '<div style="font-size:13px;line-height:1.8;white-space:pre-wrap">' + escH(c.comment_text || '') + '</div>' +
+        '<div style="font-size:10px;color:#888;margin-top:8px">対象月: ' + escH(dateLabel) + ' / 生成: ' + escH((c.generated_at || '').slice(0,10)) + '</div>';
+      return;
     }
   } catch(e) {
-    // Table doesn't exist yet - show Coming Soon (already default HTML)
+    console.warn('[loadMonthlyAiComment] cache select failed:', e);
+  }
+
+  // 2. キャッシュなし → primary venue で EF 呼出 → 成功時に再 SELECT
+  if (!STORES || STORES.length === 0) return;
+  var primaryVenueId = STORES[0].id;
+  var now = new Date();
+  // 前月の YYYY-MM を生成 (今月は集計データ未確定のため)
+  var lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var monthStr = lastMonth.getFullYear() + '-' + String(lastMonth.getMonth() + 1).padStart(2, '0');
+
+  el.innerHTML = '<div style="color:#888;font-size:12px">🤖 AIコメントを生成中... (初回のみ数十秒かかります)</div>';
+
+  try {
+    var session = (await sb.auth.getSession()).data.session;
+    var token = session ? session.access_token : '';
+    var efRes = await fetch(SUPABASE_URL + '/functions/v1/generate-monthly-comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ venue_id: primaryVenueId, month: monthStr })
+    });
+    if (!efRes.ok) {
+      var errInfo = '';
+      try { errInfo = (await efRes.json()).error || ''; } catch(_) {}
+      el.innerHTML = '<div style="color:#999;font-size:12px">月次AIコメントは現在ご利用いただけません' + (errInfo ? '（' + escH(errInfo) + '）' : '') + '</div>';
+      return;
+    }
+    // EF 成功 → DB から再取得
+    var { data: data2 } = await sb.from('ai_monthly_comments')
+      .select('comment_text, generated_at, year, month')
+      .eq('brand_id', BRAND_ID)
+      .eq('venue_id', primaryVenueId)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(1);
+    if (data2 && data2.length > 0) {
+      var c2 = data2[0];
+      var dateLabel2 = c2.year + '/' + String(c2.month).padStart(2,'0');
+      el.innerHTML = '<div style="font-size:13px;line-height:1.8;white-space:pre-wrap">' + escH(c2.comment_text || '') + '</div>' +
+        '<div style="font-size:10px;color:#888;margin-top:8px">対象月: ' + escH(dateLabel2) + ' / 生成: ' + escH((c2.generated_at || '').slice(0,10)) + '</div>';
+    } else {
+      // EF は成功したが DB 反映が遅れている等 → EF レスポンス本文をフォールバック表示
+      try {
+        var efJson = await efRes.json();
+        if (efJson && efJson.comment) {
+          el.innerHTML = '<div style="font-size:13px;line-height:1.8;white-space:pre-wrap">' + escH(efJson.comment) + '</div>' +
+            '<div style="font-size:10px;color:#888;margin-top:8px">対象月: ' + escH(monthStr) + ' / たった今生成</div>';
+        }
+      } catch(_) {}
+    }
+  } catch(e) {
+    console.warn('[loadMonthlyAiComment] EF call failed:', e);
+    el.innerHTML = '<div style="color:#999;font-size:12px">月次AIコメントの取得に失敗しました</div>';
   }
 }
 
