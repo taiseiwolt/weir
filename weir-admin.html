@@ -6442,74 +6442,69 @@ const PLAN_COSTS={STD:307,PRO:821,EXPERT:3297};
 // D-83: hardcoded demo venues removed. Real data loaded from ai_usage_logs via loadRealCostLogs().
 const COST_VENUES=[];
 
-// --- Generate 3 months of demo cost logs ---
-function generateCostDemoData(){
-  const logs=[];
-  const now=new Date(2026,2,18);// 2026-03-18
-  for(let m=0;m<3;m++){
-    const year=2026,month=2-m;// Mar=2, Feb=1, Jan=0
-    const daysInMonth=new Date(year,month+1,0).getDate();
-    COST_VENUES.forEach(store=>{
-      const planMultiplier=store.plan==='EXPERT'?3.5:store.plan==='PRO'?1.8:1;
-      COST_CONTENT_TYPES.forEach(ct=>{
-        // Random usage count weighted by plan
-        let baseCount;
-        if(ct.costPerUnit>=39)baseCount=Math.floor(Math.random()*3*planMultiplier)+1;
-        else if(ct.costPerUnit>=15)baseCount=Math.floor(Math.random()*8*planMultiplier)+2;
-        else baseCount=Math.floor(Math.random()*15*planMultiplier)+3;
-        for(let i=0;i<baseCount;i++){
-          const day=Math.floor(Math.random()*daysInMonth)+1;
-          const d=new Date(year,month,day);
-          if(d>now)continue;
-          logs.push({
-            store_id:store.id,brand_id:store.brandId,corp_id:store.corpId,
-            content_type:ct.key,model:ct.model,
-            estimated_cost_jpy:ct.costPerUnit,
-            created_at:d.toISOString()
-          });
-        }
-      });
-    });
-  }
-  return logs;
-}
-let COST_LOGS=generateCostDemoData();
+// D-83: generateCostDemoData() を削除 (Demo Fallback はハードコードに該当)。
+// 初期値は空配列、loadRealCostLogs() が ai_usage_logs から実データを取得して埋める。
+let COST_LOGS=[];
 let COST_REAL_LOGS=[];
-let _costDataSource='demo'; // 'demo' or 'real'
+let _costDataSource='empty'; // 'empty' (未取得 or 実データなし) | 'real' (実データ取得済)
 
 // --- Load real data from ai_usage_logs ---
+// 新スキーマ (20260419200000_ai_usage_logs.sql) に準拠:
+//   columns: venue_id, merchant_id, feature, model, input_tokens, output_tokens, cost_usd, status, created_at
 async function loadRealCostLogs(){
   try{
     const from=new Date(2026,0,1).toISOString();
-    const{data,error}=await sb.from('ai_usage_logs').select('id, store_id:venue_id, brand_id, corp_id:merchant_id, feature_type, model, input_tokens, output_tokens, cost_usd, api_cost_yen, action, created_at').gte('created_at',from).order('created_at',{ascending:false}).limit(5000);
-    if(error){console.warn('ai_usage_logs load error:',error.message);return;}
-    if(!data||data.length===0){return;}
-    // Map feature_type to content_type keys & find matching cost info
-    const ftMap={sales_analysis:'sales_analysis',review_reply:'review_reply',sns_content:'sns_content',pop_image:'pop_image',monthly_comment:'monthly_ai_comment'};
-    COST_REAL_LOGS=data.map(function(r){
-      const ctKey=ftMap[r.feature_type]||r.feature_type;
+    const{data,error}=await sb.from('ai_usage_logs')
+      .select('id, venue_id, merchant_id, feature, model, input_tokens, output_tokens, cost_usd, status, created_at')
+      .gte('created_at',from)
+      .order('created_at',{ascending:false})
+      .limit(5000);
+    if(error){
+      console.warn('ai_usage_logs load error:',error.message);
+      _costDataSource='empty';
+      COST_LOGS=[];
+      if(typeof refreshCostData==='function')refreshCostData();
+      return;
+    }
+    // EF feature 名 → COST_CONTENT_TYPES.key へのマッピング
+    const ftMap={
+      sns_post:'sns_content',
+      monthly_comment:'monthly_ai_comment',
+      analyze_store_performance:'sales_analysis',
+      collect_competitor_data:'competitor_report',
+      // 同名はそのまま: review_reply / pop_image
+      // バックエンドバッチ系 (google_places_collect / google_reviews_collect) は競合分析にまとめる
+      google_places_collect:'competitor_report',
+      google_reviews_collect:'competitor_report',
+    };
+    // 1 USD ≒ 150 JPY 概算 (POC 用、為替変動は別途対応)
+    const USD_TO_JPY=150;
+    COST_REAL_LOGS=(data||[]).map(function(r){
+      const ctKey=ftMap[r.feature]||r.feature;
       const ct=COST_CONTENT_TYPES.find(function(c){return c.key===ctKey;});
-      // Try to find store/brand info from COST_VENUES
-      const store=COST_VENUES.find(function(s){return s.id===r.store_id;});
+      const costYen=r.cost_usd!=null?Math.round(r.cost_usd*USD_TO_JPY):(ct?ct.costPerUnit:0);
       return{
-        store_id:r.store_id,
-        brand_id:r.brand_id,
-        corp_id:store?store.corpId:(r.corp_id||''),
+        store_id:r.venue_id||'',
+        brand_id:'', // ai_usage_logs に brand_id 列はない (venue_id 経由で解決必要、別途 JOIN 推奨)
+        corp_id:r.merchant_id||'',
         content_type:ctKey,
-        model:ct?ct.model:'Sonnet',
-        estimated_cost_jpy:r.api_cost_yen||( ct?ct.costPerUnit:0),
+        model:ct?ct.model:(r.model||'Unknown'),
+        estimated_cost_jpy:costYen,
         created_at:r.created_at,
-        action:r.action||'generate'
+        action:r.status==='error'?'error':'generate'
       };
     });
+    COST_LOGS=COST_REAL_LOGS;
+    _costDataSource=COST_REAL_LOGS.length>0?'real':'empty';
+    if(typeof refreshCostData==='function')refreshCostData();
     if(COST_REAL_LOGS.length>0){
-      _costDataSource='real';
-      // Merge: keep demo data as base, append real data
-      COST_LOGS=generateCostDemoData().concat(COST_REAL_LOGS);
-      if(typeof refreshCostData==='function')refreshCostData();
       showToast('📊 実データを読み込みました（'+COST_REAL_LOGS.length+'件）');
     }
-  }catch(e){console.warn('loadRealCostLogs error:',e);}
+  }catch(e){
+    console.warn('loadRealCostLogs error:',e);
+    _costDataSource='empty';
+    COST_LOGS=[];
+  }
 }
 
 // --- Cost filter state ---
@@ -6787,7 +6782,9 @@ function renderCostStoreTable(){
     '</tr>';
   });
 
-  const srcBadge=_costDataSource==='real'?'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(0,184,148,.12);color:#00b894">🟢 実データ接続中</span>':'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(225,112,85,.12);color:#e17055">デモデータ</span>';
+  const srcBadge=_costDataSource==='real'
+    ?'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(0,184,148,.12);color:#00b894">🟢 実データ接続中</span>'
+    :'<span style="margin-left:8px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(149,165,166,.12);color:#7f8c8d">📭 記録なし (ai_usage_logs 空 or 接続失敗)</span>';
   const heavyNote='<div style="font-size:10px;color:var(--text-light);margin-bottom:8px">🔥 ヘビーユーザー = 直近2ヶ月以上連続で全店舗トップ10</div>';
   // Top 10 shown, rest scrollable (~10 rows visible, max-height ~400px)
   return '<div class="card"><div class="card-title">🏪 店舗別コスト一覧 '+srcBadge+' <span class="ct-right"><button class="btn btn-s btn-sm" onclick="downloadCostCSV()">📥 CSVダウンロード</button></span></div>'+
