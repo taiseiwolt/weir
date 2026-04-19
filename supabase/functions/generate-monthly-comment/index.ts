@@ -188,7 +188,8 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
     })
 
     if (!claudeRes.ok) {
-      console.error('Claude API error:', await claudeRes.text())
+      const errText = await claudeRes.text()
+      console.error('Claude API error:', errText)
       await logAiInteraction(sbAdmin, {
         store_id,
         brand_id: ctx.brandId,
@@ -197,6 +198,26 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
         status: 'failed',
         model: 'claude-sonnet-4-20250514',
       })
+      // ai_usage_logs にエラー記録 (ベストエフォート)
+      try {
+        const { data: vRow } = await sbAdmin
+          .from('venues')
+          .select('id, brand_id')
+          .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+          .maybeSingle()
+        const { data: bRow } = vRow?.brand_id
+          ? await sbAdmin.from('brands').select('merchant_id').eq('id', vRow.brand_id).maybeSingle()
+          : { data: null }
+        await sbAdmin.from('ai_usage_logs').insert({
+          venue_id: vRow?.id || null,
+          merchant_id: bRow?.merchant_id || null,
+          feature: 'monthly_comment',
+          model: 'claude-sonnet-4-20250514',
+          status: 'error',
+          error_message: errText.slice(0, 500),
+          metadata: { month },
+        })
+      } catch (logErr) { console.error('[generate-monthly-comment] error log failed:', logErr) }
       return new Response(JSON.stringify({ error: 'AI生成に失敗しました' }), {
         status: 502,
         headers: jsonHeaders,
@@ -205,7 +226,9 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
 
     const claudeData = await claudeRes.json()
     const comment = claudeData.content?.[0]?.text || ''
-    const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0)
+    const inputTokens = claudeData.usage?.input_tokens || 0
+    const outputTokens = claudeData.usage?.output_tokens || 0
+    const tokensUsed = inputTokens + outputTokens
 
     await logAiInteraction(sbAdmin, {
       store_id,
@@ -216,6 +239,56 @@ ${reviewSummary.recentTexts.length > 0 ? '- 最新口コミ要約:\n' + reviewSu
       tokens_used: tokensUsed,
       model: 'claude-sonnet-4-20250514',
     })
+
+    // venue UUID を再解決（resolveStoreId 同等の挙動 — display_id 渡し対応）
+    const { data: venueRow } = await sbAdmin
+      .from('venues')
+      .select('id')
+      .eq(store_id.startsWith('STR-') ? 'display_id' : 'id', store_id)
+      .single()
+    const venueUuid = venueRow?.id || null
+
+    // ai_monthly_comments へキャッシュ (ベストエフォート)
+    if (venueUuid && ctx.brandId) {
+      const [yearStr, monthStr] = month.split('-')
+      const { error: cacheErr } = await sbAdmin
+        .from('ai_monthly_comments')
+        .upsert(
+          {
+            venue_id: venueUuid,
+            brand_id: ctx.brandId,
+            year: parseInt(yearStr, 10),
+            month: parseInt(monthStr, 10),
+            comment_text: comment,
+            model: 'claude-sonnet-4-20250514',
+            input_tokens: inputTokens,
+            output_tokens: outputTokens,
+          },
+          { onConflict: 'venue_id,year,month' }
+        )
+      if (cacheErr) console.error('[generate-monthly-comment] ai_monthly_comments upsert failed:', cacheErr)
+    }
+
+    // ai_usage_logs にも記録 (ベストエフォート)
+    if (venueUuid) {
+      const { data: brandRow } = await sbAdmin
+        .from('brands')
+        .select('merchant_id')
+        .eq('id', ctx.brandId)
+        .maybeSingle()
+      const merchantUuid = brandRow?.merchant_id || null
+      const { error: usageErr } = await sbAdmin.from('ai_usage_logs').insert({
+        venue_id: venueUuid,
+        merchant_id: merchantUuid,
+        feature: 'monthly_comment',
+        model: 'claude-sonnet-4-20250514',
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        status: 'success',
+        metadata: { month },
+      })
+      if (usageErr) console.error('[generate-monthly-comment] ai_usage_logs insert failed:', usageErr)
+    }
 
     return new Response(
       JSON.stringify({
