@@ -9003,16 +9003,36 @@ async function sdAiAnalysis(type, btnEl) {
     });
     if (res.ok) {
       var result = await res.json();
+      // 未実装タイプ (200 + status: 'not_implemented') は専用 UI で表示
+      if (result && result.status === 'not_implemented') {
+        openModal(
+          '<button class="modal-close" onclick="closeModal()">✕</button>' +
+          '<h3>\u{1F916} AI分析: ' + escH(title) + '</h3>' +
+          '<div style="margin-top:12px;padding:24px;text-align:center">' +
+            '<div style="font-size:32px;margin-bottom:12px">\u{1F6A7}</div>' +
+            '<div style="font-size:14px;font-weight:600;color:#333">' + escH(result.message || (title + ' は準備中です')) + '</div>' +
+            '<div style="font-size:12px;color:#888;margin-top:8px">他の分析タイプは順次公開予定です</div>' +
+            '<div style="margin-top:16px;padding:12px;background:#f5f6fa;border-radius:8px;font-size:12px;text-align:left">' +
+              '<div style="font-weight:600;margin-bottom:4px">現在のKPI:</div>' +
+              '売上合計: ' + escH(lkSales) + '<br>注文件数: ' + escH(lkOrders) + '<br>平均注文額: ' + escH(lkAvg) +
+            '</div>' +
+          '</div>'
+        );
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u{1F916} AI分析'; }
+        return;
+      }
+      // 成功時
+      var analysisText = result.analysis || result.data || 'No data';
       openModal(
         '<button class="modal-close" onclick="closeModal()">✕</button>' +
         '<h3>\u{1F916} AI分析: ' + escH(title) + '</h3>' +
-        '<div style="margin-top:12px;font-size:13px;line-height:1.8">' + (result.analysis || result.data || 'No data') + '</div>'
+        '<div style="margin-top:12px;font-size:13px;line-height:1.8;white-space:pre-wrap">' + escH(analysisText) + '</div>'
       );
       if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u{1F916} AI分析'; }
       return;
     }
   } catch(e) {
-    // EF not deployed, show Coming Soon
+    // EF 呼出エラー（ネットワーク等） — Coming Soon にフォールバック
   }
 
   openModal(
