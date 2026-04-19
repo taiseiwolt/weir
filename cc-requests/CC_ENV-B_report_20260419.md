@@ -8,9 +8,35 @@
 
 ---
 
-## ⚠️ 手動作業リスト (Tasei 必須、10 項目)
+## ⚠️ 手動作業リスト (Tasei 必須、11 項目)
 
-本依頼は「実装 + コミット」までが CC の責務。以下 10 項目は Tasei が手動実施する必要がある。並列可能なものはマーク付き。
+### タスク 0: feature/cc-env-b の push (🔴 最優先、未完了)
+
+CC の commit は feature/cc-env-b 上に `5b84172` として完了したが、**push は OAuth scope 制限でブロック**された。原因: gh CLI token の scope が `gist, read:org, repo` のみで、`.github/workflows/*.yml` を push するのに必要な `workflow` scope が無い。
+
+Tasei ターミナルで以下を実施:
+
+```bash
+# 方式 A: gh CLI の scope を拡張
+gh auth refresh -s workflow
+# → ブラウザで scope 追加を認証
+cd /Users/taisei/Desktop/weir
+git push -u origin feature/cc-env-b
+
+# 方式 B: 既に workflow scope のある PAT があるなら一時的に credential 差し替え
+# 省略 (方式 A を推奨)
+```
+
+push 成功後、GitHub で PR 作成:
+```
+https://github.com/taiseiwolt/weir/compare/main...feature/cc-env-b
+```
+
+**staging ブランチは CC 側で push 済** (`git push origin staging:staging` は workflow scope 不要だったため成功、origin/main と同じ 937eb82 を指す)。
+
+### タスク 1-10: Tasei 手動 10 項目
+
+以下 10 項目は Tasei が手動実施する必要がある。並列可能なものはマーク付き。
 
 | # | 作業 | 所要 | 前提 | 並列可 |
 |---|---|---|---|---|
