@@ -111,6 +111,109 @@ async function handleCreate(req, res) {
   }
 
   try {
+    // ============================================================
+    // V-B: 注文可否の事前検証 (G-1 / G-2 / G-3 / G-4) — バイパス防止
+    // EF (stripe-create-payment-intent) と同等チェックを API 層にも配置
+    // ============================================================
+
+    // venues: 存在 + 臨時停止 + 臨時閉店 (G-2)
+    const { data: venueRow } = await supabase
+      .from('venues')
+      .select('id, is_paused, spot_closed_until')
+      .eq('id', store_id)
+      .single();
+
+    if (!venueRow) {
+      return error(res, '店舗情報が見つかりません', 400, 'VENUE_NOT_FOUND');
+    }
+    if (venueRow.is_paused) {
+      return error(res, '現在、この店舗からの注文受付を一時停止しています', 400, 'VENUE_PAUSED');
+    }
+    if (venueRow.spot_closed_until && new Date(venueRow.spot_closed_until).getTime() > Date.now()) {
+      const reopenJstDate = new Date(new Date(venueRow.spot_closed_until).getTime() + 9 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      return error(res, `${reopenJstDate} まで臨時休業中です`, 400, 'VENUE_SPOT_CLOSED');
+    }
+
+    // 営業時間チェック (G-1) — venue_hours, JST, 深夜営業 (close <= open) 対応
+    {
+      const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const dayOfWeek = jstNow.getUTCDay();
+      const currentMinutes = jstNow.getUTCHours() * 60 + jstNow.getUTCMinutes();
+
+      const { data: hoursRows } = await supabase
+        .from('venue_hours')
+        .select('open_time, close_time, is_closed')
+        .eq('venue_id', store_id)
+        .eq('day_of_week', dayOfWeek);
+
+      const isOpen = (hoursRows || []).some(h => {
+        if (h.is_closed) return false;
+        if (!h.open_time || !h.close_time) return false;
+        const [oh, om] = String(h.open_time).split(':').map(Number);
+        const [ch, cm] = String(h.close_time).split(':').map(Number);
+        const openMin = oh * 60 + om;
+        const closeMin = ch * 60 + cm;
+        if (closeMin <= openMin) {
+          return currentMinutes >= openMin || currentMinutes < closeMin;
+        }
+        return currentMinutes >= openMin && currentMinutes < closeMin;
+      });
+
+      if (!isOpen) {
+        return error(res, '現在営業時間外です。営業時間内にご注文ください。', 400, 'OPERATION_OUTSIDE_HOURS');
+      }
+    }
+
+    // 在庫切れチェック (G-3) — sold_out / discontinued / sold_out_today を拒否
+    {
+      const productIds = items.map(i => i.product_id).filter(Boolean);
+      if (productIds.length > 0) {
+        const { data: saleProducts } = await supabase
+          .from('products')
+          .select('id, name, sale_status')
+          .in('id', productIds);
+        const UNAVAILABLE_STATUSES = ['sold_out', 'discontinued', 'sold_out_today'];
+        const soldOut = (saleProducts || []).filter(p => UNAVAILABLE_STATUSES.includes(p.sale_status));
+        if (soldOut.length > 0) {
+          return res.status(400).json({
+            error: '品切れまたは販売停止中の商品があります: ' + soldOut.map(p => p.name).join(', '),
+            code: 'PRODUCT_SOLD_OUT',
+            sold_out_products: soldOut.map(p => p.id),
+          });
+        }
+      }
+    }
+
+    // クーポン検証 (G-4) — coupon_id が body に含まれる場合のみ
+    if (body.coupon_id) {
+      const { data: couponRow } = await supabase
+        .from('coupons')
+        .select('id, is_active, expires_at, usage_limit, usage_count')
+        .eq('id', body.coupon_id)
+        .single();
+
+      if (!couponRow) {
+        return error(res, 'クーポンが見つかりません', 400, 'COUPON_NOT_FOUND');
+      }
+      if (!couponRow.is_active) {
+        return error(res, 'このクーポンは無効化されています', 400, 'COUPON_INACTIVE');
+      }
+      if (couponRow.expires_at) {
+        const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const expiryDay = new Date(couponRow.expires_at).toISOString().slice(0, 10);
+        if (todayJst > expiryDay) {
+          return error(res, 'このクーポンは期限切れです', 400, 'COUPON_EXPIRED');
+        }
+      }
+      if (couponRow.usage_limit && (couponRow.usage_count || 0) >= couponRow.usage_limit) {
+        return error(res, 'このクーポンは利用上限に達しています', 400, 'COUPON_USAGE_EXCEEDED');
+      }
+    }
+
+    // ============================================================
+
     let totalAmount = 0;
     const orderItems = [];
 
