@@ -15364,33 +15364,52 @@ async function snsGeneratePost() {
   txt.innerHTML = '<div style="color:#888;font-size:11px">生成中...</div>';
   box.style.display = 'block';
 
-  // Try Edge Function
-  try {
-    var session = (await sb.auth.getSession()).data.session;
-    var token = session ? session.access_token : '';
-    var res = await fetch(SUPABASE_URL + '/functions/v1/generate-sns-content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ brand_id: BRAND_ID, platform: _snsSelectedPlatform, topic: theme })
-    });
-    if (res.ok) {
-      var result = await res.json();
-      var content = result.content || result.data || '';
-      txt.innerHTML =
-        '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">🤖 AIが生成した投稿文です</div>' +
-        '<b>📝 投稿文（' + _snsSelectedPlatform + '向け）：</b><br><br>' +
-        '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + escH(content) + '</div>';
-      return;
-    }
-  } catch(e) {}
+  // EF (generate-sns-post) は x / instagram / line のみサポート
+  var efPlatformMap = { 'X': 'x', 'Instagram': 'instagram', 'LINE': 'line' };
+  var efPlatform = efPlatformMap[_snsSelectedPlatform];
+  var primaryVenueId = (STORES && STORES.length > 0) ? STORES[0].id : null;
 
-  // EF not deployed - use existing demo generation
+  // Try Edge Function (対応プラットフォーム + 店舗情報がある場合のみ)
+  if (efPlatform && primaryVenueId) {
+    try {
+      var session = (await sb.auth.getSession()).data.session;
+      var token = session ? session.access_token : '';
+      var res = await fetch(SUPABASE_URL + '/functions/v1/generate-sns-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ venue_id: primaryVenueId, platform: efPlatform, topic: theme })
+      });
+      if (res.ok) {
+        var result = await res.json();
+        var variants = Array.isArray(result.variants) ? result.variants : [];
+        if (variants.length > 0) {
+          var variantHtml = variants.map(function(v, i) {
+            var toneLabel = { formal: 'フォーマル', casual: 'カジュアル', friendly: 'フレンドリー' }[v.tone] || v.tone || ('案' + (i+1));
+            return '<div style="margin-bottom:12px;padding:10px;background:#fff;border-radius:6px;border:1px solid #e0e0ff">' +
+              '<div style="font-size:10px;color:#6c5ce7;font-weight:600;margin-bottom:6px">' + escH(toneLabel) + '</div>' +
+              '<div style="white-space:pre-wrap;font-size:13px">' + escH(v.text || '') + '</div>' +
+            '</div>';
+          }).join('');
+          txt.innerHTML =
+            '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">🤖 AIが生成した投稿文（3パターン）です</div>' +
+            '<b>📝 投稿文（' + escH(_snsSelectedPlatform) + '向け）：</b><br><br>' +
+            variantHtml;
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // EF 未対応プラットフォーム / 店舗情報なし / EF 失敗 → demo template
   var post = _snsBuildPost(_snsSelectedPlatform, theme);
+  var unsupportedNote = efPlatform ? '' :
+    '<div style="font-size:10px;color:#999;background:#f5f6fa;border-radius:4px;padding:4px 8px;margin-bottom:10px">ℹ️ ' + escH(_snsSelectedPlatform) + ' は AI 生成未対応のため、テンプレートを表示しています</div>';
   txt.innerHTML =
-    '<div style="font-size:10px;color:#f39c12;background:#fff8e1;border-radius:4px;padding:4px 8px;margin-bottom:10px">📝 デモテキストを生成しました（AI生成はEdge Functionデプロイ後に利用可能）</div>' +
-    '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">' + post.note + '</div>' +
-    '<b>📝 投稿文（' + _snsSelectedPlatform + '向け）：</b><br><br>' +
-    '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + post.text + '</div>';
+    '<div style="font-size:10px;color:#f39c12;background:#fff8e1;border-radius:4px;padding:4px 8px;margin-bottom:10px">📝 デモテキストを生成しました</div>' +
+    unsupportedNote +
+    '<div style="font-size:10px;color:#6c5ce7;background:#f0edff;border-radius:4px;padding:4px 8px;margin-bottom:10px">' + escH(post.note) + '</div>' +
+    '<b>📝 投稿文（' + escH(_snsSelectedPlatform) + '向け）：</b><br><br>' +
+    '<div style="white-space:pre-wrap;background:#fff;border-radius:6px;padding:10px;border:1px solid #e0e0ff">' + escH(post.text) + '</div>';
 }
 
 function snsPreviewPost() {
