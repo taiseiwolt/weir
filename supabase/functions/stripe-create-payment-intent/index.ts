@@ -125,12 +125,40 @@ serve(async (req) => {
 
       if (storeErr || !storeRow) {
         return new Response(
-          JSON.stringify({ error: '店舗情報が見つかりません' }),
+          JSON.stringify({ error: '店舗情報が見つかりません', error_code: 'VENUE_NOT_FOUND' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      // 1b. 営業時間チェック（サーバーサイド — C-10）
+      // 1a. 臨時閉店チェック（V-B G-2）
+      if (storeRow.is_paused) {
+        return new Response(
+          JSON.stringify({
+            error: '現在、この店舗からの注文受付を一時停止しています',
+            error_code: 'VENUE_PAUSED',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (
+        storeRow.spot_closed_until &&
+        new Date(storeRow.spot_closed_until).getTime() > Date.now()
+      ) {
+        const reopenJstDate = new Date(
+          new Date(storeRow.spot_closed_until).getTime() + 9 * 60 * 60 * 1000
+        )
+          .toISOString()
+          .slice(0, 10)
+        return new Response(
+          JSON.stringify({
+            error: `${reopenJstDate} まで臨時休業中です`,
+            error_code: 'VENUE_SPOT_CLOSED',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // 1b. 営業時間チェック（サーバーサイド — C-10 / V-B G-1 深夜営業対応）
       {
         const now = new Date()
         // JST = UTC + 9h
@@ -148,16 +176,24 @@ serve(async (req) => {
         // 今日の営業時間が存在しない or 全て is_closed の場合は拒否
         const isOpen = hoursRows && hoursRows.some((h: any) => {
           if (h.is_closed) return false
+          if (!h.open_time || !h.close_time) return false
           const [oh, om] = (h.open_time as string).split(':').map(Number)
           const [ch, cm] = (h.close_time as string).split(':').map(Number)
           const openMin = oh * 60 + om
           const closeMin = ch * 60 + cm
+          // 深夜営業（close_time <= open_time、例: 18:00 open / 02:00 close）対応
+          if (closeMin <= openMin) {
+            return currentMinutes >= openMin || currentMinutes < closeMin
+          }
           return currentMinutes >= openMin && currentMinutes < closeMin
         })
 
         if (!isOpen) {
           return new Response(
-            JSON.stringify({ error: '現在営業時間外です。営業時間内にご注文ください。' }),
+            JSON.stringify({
+              error: '現在営業時間外です。営業時間内にご注文ください。',
+              error_code: 'OPERATION_OUTSIDE_HOURS',
+            }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -179,12 +215,14 @@ serve(async (req) => {
           }
         }
 
-        // 品切れチェック（sale_status が 'sold_out' の商品）
-        const soldOut = products?.filter(p => p.sale_status === 'sold_out')
+        // 品切れチェック（V-B G-3: sold_out / discontinued / sold_out_today 全て拒否）
+        const UNAVAILABLE_SALE_STATUSES = ['sold_out', 'discontinued', 'sold_out_today']
+        const soldOut = products?.filter(p => UNAVAILABLE_SALE_STATUSES.includes(p.sale_status))
         if (soldOut && soldOut.length > 0) {
           return new Response(
             JSON.stringify({
-              error: '品切れの商品があります: ' + soldOut.map(p => p.name).join(', '),
+              error: '品切れまたは販売停止中の商品があります: ' + soldOut.map(p => p.name).join(', '),
+              error_code: 'PRODUCT_SOLD_OUT',
               sold_out_products: soldOut.map(p => p.id),
             }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -287,30 +325,59 @@ serve(async (req) => {
           .eq('id', coupon_id)
           .single()
 
-        if (!couponRow || !couponRow.is_active) {
+        // V-B G-4: クーポン再検証（NOT_FOUND / INACTIVE / EXPIRED / USAGE_EXCEEDED / MIN_ORDER_NOT_MET）
+        if (!couponRow) {
           return new Response(
-            JSON.stringify({ error: 'クーポンが無効または期限切れです' }),
+            JSON.stringify({ error: 'クーポンが見つかりません', error_code: 'COUPON_NOT_FOUND' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
+        }
+        if (!couponRow.is_active) {
+          return new Response(
+            JSON.stringify({ error: 'このクーポンは無効化されています', error_code: 'COUPON_INACTIVE' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // 期限切れチェック (JST 日単位): expires_at 日を含む日まで有効、翌日から無効
+        if (couponRow.expires_at) {
+          const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+          const expiryDay = new Date(couponRow.expires_at).toISOString().slice(0, 10)
+          if (todayJst > expiryDay) {
+            return new Response(
+              JSON.stringify({ error: 'このクーポンは期限切れです', error_code: 'COUPON_EXPIRED' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
         }
         // 利用回数上限チェック
         if (couponRow.usage_limit && (couponRow.usage_count || 0) >= couponRow.usage_limit) {
           return new Response(
-            JSON.stringify({ error: 'このクーポンは利用上限に達しています' }),
+            JSON.stringify({ error: 'このクーポンは利用上限に達しています', error_code: 'COUPON_USAGE_EXCEEDED' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
         // 最低注文金額チェック
         if (couponRow.min_order_amount && subtotal < couponRow.min_order_amount) {
           return new Response(
-            JSON.stringify({ error: `このクーポンは¥${couponRow.min_order_amount.toLocaleString()}以上のご注文で利用可能です` }),
+            JSON.stringify({
+              error: `このクーポンは¥${couponRow.min_order_amount.toLocaleString()}以上のご注文で利用可能です`,
+              error_code: 'COUPON_MIN_ORDER_NOT_MET',
+            }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-        // 割引額をサーバーで再計算（クライアント値を上書き）
-        discount = couponRow.discount_type === 'percent'
+        // 割引額をサーバーで再計算（クライアント値を上書き — 改ざん防止）
+        const serverDiscount = couponRow.discount_type === 'percent'
           ? Math.round(subtotal * couponRow.discount_value / 100)
           : couponRow.discount_value
+        if (Math.abs(serverDiscount - (coupon_discount || 0)) > 1) {
+          console.warn('[coupon] client/server discount mismatch — using server value', {
+            client: coupon_discount,
+            server: serverDiscount,
+            coupon_id,
+          })
+        }
+        discount = serverDiscount
       } else if (!coupon_id && (coupon_discount || 0) > 0) {
         // coupon_idなしでdiscountを送ってきた場合は無視（不正利用防止）
         discount = 0
