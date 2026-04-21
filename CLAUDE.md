@@ -226,6 +226,7 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - Step 3 の 16 枚は内部で `modelName` (Claude / GPT / Gemini / Grok) を保持、UI には**一切表示しない**（D-196 準拠）。選択時に `console.info` で記録、CC-22b で `ai_model_change_log` INSERT に差し替える
 - LocalStorage キー `weir_onboarding_state_v1` で中断復帰対応。写真の dataUrl が 4MB を超えたら metadata のみ保存にフォールバック
 - Mock 画像 seed は `weir-{tone}-{1..4}` / `weir-final-{pop|sns|review|report|profile}` 命名（CC-22b 実装時のデバッグ容易化のため）
+- **CC-22b で削除要**: `vercel.json` CSP の `img-src` に `https://picsum.photos` / `https://fastly.picsum.photos` を一時追加済（mock 画像用）。本番データが Supabase Storage 経由になったら除去
 
 ---
 
