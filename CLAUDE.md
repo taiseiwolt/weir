@@ -212,9 +212,10 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - 来店予約ON/OFFは`service_subscriptions`（key=`'reservation'`）で管理し`venues.reservation_enabled`と連動させる
 
 ### orders PII カラム（anon REVOKE 済み）
-- **`orders.customer_name` / `customer_email` / `customer_phone` は anon から SELECT 不可**。`sec11_revoke_pii_columns.sql` が anon の列レベル GRANT を剥がしているため、PostgREST は「column does not exist」エラーを返す（2026-04-21 CC-21 実績）
+- **`orders` の 6 カラムは anon から SELECT 不可**: `customer_name` / `customer_email` / `customer_phone` / `delivery_address` / `delivery_lat` / `delivery_lng`。`sec11_revoke_pii_columns.sql` が anon の列レベル GRANT を剥がしているため、PostgREST は「column does not exist」エラーを返す（2026-04-21 CC-21 / CC-24 実績）
 - 顧客名は会員: `members` テーブルを `orders.member_id` で JOIN / 別クエリ取得。ゲスト: 表示しない（`'ゲスト'`）
-- ゲスト PII 露出を避けるため、管理画面では customer_* を参照しないこと。必要なら EF（service_role）経由で取得する
+- 配送情報（delivery_*）は admin UI では参照しない。必要なら EF（service_role）経由または tracking_token RPC（`get_order_by_tracking_token`, SECURITY DEFINER）経由で取得する
+- ゲスト PII 露出を避けるため、管理画面では customer_* / delivery_* を参照しないこと。CC-24 調査で admin UI (`weir-admin.html` / `weir-customer-admin.html` / `weir-order-dashboard.html`) には delivery_* の参照なしを確認済（2026-04-21）
 
 ### 空データ時の文言統一
 - データ未存在時は `renderEmptyState({icon, title, description})` ヘルパーを使う（`weir-admin.html` / `weir-customer-admin.html` に定義済み）
