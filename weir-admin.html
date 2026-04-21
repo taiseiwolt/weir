@@ -173,6 +173,42 @@ function statusBadge(s){const m={active:'status-active',suspended:'status-suspen
 function roleBadge(r){const c={owner:'#6c5ce7',admin:'#0984e3',staff:'#636e72'};return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+c[r]+'20;color:'+c[r]+'">'+r.charAt(0).toUpperCase()+r.slice(1)+'</span>';}
 function rankBadge(r){const c={'ゴールド':'#e17055','シルバー':'#636e72','レギュラー':'#0984e3'};return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:'+(c[r]||'#999')+'20;color:'+(c[r]||'#999')+'">'+r+'</span>';}
 function escHtml(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+function renderEmptyState(opts){
+  var o=opts||{};
+  var title=o.title||'';
+  var description=o.description||'';
+  var icon=o.icon||'📭';
+  return '<div class="empty-state" style="padding:48px 24px;text-align:center">'
+    +'<div style="font-size:36px;margin-bottom:12px;opacity:.55">'+icon+'</div>'
+    +'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">'+escHtml(title)+'</div>'
+    +(description?'<div style="font-size:12px;color:var(--text-light);line-height:1.6">'+escHtml(description)+'</div>':'')
+    +'</div>';
+}
+async function fetchMembersMap(rows){
+  var ids=Array.from(new Set((rows||[]).map(function(o){return o.member_id;}).filter(function(x){return !!x;})));
+  if(!ids.length)return {};
+  try{
+    var res=await sb.from('members').select('id, name, first_name, last_name, email, phone').in('id', ids);
+    if(res.error||!res.data)return {};
+    var map={};
+    res.data.forEach(function(m){map[m.id]=m;});
+    return map;
+  }catch(e){return {};}
+}
+function formatMemberName(m){
+  if(!m)return '';
+  if(m.name)return m.name;
+  var last=m.last_name||'';
+  var first=m.first_name||'';
+  return (last+(last&&first?' ':'')+first).trim();
+}
+function getOrderCustomerName(order, memberMap){
+  if(!order)return '—';
+  if(!order.member_id)return 'ゲスト';
+  var m=(memberMap||{})[order.member_id];
+  var nm=formatMemberName(m);
+  return nm||'会員';
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 async function doLogout(){if(!confirm('ログアウトしますか？'))return;try{await sb.auth.signOut();}catch(e){}sessionStorage.clear();localStorage.removeItem('weirPopList');window.location.href='/';}
 // bfcache防止: ブラウザバックで復元された場合はリロード
@@ -2451,19 +2487,24 @@ function renderCompOrderResultsTable(orders){
 }
 
 // DB行を補填処理用のUI形式にマップ（venue/brandは global VENUES/BRANDS から解決）
-function mapOrderForCompensation(r){
+function mapOrderForCompensation(r, memberMap){
   var v=VENUES.find(function(x){return x._uuid===r.venue_id;});
   var b=BRANDS.find(function(x){return x._uuid===r.brand_id;});
   var items=(r.order_items||[]).map(function(it){
     return {name:it.product_name||'商品',qty:it.quantity||0,price:it.unit_price||0};
   });
+  var customer='ゲスト';
+  if(r.member_id){
+    var m=(memberMap||{})[r.member_id];
+    customer=formatMemberName(m)||'会員';
+  }
   return {
     id:r.display_id||r.id,
     uuid:r.id,
     storeId:v?v.id:'',
     storeName:v?v.name:'—',
     brandName:b?b.name:'—',
-    customer:r.customer_name||'ゲスト',
+    customer:customer,
     total:r.total_amount||0,
     status:r.tracking_status||'',
     paymentStatus:r.payment_status||'',
@@ -2483,15 +2524,27 @@ async function searchCompOrders(){
     // PostgRESTのor/ilikeクエリに渡せない文字を除去
     var safe=q.replace(/[,()\\%_]/g,' ').trim();
     if(!safe){box.innerHTML='<div class="empty">有効な検索キーワードを入力してください</div>';return;}
-    var res=await sb.from('orders').select(
-      'id, display_id, venue_id, brand_id, customer_name, total_amount, '+
+    // 会員名でもヒットさせるため先に member_id を収集
+    var memIds=[];
+    try{
+      var mSearch=await sb.from('members').select('id').or('name.ilike.%'+safe+'%,first_name.ilike.%'+safe+'%,last_name.ilike.%'+safe+'%').limit(200);
+      if(!mSearch.error && mSearch.data) memIds=mSearch.data.map(function(m){return m.id;});
+    }catch(_){}
+    var query=sb.from('orders').select(
+      'id, display_id, venue_id, brand_id, total_amount, '+
       'tracking_status, payment_status, payment_intent_id, created_at, member_id, '+
       'order_items(product_name, quantity, unit_price, subtotal)'
-    )
-    .or('display_id.ilike.%'+safe+'%,customer_name.ilike.%'+safe+'%')
-    .order('created_at',{ascending:false}).limit(100);
+    );
+    if(memIds.length){
+      query=query.or('display_id.ilike.%'+safe+'%,member_id.in.('+memIds.join(',')+')');
+    }else{
+      query=query.ilike('display_id','%'+safe+'%');
+    }
+    var res=await query.order('created_at',{ascending:false}).limit(100);
     if(res.error)throw res.error;
-    compOrdersCache=(res.data||[]).map(mapOrderForCompensation);
+    var rows=res.data||[];
+    var memberMap=await fetchMembersMap(rows);
+    compOrdersCache=rows.map(function(r){return mapOrderForCompensation(r, memberMap);});
     box.innerHTML=renderCompOrderResultsTable(compOrdersCache);
   }catch(e){
     box.innerHTML='<div class="empty" style="color:var(--danger)">検索エラー: '+escHtml(e.message||String(e))+'</div>';
@@ -2503,12 +2556,14 @@ async function showAllCompOrders(){
   box.innerHTML='<div class="empty">読み込み中...</div>';
   try{
     var res=await sb.from('orders').select(
-      'id, display_id, venue_id, brand_id, customer_name, total_amount, '+
+      'id, display_id, venue_id, brand_id, total_amount, '+
       'tracking_status, payment_status, payment_intent_id, created_at, member_id, '+
       'order_items(product_name, quantity, unit_price, subtotal)'
     ).order('created_at',{ascending:false}).limit(100);
     if(res.error)throw res.error;
-    compOrdersCache=(res.data||[]).map(mapOrderForCompensation);
+    var rows=res.data||[];
+    var memberMap=await fetchMembersMap(rows);
+    compOrdersCache=rows.map(function(r){return mapOrderForCompensation(r, memberMap);});
     box.innerHTML=renderCompOrderResultsTable(compOrdersCache);
   }catch(e){
     box.innerHTML='<div class="empty" style="color:var(--danger)">読み込みエラー: '+escHtml(e.message||String(e))+'</div>';
@@ -5344,6 +5399,7 @@ var ordersState = {
     createdFrom:'', createdTo:'', pickupFrom:'', pickupTo:''
   },
   rows: [],
+  memberMap: {},
   loading: false,
   realtimeChannel: null,
   debounceTimer: null
@@ -5461,7 +5517,6 @@ async function loadOrders(){
     var q = sb.from('orders').select(
       'id, display_id, venue_id, brand_id, merchant_id, order_type, '
       + 'tracking_status, payment_status, total_amount, '
-      + 'customer_name, customer_email, customer_phone, '
       + 'channel, notes, pickup_at, created_at, member_id'
     ).order('created_at', {ascending: false}).limit(500);
     if(f.merchantUuid !== 'all') q = q.eq('merchant_id', f.merchantUuid);
@@ -5478,6 +5533,7 @@ async function loadOrders(){
     var res = await q;
     if(res.error) throw res.error;
     ordersState.rows = res.data || [];
+    ordersState.memberMap = await fetchMembersMap(ordersState.rows);
     renderOrdersTable(ordersState.rows);
   }catch(e){
     bodyEl.innerHTML = '<div style="padding:24px;color:var(--danger)">読み込みエラー: '+escHtml(e.message||String(e))+'</div>';
@@ -5490,7 +5546,11 @@ function renderOrdersTable(rows){
   var bodyEl = document.getElementById('ordersTableBody');
   if(!bodyEl) return;
   if(!rows || !rows.length){
-    bodyEl.innerHTML = '<div class="empty-state">該当する注文はありません</div>';
+    bodyEl.innerHTML = renderEmptyState({
+      icon:'📋',
+      title:'まだ注文のデータはありません',
+      description:'お客様の注文が入ると、ここに表示されます'
+    });
     return;
   }
   var venueMap = {}; VENUES.forEach(function(v){ venueMap[v._uuid]=v; });
@@ -5514,7 +5574,7 @@ function renderOrdersTable(rows){
     var createdStr = o.created_at ? new Date(o.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
     var pickupStr  = o.pickup_at  ? new Date(o.pickup_at ).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '—';
     var amount = typeof o.total_amount==='number' ? ('¥' + o.total_amount.toLocaleString()) : '—';
-    var custName = o.customer_name || '—';
+    var custName = getOrderCustomerName(o, ordersState.memberMap);
     var typeLabel = ({dinein:'店内', takeout:'テイクアウト', delivery:'デリバリー'})[o.order_type] || escHtml(o.order_type||'—');
     html += '<tr>'
       + '<td><code style="font-size:11px;background:#f5f6fa;padding:2px 6px;border-radius:4px">'+escHtml(o.display_id||(o.id||'').substring(0,8))+'</code></td>'
@@ -5670,7 +5730,6 @@ async function openOrderDetailModal(orderId){
       'id, display_id, venue_id, brand_id, merchant_id, order_type, channel, notes, '
       + 'tracking_status, payment_status, payment_intent_id, '
       + 'total_amount, delivery_fee, service_fee, surcharge_amount, '
-      + 'customer_name, customer_email, customer_phone, '
       + 'created_at, pickup_at, member_id, '
       + 'order_items(id, product_id, size_id, quantity, unit_price, subtotal, product_name)'
     ).eq('id', orderId).single();
@@ -5679,6 +5738,13 @@ async function openOrderDetailModal(orderId){
     if(!o){
       openModal('<p>注文が見つかりませんでした</p><div style="text-align:right"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>');
       return;
+    }
+    var memberData = null;
+    if(o.member_id){
+      try{
+        var mRes = await sb.from('members').select('name, first_name, last_name, email, phone').eq('id', o.member_id).maybeSingle();
+        if(!mRes.error) memberData = mRes.data;
+      }catch(_){}
     }
     var v = VENUES.find(function(x){return x._uuid===o.venue_id;});
     var b = BRANDS.find(function(x){return x._uuid===o.brand_id;});
@@ -5731,9 +5797,9 @@ async function openOrderDetailModal(orderId){
       + row('PaymentIntent', o.payment_intent_id?('<code style="font-size:10px">'+escHtml(o.payment_intent_id)+'</code>'):'—')
       + '</div>'
       + '<div><div class="card-title" style="font-size:12px">👤 顧客情報</div>'
-      + row('氏名', escHtml(o.customer_name||'—'))
-      + row('電話', escHtml(o.customer_phone||'—'))
-      + row('メール', escHtml(o.customer_email||'—'))
+      + row('氏名', escHtml(o.member_id ? (formatMemberName(memberData) || '会員') : 'ゲスト'))
+      + row('電話', escHtml((memberData && memberData.phone) || '—'))
+      + row('メール', escHtml((memberData && memberData.email) || '—'))
       + row('種別', o.member_id?'会員':'ゲスト')
       + '<div class="card-title" style="font-size:12px;margin-top:16px">🏢 階層</div>'
       + row('法人', escHtml(m?m.name:'—'))
@@ -6850,8 +6916,10 @@ function updateCostChart(){
       const wrap=canvas.parentElement;
       const div=document.createElement('div');
       div.id='costChartEmpty';
-      div.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:13px';
-      div.textContent='データがありません';
+      div.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-light);padding:24px;text-align:center';
+      div.innerHTML='<div style="font-size:36px;margin-bottom:12px;opacity:.55">📊</div>'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">まだコストデータはありません</div>'
+        +'<div style="font-size:12px;line-height:1.6">コストが記録されると、月次推移としてここに表示されます</div>';
       wrap.appendChild(div);
     }
     return;
@@ -7081,9 +7149,12 @@ function renderBillingInvoicesTab(){
   if(!INVOICES||INVOICES.length===0){
     return '<div class="card"><div class="card-title">🧾 請求書一覧 '+headerCtrls+'</div>'+
       tableHead+'</tbody></table>'+
-      '<div class="empty" style="padding:24px;text-align:center;color:var(--text-light);font-size:12px">'+
-      'データなし（0件）<div style="margin-top:6px;font-size:10px">Stripe Billing連携の設定後に表示されます</div>'+
-      '</div></div>';
+      renderEmptyState({
+        icon:'🧾',
+        title:'まだ請求書のデータはありません',
+        description:'Stripe Billing 連携の設定後、自動的に表示されます'
+      })+
+      '</div>';
   }
 
   const rows=INVOICES.slice().sort(function(a,b){

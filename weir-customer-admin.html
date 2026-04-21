@@ -22,6 +22,24 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 function escH(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function renderEmptyState(opts){
+  var o=opts||{};
+  var title=o.title||'';
+  var description=o.description||'';
+  var icon=o.icon||'📭';
+  return '<div class="empty-state" style="padding:48px 24px;text-align:center">'
+    +'<div style="font-size:36px;margin-bottom:12px;opacity:.55">'+icon+'</div>'
+    +'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">'+escH(title)+'</div>'
+    +(description?'<div style="font-size:12px;color:var(--text-light);line-height:1.6">'+escH(description)+'</div>':'')
+    +'</div>';
+}
+function formatMemberName(m){
+  if(!m)return '';
+  if(m.name)return m.name;
+  var last=m.last_name||'';
+  var first=m.first_name||'';
+  return (last+(last&&first?' ':'')+first).trim();
+}
 
 // ─── 素材画像インポート ──────────────────────────────
 var _snsImgFiles = [];
@@ -11749,7 +11767,11 @@ function ordRenderTable() {
   var rows = ordState.rows || [];
   if (countEl) countEl.textContent = rows.length + '件の注文';
   if (!rows.length) {
-    bodyEl.innerHTML = '<div class="empty-state" style="padding:24px">該当する注文はありません</div>';
+    bodyEl.innerHTML = renderEmptyState({
+      icon:'📋',
+      title:'まだ注文のデータはありません',
+      description:'お客様の注文が入ると、ここに表示されます'
+    });
     return;
   }
   var venueMap = {}; (ordState.brandVenues || []).forEach(function(v){ venueMap[v.id] = v; });
@@ -11833,13 +11855,20 @@ async function ordOpenDetail(orderId) {
   body.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:24px">読み込み中...</div>';
   try {
     var oRes = await sb.from('orders').select(
-      'id,display_id,venue_id,order_type,tracking_status,payment_status,total_amount,delivery_fee,service_fee,surcharge_amount,created_at,customer_name,customer_phone,customer_email,member_id,notes'
+      'id,display_id,venue_id,order_type,tracking_status,payment_status,total_amount,delivery_fee,service_fee,surcharge_amount,created_at,member_id,notes'
     ).eq('id', orderId).maybeSingle();
     if (oRes.error) throw oRes.error;
     var o = oRes.data;
     if (!o) {
       body.innerHTML = '<div style="padding:24px;color:var(--danger)">注文が見つかりません</div>';
       return;
+    }
+    var memberData = null;
+    if (o.member_id) {
+      try {
+        var mRes = await sb.from('members').select('name, first_name, last_name, phone').eq('id', o.member_id).maybeSingle();
+        if (!mRes.error) memberData = mRes.data;
+      } catch(_){}
     }
     var iRes = await sb.from('order_items').select('id,product_name,quantity,unit_price,subtotal').eq('order_id', orderId);
     if (iRes.error) throw iRes.error;
@@ -11857,8 +11886,9 @@ async function ordOpenDetail(orderId) {
     var isMember = !!o.member_id;
     var customerBlock;
     if (isMember) {
-      var cName = o.customer_name ? escH(o.customer_name) : '—';
-      var cPhone = o.customer_phone ? escH(o.customer_phone) : '—';
+      var mName = formatMemberName(memberData);
+      var cName = escH(mName || '—');
+      var cPhone = escH((memberData && memberData.phone) || '—');
       customerBlock = '<div style="margin-top:12px;padding:12px 14px;background:#f5f6fa;border-radius:6px">' +
         '<div style="font-weight:700;font-size:12px;margin-bottom:6px">👤 顧客情報（会員）</div>' +
         '<div style="font-size:12px;line-height:1.8">名前: ' + cName + '<br>電話: ' + cPhone + '</div>' +
@@ -19016,7 +19046,7 @@ async function generateOrdersCsv() {
     var startDate = dateInputs[0] ? dateInputs[0].value : '';
     var endDate = dateInputs[1] ? dateInputs[1].value : '';
 
-    var query = sb.from('orders').select('display_id, order_type, total_amount, payment_status, created_at, customer_name');
+    var query = sb.from('orders').select('display_id, order_type, total_amount, payment_status, created_at');
     if (BRAND_ID) query = query.eq('brand_id', BRAND_ID);
     if (startDate) query = query.gte('created_at', startDate + 'T00:00:00');
     if (endDate) query = query.lte('created_at', endDate + 'T23:59:59');

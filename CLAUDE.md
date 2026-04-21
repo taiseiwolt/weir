@@ -167,7 +167,7 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 
 ### Agents
 - `.claude/agents/` にエージェント定義: business/corporate/engineering/legal/operations/project-execution の6ファイル + security/配下7ファイル
-- `~/.claude/skills/aiden/` の6スキル（aiden-challenge/product/qa/spec/supabase/task）も引き続き使用可能
+- `~/.claude/skills/weir/` の6スキル（weir-challenge/product/qa/spec/supabase/task）も引き続き使用可能
 - エージェント横断の品質チェック（.claude/rules/legal.md 参照）で、未定義ドメインの観点も考慮する
 
 ---
@@ -210,6 +210,15 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 ### サービス設定
 - `service_subscriptions`が空配列の場合は制限なし（全注文モードで注文可能）。`venues.takeout_enabled`/`delivery_enabled`でfallback判定が必要
 - 来店予約ON/OFFは`service_subscriptions`（key=`'reservation'`）で管理し`venues.reservation_enabled`と連動させる
+
+### orders PII カラム（anon REVOKE 済み）
+- **`orders.customer_name` / `customer_email` / `customer_phone` は anon から SELECT 不可**。`sec11_revoke_pii_columns.sql` が anon の列レベル GRANT を剥がしているため、PostgREST は「column does not exist」エラーを返す（2026-04-21 CC-21 実績）
+- 顧客名は会員: `members` テーブルを `orders.member_id` で JOIN / 別クエリ取得。ゲスト: 表示しない（`'ゲスト'`）
+- ゲスト PII 露出を避けるため、管理画面では customer_* を参照しないこと。必要なら EF（service_role）経由で取得する
+
+### 空データ時の文言統一
+- データ未存在時は `renderEmptyState({icon, title, description})` ヘルパーを使う（`weir-admin.html` / `weir-customer-admin.html` に定義済み）
+- テンプレート: シンプル版「まだ {対象} のデータはありません」「{対象を追加/連携}すると、ここに表示されます」、連携待ち版「Stripe Billing 連携の設定後、自動的に表示されます」
 
 ---
 
