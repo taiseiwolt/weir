@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>オンボーディング | Weir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#1a1a2e;--primary-light:#16213e;
+  --accent:#6c5ce7;--accent-hover:#5a4bd1;--accent-light:#a29bfe;--accent-bg:rgba(108,92,231,.08);
+  --bg:#faf9ff;--card:#fff;--text:#2d3436;--text-light:#636e72;
+  --border:#e0e0e0;--border-light:#f0f0f0;
+  --success:#00b894;--warning:#fdcb6e;--danger:#d63031;--info:#0984e3;
+  --header-h:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* ===== LOGIN OVERLAY ===== */
+.login-overlay{position:fixed;inset:0;background:rgba(26,26,46,.96);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px}
+.login-card{background:#fff;border-radius:14px;padding:36px 32px;width:400px;max-width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.login-card h1{margin:0 0 6px;font-size:22px;text-align:center;font-weight:700}
+.login-card .login-sub{margin:0 0 22px;color:var(--text-light);text-align:center;font-size:12px}
+.login-card .form-group{margin-bottom:14px}
+.login-card label{display:block;font-size:12px;margin-bottom:6px;color:var(--text);font-weight:600}
+.login-card input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box}
+.login-card input:focus{outline:none;border-color:var(--accent)}
+.login-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit}
+.login-btn:hover:not(:disabled){background:var(--accent-hover)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-error{color:var(--danger);font-size:12px;margin-bottom:12px;padding:8px 10px;background:rgba(214,48,49,.08);border-radius:6px;display:none}
+
+/* ===== HEADER ===== */
+.onb-header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:#fff;border-bottom:1px solid var(--border-light);display:flex;align-items:center;padding:0 28px;z-index:100;gap:24px}
+.onb-header-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.onb-header-logo img{width:22px;height:22px;object-fit:contain;display:block}
+.onb-header-logo .txt{font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px}
+.onb-header-progress{flex:1;display:flex;align-items:center;gap:8px;max-width:560px;margin:0 auto}
+.onb-step-dot{flex:1;height:4px;border-radius:2px;background:var(--border);transition:background .3s}
+.onb-step-dot.active{background:var(--accent)}
+.onb-step-dot.done{background:var(--accent-light)}
+.onb-step-label{font-size:11px;color:var(--text-light);font-weight:600;flex-shrink:0;min-width:52px;text-align:right}
+.onb-header-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.onb-resume-hint{font-size:11px;color:var(--text-light)}
+.btn-header-exit{background:none;border:1px solid var(--border);color:var(--text-light);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-header-exit:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ===== LAYOUT ===== */
+.onb-main{padding:calc(var(--header-h) + 32px) 20px 60px;max-width:960px;margin:0 auto}
+.onb-step{display:none;animation:fadeIn .5s ease}
+.onb-step.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.onb-title{font-size:26px;font-weight:800;margin-bottom:6px;line-height:1.3}
+.onb-subtitle{font-size:14px;color:var(--text-light);margin-bottom:28px;line-height:1.7;white-space:pre-line}
+.onb-greeting{background:linear-gradient(135deg,rgba(108,92,231,.08),rgba(162,155,254,.05));border-left:3px solid var(--accent);border-radius:10px;padding:18px 22px;margin-bottom:28px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-line}
+
+/* ===== CARDS / FORMS ===== */
+.onb-card{background:var(--card);border-radius:14px;padding:28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid var(--border-light)}
+.onb-card-title{font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.onb-card-help{font-size:12px;color:var(--text-light);margin-bottom:18px;line-height:1.7}
+
+.onb-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.onb-form-row.single{grid-template-columns:1fr}
+.onb-form-row.triple{grid-template-columns:1fr 1fr 1fr}
+.onb-field{display:flex;flex-direction:column;gap:6px}
+.onb-field-full{grid-column:1/-1}
+.onb-field label{font-size:12px;font-weight:600;color:var(--text)}
+.onb-field label .req{color:var(--danger);margin-left:4px}
+.onb-field label .optional{color:var(--text-light);font-weight:400;margin-left:6px;font-size:11px}
+.onb-field .hint{font-size:11px;color:var(--text-light);margin-top:-2px;line-height:1.5}
+.onb-field input[type="text"],
+.onb-field input[type="number"],
+.onb-field input[type="email"],
+.onb-field select,
+.onb-field textarea{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;transition:border-color .15s;background:#fff;color:var(--text)}
+.onb-field input:focus,.onb-field select:focus,.onb-field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,.1)}
+.onb-field textarea{resize:vertical;min-height:80px;line-height:1.6}
+.onb-field .counter{font-size:10px;color:var(--text-light);text-align:right;margin-top:-2px}
+.onb-field .counter.over{color:var(--danger)}
+
+/* Image tags (multi-select chips) */
+.onb-chip-group{display:flex;flex-wrap:wrap;gap:8px}
+.onb-chip{padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-light);cursor:pointer;transition:all .15s;user-select:none;background:#fff}
+.onb-chip:hover{border-color:var(--accent-light);color:var(--accent)}
+.onb-chip.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Color picker row */
+.onb-color-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.onb-color-item{display:flex;align-items:center;gap:8px}
+.onb-color-item label{font-size:11px;color:var(--text-light);font-weight:600;min-width:64px}
+.onb-color-swatch{width:40px;height:40px;border-radius:8px;border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden}
+.onb-color-swatch input[type="color"]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:0;padding:0;cursor:pointer;opacity:0}
+.onb-color-hex{font-size:11px;font-family:monospace;color:var(--text-light);min-width:70px}
+.onb-color-presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.onb-color-preset{display:flex;gap:3px;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;transition:all .15s}
+.onb-color-preset:hover{border-color:var(--accent);background:var(--accent-bg)}
+.onb-color-preset .preset-label{font-size:11px;color:var(--text-light);margin-right:4px;font-weight:600}
+.onb-color-preset .preset-dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.08)}
+
+/* Photo upload */
+.onb-upload-block{margin-bottom:18px}
+.onb-upload-title{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.onb-upload-title .tag{background:#fafafe;color:var(--text-light);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:6px}
+.onb-upload-title .tag.req{background:rgba(214,48,49,.1);color:var(--danger)}
+.onb-upload-title .tag.rec{background:rgba(9,132,227,.1);color:var(--info)}
+.onb-upload-hint{font-size:11px;color:var(--text-light);margin-bottom:10px}
+.onb-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafe;position:relative}
+.onb-upload-zone:hover,.onb-upload-zone.drag{border-color:var(--accent);background:var(--accent-bg)}
+.onb-upload-zone .icon{font-size:32px;margin-bottom:4px;opacity:.5}
+.onb-upload-zone p{font-size:12px;color:var(--text-light);margin-top:2px}
+.onb-upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.onb-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px}
+.onb-photo-thumb{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#f5f5f5;border:1px solid var(--border-light)}
+.onb-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.onb-photo-thumb .rm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.onb-photo-thumb .rm:hover{background:var(--danger)}
+.onb-photo-thumb .label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.7),transparent);color:#fff;font-size:10px;font-weight:600;padding:8px 6px 4px;text-align:center}
+
+/* ===== BUTTONS ===== */
+.onb-btn{padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:0;font-family:inherit;display:inline-flex;align-items:center;gap:8px;transition:all .15s;white-space:nowrap}
+.onb-btn-primary{background:var(--accent);color:#fff}
+.onb-btn-primary:hover:not(:disabled){background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 12px rgba(108,92,231,.25)}
+.onb-btn-primary:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+.onb-btn-ghost{background:transparent;color:var(--text-light);border:1px solid var(--border)}
+.onb-btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.onb-btn-large{padding:14px 36px;font-size:15px}
+.onb-btn-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:28px}
+.onb-btn-row.center{justify-content:center}
+.onb-btn-row.right{justify-content:flex-end}
+
+/* ===== STEP 2 ===== */
+.onb-step2-stage{text-align:center;padding:48px 20px 32px;position:relative}
+.onb-ai-orb{width:140px;height:140px;margin:0 auto 30px;position:relative;display:flex;align-items:center;justify-content:center}
+.onb-ai-orb .core{position:absolute;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--accent-light),var(--accent) 50%,var(--primary));box-shadow:0 0 48px rgba(108,92,231,.4);animation:orbPulse 2.8s ease-in-out infinite}
+.onb-ai-orb .ring{position:absolute;width:180%;height:180%;border-radius:50%;border:2px solid rgba(108,92,231,.2);animation:ringSpin 6s linear infinite}
+.onb-ai-orb .ring.r2{width:220%;height:220%;border-color:rgba(108,92,231,.1);animation-duration:9s;animation-direction:reverse}
+.onb-ai-orb .icon{position:relative;font-size:48px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));z-index:2}
+@keyframes orbPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.9}}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+
+.onb-typing{font-size:20px;font-weight:700;margin-bottom:10px;min-height:28px;color:var(--text)}
+.onb-typing .cursor{display:inline-block;width:2px;height:18px;background:var(--accent);vertical-align:middle;margin-left:3px;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.onb-waiting-msg{font-size:13px;color:var(--text-light);margin-bottom:36px;min-height:38px;line-height:1.7;transition:opacity .4s;white-space:pre-line}
+
+.onb-progress-wrap{max-width:560px;margin:0 auto 28px}
+.onb-progress-bar{width:100%;height:10px;background:#efeeff;border-radius:5px;overflow:hidden;margin-bottom:10px}
+.onb-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-light),var(--accent));border-radius:5px;transition:width .6s ease}
+.onb-progress-text{display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);font-weight:600}
+.onb-progress-labels{font-size:12px;color:var(--text-light);text-align:center;font-weight:600}
+
+.onb-ai-candidates{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px auto 0;max-width:560px}
+.onb-ai-card{background:#fff;border:1px solid var(--border-light);border-radius:12px;padding:14px 10px;text-align:center;transition:all .3s;opacity:.5}
+.onb-ai-card.working{opacity:1;border-color:var(--accent-light);background:var(--accent-bg)}
+.onb-ai-card.done{opacity:1;border-color:var(--success);background:rgba(0,184,148,.08)}
+.onb-ai-card .ic{font-size:22px;margin-bottom:4px}
+.onb-ai-card .nm{font-size:11px;font-weight:700;color:var(--text)}
+.onb-ai-card .st{font-size:10px;color:var(--text-light);margin-top:2px}
+.onb-ai-card.done .st{color:var(--success)}
+.onb-ai-card.working .st{color:var(--accent)}
+
+.onb-parallel{background:var(--accent-bg);border-radius:10px;padding:14px 18px;margin-top:24px;max-width:560px;margin-left:auto;margin-right:auto}
+.onb-parallel-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.onb-parallel-list{display:flex;flex-wrap:wrap;gap:6px}
+.onb-parallel-item{font-size:11px;padding:5px 10px;background:#fff;border-radius:14px;color:var(--text-light);border:1px solid rgba(108,92,231,.15)}
+
+/* ===== STEP 3 ===== */
+.onb-gallery-header{text-align:center;margin-bottom:28px}
+.onb-gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.onb-preview-tile{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;cursor:pointer;border:3px solid transparent;transition:all .2s;background:#f5f5f5}
+.onb-preview-tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.onb-preview-tile:hover img{transform:scale(1.05)}
+.onb-preview-tile:hover{border-color:var(--accent-light);box-shadow:0 6px 20px rgba(108,92,231,.18)}
+.onb-preview-tile.selected{border-color:var(--accent);box-shadow:0 6px 24px rgba(108,92,231,.35)}
+.onb-preview-tile.selected::after{content:'✓';position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.onb-preview-tile .tone-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.72),transparent);color:#fff;font-size:11px;font-weight:700;padding:14px 8px 8px;text-align:center;letter-spacing:.5px}
+
+.onb-gallery-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.onb-gallery-fallback{font-size:12px;color:var(--text-light)}
+.onb-gallery-fallback a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
+.onb-gallery-fallback a:hover{text-decoration:underline}
+
+/* Preview modal */
+.onb-modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,.8);z-index:9000;align-items:center;justify-content:center;padding:28px;backdrop-filter:blur(4px)}
+.onb-modal-overlay.show{display:flex}
+.onb-modal{background:#fff;border-radius:14px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;padding:0;position:relative}
+.onb-modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.08);color:var(--text);border:0;cursor:pointer;font-size:14px;z-index:2;display:flex;align-items:center;justify-content:center}
+.onb-modal-close:hover{background:rgba(0,0,0,.15)}
+.onb-modal-img-wrap{background:#f5f5f5;padding:0}
+.onb-modal-img-wrap img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.onb-modal-body{padding:24px 28px}
+.onb-modal-tone{font-size:18px;font-weight:700;margin-bottom:6px}
+.onb-modal-desc{font-size:13px;color:var(--text-light);margin-bottom:20px;line-height:1.7}
+.onb-modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ===== STEP 4 ===== */
+.onb-confirm-hero{text-align:center;padding:40px 20px 28px}
+.onb-confirm-hero .selected-preview{width:160px;height:160px;border-radius:20px;overflow:hidden;margin:0 auto 20px;border:3px solid var(--accent);box-shadow:0 8px 28px rgba(108,92,231,.3)}
+.onb-confirm-hero .selected-preview img{width:100%;height:100%;object-fit:cover}
+.onb-reveal-line{font-size:22px;font-weight:700;margin:4px 0;opacity:0;transform:translateY(8px);transition:all .6s ease;line-height:1.5}
+.onb-reveal-line.visible{opacity:1;transform:translateY(0)}
+.onb-reveal-line.small{font-size:15px;color:var(--text-light);font-weight:600}
+
+.onb-package-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:36px 0 28px;max-width:920px}
+.onb-package-card{background:#fff;border-radius:14px;border:1px solid var(--border-light);overflow:hidden;opacity:0;transform:translateY(20px) scale(.95);transition:all .8s cubic-bezier(.2,1,.3,1);box-shadow:0 4px 16px rgba(0,0,0,.04);display:flex;flex-direction:column}
+.onb-package-card.revealed{opacity:1;transform:translateY(0) scale(1)}
+.onb-package-card .pc-narrative{font-size:13px;font-weight:700;padding:12px 16px;color:var(--accent);background:var(--accent-bg);border-bottom:1px solid rgba(108,92,231,.12);min-height:40px}
+.onb-package-card .pc-media{background:#f5f5f5;position:relative;aspect-ratio:16/10;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.onb-package-card .pc-media img{width:100%;height:100%;object-fit:cover}
+.onb-package-card .pc-type-badge{position:absolute;top:10px;left:10px;background:rgba(26,26,46,.85);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:10px;letter-spacing:.5px}
+.onb-package-card .pc-body{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:6px}
+.onb-package-card .pc-title{font-size:13px;font-weight:700}
+.onb-package-card .pc-content{font-size:12px;color:var(--text-light);line-height:1.7;white-space:pre-line}
+
+.onb-complete-note{text-align:center;padding:28px 20px;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-line;opacity:0;transition:opacity .8s ease;font-weight:600}
+.onb-complete-note.visible{opacity:1}
+
+.onb-complete-actions{display:flex;justify-content:center;gap:12px;margin-top:14px;opacity:0;transition:opacity .8s ease .3s}
+.onb-complete-actions.visible{opacity:1}
+
+/* ===== SAMPLE MODAL (good/bad examples) ===== */
+.sample-link{display:inline-block;font-size:11px;color:var(--accent);cursor:pointer;font-weight:600;margin-left:6px;text-decoration:none}
+.sample-link:hover{text-decoration:underline}
+
+/* ===== TOAST ===== */
+.onb-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(24px);background:var(--primary);color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .3s;pointer-events:none}
+.onb-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .onb-main{padding:calc(var(--header-h) + 20px) 14px 40px}
+  .onb-title{font-size:22px}
+  .onb-form-row{grid-template-columns:1fr}
+  .onb-form-row.triple{grid-template-columns:1fr 1fr}
+  .onb-gallery-grid{grid-template-columns:repeat(3,1fr)}
+  .onb-ai-candidates{grid-template-columns:repeat(2,1fr)}
+  .onb-header-progress{display:none}
+  .onb-card{padding:20px}
+  .onb-step2-stage{padding:28px 12px 20px}
+  .onb-ai-orb{width:110px;height:110px;margin-bottom:22px}
+  .onb-ai-orb .icon{font-size:36px}
+  .onb-typing{font-size:17px}
+}
+@media(max-width:560px){
+  .onb-gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .onb-btn-row{flex-direction:column-reverse}
+  .onb-btn-row>*{width:100%;justify-content:center}
+  .onb-title{font-size:20px}
+  .onb-form-row.triple{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h1>Weir オンボーディング</h1>
+    <p class="login-sub">加盟店オーナー様専用</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="loginEmail" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">ログイン</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="onb-header" id="onbHeader" style="display:none">
+  <div class="onb-header-logo">
+    <img src="/weir-logo.png" alt="Weir">
+    <span class="txt">Weir</span>
+  </div>
+  <div class="onb-header-progress">
+    <div class="onb-step-dot" data-dot="1"></div>
+    <div class="onb-step-dot" data-dot="2"></div>
+    <div class="onb-step-dot" data-dot="3"></div>
+    <div class="onb-step-dot" data-dot="4"></div>
+    <div class="onb-step-label" id="stepLabel">1 / 4</div>
+  </div>
+  <div class="onb-header-right">
+    <span class="onb-resume-hint" id="resumeHint"></span>
+    <button class="btn-header-exit" onclick="exitOnboarding()">一時保存して退出</button>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="onb-main" id="onbMain" style="display:none">
+
+<!-- ===== STEP 1: 情報入力 + 写真アップロード ===== -->
+<section class="onb-step" id="step1">
+  <div class="onb-greeting">Weir へようこそ、<span id="greetingBrand">あなた</span> さん。
+
+これからあなたのお店のことを教えてください。
+後ほど、<span id="greetingBrand2">あなた</span> のための AI パートナーを探します。</div>
+
+  <!-- 基本情報 -->
+  <div class="onb-card">
+    <div class="onb-card-title">🏷️ 基本情報</div>
+    <div class="onb-card-help">お店の基本的なプロフィールを教えてください。AI パートナーがお店のことを理解する土台になります。</div>
+
+    <div class="onb-form-row">
+      <div class="onb-field">
+        <label>ブランド名<span class="req">*</span></label>
+        <input type="text" id="fBrandName" placeholder="例: あなたのお店の名前" maxlength="80" oninput="onFieldChange()">
+      </div>
+      <div class="onb-field">
+        <label>業態カテゴリ<span class="req">*</span></label>
+        <select id="fCategory" onchange="onCategoryChange()">
+          <option value="">選択してください</option>
+          <option value="izakaya">居酒屋</option>
+          <option value="cafe">カフェ</option>
+          <option value="italian">イタリアン</option>
+          <option value="japanese">和食</option>
+          <option value="yakiniku">焼肉</option>
+          <option value="chinese">中華</option>
+          <option value="ramen">ラーメン</option>
+          <option value="sushi">寿司</option>
+          <option value="french">フレンチ</option>
+          <option value="bar">バー</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="onb-form-row single">
+      <div class="onb-field">
+        <label>ブランドコンセプト<span class="req">*</span></label>
+        <div class="hint">お店が大切にしている想いを、200 字程度でお聞かせください。</div>
+        <textarea id="fConcept" placeholder="お店が大切にしている想いや、お客様にお届けしたい体験をお聞かせください。" maxlength="240" oninput="onFieldChange();updateCounter('fConcept','cConcept',240)"></textarea>
+        <div class="counter" id="cConcept">0 / 240</div>
+      </div>
+    </div>
+
+    <div class="onb-form-row">
+      <div class="onb-field">
+        <label>ターゲット客層<span class="req">*</span></label>
+        <div class="hint">普段どんなお客様にいらしていただいていますか?</div>
+        <input type="text" id="fTarget" placeholder="お客様の年代・シーンなどをご記入ください" maxlength="100" oninput="onFieldChange()">
+      </div>
+      <div class="onb-field">
+        <label>キャッチフレーズ<span class="optional">任意</span></label>
+        <div class="hint">お店の個性を一言で。</div>
+        <input type="text" id="fCatchphrase" placeholder="お店の個性を一言で表すフレーズ" maxlength="100" oninput="onFieldChange()">
+      </div>
+    </div>
+
+    <div class="onb-form-row single">
+      <div class="onb-field">
+        <label>希望するブランドイメージ<span class="req">*</span></label>
+        <div class="hint">お客様に最初に感じてほしい印象を選んでください（複数選択可）。</div>
+        <div class="onb-chip-group" id="imageChips">
+          <div class="onb-chip" data-val="stylish" onclick="toggleImageChip(this)">スタイリッシュ</div>
+          <div class="onb-chip" data-val="warmth" onclick="toggleImageChip(this)">温かみ</div>
+          <div class="onb-chip" data-val="premium" onclick="toggleImageChip(this)">高級感</div>
+          <div class="onb-chip" data-val="casual" onclick="toggleImageChip(this)">カジュアル</div>
+          <div class="onb-chip" data-val="traditional" onclick="toggleImageChip(this)">伝統的</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onb-form-row">
+      <div class="onb-field">
+        <label>創業年<span class="optional">任意</span></label>
+        <input type="number" id="fFoundingYear" placeholder="例: 2006" min="1900" max="2099" oninput="onFieldChange()">
+      </div>
+      <div class="onb-field">
+        <label>店主の想い<span class="optional">任意</span></label>
+        <div class="hint">お店を始めたきっかけや、大切にしていること。</div>
+        <textarea id="fOwnerStory" placeholder="任意項目です" maxlength="500" oninput="onFieldChange();updateCounter('fOwnerStory','cOwnerStory',500)"></textarea>
+        <div class="counter" id="cOwnerStory">0 / 500</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カラーテーマ -->
+  <div class="onb-card">
+    <div class="onb-card-title">🎨 カラーテーマ <span style="font-size:11px;color:var(--text-light);font-weight:400;margin-left:6px">任意</span></div>
+    <div class="onb-card-help">お店の雰囲気を色で表すなら、どんな色ですか? 業態別のおすすめもご用意しています。</div>
+
+    <div class="onb-color-row">
+      <div class="onb-color-item">
+        <label>メイン</label>
+        <div class="onb-color-swatch" style="background:#6c5ce7">
+          <input type="color" id="fColorMain" value="#6c5ce7" oninput="onColorChange()">
+        </div>
+        <span class="onb-color-hex" id="hexMain">#6c5ce7</span>
+      </div>
+      <div class="onb-color-item">
+        <label>アクセント</label>
+        <div class="onb-color-swatch" style="background:#fdcb6e">
+          <input type="color" id="fColorAccent" value="#fdcb6e" oninput="onColorChange()">
+        </div>
+        <span class="onb-color-hex" id="hexAccent">#fdcb6e</span>
+      </div>
+      <div class="onb-color-item">
+        <label>サブ</label>
+        <div class="onb-color-swatch" style="background:#2d3436">
+          <input type="color" id="fColorSub" value="#2d3436" oninput="onColorChange()">
+        </div>
+        <span class="onb-color-hex" id="hexSub">#2d3436</span>
+      </div>
+    </div>
+
+    <div class="onb-color-presets" id="colorPresets">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- 写真アップロード -->
+  <div class="onb-card">
+    <div class="onb-card-title">📷 お店の写真</div>
+    <div class="onb-card-help">お店の雰囲気が伝わる写真をご用意ください。この写真を基に AI パートナーが 16 枚のプレビューを作ります。</div>
+
+    <!-- 店舗外観 -->
+    <div class="onb-upload-block">
+      <div class="onb-upload-title">
+        店舗外観 <span class="tag req">必須</span>
+        <a class="sample-link" onclick="openSampleModal('exterior')">サンプルを見る</a>
+      </div>
+      <div class="onb-upload-hint">看板が写った正面の写真が理想です。1 枚必須。</div>
+      <div class="onb-upload-zone" id="uzExterior">
+        <div class="icon">🏪</div>
+        <p>ドラッグ&ドロップ または クリックで選択</p>
+        <p style="font-size:10px;color:var(--text-light)">JPG / PNG / WebP　最大 10MB</p>
+        <input type="file" accept="image/jpeg,image/png,image/webp" onchange="handleFiles(event,'exterior',1)">
+      </div>
+      <div class="onb-photo-grid" id="photosExterior"></div>
+    </div>
+
+    <!-- 店舗内観 -->
+    <div class="onb-upload-block">
+      <div class="onb-upload-title">
+        店舗内観 <span class="tag rec">推奨 1-3 枚</span>
+        <a class="sample-link" onclick="openSampleModal('interior')">サンプルを見る</a>
+      </div>
+      <div class="onb-upload-hint">店内の雰囲気が伝わる写真。カウンター / テーブル / 照明など。</div>
+      <div class="onb-upload-zone" id="uzInterior">
+        <div class="icon">🪑</div>
+        <p>ドラッグ&ドロップ または クリックで選択</p>
+        <p style="font-size:10px;color:var(--text-light)">JPG / PNG / WebP　最大 10MB / 枚</p>
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="handleFiles(event,'interior',3)">
+      </div>
+      <div class="onb-photo-grid" id="photosInterior"></div>
+    </div>
+
+    <!-- メニュー写真 -->
+    <div class="onb-upload-block">
+      <div class="onb-upload-title">
+        看板メニュー <span class="tag rec">推奨 3-5 枚</span>
+        <a class="sample-link" onclick="openSampleModal('menu')">サンプルを見る</a>
+      </div>
+      <div class="onb-upload-hint">看板メニューの料理写真。SNS 投稿や POP 画像の素材になります。</div>
+      <div class="onb-upload-zone" id="uzMenu">
+        <div class="icon">🍽️</div>
+        <p>ドラッグ&ドロップ または クリックで選択</p>
+        <p style="font-size:10px;color:var(--text-light)">JPG / PNG / WebP　最大 10MB / 枚</p>
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="handleFiles(event,'menu',5)">
+      </div>
+      <div class="onb-photo-grid" id="photosMenu"></div>
+    </div>
+
+    <!-- ロゴ -->
+    <div class="onb-upload-block">
+      <div class="onb-upload-title">
+        ロゴ画像 <span class="tag">任意</span>
+      </div>
+      <div class="onb-upload-hint">お持ちの場合はアップロードください。POP 画像に配置されます。</div>
+      <div class="onb-upload-zone" id="uzLogo">
+        <div class="icon">✨</div>
+        <p>ドラッグ&ドロップ または クリックで選択</p>
+        <p style="font-size:10px;color:var(--text-light)">PNG 透過推奨　最大 5MB</p>
+        <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" onchange="handleFiles(event,'logo',1)">
+      </div>
+      <div class="onb-photo-grid" id="photosLogo"></div>
+    </div>
+  </div>
+
+  <div class="onb-btn-row right">
+    <button class="onb-btn onb-btn-primary onb-btn-large" id="step1NextBtn" onclick="goToStep(2)" disabled>次へ進む →</button>
+  </div>
+</section>
+
+<!-- ===== STEP 2: AI 生成演出 ===== -->
+<section class="onb-step" id="step2">
+  <div class="onb-step2-stage">
+    <div class="onb-ai-orb">
+      <div class="ring"></div>
+      <div class="ring r2"></div>
+      <div class="core"></div>
+      <div class="icon">🤖</div>
+    </div>
+
+    <div class="onb-typing" id="step2Typing"></div>
+    <div class="onb-waiting-msg" id="step2WaitingMsg"></div>
+
+    <div class="onb-progress-wrap">
+      <div class="onb-progress-bar">
+        <div class="onb-progress-fill" id="step2Progress" style="width:0%"></div>
+      </div>
+      <div class="onb-progress-text">
+        <span id="step2ProgressPct">0%</span>
+        <span id="step2ProgressLabel">準備中...</span>
+      </div>
+    </div>
+
+    <div class="onb-ai-candidates" id="aiCandidates">
+      <div class="onb-ai-card" data-ai="0"><div class="ic">🎨</div><div class="nm">AI パートナー 1</div><div class="st">待機中</div></div>
+      <div class="onb-ai-card" data-ai="1"><div class="ic">🎨</div><div class="nm">AI パートナー 2</div><div class="st">待機中</div></div>
+      <div class="onb-ai-card" data-ai="2"><div class="ic">🎨</div><div class="nm">AI パートナー 3</div><div class="st">待機中</div></div>
+      <div class="onb-ai-card" data-ai="3"><div class="ic">🎨</div><div class="nm">AI パートナー 4</div><div class="st">待機中</div></div>
+    </div>
+
+    <div class="onb-parallel">
+      <div class="onb-parallel-title">⏱ お待ちの間、他の設定も進められます</div>
+      <div class="onb-parallel-list">
+        <div class="onb-parallel-item">営業時間を設定する</div>
+        <div class="onb-parallel-item">決済を設定する（Stripe 連携）</div>
+        <div class="onb-parallel-item">メニューの詳細を追加する</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STEP 3: 16 枚ギャラリー ===== -->
+<section class="onb-step" id="step3">
+  <div class="onb-gallery-header">
+    <h1 class="onb-title">どのテイストが <span id="step3BrandName">あなたのお店</span> さんに似合いますか?</h1>
+    <p class="onb-subtitle">4 人の AI パートナーが、それぞれ 4 パターン用意しました。
+計 16 枚の中から、直感で 1 枚お選びください。</p>
+  </div>
+
+  <div class="onb-gallery-grid" id="galleryGrid">
+    <!-- 16 tiles rendered by JS -->
+  </div>
+
+  <div class="onb-gallery-actions">
+    <div class="onb-gallery-fallback">
+      全部魅力的で迷ってしまう場合は <a onclick="aiRecommend()">AI に選んでもらう</a>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="onb-btn onb-btn-ghost" onclick="goToStep(2)">← 戻る</button>
+      <button class="onb-btn onb-btn-primary" id="step3NextBtn" onclick="confirmSelection()" disabled>このテイストで確定する</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STEP 4: X-4 確定演出 ===== -->
+<section class="onb-step" id="step4">
+  <div class="onb-confirm-hero">
+    <div class="selected-preview" id="step4SelectedImg">
+      <img src="" alt="">
+    </div>
+    <div class="onb-reveal-line" id="reveal1" data-text="{brand} のための AI パートナーが決まりました。"></div>
+    <div class="onb-reveal-line small" id="reveal2" data-text="初めての仕事を済ませました。"></div>
+    <div class="onb-reveal-line small" id="reveal3" data-text="これからもあなたのお店のために働き続けます。"></div>
+  </div>
+
+  <div class="onb-package-grid" id="packageGrid">
+    <!-- 5 cards rendered by JS -->
+  </div>
+
+  <div class="onb-complete-note" id="completeNote">これが、Weir がお届けする価値です。
+
+これからずっと、<span id="completeBrand">あなたのお店</span> のために働きます。</div>
+
+  <div class="onb-complete-actions" id="completeActions">
+    <button class="onb-btn onb-btn-ghost" onclick="showPlaceholderToast('後で選ぶ: CC-22d でプラン選択画面を実装予定')">後で選ぶ</button>
+    <button class="onb-btn onb-btn-primary onb-btn-large" onclick="showPlaceholderToast('プラン選択画面へ: CC-22d で実装予定')">続いてプランを選ぶ →</button>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== PREVIEW DETAIL MODAL ===== -->
+<div class="onb-modal-overlay" id="previewModal" onclick="if(event.target===this)closePreviewModal()">
+  <div class="onb-modal">
+    <button class="onb-modal-close" onclick="closePreviewModal()">✕</button>
+    <div class="onb-modal-img-wrap">
+      <img id="pmImg" src="" alt="">
+    </div>
+    <div class="onb-modal-body">
+      <div class="onb-modal-tone" id="pmTone">—</div>
+      <div class="onb-modal-desc" id="pmDesc">—</div>
+      <div class="onb-modal-actions">
+        <button class="onb-btn onb-btn-ghost" onclick="closePreviewModal()">戻る</button>
+        <button class="onb-btn onb-btn-primary" onclick="selectFromModal()">このテイストを選ぶ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SAMPLE MODAL (good/bad examples) ===== -->
+<div class="onb-modal-overlay" id="sampleModal" onclick="if(event.target===this)closeSampleModal()">
+  <div class="onb-modal" style="max-width:720px">
+    <button class="onb-modal-close" onclick="closeSampleModal()">✕</button>
+    <div class="onb-modal-body">
+      <div class="onb-modal-tone" id="smTitle">サンプル</div>
+      <div id="smContent" style="font-size:12px;line-height:1.8;color:var(--text)"></div>
+      <div class="onb-modal-actions" style="margin-top:20px">
+        <button class="onb-btn onb-btn-primary" onclick="closeSampleModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="onb-toast" id="onbToast"></div>
+
+<script>
+/* ==========================================================================
+ * Weir Onboarding Flow (CC-22a) - v1.0
+ * 4-step UI skeleton with mock data. Backend integration in CC-22b.
+ *
+ * Data source abstraction: all mock data is in MOCK_DATA_SOURCE below.
+ * CC-22b will replace functions in MOCK_DATA_SOURCE with real API calls.
+ * ========================================================================== */
+
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://iikwusprydaogzeslgdz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oiOC8uI-wOTexg-02toAOQ_3MXBt8lC';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const LS_KEY = 'weir_onboarding_state_v1';
+
+// ===== STATE =====
+let state = {
+  currentStep: 1,
+  form: {
+    brandName: '',
+    category: '',
+    concept: '',
+    target: '',
+    catchphrase: '',
+    foundingYear: '',
+    ownerStory: '',
+    imageKeywords: [], // multi-select: stylish, warmth, premium, casual, traditional
+    colorMain: '#6c5ce7',
+    colorAccent: '#fdcb6e',
+    colorSub: '#2d3436'
+  },
+  photos: {
+    exterior: [], // [{name, dataUrl, size, width, height}]
+    interior: [],
+    menu: [],
+    logo: []
+  },
+  previews: [], // 16 items built by mock source
+  selectedPreviewId: null,
+  session: {
+    id: null,
+    startedAt: Date.now(),
+    lastSavedAt: null
+  }
+};
+
+// ===== MOCK DATA SOURCE (replaced in CC-22b) =====
+const MOCK_DATA_SOURCE = {
+  // Generate 16 preview items: 4 tones x 4 variations, each with internal model_name
+  getPreviews: function() {
+    const tones = [
+      { key: 'warmth',  label: '温かみ',         desc: '柔らかな光と温もりのあるトーンで、お店の人情味を表現します。' },
+      { key: 'modern',  label: 'モダン',         desc: 'スマートで洗練された構図。都会的でシャープな印象を演出します。' },
+      { key: 'premium', label: '高級感',         desc: '落ち着いた色調と上質な質感で、特別な時間を想起させます。' },
+      { key: 'casual',  label: 'カジュアル',     desc: '親しみやすく明るいトーンで、日常使いの心地よさを伝えます。' }
+    ];
+    const models = ['Claude', 'GPT', 'Gemini', 'Grok']; // internal only, never shown in UI
+    const out = [];
+    tones.forEach((tone, ti) => {
+      models.forEach((model, mi) => {
+        const seed = `weir-${tone.key}-${mi + 1}`;
+        out.push({
+          id: seed,
+          seed: seed,
+          imgUrl: `https://picsum.photos/seed/${seed}/600/600`,
+          tone: tone.key,
+          toneLabel: tone.label,
+          toneDesc: tone.desc,
+          patternIndex: mi + 1,
+          modelName: model // internal only
+        });
+      });
+    });
+    return out;
+  },
+
+  getConfirmationPackage: function(selectedPreview, brandName) {
+    const brand = brandName || 'お店';
+    return [
+      {
+        id: 'pop',
+        type: 'POP 画像',
+        narrative: 'まず、お店の看板になる POP を。',
+        title: `${brand} 店頭 POP`,
+        imgUrl: 'https://picsum.photos/seed/weir-final-pop/800/500',
+        contentText: 'A4 サイズの店頭用 POP。お店のロゴとキャッチフレーズ、看板メニューの写真を組み合わせた一枚。'
+      },
+      {
+        id: 'sns',
+        type: 'SNS 投稿',
+        narrative: '次に、今日の投稿を。',
+        title: 'Instagram 投稿サンプル',
+        imgUrl: 'https://picsum.photos/seed/weir-final-sns/800/500',
+        contentText: '本日の看板メニュー、ご用意いたしました。\n\n一皿ずつ丁寧に仕上げた今日の一品を、ぜひお店でお楽しみください。\n\n#' + brand + ' #本日のおすすめ #お料理'
+      },
+      {
+        id: 'review',
+        type: 'レビュー返信',
+        narrative: 'そして、お客様への返信を。',
+        title: '★★★★★ への返信サンプル',
+        imgUrl: 'https://picsum.photos/seed/weir-final-review/800/500',
+        contentText: '[お客様] ★★★★★\n「最高のひとときでした。お料理も接客も素晴らしく、また伺います。」\n\n[お店]\n嬉しいお言葉、誠にありがとうございます。\nスタッフ一同、お客様の笑顔のために、また次回もお待ちしております。'
+      },
+      {
+        id: 'report',
+        type: '月次コメント',
+        narrative: '毎月のご挨拶も。',
+        title: '月次レポートのカバー',
+        imgUrl: 'https://picsum.photos/seed/weir-final-report/800/500',
+        contentText: '今月もお客様のおかげで、たくさんの笑顔に出会えました。\n\n常連のお客様、初めてのお客様、それぞれの一夜に寄り添えたことに感謝します。\n\n来月は季節の食材を使った限定コースもご用意しています。'
+      },
+      {
+        id: 'profile',
+        type: 'プロフィール',
+        narrative: '最後に、AI があなたのお店をどう理解したか。',
+        title: 'AI が理解した ' + brand,
+        imgUrl: 'https://picsum.photos/seed/weir-final-profile/800/500',
+        contentText: '■ お店の個性\nこだわりの一皿で、日常に少しの特別を添えるお店。\n\n■ ブランドボイス\n丁寧、温かい、寄り添う姿勢。\n\n■ お客様との距離感\n一言を惜しまず、親しみを込めて。'
+      }
+    ];
+  },
+
+  // Simulated progress for Step 2 mock (in ms for each AI's completion)
+  getSimulatedProgressPlan: function() {
+    return [
+      { aiIndex: 0, startMs: 600,  doneMs: 4200 },
+      { aiIndex: 1, startMs: 1100, doneMs: 5800 },
+      { aiIndex: 2, startMs: 1700, doneMs: 7500 },
+      { aiIndex: 3, startMs: 2300, doneMs: 9200 }
+    ];
+  }
+};
+
+// ===== COLOR PRESETS (by category) =====
+const COLOR_PRESETS = {
+  izakaya:  [{ name: '提灯オレンジ', colors: ['#c0392b', '#f39c12', '#2d1810'] }, { name: '墨黒 × 金', colors: ['#1a1a1a', '#d4af37', '#3c2e26'] }],
+  cafe:     [{ name: 'ラテベージュ', colors: ['#c9a780', '#f1e6d3', '#4a3b2a'] }, { name: 'ミントフレッシュ', colors: ['#7fc7af', '#ffffff', '#365850'] }],
+  italian:  [{ name: 'トスカーナ', colors: ['#b33c2a', '#e8c87a', '#1f3a2f'] }, { name: 'オリーブ', colors: ['#6b8e23', '#f5e6c9', '#2d2d2d'] }],
+  japanese: [{ name: '和モダン', colors: ['#8b2c1f', '#ecd6a9', '#2d1810'] }, { name: '墨と藍', colors: ['#1a1a1a', '#d4af37', '#1a3a5a'] }],
+  yakiniku: [{ name: '炭火', colors: ['#c0392b', '#f39c12', '#1a1a1a'] }, { name: '黒毛和牛', colors: ['#1a1a1a', '#8b0000', '#d4af37'] }],
+  chinese:  [{ name: '中華朱色', colors: ['#c8102e', '#ffd700', '#2d1810'] }],
+  ramen:    [{ name: '醤油ベース', colors: ['#8b4513', '#f1c40f', '#2d2d2d'] }, { name: '塩ラーメン', colors: ['#ecf0f1', '#3498db', '#2d3436'] }],
+  sushi:    [{ name: '江戸前', colors: ['#1a1a1a', '#c0392b', '#f1e6d3'] }, { name: '板場の青', colors: ['#1f4e79', '#ffffff', '#2d3436'] }],
+  french:   [{ name: 'ノワール', colors: ['#1a1a1a', '#d4af37', '#ffffff'] }, { name: 'シャンパン', colors: ['#f5e6c9', '#b8860b', '#3c2e26'] }],
+  bar:      [{ name: 'ウィスキー', colors: ['#8b4513', '#d4af37', '#1a1a1a'] }, { name: 'ネイビー', colors: ['#1a1a2e', '#6c5ce7', '#ecf0f1'] }],
+  other:    [{ name: 'Weir デフォルト', colors: ['#6c5ce7', '#fdcb6e', '#2d3436'] }]
+};
+
+// ===== WAITING MESSAGES (Step 2 rotation) =====
+const WAITING_MESSAGES = [
+  'AI がお店の雰囲気を読み取っています...',
+  '4 人の AI が競作しています...',
+  'まもなくあなたのお店の変身姿が現れます...',
+  '{brand} に似合うテイストを考えています...',
+  '4 つの個性、どれもあなたのお店の一面を切り取ります...',
+  '色、構図、雰囲気 — AI がそれぞれの解釈を表現しています...'
+];
+
+// ===== AUTH =====
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
+  try {
+    const res = await sb.auth.signInWithPassword({ email, password: pw });
+    if (res.error) throw res.error;
+    await proceedAfterAuth();
+  } catch (err) {
+    errEl.textContent = err.message === 'Invalid login credentials'
+      ? 'メールアドレスまたはパスワードが正しくありません'
+      : 'ログインエラー: ' + (err.message || '不明なエラー');
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+  }
+}
+async function proceedAfterAuth() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('onbHeader').style.display = 'flex';
+  document.getElementById('onbMain').style.display = 'block';
+  sb.auth.onAuthStateChange(function(ev) { if (ev === 'SIGNED_OUT') location.reload(); });
+  initOnboarding();
+}
+(async function checkSession() {
+  try {
+    const s = await sb.auth.getSession();
+    if (s && s.data && s.data.session) {
+      await proceedAfterAuth();
+    }
+  } catch (e) { console.error('session check error:', e); }
+})();
+
+// ===== INIT =====
+function initOnboarding() {
+  loadStateFromLocalStorage();
+  renderColorPresets();
+  renderColorSwatches();
+  populateFormFields();
+  renderPhotoGrids();
+  renderImageChips();
+  updateCounter('fConcept', 'cConcept', 240);
+  updateCounter('fOwnerStory', 'cOwnerStory', 500);
+  wireUploadDragDrop();
+  showStep(state.currentStep);
+  validateStep1();
+}
+function exitOnboarding() {
+  saveStateToLocalStorage();
+  showToast('現在までの入力を保存しました。いつでもお戻りいただけます。');
+  setTimeout(() => { location.href = '/'; }, 1400);
+}
+
+// ===== STATE PERSISTENCE =====
+function saveStateToLocalStorage() {
+  try {
+    state.session.lastSavedAt = Date.now();
+    // Photos: strip dataUrl from persistence (too big). Keep metadata only.
+    const persistable = {
+      currentStep: state.currentStep,
+      form: state.form,
+      photos: {
+        exterior: state.photos.exterior.map(p => ({ name: p.name, size: p.size, dataUrl: p.dataUrl })),
+        interior: state.photos.interior.map(p => ({ name: p.name, size: p.size, dataUrl: p.dataUrl })),
+        menu:     state.photos.menu.map(p => ({ name: p.name, size: p.size, dataUrl: p.dataUrl })),
+        logo:     state.photos.logo.map(p => ({ name: p.name, size: p.size, dataUrl: p.dataUrl }))
+      },
+      selectedPreviewId: state.selectedPreviewId,
+      session: state.session
+    };
+    // Cap: if total exceeds 4MB, drop photo dataUrls
+    const str = JSON.stringify(persistable);
+    if (str.length > 4 * 1024 * 1024) {
+      ['exterior','interior','menu','logo'].forEach(k => {
+        persistable.photos[k] = persistable.photos[k].map(p => ({ name: p.name, size: p.size, dataUrl: '' }));
+      });
+      localStorage.setItem(LS_KEY, JSON.stringify(persistable));
+    } else {
+      localStorage.setItem(LS_KEY, str);
+    }
+    updateResumeHint();
+  } catch (e) { console.warn('saveStateToLocalStorage:', e); }
+}
+function loadStateFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && obj.form) {
+      state.currentStep = obj.currentStep || 1;
+      state.form = Object.assign(state.form, obj.form);
+      state.photos = obj.photos || state.photos;
+      state.selectedPreviewId = obj.selectedPreviewId || null;
+      state.session = obj.session || state.session;
+      updateResumeHint();
+    }
+  } catch (e) { console.warn('loadStateFromLocalStorage:', e); }
+}
+function updateResumeHint() {
+  const el = document.getElementById('resumeHint');
+  if (!el) return;
+  if (state.session.lastSavedAt) {
+    const ms = Date.now() - state.session.lastSavedAt;
+    if (ms < 60000) el.textContent = '自動保存済';
+    else el.textContent = '自動保存: ' + new Date(state.session.lastSavedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  }
+}
+
+// ===== STEP NAVIGATION =====
+function showStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    if (el) el.classList.toggle('active', i === n);
+  }
+  document.querySelectorAll('.onb-step-dot').forEach(d => {
+    const idx = parseInt(d.dataset.dot, 10);
+    d.classList.toggle('active', idx === n);
+    d.classList.toggle('done', idx < n);
+  });
+  document.getElementById('stepLabel').textContent = n + ' / 4';
+  state.currentStep = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  saveStateToLocalStorage();
+}
+function goToStep(n) {
+  if (n === 2) {
+    if (!validateStep1(true)) return;
+    updateGreetingBrand();
+    startStep2();
+  } else if (n === 3) {
+    renderGallery();
+  } else if (n === 4) {
+    startStep4();
+  }
+  showStep(n);
+}
+
+// ===== STEP 1: FORM =====
+function onFieldChange() {
+  state.form.brandName = document.getElementById('fBrandName').value.trim();
+  state.form.category = document.getElementById('fCategory').value;
+  state.form.concept = document.getElementById('fConcept').value;
+  state.form.target = document.getElementById('fTarget').value;
+  state.form.catchphrase = document.getElementById('fCatchphrase').value;
+  state.form.foundingYear = document.getElementById('fFoundingYear').value;
+  state.form.ownerStory = document.getElementById('fOwnerStory').value;
+  saveStateToLocalStorage();
+  validateStep1();
+}
+function onCategoryChange() {
+  onFieldChange();
+  renderColorPresets();
+}
+function onColorChange() {
+  state.form.colorMain = document.getElementById('fColorMain').value;
+  state.form.colorAccent = document.getElementById('fColorAccent').value;
+  state.form.colorSub = document.getElementById('fColorSub').value;
+  document.getElementById('hexMain').textContent = state.form.colorMain;
+  document.getElementById('hexAccent').textContent = state.form.colorAccent;
+  document.getElementById('hexSub').textContent = state.form.colorSub;
+  renderColorSwatches();
+  saveStateToLocalStorage();
+}
+function renderColorSwatches() {
+  document.querySelectorAll('.onb-color-swatch').forEach(sw => {
+    const input = sw.querySelector('input[type="color"]');
+    if (input) sw.style.background = input.value;
+  });
+}
+function renderColorPresets() {
+  const cat = state.form.category || 'other';
+  const presets = COLOR_PRESETS[cat] || COLOR_PRESETS.other;
+  const wrap = document.getElementById('colorPresets');
+  wrap.innerHTML = '';
+  presets.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'onb-color-preset';
+    el.innerHTML = '<span class="preset-label">' + escH(p.name) + '</span>'
+      + p.colors.map(c => '<span class="preset-dot" style="background:' + c + '"></span>').join('');
+    el.onclick = () => applyColorPreset(p.colors);
+    wrap.appendChild(el);
+  });
+}
+function applyColorPreset(colors) {
+  state.form.colorMain = colors[0];
+  state.form.colorAccent = colors[1];
+  state.form.colorSub = colors[2];
+  document.getElementById('fColorMain').value = colors[0];
+  document.getElementById('fColorAccent').value = colors[1];
+  document.getElementById('fColorSub').value = colors[2];
+  onColorChange();
+  showToast('カラーテーマを適用しました');
+}
+function populateFormFields() {
+  const f = state.form;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+  set('fBrandName', f.brandName);
+  set('fCategory', f.category);
+  set('fConcept', f.concept);
+  set('fTarget', f.target);
+  set('fCatchphrase', f.catchphrase);
+  set('fFoundingYear', f.foundingYear);
+  set('fOwnerStory', f.ownerStory);
+  set('fColorMain', f.colorMain);
+  set('fColorAccent', f.colorAccent);
+  set('fColorSub', f.colorSub);
+  document.getElementById('hexMain').textContent = f.colorMain;
+  document.getElementById('hexAccent').textContent = f.colorAccent;
+  document.getElementById('hexSub').textContent = f.colorSub;
+}
+function updateCounter(inputId, counterId, max) {
+  const v = (document.getElementById(inputId) || { value: '' }).value || '';
+  const el = document.getElementById(counterId);
+  if (!el) return;
+  el.textContent = v.length + ' / ' + max;
+  el.classList.toggle('over', v.length > max);
+}
+function toggleImageChip(el) {
+  const v = el.dataset.val;
+  const idx = state.form.imageKeywords.indexOf(v);
+  if (idx >= 0) {
+    state.form.imageKeywords.splice(idx, 1);
+    el.classList.remove('selected');
+  } else {
+    state.form.imageKeywords.push(v);
+    el.classList.add('selected');
+  }
+  saveStateToLocalStorage();
+  validateStep1();
+}
+function renderImageChips() {
+  document.querySelectorAll('#imageChips .onb-chip').forEach(ch => {
+    ch.classList.toggle('selected', state.form.imageKeywords.includes(ch.dataset.val));
+  });
+}
+function validateStep1(showErrors) {
+  const f = state.form;
+  const hasExterior = state.photos.exterior.length >= 1;
+  const conditions = {
+    brandName: !!f.brandName,
+    category: !!f.category,
+    concept: !!f.concept && f.concept.length <= 240,
+    target: !!f.target,
+    image: f.imageKeywords.length > 0,
+    exterior: hasExterior
+  };
+  const ok = Object.values(conditions).every(Boolean);
+  const btn = document.getElementById('step1NextBtn');
+  if (btn) btn.disabled = !ok;
+  if (!ok && showErrors) {
+    const missing = [];
+    if (!conditions.brandName) missing.push('ブランド名');
+    if (!conditions.category) missing.push('業態カテゴリ');
+    if (!conditions.concept) missing.push('ブランドコンセプト');
+    if (!conditions.target) missing.push('ターゲット客層');
+    if (!conditions.image) missing.push('希望するブランドイメージ');
+    if (!conditions.exterior) missing.push('店舗外観写真');
+    showToast('未入力があります: ' + missing.join(' / '));
+  }
+  return ok;
+}
+
+// ===== STEP 1: UPLOAD =====
+function wireUploadDragDrop() {
+  const zones = [
+    { id: 'uzExterior', key: 'exterior', max: 1 },
+    { id: 'uzInterior', key: 'interior', max: 3 },
+    { id: 'uzMenu',     key: 'menu',     max: 5 },
+    { id: 'uzLogo',     key: 'logo',     max: 1 }
+  ];
+  zones.forEach(z => {
+    const el = document.getElementById(z.id);
+    if (!el) return;
+    el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drag'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag'));
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      el.classList.remove('drag');
+      const files = Array.from(e.dataTransfer.files || []);
+      ingestFiles(files, z.key, z.max);
+    });
+  });
+}
+function handleFiles(ev, key, max) {
+  const files = Array.from(ev.target.files || []);
+  ingestFiles(files, key, max);
+  ev.target.value = '';
+}
+function ingestFiles(files, key, max) {
+  const arr = state.photos[key] || [];
+  for (const file of files) {
+    if (arr.length >= max) { showToast('この区分は ' + max + ' 枚までです'); break; }
+    if (!/^image\/(jpeg|png|webp|svg\+xml)$/.test(file.type)) {
+      showToast('対応していない形式です: ' + (file.name || ''));
+      continue;
+    }
+    const sizeLimit = key === 'logo' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > sizeLimit) {
+      showToast('サイズが大きすぎます: ' + Math.round(file.size / 1024 / 1024 * 10) / 10 + 'MB');
+      continue;
+    }
+    readFileAsDataUrl(file).then((dataUrl) => {
+      const img = new Image();
+      img.onload = () => {
+        const rec = {
+          name: file.name,
+          size: file.size,
+          dataUrl: dataUrl,
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        };
+        if (rec.width < 800 || rec.height < 600) {
+          showToast('解像度が小さめです（' + rec.width + 'x' + rec.height + '）。推奨 800x600 以上。');
+        }
+        state.photos[key].push(rec);
+        renderPhotoGrids();
+        saveStateToLocalStorage();
+        validateStep1();
+      };
+      img.onerror = () => showToast('画像を読み込めませんでした');
+      img.src = dataUrl;
+    });
+  }
+}
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function removePhoto(key, idx) {
+  state.photos[key].splice(idx, 1);
+  renderPhotoGrids();
+  saveStateToLocalStorage();
+  validateStep1();
+}
+function renderPhotoGrids() {
+  ['exterior', 'interior', 'menu', 'logo'].forEach(key => {
+    const grid = document.getElementById('photos' + key[0].toUpperCase() + key.slice(1));
+    if (!grid) return;
+    grid.innerHTML = '';
+    state.photos[key].forEach((p, idx) => {
+      const tile = document.createElement('div');
+      tile.className = 'onb-photo-thumb';
+      tile.innerHTML = '<img src="' + escH(p.dataUrl || '') + '" alt="">'
+        + '<button class="rm" title="削除">✕</button>'
+        + '<div class="label">' + escH(p.name || '写真') + '</div>';
+      tile.querySelector('.rm').onclick = () => removePhoto(key, idx);
+      grid.appendChild(tile);
+    });
+  });
+}
+
+// ===== STEP 2: AI GENERATION PERFORMANCE (mock) =====
+let step2Timers = [];
+function startStep2() {
+  clearStep2Timers();
+  // Reset UI
+  document.querySelectorAll('#aiCandidates .onb-ai-card').forEach(c => {
+    c.classList.remove('working', 'done');
+    c.querySelector('.st').textContent = '待機中';
+  });
+  const brand = state.form.brandName || 'あなたのお店';
+  typewriterTo('step2Typing', brand + ' のための AI パートナーを探しています', 0);
+
+  const waitEl = document.getElementById('step2WaitingMsg');
+  waitEl.textContent = '4 人の AI パートナーに依頼を送りました。\nあなたのお店の写真を基に、それぞれが個性的な POP 画像を作っています。';
+
+  const plan = MOCK_DATA_SOURCE.getSimulatedProgressPlan();
+  const totalDur = Math.max.apply(null, plan.map(p => p.doneMs)) + 400;
+  const startTime = Date.now();
+
+  // Rotate waiting messages
+  let msgIdx = 0;
+  const msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % WAITING_MESSAGES.length;
+    const msg = WAITING_MESSAGES[msgIdx].replace('{brand}', brand);
+    waitEl.style.opacity = '0';
+    setTimeout(() => {
+      waitEl.textContent = msg;
+      waitEl.style.opacity = '1';
+    }, 400);
+  }, 3500);
+  step2Timers.push({ type: 'interval', handle: msgTimer });
+
+  // Progress bar
+  const progressTimer = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const pct = Math.min(100, Math.round(elapsed / totalDur * 100));
+    document.getElementById('step2Progress').style.width = pct + '%';
+    document.getElementById('step2ProgressPct').textContent = pct + '%';
+  }, 80);
+  step2Timers.push({ type: 'interval', handle: progressTimer });
+
+  // Per-AI start
+  plan.forEach(p => {
+    const t1 = setTimeout(() => {
+      const card = document.querySelector('#aiCandidates .onb-ai-card[data-ai="' + p.aiIndex + '"]');
+      if (card) { card.classList.add('working'); card.querySelector('.st').textContent = '制作中...'; }
+    }, p.startMs);
+    const t2 = setTimeout(() => {
+      const card = document.querySelector('#aiCandidates .onb-ai-card[data-ai="' + p.aiIndex + '"]');
+      if (card) { card.classList.remove('working'); card.classList.add('done'); card.querySelector('.st').textContent = '完成'; }
+      const doneCount = document.querySelectorAll('#aiCandidates .onb-ai-card.done').length;
+      document.getElementById('step2ProgressLabel').textContent = doneCount + '/4 完了';
+    }, p.doneMs);
+    step2Timers.push({ type: 'timeout', handle: t1 });
+    step2Timers.push({ type: 'timeout', handle: t2 });
+  });
+
+  // Finalize: move to Step 3
+  const finalT = setTimeout(() => {
+    clearStep2Timers();
+    document.getElementById('step2Progress').style.width = '100%';
+    document.getElementById('step2ProgressPct').textContent = '100%';
+    document.getElementById('step2ProgressLabel').textContent = '4/4 完了';
+    typewriterTo('step2Typing', brand + ' のための AI パートナー、仕事を終えました', 0);
+    document.getElementById('step2WaitingMsg').textContent = 'それぞれの個性をご覧ください。';
+    setTimeout(() => goToStep(3), 1800);
+  }, totalDur);
+  step2Timers.push({ type: 'timeout', handle: finalT });
+}
+function clearStep2Timers() {
+  step2Timers.forEach(t => {
+    if (t.type === 'interval') clearInterval(t.handle);
+    else clearTimeout(t.handle);
+  });
+  step2Timers = [];
+}
+function typewriterTo(elId, text, index) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (index === 0) el.innerHTML = '';
+  if (index <= text.length) {
+    el.innerHTML = escH(text.substring(0, index)) + '<span class="cursor"></span>';
+    setTimeout(() => typewriterTo(elId, text, index + 1), 35);
+  }
+}
+
+// ===== STEP 3: GALLERY =====
+function renderGallery() {
+  state.previews = MOCK_DATA_SOURCE.getPreviews();
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+  const brand = state.form.brandName || 'あなたのお店';
+  document.getElementById('step3BrandName').textContent = brand;
+  state.previews.forEach((p, idx) => {
+    const tile = document.createElement('div');
+    tile.className = 'onb-preview-tile';
+    tile.dataset.previewId = p.id;
+    tile.dataset.modelName = p.modelName; // internal
+    tile.innerHTML = '<img src="' + escH(p.imgUrl) + '" alt="" loading="lazy">'
+      + '<div class="tone-label">' + escH(p.toneLabel) + ' ' + p.patternIndex + '</div>';
+    tile.onclick = () => openPreviewModal(p.id);
+    if (state.selectedPreviewId === p.id) tile.classList.add('selected');
+    grid.appendChild(tile);
+  });
+  updateStep3NextBtn();
+}
+function openPreviewModal(previewId) {
+  const p = state.previews.find(x => x.id === previewId);
+  if (!p) return;
+  document.getElementById('pmImg').src = p.imgUrl;
+  document.getElementById('pmTone').textContent = p.toneLabel + ' ' + p.patternIndex;
+  document.getElementById('pmDesc').textContent = p.toneDesc;
+  document.getElementById('previewModal').dataset.previewId = p.id;
+  document.getElementById('previewModal').classList.add('show');
+}
+function closePreviewModal() {
+  document.getElementById('previewModal').classList.remove('show');
+}
+function selectFromModal() {
+  const modal = document.getElementById('previewModal');
+  const pid = modal.dataset.previewId;
+  selectPreview(pid);
+  closePreviewModal();
+}
+function selectPreview(previewId) {
+  state.selectedPreviewId = previewId;
+  const p = state.previews.find(x => x.id === previewId);
+  // CC-22b: replace with INSERT into ai_model_change_log
+  if (window.console && window.console.info) {
+    window.console.info('[weir-onb] preview selected', {
+      id: previewId,
+      tone: p && p.toneLabel,
+      pattern: p && p.patternIndex,
+      internalModelName: p && p.modelName // D-196: never shown in UI
+    });
+  }
+  document.querySelectorAll('.onb-preview-tile').forEach(t => {
+    t.classList.toggle('selected', t.dataset.previewId === previewId);
+  });
+  updateStep3NextBtn();
+  saveStateToLocalStorage();
+  showToast('「' + (p ? p.toneLabel : '') + ' ' + (p ? p.patternIndex : '') + '」を選択しました');
+}
+function updateStep3NextBtn() {
+  const btn = document.getElementById('step3NextBtn');
+  if (btn) btn.disabled = !state.selectedPreviewId;
+}
+function aiRecommend() {
+  // Mock: pick based on user's imageKeywords preference, fallback to first warmth
+  const keys = state.form.imageKeywords || [];
+  let targetTone = 'warmth';
+  if (keys.includes('stylish') || keys.includes('premium')) targetTone = 'modern';
+  if (keys.includes('premium')) targetTone = 'premium';
+  if (keys.includes('casual')) targetTone = 'casual';
+  if (keys.includes('warmth') || keys.includes('traditional')) targetTone = 'warmth';
+  const candidates = state.previews.filter(p => p.tone === targetTone);
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  if (pick) {
+    selectPreview(pick.id);
+    const tile = document.querySelector('.onb-preview-tile[data-preview-id="' + pick.id + '"]');
+    if (tile) tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+function confirmSelection() {
+  if (!state.selectedPreviewId) return;
+  goToStep(4);
+}
+
+// ===== STEP 4: X-4 ANIMATION =====
+let step4Timers = [];
+function startStep4() {
+  clearStep4Timers();
+  const sel = state.previews.find(p => p.id === state.selectedPreviewId);
+  const brand = state.form.brandName || 'あなたのお店';
+
+  // Hero image + greeting brand placeholders
+  const selImgEl = document.getElementById('step4SelectedImg').querySelector('img');
+  if (sel && selImgEl) selImgEl.src = sel.imgUrl;
+  document.getElementById('completeBrand').textContent = brand;
+
+  // Render 5-point package cards (hidden initially)
+  const pkg = MOCK_DATA_SOURCE.getConfirmationPackage(sel, brand);
+  const grid = document.getElementById('packageGrid');
+  grid.innerHTML = '';
+  pkg.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'onb-package-card';
+    card.dataset.pkgIdx = idx;
+    card.innerHTML = ''
+      + '<div class="pc-narrative">' + escH(item.narrative) + '</div>'
+      + '<div class="pc-media">'
+      +   '<span class="pc-type-badge">' + escH(item.type) + '</span>'
+      +   '<img src="' + escH(item.imgUrl) + '" alt="" loading="lazy">'
+      + '</div>'
+      + '<div class="pc-body">'
+      +   '<div class="pc-title">' + escH(item.title) + '</div>'
+      +   '<div class="pc-content">' + escH(item.contentText) + '</div>'
+      + '</div>';
+    grid.appendChild(card);
+  });
+
+  // Reveal lines (1-2 sec余韻)
+  const lines = document.querySelectorAll('#step4 .onb-reveal-line');
+  lines.forEach(l => {
+    l.classList.remove('visible');
+    l.textContent = (l.dataset.text || '').replace(/\{brand\}/g, brand);
+  });
+  const t1 = setTimeout(() => lines[0].classList.add('visible'), 400);
+  const t2 = setTimeout(() => lines[1].classList.add('visible'), 1500);
+  const t3 = setTimeout(() => lines[2].classList.add('visible'), 2600);
+  step4Timers.push(t1, t2, t3);
+
+  // Reveal cards at 1s intervals starting at 3.8s
+  const cards = document.querySelectorAll('#packageGrid .onb-package-card');
+  cards.forEach((card, i) => {
+    const t = setTimeout(() => card.classList.add('revealed'), 3800 + i * 1000);
+    step4Timers.push(t);
+  });
+
+  // Complete note + actions
+  const totalRevealMs = 3800 + cards.length * 1000;
+  const t4 = setTimeout(() => {
+    document.getElementById('completeNote').classList.add('visible');
+    document.getElementById('completeActions').classList.add('visible');
+  }, totalRevealMs + 400);
+  step4Timers.push(t4);
+}
+function clearStep4Timers() {
+  step4Timers.forEach(t => clearTimeout(t));
+  step4Timers = [];
+}
+
+// ===== SAMPLE MODAL =====
+function openSampleModal(which) {
+  const titles = {
+    exterior: '店舗外観写真のサンプル',
+    interior: '店舗内観写真のサンプル',
+    menu: '看板メニュー写真のサンプル'
+  };
+  const tips = {
+    exterior: '【良い例】\n・看板が写った正面の写真\n・自然光で明るめ\n・お店全体が収まっている\n\n【避けたい例】\n・人物が中心で店舗が見切れている\n・暗すぎて雰囲気が分からない\n・加工フィルターが強すぎる',
+    interior: '【良い例】\n・店内全体の雰囲気が分かる構図\n・照明 ON で明るめ\n・カウンターやテーブル配置が見える\n\n【避けたい例】\n・食べかけの料理が写っている\n・他のお客様の顔が写り込んでいる\n・極端に暗い',
+    menu: '【良い例】\n・料理が皿全体で写っている\n・明るい自然光 or 店内照明\n・複数のメイン料理を並べた構図\n\n【避けたい例】\n・食べかけ\n・手や他の人が写り込んでいる\n・極端に暗い / 明るすぎる'
+  };
+  document.getElementById('smTitle').textContent = titles[which] || 'サンプル';
+  document.getElementById('smContent').innerHTML = '<div style="white-space:pre-line">' + escH(tips[which] || '') + '</div>';
+  document.getElementById('sampleModal').classList.add('show');
+}
+function closeSampleModal() {
+  document.getElementById('sampleModal').classList.remove('show');
+}
+
+// ===== UTIL =====
+function escH(s) { return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : ''; }
+function showToast(msg) {
+  const t = document.getElementById('onbToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function showPlaceholderToast(msg) { showToast(msg); }
+function updateGreetingBrand() {
+  const brand = state.form.brandName || 'あなたのお店';
+  const elA = document.getElementById('greetingBrand');
+  const elB = document.getElementById('greetingBrand2');
+  if (elA) elA.textContent = brand;
+  if (elB) elB.textContent = brand;
+}
+</script>
+</body>
+</html>

@@ -220,6 +220,13 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - データ未存在時は `renderEmptyState({icon, title, description})` ヘルパーを使う（`weir-admin.html` / `weir-customer-admin.html` に定義済み）
 - テンプレート: シンプル版「まだ {対象} のデータはありません」「{対象を追加/連携}すると、ここに表示されます」、連携待ち版「Stripe Billing 連携の設定後、自動的に表示されます」
 
+### オンボフロー（CC-22a 配置、2026-04-21）
+- `weir-onboarding.html` は **mock 動作の UI 骨格のみ**。Backend / 実 AI 呼び出し / Realtime 進捗 / DB 書き込みは **全て CC-22b 以降で実装予定**
+- Mock データは `MOCK_DATA_SOURCE` オブジェクトに集約（getPreviews / getConfirmationPackage / getSimulatedProgressPlan）。CC-22b で差し替える
+- Step 3 の 16 枚は内部で `modelName` (Claude / GPT / Gemini / Grok) を保持、UI には**一切表示しない**（D-196 準拠）。選択時に `console.info` で記録、CC-22b で `ai_model_change_log` INSERT に差し替える
+- LocalStorage キー `weir_onboarding_state_v1` で中断復帰対応。写真の dataUrl が 4MB を超えたら metadata のみ保存にフォールバック
+- Mock 画像 seed は `weir-{tone}-{1..4}` / `weir-final-{pop|sns|review|report|profile}` 命名（CC-22b 実装時のデバッグ容易化のため）
+
 ---
 
 ## Agent Teams
