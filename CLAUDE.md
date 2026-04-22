@@ -237,7 +237,15 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - **共通 `.onb-header` は全 Step で常時表示**（CC-22a-fix3、2026-04-22）。`body.step1-active` で非表示にする運用はやめた。Step 1 v2 は共通ヘッダー下から（`top:var(--header-h)`）開始
 - **`.onb-step` の `display` は CSS specificity 注意**: `#step1.step1-v2` は ID+class で `.onb-step.active` より勝つ。必ず `#step1.step1-v2{display:none}` + `#step1.step1-v2.active{display:block}` で ID セレクタ同士で決着（CC-22a-fix3 Q9 遷移バグ教訓）
 - **Step 1 背景アニメーション**: エメラルド blob 3 つ（filter:blur 100px）+ SVG mesh、`.bg-animation` レイヤー z-index:0、`.s1v2-app` z-index:1。`prefers-reduced-motion:reduce` で停止、モバイルでは blob サイズと blur 縮小
-- **セルフオンボーディング入口**（D-206）: 将来加盟店が自力で Weir を始める入口画面。動的背景は先進性演出の差別化要素として Step 1 〜 4 全体に展開予定
+- **セルフオンボーディング入口**（D-206）: 将来加盟店が自力で Weir を始める入口画面。動的背景は先進性演出の差別化要素として Step 1 〜 4 全体に展開済み（CC-22a-fix4）
+- **Weir デザイン言語 Step 1-4 統一完了**（CC-22a-fix4、2026-04-22）: 全 Step で黒背景 + Red Hat Display + Noto Sans JP + 共通 `.weir-bg-animation`（5 blobs + mesh、モバイルは 3 blobs）+ エメラルド #10B981 アクセント。紫 (`#6c5ce7`) 系のオーブ / グロー / カードは完全撤去
+- **Step 2 の AI 演出**: 波紋リング 4 本 (`keyframes s2-ripple`) + 中央インクブロッチ (`s2-blot`) の監視感。進捗バーは削除し共通ヘッダーのドット進捗に統合。4 stage cards は `working/done` で emerald 化
+- **Step 3 の 16 タイル**: 4x4 コンパクト（aspect-ratio 4/3、clamp サイズ）+ クリックで dark 詳細モーダル。1 viewport 完結。モバイルは 2 列 + 内部スクロール許容
+- **Step 4 は 3 サブステップ分割**（D-207）: `state.step4Sub` (1/2/3) で `.sub-step` 切替。4-1 = hero + reveal、4-2 = 5-point preview カード（クリックで詳細モーダル）、4-3 = summary + CTA。メインプログレスは Step 4 全体で active 維持、`.sub-nav .sub-dot` で内部進捗を表示
+- **Step 4-3 最終 CTA**（D-208）: Primary = 「管理マスタで使ってみる」→ `/weir-admin.html`、Secondary = 「後で選ぶ」。「続いてプランを選ぶ」はオンボ完了後の別フロー（CC-22d 管轄）に譲渡
+- **`MOCK_DATA_SOURCE.getConfirmationPackage` のフィールド拡張**（CC-22a-fix4）: 既存の `id/type/narrative/title/imgUrl/contentText` に加え `hint`（4-2 カードの一言）、`previewText`（モーダル詳細文）、`meta`（3 タグ配列）を追加。CC-22b で実 API 接続時は各メソッドを差し替えるだけで互換
+- **`MOCK_DATA_SOURCE.getBrandSummary`**（CC-22a-fix4 新規）: 4-3 サマリ用 3 セクション（お店の個性 / ブランドボイス / お客様との距離感）
+- **Step 3 Unsplash 画像は内容確認必須**: photo ID 差替時は人物メインや業態不一致に注意（例: warmth-3「昔ながらの喫茶店」/ modern-1「スタイリッシュなバー」/ modern-3「デザインカフェ」は過去に不一致報告あり）
 
 ---
 
