@@ -245,7 +245,14 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - **Step 4-3 最終 CTA**（D-208）: Primary = 「管理マスタで使ってみる」→ `/weir-admin.html`、Secondary = 「後で選ぶ」。「続いてプランを選ぶ」はオンボ完了後の別フロー（CC-22d 管轄）に譲渡
 - **`MOCK_DATA_SOURCE.getConfirmationPackage` のフィールド拡張**（CC-22a-fix4）: 既存の `id/type/narrative/title/imgUrl/contentText` に加え `hint`（4-2 カードの一言）、`previewText`（モーダル詳細文）、`meta`（3 タグ配列）を追加。CC-22b で実 API 接続時は各メソッドを差し替えるだけで互換
 - **`MOCK_DATA_SOURCE.getBrandSummary`**（CC-22a-fix4 新規）: 4-3 サマリ用 3 セクション（お店の個性 / ブランドボイス / お客様との距離感）
-- **Step 3 Unsplash 画像は内容確認必須**: photo ID 差替時は人物メインや業態不一致に注意（例: warmth-3「昔ながらの喫茶店」/ modern-1「スタイリッシュなバー」/ modern-3「デザインカフェ」は過去に不一致報告あり）
+- **Step 3 Unsplash 画像は内容確認必須**: photo ID 差替時は人物メインや業態不一致に注意（例: warmth-3「昔ながらの喫茶店」/ modern-1「スタイリッシュなバー」/ modern-3「デザインカフェ」は過去に不一致報告あり）。CC-22a-fix6 で `/public/assets/onboarding/step3/weir-{tone}-{N}.webp` への差替予定（Taisei が GPT 生成中）
+- **Weir プライマリボタン = 白**（D-209、CC-22a-fix5）: bg `#fff` / color `#000`。緑（emerald `#10B981`）はプログレスバー・ラベル・アクセントのみ、ボタンには絶対に使わない。Step 1 の `.primary-v2` / Step 3 の `.weir-btn-primary` / Step 4 の `.s4-primary` / モーダルの `.pd-btn-primary` は全て白系で統一
+- **AI / Weir の用語使い分け**（D-210、CC-22a-fix5）: 加盟店表示は基本「Weir」（製品名）。例外として Step 2 の演出メッセージは「AI パートナー」を維持（探索演出として直感的）。Step 4 の見出し / 締め / Step 3 の「迷ったら〜に選んでもらう」は全て「Weir」
+- **Step 1 質問切替**（CC-22a-fix5 教訓）: `qwrap.firstElementChild` だけ leave すると連続クリックで前画面が累積する。`Array.from(qwrap.children)` 全てに leave + `setTimeout(remove, 260)` で確実に削除する
+- **Step 4-3 のサマリは getBrandSummary()** で動的取得、`text-align:center`。3 セクション (お店の個性 / ブランドボイス / お客様との距離感) を中央揃えで表示、ハードコードなし
+- **Step 4 の 5-point preview モーダル**（CC-22a-fix5）: id 別に builder（`buildS4PopPreview` / `buildS4SnsPreview` / `buildS4ReviewPreview` / `buildS4MonthlyPreview` / `buildS4SitePreview`）を切替。MOCK_DATA_SOURCE に `getPreviewPOP/SNS/Review/Monthly/Site` 追加。各モーダル下部は「閉じる / 機能ボタン (mock toast) / 管理マスタで{機能} →」(白プライマリ)
+- **Step 4-2 5 カードラベル**（CC-22a-fix5）: POP / SNS (サイズは投稿タイプに応じて最適化) / レビュー返信 / 月次レポート (売上分析 / 対策提示 / ソリューション提供) / 自社サイト (雰囲気 / メッセージ / 個性)。`profile` から `site` に id 変更
+- **Step 3 16 タイル**（CC-22a-fix5）: `grid-template-rows:repeat(4,1fr)` で grid 行を 4 等分、タイルは `aspect-ratio:auto` で自然フィット。footer は `display:grid; grid-template-columns:1fr auto 1fr` で 戻る / 中央リンク / プライマリ を整列
 
 ---
 

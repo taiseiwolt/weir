@@ -191,24 +191,33 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 #step3 .gallery-head{flex-shrink:0;padding:20px clamp(24px,5vw,60px) 12px;text-align:center}
 #step3 .gallery-head .gallery-title{font:700 clamp(20px,2.2vw,28px)/1.3 inherit;color:#fff;letter-spacing:-.005em;margin:0 0 6px}
 #step3 .gallery-head .gallery-sub{font:400 12px/1.65 inherit;color:rgba(255,255,255,.55);letter-spacing:.03em;margin:0;white-space:pre-line}
-#step3 .onb-gallery-grid{flex:1;min-height:0;padding:10px clamp(24px,5vw,60px);display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-content:center;max-width:1200px;width:100%;margin:0 auto;overflow:hidden}
-#step3 .onb-preview-tile{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .3s cubic-bezier(.2,1,.3,1);background:rgba(255,255,255,.04);opacity:0;transform:translateY(10px) scale(.98);animation:s3-tileIn .5s cubic-bezier(.2,1,.3,1) forwards}
+#step3 .onb-gallery-grid{flex:1;min-height:0;padding:10px clamp(20px,4vw,40px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,1fr);gap:10px;max-width:1200px;width:100%;margin:0 auto;overflow:hidden;box-sizing:border-box}
+#step3 .onb-preview-tile{position:relative;min-height:0;min-width:0;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .3s cubic-bezier(.2,1,.3,1);background:rgba(255,255,255,.04);opacity:0;transform:translateY(10px) scale(.98);animation:s3-tileIn .5s cubic-bezier(.2,1,.3,1) forwards}
 #step3 .onb-preview-tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.2,1,.3,1)}
 #step3 .onb-preview-tile:hover{transform:translateY(-2px);border-color:rgba(16,185,129,.5);box-shadow:0 8px 24px rgba(16,185,129,.2)}
 #step3 .onb-preview-tile:hover img{transform:scale(1.06)}
-#step3 .onb-preview-tile.selected{border-color:#10B981;box-shadow:0 6px 24px rgba(16,185,129,.35)}
-#step3 .onb-preview-tile.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:#10B981;color:#000;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:s3-checkPop .35s cubic-bezier(.2,1.3,.4,1)}
+#step3 .onb-preview-tile.selected{border-color:#fff;box-shadow:0 6px 24px rgba(255,255,255,.3)}
+#step3 .onb-preview-tile.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:s3-checkPop .35s cubic-bezier(.2,1.3,.4,1)}
 @keyframes s3-tileIn{to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes s3-checkPop{from{transform:scale(0)}to{transform:scale(1)}}
 #step3 .onb-preview-tile .tone-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 100%);color:#fff;padding:14px 8px 6px;letter-spacing:.02em}
 #step3 .onb-preview-tile .tl-tone{display:block;font:500 8.5px/1 inherit;opacity:.65;letter-spacing:.18em;text-transform:uppercase;margin-bottom:2px}
 #step3 .onb-preview-tile .tl-cuisine{display:block;font:700 11px/1.3 inherit}
 
-#step3 .gallery-actions{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px clamp(24px,5vw,60px) 18px;border-top:1px solid rgba(255,255,255,.08)}
-#step3 .gallery-fallback{font:400 12px/1.5 inherit;color:rgba(255,255,255,.55)}
-#step3 .gallery-fallback a{color:#10B981;cursor:pointer;font-weight:500;border-bottom:1px dashed rgba(16,185,129,.5)}
-#step3 .gallery-fallback a:hover{color:#34D399;border-bottom-style:solid}
-#step3 .gallery-buttons{display:flex;gap:10px;align-items:center}
+#step3 .gallery-actions{flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:14px clamp(24px,5vw,60px) 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.92);backdrop-filter:blur(10px)}
+#step3 .gallery-fallback{font:400 12px/1.5 inherit;color:rgba(255,255,255,.55);justify-self:center;text-align:center}
+#step3 .gallery-fallback a{color:#fff;cursor:pointer;font-weight:500;border-bottom:1px dashed rgba(255,255,255,.4);padding-bottom:1px}
+#step3 .gallery-fallback a:hover{border-bottom-style:solid;border-bottom-color:#fff}
+#step3 .gallery-back{justify-self:start}
+#step3 .gallery-next{justify-self:end}
+#step3 .weir-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:11px 22px;font:500 13px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.04em;cursor:pointer;transition:border-color .2s,background .2s}
+#step3 .weir-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.05)}
+#step3 .weir-btn-primary{background:#fff;color:#000;border:0;padding:13px 26px;font:600 13px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:background .2s,transform .2s}
+#step3 .weir-btn-primary:hover{background:#f0f0f0}
+#step3 .weir-btn-primary:active{transform:translateY(1px)}
+#step3 .weir-btn-primary:disabled{opacity:.3;cursor:not-allowed}
+#step3 .weir-btn-primary .arrow{font-weight:400;font-size:15px;transition:transform .25s}
+#step3 .weir-btn-primary:not(:disabled):hover .arrow{transform:translateX(3px)}
 
 /* ===== STEP 3 preview modal (dark) ===== */
 .onb-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;align-items:center;justify-content:center;padding:28px;backdrop-filter:blur(8px)}
@@ -248,21 +257,22 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 #step4 .package-grid{flex:1;min-height:0;padding:10px clamp(24px,5vw,60px);display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-content:center;max-width:1280px;width:100%;margin:0 auto;overflow:hidden}
 #step4 .package-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .3s cubic-bezier(.2,1,.3,1);display:flex;flex-direction:column;opacity:0;transform:translateY(14px) scale(.95);animation:s4-cardIn .5s cubic-bezier(.2,1,.3,1) forwards}
 @keyframes s4-cardIn{to{opacity:1;transform:translateY(0) scale(1)}}
-#step4 .package-card:hover{border-color:rgba(16,185,129,.45);background:rgba(255,255,255,.05);transform:translateY(-3px);box-shadow:0 10px 24px rgba(16,185,129,.15)}
+#step4 .package-card:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05);transform:translateY(-3px);box-shadow:0 10px 24px rgba(255,255,255,.08)}
 #step4 .package-card .pc-media{aspect-ratio:4/3;background:#111;overflow:hidden}
 #step4 .package-card .pc-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.2,1,.3,1)}
 #step4 .package-card:hover .pc-media img{transform:scale(1.05)}
 #step4 .package-card .pc-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
-#step4 .package-card .pc-type-badge{font:600 9px/1 inherit;color:#10B981;letter-spacing:.14em;text-transform:uppercase}
+#step4 .package-card .pc-type-badge{font:600 9px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.14em;text-transform:uppercase}
 #step4 .package-card .pc-title{font:700 12.5px/1.4 inherit;color:#fff;letter-spacing:-.005em}
 #step4 .package-card .pc-hint{font:400 10.5px/1.5 inherit;color:rgba(255,255,255,.5);letter-spacing:.02em;margin-top:auto;padding-top:6px}
 
 /* 4-3 summary + cta */
 #step4 .s4-summary{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px clamp(24px,5vw,60px);text-align:center;overflow-y:auto}
 #step4 .s4-summary .summary-title{font:700 clamp(22px,2.4vw,30px)/1.35 inherit;color:#fff;letter-spacing:-.005em;max-width:780px;margin:0}
-#step4 .s4-summary .summary-block{max-width:680px;width:100%;text-align:left;padding:18px 22px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px}
-#step4 .s4-summary .summary-block h3{font:600 11px/1 inherit;color:#10B981;letter-spacing:.2em;text-transform:uppercase;margin:0 0 6px}
-#step4 .s4-summary .summary-block p{font:400 13px/1.7 inherit;color:rgba(255,255,255,.78);margin:0 0 10px;letter-spacing:.02em}
+#step4 .s4-summary .summary-block{max-width:680px;width:100%;text-align:center;padding:22px 28px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px}
+#step4 .s4-summary .summary-block h3{font:600 11px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.2em;text-transform:uppercase;margin:0 0 6px}
+#step4 .s4-summary .summary-block p{font:400 13px/1.7 inherit;color:rgba(255,255,255,.78);margin:0 0 14px;letter-spacing:.02em;text-align:center}
+#step4 .s4-summary .summary-block p:last-child{margin:0}
 #step4 .s4-summary .summary-block p:last-child{margin:0}
 #step4 .s4-summary .summary-note{font:500 13.5px/1.8 inherit;color:#fff;letter-spacing:.005em;max-width:620px;white-space:pre-line}
 
@@ -271,10 +281,10 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 #step4 .s4-footer .s4-back{justify-self:start;background:transparent;border:0;font:500 13px/1 inherit;color:rgba(255,255,255,.5);cursor:pointer;letter-spacing:.06em;padding:10px 2px;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}
 #step4 .s4-footer .s4-back:hover{color:#fff;border-color:rgba(255,255,255,.6)}
 #step4 .s4-footer .s4-back:disabled{color:rgba(255,255,255,.2);pointer-events:none}
-#step4 .s4-footer .s4-primary{justify-self:center;appearance:none;-webkit-appearance:none;background:#10B981;color:#000;border:0;padding:14px 36px;font:700 14px/1 inherit;letter-spacing:.08em;cursor:pointer;display:inline-flex;align-items:center;gap:12px;transition:background .25s,letter-spacing .25s}
-#step4 .s4-footer .s4-primary:hover{background:#34D399;letter-spacing:.12em}
-#step4 .s4-footer .s4-primary.white{background:#fff;color:#000}
-#step4 .s4-footer .s4-primary.white:hover{background:#f0f0f0}
+#step4 .s4-footer .s4-primary{justify-self:center;appearance:none;-webkit-appearance:none;background:#fff;color:#000;border:0;padding:14px 36px;font:600 14px/1 inherit;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:12px;transition:background .25s,letter-spacing .25s}
+#step4 .s4-footer .s4-primary:hover{background:#f0f0f0;letter-spacing:.1em}
+#step4 .s4-footer .s4-primary:active{transform:translateY(1px)}
+#step4 .s4-footer .s4-primary:disabled{opacity:.3;cursor:not-allowed}
 #step4 .s4-footer .s4-primary .arrow{font:400 16px/1 inherit;transition:transform .25s}
 #step4 .s4-footer .s4-primary:hover .arrow{transform:translateX(4px)}
 #step4 .s4-footer .s4-ghost{justify-self:end;background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:12px 24px;font:500 12px/1 inherit;letter-spacing:.06em;cursor:pointer;transition:border-color .2s,background .2s}
@@ -296,8 +306,67 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .s4-preview-modal .pd-actions{padding:16px 26px 22px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,.08)}
 .s4-preview-modal .pd-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;padding:11px 20px;font:500 12px/1 inherit;letter-spacing:.04em;cursor:pointer;transition:border-color .2s}
 .s4-preview-modal .pd-btn-ghost:hover{border-color:#fff}
-.s4-preview-modal .pd-btn-emerald{background:#10B981;border:0;color:#000;padding:11px 22px;font:700 12px/1 inherit;letter-spacing:.08em;cursor:pointer;transition:background .2s}
-.s4-preview-modal .pd-btn-emerald:hover{background:#34D399}
+.s4-preview-modal .pd-btn-emerald,.pd-btn-primary{background:#fff;border:0;color:#000;padding:11px 22px;font:600 12px/1 inherit;letter-spacing:.06em;cursor:pointer;transition:background .2s}
+.s4-preview-modal .pd-btn-emerald:hover,.pd-btn-primary:hover{background:#f0f0f0}
+.s4-preview-modal .pd-btn-secondary{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 18px;font:500 12px/1 inherit;letter-spacing:.04em;cursor:pointer;transition:border-color .2s,background .2s}
+.s4-preview-modal .pd-btn-secondary:hover{border-color:#fff;background:rgba(255,255,255,.05)}
+
+/* ===== Step 4 rich preview bodies ===== */
+.s4-preview-modal .pd-rich{padding:18px 24px 4px;display:flex;flex-direction:column;gap:14px}
+.s4-preview-modal .pd-rich .pd-meta{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px}
+.s4-preview-modal .pd-rich .pd-meta span{font:500 10.5px/1 inherit;padding:6px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.7);letter-spacing:.04em}
+/* POP */
+.pd-pop .pop-hero{aspect-ratio:16/10;overflow:hidden;background:#111;border-radius:4px}
+.pd-pop .pop-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.pd-pop .pop-foot{background:#faf9f5;color:#1a1a1a;padding:18px 20px;border-radius:4px;display:flex;flex-direction:column;gap:10px;text-align:center;font-family:'Red Hat Display','Noto Sans JP',sans-serif}
+.pd-pop .pop-logo{font-weight:700;font-size:17px;letter-spacing:.08em}
+.pd-pop .pop-catch{font-size:13px;color:#555;letter-spacing:.02em}
+.pd-pop .pop-dishes{list-style:none;margin:6px 0;padding:8px 0;border-top:1px solid rgba(0,0,0,.1);border-bottom:1px solid rgba(0,0,0,.1);display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:#1a1a1a}
+.pd-pop .pop-dishes li{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pd-pop .pop-dishes .pop-price{font-weight:700}
+.pd-pop .pop-addr{font-size:10.5px;color:#777;letter-spacing:.06em;font-weight:500}
+/* SNS */
+.pd-sns .sns-frame{background:#0f0f0f;border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden;max-width:420px;margin:0 auto;width:100%}
+.pd-sns .sns-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.pd-sns .sns-avatar{width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
+.pd-sns .sns-acct{display:flex;flex-direction:column;gap:2px;font-family:'Red Hat Display','Noto Sans JP',sans-serif;line-height:1.2}
+.pd-sns .sns-name{font-weight:700;font-size:12.5px;color:#fff;letter-spacing:.02em}
+.pd-sns .sns-handle{font-size:10.5px;color:rgba(255,255,255,.55)}
+.pd-sns .sns-image{aspect-ratio:1/1;background:#000;overflow:hidden}
+.pd-sns .sns-image img{width:100%;height:100%;object-fit:cover;display:block}
+.pd-sns .sns-cap{padding:12px 14px 4px;font-size:12.5px;line-height:1.7;color:rgba(255,255,255,.88);font-family:'Noto Sans JP','Red Hat Display',sans-serif;letter-spacing:.02em}
+.pd-sns .sns-tags{padding:0 14px 12px;font-size:11.5px;color:#7aa7ff;font-weight:500;letter-spacing:.02em;word-break:break-all}
+/* Review */
+.pd-review .rv-source{font:600 10.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.18em;color:rgba(255,255,255,.5);text-transform:uppercase}
+.pd-review .rv-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.pd-review .rv-card.rv-out{border-left:2px solid #fff;background:rgba(255,255,255,.07)}
+.pd-review .rv-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pd-review .rv-stars{color:#FFC107;font-size:15px;letter-spacing:2px}
+.pd-review .rv-by{font-size:11.5px;color:rgba(255,255,255,.55)}
+.pd-review .rv-text{font-size:13px;line-height:1.75;color:#fff;letter-spacing:.02em;margin:0}
+.pd-review .rv-divider{font:600 10.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.18em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;margin-top:2px}
+/* Monthly */
+.pd-monthly .mo-cover{aspect-ratio:16/9;overflow:hidden;border-radius:4px;background:#111}
+.pd-monthly .mo-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.pd-monthly .mo-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pd-monthly .mo-metric{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;text-align:center}
+.pd-monthly .mo-metric .mo-label{font-size:10px;color:rgba(255,255,255,.55);letter-spacing:.14em;text-transform:uppercase}
+.pd-monthly .mo-metric .mo-value{font-size:15px;font-weight:700;color:#fff;margin:4px 0;letter-spacing:.01em}
+.pd-monthly .mo-metric .mo-delta{font-size:10.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
+.pd-monthly .mo-section h4{font:600 10.5px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px}
+.pd-monthly .mo-section p{font-size:13px;line-height:1.75;color:#fff;margin:0;letter-spacing:.02em}
+.pd-monthly .mo-menus{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;color:#fff}
+.pd-monthly .mo-closing{font-style:italic;font-size:13px;color:rgba(255,255,255,.7);letter-spacing:.02em;text-align:center;padding-top:4px}
+/* Site */
+.pd-site .site-hero{aspect-ratio:16/9;background-size:cover;background-position:center;border-radius:4px;display:flex;align-items:flex-end;padding:14px 18px;position:relative;overflow:hidden}
+.pd-site .site-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75),transparent 60%);pointer-events:none}
+.pd-site .site-hero-over{position:relative;z-index:1}
+.pd-site .site-brand{font:700 19px/1 'Red Hat Display','Noto Sans JP',sans-serif;color:#fff;letter-spacing:.06em}
+.pd-site .site-section h4{font:600 10.5px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px}
+.pd-site .site-section p{font-size:13px;line-height:1.75;color:#fff;margin:0;letter-spacing:.02em}
+@media(max-width:720px){
+  .pd-monthly .mo-metrics{grid-template-columns:1fr}
+}
 
 /* ===== SAMPLE MODAL (good/bad examples, kept for legacy compat) ===== */
 .sample-link{display:inline-block;font-size:11px;color:#10B981;cursor:pointer;font-weight:600;margin-left:6px;text-decoration:none}
@@ -675,13 +744,13 @@ body.step1-active #step4{display:none!important}
       <!-- 16 tiles rendered by JS -->
     </div>
     <div class="gallery-actions">
+      <button class="weir-btn-ghost gallery-back" type="button" onclick="goToStep(2)">← 戻る</button>
       <div class="gallery-fallback">
-        迷ったら <a onclick="aiRecommend()">AI に選んでもらう</a>
+        迷ったら <a onclick="aiRecommend()">Weir に選んでもらう</a>
       </div>
-      <div class="gallery-buttons">
-        <button class="s4-ghost" type="button" onclick="goToStep(2)" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 18px;font:500 12px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.06em;cursor:pointer">← 戻る</button>
-        <button class="s4-primary" type="button" id="step3NextBtn" onclick="confirmSelection()" disabled style="background:#10B981;color:#000;border:0;padding:12px 24px;font:700 13px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.08em;cursor:pointer;display:inline-flex;align-items:center;gap:10px">このテイストで確定する <span style="font-weight:400">→</span></button>
-      </div>
+      <button class="weir-btn-primary gallery-next" type="button" id="step3NextBtn" onclick="confirmSelection()" disabled>
+        このテイストで確定する <span class="arrow">→</span>
+      </button>
     </div>
   </div>
 </section>
@@ -710,15 +779,15 @@ body.step1-active #step4{display:none!important}
       <div class="s4-hero">
         <div class="hero-img" id="step4SelectedImg"><img src="" alt=""></div>
         <div class="hero-line" id="reveal1" data-text="{brand} のための AI パートナーが決まりました。"></div>
-        <div class="hero-line small" id="reveal2" data-text="初めての仕事を、済ませてあります。"></div>
+        <div class="hero-line small" id="reveal2" data-text="Weir があなたのお店の全体像を理解しました。"></div>
       </div>
     </div>
 
     <!-- 4-2 5-point preview -->
     <div class="sub-step" data-sub="2">
       <div class="s4-pkg-head">
-        <h2 class="pkg-title">これが、あなたのお店のために働きます</h2>
-        <p class="pkg-sub">タイルをクリックすると、実際の仕上がりを確認できます。</p>
+        <h2 class="pkg-title">Weir が提供する、あなたのお店のための 5 つの価値</h2>
+        <p class="pkg-sub">タイルをクリックすると実際の仕上がりが確認できます。これからも Weir は進化し続けます。</p>
       </div>
       <div class="package-grid" id="packageGrid">
         <!-- 5 cards rendered by startStep4 -->
@@ -728,13 +797,11 @@ body.step1-active #step4{display:none!important}
     <!-- 4-3 summary + CTA -->
     <div class="sub-step" data-sub="3">
       <div class="s4-summary">
-        <h2 class="summary-title">AI が理解した <span id="summaryBrand">あなたのお店</span></h2>
+        <h2 class="summary-title">Weir が理解した <span id="summaryBrand">あなたのお店</span></h2>
         <div class="summary-block" id="summaryBlock">
           <!-- rendered by startStep4 -->
         </div>
-        <p class="summary-note" id="summaryNote">これが、Weir がお届けする価値です。
-
-これからずっと、<span id="completeBrand">あなたのお店</span> のために働きます。</p>
+        <p class="summary-note" id="summaryNote">準備が整いました。ここから始めましょう。</p>
       </div>
     </div>
 
@@ -770,25 +837,12 @@ body.step1-active #step4{display:none!important}
   </div>
 </div>
 
-<!-- ===== STEP 4 PREVIEW DETAIL MODAL (5-point deliverables) ===== -->
+<!-- ===== STEP 4 PREVIEW DETAIL MODAL (5-point deliverables, dynamic body) ===== -->
 <div class="onb-modal-overlay s4-preview-modal" id="step4PreviewModal" onclick="if(event.target===this)closeStep4Preview()">
   <div class="onb-modal">
     <button class="onb-modal-close" onclick="closeStep4Preview()" aria-label="閉じる">✕</button>
-    <div class="preview-detail">
-      <div class="pd-header">
-        <div class="pd-type" id="s4pdType">—</div>
-        <h3 class="pd-title" id="s4pdTitle">—</h3>
-      </div>
-      <div class="pd-media"><img id="s4pdImg" src="" alt=""></div>
-      <div class="pd-body">
-        <h4>プレビュー</h4>
-        <div class="pd-content" id="s4pdContent">—</div>
-        <div class="pd-meta" id="s4pdMeta"></div>
-      </div>
-      <div class="pd-actions">
-        <button class="pd-btn-ghost" onclick="closeStep4Preview()">閉じる</button>
-        <button class="pd-btn-emerald" onclick="exitToAdmin()">管理マスタで使う →</button>
-      </div>
+    <div class="preview-detail" id="s4pdRoot">
+      <!-- rendered by openStep4Preview -->
     </div>
   </div>
 </div>
@@ -919,59 +973,105 @@ const MOCK_DATA_SOURCE = {
       {
         id: 'pop',
         type: 'POP',
-        narrative: 'まず、お店の看板になる POP を。',
         title: '店頭ポスター',
-        hint: 'A4 / 印刷対応',
-        imgUrl: UNSPLASH('photo-1546069901-ba9599a7e63c'),
-        contentText: 'A4 サイズの店頭用 POP。お店のロゴとキャッチフレーズ、看板メニューの写真を組み合わせた一枚。',
-        previewText: '看板メニューの写真を中央に、ロゴ / キャッチコピー / 営業時間を整然と配置した A4 縦ポスター。店頭にそのまま貼るほか、レジ横の卓上ラックでも映えます。',
-        meta: ['A4 / 縦', 'PDF', '印刷そのまま']
+        hint: 'A4 印刷対応',
+        imgUrl: UNSPLASH('photo-1546069901-ba9599a7e63c')
       },
       {
         id: 'sns',
         type: 'SNS',
-        narrative: '次に、今日の投稿を。',
         title: 'Instagram 投稿',
-        hint: '正方形 / キャプション付き',
-        imgUrl: UNSPLASH('photo-1555244162-803834f70033'),
-        contentText: '本日の看板メニュー、ご用意いたしました。\n\n一皿ずつ丁寧に仕上げた今日の一品を、ぜひお店でお楽しみください。\n\n#' + brand + ' #本日のおすすめ #お料理',
-        previewText: '料理写真 1 枚 + お店の声で綴るキャプション + ハッシュタグ 5 本。週 3 本ペースで自動ドラフト、投稿前に加盟店が一度確認してから送信できます。',
-        meta: ['1:1 正方形', 'Instagram', '自動生成 + 承認']
+        hint: 'サイズは投稿タイプに応じて最適化',
+        imgUrl: UNSPLASH('photo-1555244162-803834f70033')
       },
       {
         id: 'review',
         type: 'レビュー返信',
-        narrative: 'そして、お客様への返信を。',
         title: '★5 のお客様への返信',
         hint: '文例 + 編集可能',
-        imgUrl: UNSPLASH('photo-1528605248644-14dd04022da1'),
-        contentText: '[お客様] ★★★★★\n「最高のひとときでした。お料理も接客も素晴らしく、また伺います。」\n\n[お店]\n嬉しいお言葉、誠にありがとうございます。\nスタッフ一同、お客様の笑顔のために、また次回もお待ちしております。',
-        previewText: '★評価とレビュー内容を読み取り、店主の語り口で返信文を下書き。送信前に一文単位で編集でき、忙しい時間帯でも 30 秒で返せます。',
-        meta: ['Google / 食べログ', '加筆可能', '月 10 件 (STD)']
+        imgUrl: UNSPLASH('photo-1528605248644-14dd04022da1')
       },
       {
         id: 'report',
         type: '月次レポート',
-        narrative: '毎月のご挨拶も。',
         title: '今月のふり返り',
-        hint: 'PDF / 来客動向 + 一言',
-        imgUrl: UNSPLASH('photo-1517248135467-4c7edcad34c4'),
-        contentText: '今月もお客様のおかげで、たくさんの笑顔に出会えました。\n\n常連のお客様、初めてのお客様、それぞれの一夜に寄り添えたことに感謝します。\n\n来月は季節の食材を使った限定コースもご用意しています。',
-        previewText: '来客数 / リピート率 / 人気メニューをグラフで整理し、店主からのひと言 (AI 下書き) を添えた 2 ページ PDF。SNS にも流用できます。',
-        meta: ['PDF / 2 枚', '月 1 回', 'データ + 物語']
+        hint: '売上分析 / 対策提示 / ソリューション提供',
+        imgUrl: UNSPLASH('photo-1517248135467-4c7edcad34c4')
       },
       {
-        id: 'profile',
-        type: 'プロフィール',
-        narrative: '最後に、AI があなたのお店をどう理解したか。',
-        title: 'ブランドプロファイル',
-        hint: '個性 / 声 / 距離感',
-        imgUrl: UNSPLASH('photo-1555992336-fb0d29498b13'),
-        contentText: '■ お店の個性\nこだわりの一皿で、日常に少しの特別を添えるお店。\n\n■ ブランドボイス\n丁寧、温かい、寄り添う姿勢。\n\n■ お客様との距離感\n一言を惜しまず、親しみを込めて。',
-        previewText: 'POP / SNS / レビュー返信がブレずに同じ人格で書かれるための芯。管理マスタの「ブランドボイス」画面でいつでも調整できます。',
-        meta: ['内部 JSON', '全機能と同期', '随時編集']
+        id: 'site',
+        type: '自社サイト',
+        title: 'ブランドサイト',
+        hint: '雰囲気 / メッセージ / 個性',
+        imgUrl: UNSPLASH('photo-1555992336-fb0d29498b13')
       }
     ];
+  },
+
+  // Per-card preview details (CC-22a-fix5). CC-22b: replace with real API.
+  getPreviewPOP: function (brandName) {
+    const brand = brandName || 'お店';
+    return {
+      heroImg: UNSPLASH('photo-1546069901-ba9599a7e63c'),
+      logoText: brand,
+      catchphrase: '港町の、ちいさな台所',
+      signatureDishes: [
+        { name: '本日の刺身盛り', price: '¥1,680' },
+        { name: '炙り〆鯖', price: '¥980' },
+        { name: '本日の日本酒', price: '¥780〜' }
+      ],
+      address: '営業 18:00 – 24:00（定休日 月）',
+      meta: ['A4 / 縦', 'PDF', '印刷そのまま']
+    };
+  },
+  getPreviewSNS: function (brandName) {
+    const brand = brandName || 'お店';
+    return {
+      accountName: brand,
+      accountHandle: '@' + (brand.replace(/\s+/g, '')).toLowerCase() + '_official',
+      avatar: UNSPLASH('photo-1555992336-fb0d29498b13'),
+      image: UNSPLASH('photo-1555244162-803834f70033'),
+      caption: '本日の看板メニュー、ご用意いたしました。\n\n一皿ずつ丁寧に仕上げた今日の一品を、ぜひお店でお楽しみください。',
+      hashtags: ['#' + brand.replace(/\s+/g, ''), '#本日のおすすめ', '#お料理', '#和食'],
+      meta: ['Instagram', '自動ドラフト', '承認後に投稿']
+    };
+  },
+  getPreviewReview: function () {
+    return {
+      customerName: '山田 様',
+      rating: 5,
+      customerMessage: '最高のひとときでした。お料理も接客も素晴らしく、また伺います。',
+      aiReply: '山田様、このたびは貴重なお言葉を本当にありがとうございます。\nスタッフ一同、お客様の笑顔のために、また次のご来店をお待ちしております。',
+      source: 'Google',
+      meta: ['Google / 食べログ', '加筆可能', '送信前に確認']
+    };
+  },
+  getPreviewMonthly: function (brandName) {
+    const brand = brandName || 'お店';
+    return {
+      coverImg: UNSPLASH('photo-1517248135467-4c7edcad34c4'),
+      metrics: [
+        { label: '客数', value: '1,247 名', delta: '前月比 +12%' },
+        { label: 'リピート率', value: '38%', delta: '前月比 +3pt' },
+        { label: '売上', value: '¥3,420,000', delta: '前月比 +8%' }
+      ],
+      topMenus: ['本日の刺身盛り', '炙り〆鯖', '本日の日本酒'],
+      analysis: '週末の客数増加傾向が継続。平日の新規獲得が課題。',
+      recommendation: '平日限定の小皿コース（¥2,500）を検討。SNS での平日推しも強化を。',
+      closing: '来月も、' + brand + ' のお客様の笑顔のために。',
+      meta: ['PDF / 2 枚', '月 1 回', 'データ + 物語']
+    };
+  },
+  getPreviewSite: function (brandName) {
+    const brand = brandName || 'お店';
+    return {
+      heroImg: UNSPLASH('photo-1555992336-fb0d29498b13'),
+      brandName: brand,
+      atmosphere: brand + ' では、港町の暮らしに寄り添うような、気取らない温かさと、確かな技を大切にしています。',
+      ownerMessage: 'お客様の一日の締めくくりに、静かな安らぎを。本日も、お越しをお待ちしております。',
+      identity: '小さな台所だからこそ届けられる、一皿ずつの気持ち。',
+      meta: ['レスポンシブ', '独自ドメイン対応', 'SEO 設定済み']
+    };
   },
 
   getBrandSummary: function (brandName) {
@@ -1320,11 +1420,12 @@ function renderStep1V2() {
 
   el.innerHTML = eyebrow + '<h1 class="q">' + escH(q.q) + '</h1>' + subtitle + body;
 
-  const prev = qwrap.firstElementChild;
-  if (prev) {
+  // Clear any previous screens. Using setTimeout guarantees removal even when
+  // the user advances faster than the 220ms leave animation (CC-22a-fix5).
+  Array.from(qwrap.children).forEach(function (prev) {
     prev.classList.add('leave');
-    prev.addEventListener('animationend', function () { prev.remove(); }, { once: true });
-  }
+    setTimeout(function () { if (prev.parentNode) prev.remove(); }, 260);
+  });
   qwrap.appendChild(el);
 
   // Footer state
@@ -1842,16 +1943,135 @@ function s4Keydown(e) {
 function openStep4Preview(idx) {
   const item = step4Package[idx];
   if (!item) return;
-  document.getElementById('s4pdType').textContent = item.type;
-  document.getElementById('s4pdTitle').textContent = item.title;
-  document.getElementById('s4pdImg').src = item.imgUrl;
-  document.getElementById('s4pdContent').textContent = item.previewText || item.contentText || '';
-  const metaEl = document.getElementById('s4pdMeta');
-  metaEl.innerHTML = (item.meta || []).map(m => '<span>' + escH(m) + '</span>').join('');
+  const brand = state.form.brandName || 'あなたのお店';
+  const root = document.getElementById('s4pdRoot');
+  const header = '<div class="pd-header">'
+    + '<div class="pd-type">' + escH(item.type) + '</div>'
+    + '<h3 class="pd-title">' + escH(item.title) + '</h3>'
+    + '</div>';
+  const builders = {
+    pop:    buildS4PopPreview,
+    sns:    buildS4SnsPreview,
+    review: buildS4ReviewPreview,
+    report: buildS4MonthlyPreview,
+    site:   buildS4SitePreview
+  };
+  const builder = builders[item.id];
+  const body = builder ? builder(brand) : '';
+  const actionMap = {
+    pop:    { send: '印刷用にダウンロード', admin: '管理マスタで編集' },
+    sns:    { send: 'SNS に投稿',           admin: '管理マスタで編集' },
+    review: { send: 'この返信を送信',       admin: '管理マスタで確認' },
+    report: { send: 'レポート全文を開く',   admin: '管理マスタで詳細' },
+    site:   { send: '自社サイトを見る',     admin: '管理マスタで編集' }
+  };
+  const a = actionMap[item.id] || { send: '試す', admin: '管理マスタで使う' };
+  const actions = '<div class="pd-actions">'
+    + '<button class="pd-btn-secondary" onclick="closeStep4Preview()">閉じる</button>'
+    + '<button class="pd-btn-secondary" onclick="showToast(\'' + escH(a.send).replace(/'/g, "\\'") + ' は準備中です\')">' + escH(a.send) + '</button>'
+    + '<button class="pd-btn-primary" onclick="exitToAdmin()">' + escH(a.admin) + ' →</button>'
+    + '</div>';
+  root.innerHTML = header + body + actions;
   document.getElementById('step4PreviewModal').classList.add('show');
 }
 function closeStep4Preview() {
   document.getElementById('step4PreviewModal').classList.remove('show');
+}
+
+function buildS4PopPreview(brand) {
+  const d = MOCK_DATA_SOURCE.getPreviewPOP(brand);
+  const dishes = d.signatureDishes.map(function (x) {
+    return '<li><span>' + escH(x.name) + '</span><span class="pop-price">' + escH(x.price) + '</span></li>';
+  }).join('');
+  const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
+  return '<div class="pd-rich pd-pop">'
+    + '<div class="pop-hero"><img src="' + escH(d.heroImg) + '" alt=""></div>'
+    + '<div class="pop-foot">'
+    +   '<div class="pop-logo">' + escH(d.logoText) + '</div>'
+    +   '<div class="pop-catch">' + escH(d.catchphrase) + '</div>'
+    +   '<ul class="pop-dishes">' + dishes + '</ul>'
+    +   '<div class="pop-addr">' + escH(d.address) + '</div>'
+    + '</div>'
+    + '<div class="pd-meta">' + meta + '</div>'
+    + '</div>';
+}
+function buildS4SnsPreview(brand) {
+  const d = MOCK_DATA_SOURCE.getPreviewSNS(brand);
+  const tags = d.hashtags.map(escH).join(' ');
+  const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
+  const cap = escH(d.caption).replace(/\n/g, '<br>');
+  return '<div class="pd-rich pd-sns">'
+    + '<div class="sns-frame">'
+    +   '<div class="sns-head">'
+    +     '<span class="sns-avatar" style="background-image:url(\'' + escH(d.avatar) + '\')"></span>'
+    +     '<span class="sns-acct">'
+    +       '<span class="sns-name">' + escH(d.accountName) + '</span>'
+    +       '<span class="sns-handle">' + escH(d.accountHandle) + '</span>'
+    +     '</span>'
+    +   '</div>'
+    +   '<div class="sns-image"><img src="' + escH(d.image) + '" alt=""></div>'
+    +   '<div class="sns-cap">' + cap + '</div>'
+    +   '<div class="sns-tags">' + tags + '</div>'
+    + '</div>'
+    + '<div class="pd-meta">' + meta + '</div>'
+    + '</div>';
+}
+function buildS4ReviewPreview() {
+  const d = MOCK_DATA_SOURCE.getPreviewReview();
+  const stars = '★'.repeat(d.rating) + '☆'.repeat(Math.max(0, 5 - d.rating));
+  const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
+  const reply = escH(d.aiReply).replace(/\n/g, '<br>');
+  return '<div class="pd-rich pd-review">'
+    + '<div class="rv-source">' + escH(d.source) + ' のレビュー</div>'
+    + '<div class="rv-card rv-in">'
+    +   '<div class="rv-head">'
+    +     '<span class="rv-stars">' + stars + '</span>'
+    +     '<span class="rv-by">' + escH(d.customerName) + '</span>'
+    +   '</div>'
+    +   '<div class="rv-text">' + escH(d.customerMessage) + '</div>'
+    + '</div>'
+    + '<div class="rv-divider">Weir の返信ドラフト</div>'
+    + '<div class="rv-card rv-out">'
+    +   '<div class="rv-text">' + reply + '</div>'
+    + '</div>'
+    + '<div class="pd-meta">' + meta + '</div>'
+    + '</div>';
+}
+function buildS4MonthlyPreview(brand) {
+  const d = MOCK_DATA_SOURCE.getPreviewMonthly(brand);
+  const metrics = d.metrics.map(function (m) {
+    return '<div class="mo-metric">'
+      + '<div class="mo-label">' + escH(m.label) + '</div>'
+      + '<div class="mo-value">' + escH(m.value) + '</div>'
+      + '<div class="mo-delta">' + escH(m.delta) + '</div>'
+      + '</div>';
+  }).join('');
+  const menus = d.topMenus.map(function (x, i) {
+    return '<li>' + String(i+1) + '. ' + escH(x) + '</li>';
+  }).join('');
+  const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
+  return '<div class="pd-rich pd-monthly">'
+    + '<div class="mo-cover"><img src="' + escH(d.coverImg) + '" alt=""></div>'
+    + '<div class="mo-metrics">' + metrics + '</div>'
+    + '<div class="mo-section"><h4>人気メニュー TOP3</h4><ol class="mo-menus">' + menus + '</ol></div>'
+    + '<div class="mo-section"><h4>主要分析</h4><p>' + escH(d.analysis) + '</p></div>'
+    + '<div class="mo-section"><h4>対策提示</h4><p>' + escH(d.recommendation) + '</p></div>'
+    + '<div class="mo-closing">' + escH(d.closing) + '</div>'
+    + '<div class="pd-meta">' + meta + '</div>'
+    + '</div>';
+}
+function buildS4SitePreview(brand) {
+  const d = MOCK_DATA_SOURCE.getPreviewSite(brand);
+  const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
+  return '<div class="pd-rich pd-site">'
+    + '<div class="site-hero" style="background-image:url(\'' + escH(d.heroImg) + '\')">'
+    +   '<div class="site-hero-over"><div class="site-brand">' + escH(d.brandName) + '</div></div>'
+    + '</div>'
+    + '<div class="site-section"><h4>お店の雰囲気</h4><p>' + escH(d.atmosphere) + '</p></div>'
+    + '<div class="site-section"><h4>店主からのメッセージ</h4><p>' + escH(d.ownerMessage) + '</p></div>'
+    + '<div class="site-section"><h4>個性</h4><p>' + escH(d.identity) + '</p></div>'
+    + '<div class="pd-meta">' + meta + '</div>'
+    + '</div>';
 }
 
 function clearStep4Timers() {
