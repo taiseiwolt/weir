@@ -144,25 +144,31 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .onb-step.dark-step.active{display:flex;flex-direction:column}
 .onb-step.dark-step .dark-inner{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 
-/* ===== STEP 2: AI generation stage (monochrome + emerald ripples) ===== */
-#step2 .onb-step2-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px clamp(24px,5vw,60px);text-align:center;gap:22px;overflow:hidden}
+/* ===== STEP 2: AI generation stage (organic mist background, no central core) ===== */
+#step2 .onb-step2-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px clamp(24px,5vw,60px);text-align:center;gap:22px;overflow:hidden;position:relative;z-index:1}
 #step2 .step2-title{font:700 clamp(22px,2.6vw,32px)/1.35 inherit;letter-spacing:.005em;color:#fff;max-width:780px;min-height:36px}
 #step2 .step2-title .cursor{display:inline-block;width:2px;height:.9em;vertical-align:text-bottom;background:#009DE1;margin-left:3px;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 #step2 .step2-waiting{font:400 13px/1.7 inherit;color:rgba(255,255,255,.55);max-width:560px;min-height:44px;letter-spacing:.04em;white-space:pre-line;transition:opacity .5s}
 
-#step2 .ripple-stage{position:relative;width:clamp(240px,28vw,340px);aspect-ratio:1/1;display:grid;place-items:center}
-#step2 .ripple{position:absolute;inset:50% 50% 50% 50%;border-radius:50%;border:1px solid rgba(0,157,225,.55);transform:translate(-50%,-50%);animation:s2-ripple 3.6s cubic-bezier(.2,.7,.2,1) infinite;opacity:0}
-#step2 .ripple.r2{animation-delay:.9s;border-color:rgba(0,157,225,.45)}
-#step2 .ripple.r3{animation-delay:1.8s;border-color:rgba(0,157,225,.3)}
-#step2 .ripple.r4{animation-delay:2.7s;border-color:rgba(0,157,225,.2)}
-@keyframes s2-ripple{
-  0%{width:12%;height:12%;opacity:.9;border-width:2px}
-  80%{opacity:.15}
-  100%{width:140%;height:140%;opacity:0;border-width:1px}
-}
-#step2 .ink-blot{position:absolute;inset:0;margin:auto;width:24%;aspect-ratio:1/1;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(255,255,255,.85),rgba(255,255,255,.2) 60%,transparent 80%);filter:blur(4px);animation:s2-blot 3.2s ease-in-out infinite}
-@keyframes s2-blot{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.9}}
+/* Step 2 mist background — 12 blurred blobs scattered across viewport, no center (CC-22a-fix7 [1]/[8]) */
+#step2 .step2-mist-bg{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#step2 .step2-mist{position:absolute;border-radius:50%;filter:blur(60px);will-change:transform,opacity}
+#step2 .step2-mist-1 {top:-8%;  left:-6%;  width:280px;height:280px;background:rgba(0,157,225,.48);animation:s2-mist-a 8.5s ease-in-out 0s     infinite}
+#step2 .step2-mist-2 {top:12%;  left:26%;  width:210px;height:210px;background:rgba(0,157,225,.40);animation:s2-mist-b 9.8s ease-in-out -.6s   infinite}
+#step2 .step2-mist-3 {top:-4%;  right:14%; width:320px;height:320px;background:rgba(0,157,225,.36);animation:s2-mist-a 10.4s ease-in-out -1.2s infinite}
+#step2 .step2-mist-4 {top:34%;  right:-4%; width:260px;height:260px;background:rgba(0,157,225,.44);animation:s2-mist-b 8.2s ease-in-out -1.5s  infinite}
+#step2 .step2-mist-5 {top:42%;  left:8%;   width:190px;height:190px;background:rgba(0,157,225,.50);animation:s2-mist-a 9.1s ease-in-out -1.8s  infinite}
+#step2 .step2-mist-6 {top:58%;  left:38%;  width:240px;height:240px;background:rgba(0,157,225,.38);animation:s2-mist-b 10.8s ease-in-out -2s   infinite}
+#step2 .step2-mist-7 {bottom:6%; right:24%;width:220px;height:220px;background:rgba(0,157,225,.42);animation:s2-mist-a 8.8s ease-in-out -2.5s  infinite}
+#step2 .step2-mist-8 {bottom:18%;left:-4%; width:300px;height:300px;background:rgba(0,157,225,.35);animation:s2-mist-b 9.5s ease-in-out -2.8s  infinite}
+#step2 .step2-mist-9 {bottom:-6%;right:8%; width:280px;height:280px;background:rgba(0,157,225,.46);animation:s2-mist-a 10.2s ease-in-out -3.2s infinite}
+#step2 .step2-mist-10{top:18%;  left:62%;  width:170px;height:170px;background:rgba(0,157,225,.52);animation:s2-mist-b 8.6s ease-in-out -4s    infinite}
+#step2 .step2-mist-11{top:70%;  right:48%; width:200px;height:200px;background:rgba(0,157,225,.40);animation:s2-mist-a 11s   ease-in-out -2s   infinite}
+#step2 .step2-mist-12{top:-10%; left:48%;  width:240px;height:240px;background:rgba(0,157,225,.44);animation:s2-mist-b 9.3s ease-in-out -5s    infinite}
+@keyframes s2-mist-a{0%,100%{transform:scale(1);opacity:.48}50%{transform:scale(1.25);opacity:.72}}
+@keyframes s2-mist-b{0%,100%{transform:scale(1.15);opacity:.35}50%{transform:scale(.85);opacity:.58}}
+@media(prefers-reduced-motion:reduce){#step2 .step2-mist{animation:none}}
 
 #step2 .onb-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:760px;margin:0 auto}
 #step2 .onb-stage-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 14px;text-align:left;transition:all .5s cubic-bezier(.2,1,.3,1);opacity:.55;position:relative;overflow:hidden}
@@ -181,11 +187,11 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 @keyframes s2-stageGlow{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
 @keyframes s2-dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(0,157,225,.2)}50%{box-shadow:0 0 0 6px rgba(0,157,225,.08)}}
 
-#step2 .onb-parallel{flex-shrink:0;border-top:1px solid rgba(255,255,255,.06);padding:14px 32px 18px;background:rgba(0,0,0,.4)}
-#step2 .onb-parallel-title{font:600 11px/1 inherit;color:rgba(255,255,255,.6);margin-bottom:8px;letter-spacing:.14em;text-transform:uppercase;text-align:center}
-#step2 .onb-parallel-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-#step2 .onb-parallel-item{font:500 11px/1 inherit;padding:8px 14px;background:transparent;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.75);letter-spacing:.03em;cursor:pointer;transition:border-color .2s,color .2s}
-#step2 .onb-parallel-item:hover{border-color:rgba(255,255,255,.45);color:#fff}
+.onb-parallel{flex-shrink:0;border-top:1px solid rgba(255,255,255,.06);padding:14px 32px 18px;background:rgba(0,0,0,.4);position:relative;z-index:1}
+.onb-parallel-title{font:600 11px/1 inherit;color:rgba(255,255,255,.6);margin-bottom:8px;letter-spacing:.14em;text-transform:uppercase;text-align:center}
+.onb-parallel-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.onb-parallel-item{font:500 11px/1 inherit;padding:8px 14px;background:transparent;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.75);letter-spacing:.03em;cursor:pointer;transition:border-color .2s,color .2s}
+.onb-parallel-item:hover{border-color:rgba(255,255,255,.45);color:#fff}
 
 /* ===== STEP 3: 16-tile gallery (compact dark + preview modal) ===== */
 #step3 .gallery-head{flex-shrink:0;padding:20px clamp(24px,5vw,60px) 12px;text-align:center}
@@ -346,14 +352,17 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .s4-preview-modal .pd-rich{padding:18px 24px 4px;display:flex;flex-direction:column;gap:14px}
 .s4-preview-modal .pd-rich .pd-meta{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px}
 .s4-preview-modal .pd-rich .pd-meta span{font:500 10.5px/1 inherit;padding:6px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.7);letter-spacing:.04em}
-/* POP (CC-22a-fix6 C-2: 白枠線で境界を明示) */
-.pd-pop,.weir-preview-pop{border:1px solid rgba(255,255,255,.15);border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
-.pd-pop .pop-hero{aspect-ratio:16/10;overflow:hidden;background:#111;border-radius:0}
+/* POP (CC-22a-fix7 [6]: print-area で印刷範囲を明示、1440x900 でスクロール不要) */
+.weir-preview-pop{border:1px solid rgba(255,255,255,.15);border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
+.pd-pop{display:flex;flex-direction:column;gap:10px}
+.pd-pop .pop-print-label{font:500 9.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.22em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:left;margin:0;padding-left:2px}
+.pd-pop .pop-print-area{border:1px dashed rgba(255,255,255,.28);border-radius:4px;overflow:hidden}
+.pd-pop .pop-hero{aspect-ratio:3/1;overflow:hidden;background:#111;border-radius:0}
 .pd-pop .pop-hero img{width:100%;height:100%;object-fit:cover;display:block}
-.pd-pop .pop-foot{background:#faf9f5;color:#1a1a1a;padding:18px 20px;border-radius:4px;display:flex;flex-direction:column;gap:10px;text-align:center;font-family:'Red Hat Display','Noto Sans JP',sans-serif}
+.pd-pop .pop-foot{background:#faf9f5;color:#1a1a1a;padding:14px 18px;border-radius:0;display:flex;flex-direction:column;gap:8px;text-align:center;font-family:'Red Hat Display','Noto Sans JP',sans-serif}
 .pd-pop .pop-logo{font-weight:700;font-size:17px;letter-spacing:.08em}
 .pd-pop .pop-catch{font-size:13px;color:#555;letter-spacing:.02em}
-.pd-pop .pop-dishes{list-style:none;margin:6px 0;padding:8px 0;border-top:1px solid rgba(0,0,0,.1);border-bottom:1px solid rgba(0,0,0,.1);display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:#1a1a1a}
+.pd-pop .pop-dishes{list-style:none;margin:4px 0;padding:6px 0;border-top:1px solid rgba(0,0,0,.1);border-bottom:1px solid rgba(0,0,0,.1);display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#1a1a1a}
 .pd-pop .pop-dishes li{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .pd-pop .pop-dishes .pop-price{font-weight:700}
 .pd-pop .pop-addr{font-size:10.5px;color:#777;letter-spacing:.06em;font-weight:500}
@@ -393,8 +402,8 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .weir-preview-report .report-mini-chart{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:12px 14px 14px}
 .weir-preview-report .report-chart-label{font:500 10.5px/1 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.12em;margin-bottom:10px}
 .weir-preview-report .report-chart-bars{display:flex;align-items:flex-end;gap:8px;height:80px}
-.weir-preview-report .report-chart-bar{flex:1;background:linear-gradient(to top,rgba(255,255,255,.45),rgba(255,255,255,.18));border-radius:2px 2px 0 0;min-height:6px}
-.weir-preview-report .report-chart-bar:last-child{background:linear-gradient(to top,#fff,rgba(255,255,255,.5))}
+.weir-preview-report .report-chart-bar{flex:1;background:rgba(0,157,225,.35);border-radius:2px 2px 0 0;min-height:6px}
+.weir-preview-report .report-chart-bar:last-child{background:#009DE1}
 
 .weir-preview-report .report-section-title{font:600 11px/1 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 10px}
 .weir-preview-report .report-factors{display:flex;flex-direction:column;gap:8px}
@@ -435,7 +444,7 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 @media(max-width:900px){
   .onb-main{padding:calc(var(--header-h) + 20px) 14px 40px}
   #step2 .onb-stages{grid-template-columns:repeat(2,1fr)}
-  #step2 .onb-parallel{padding:12px 20px 14px}
+  .onb-parallel{padding:12px 20px 14px}
   #step3 .onb-gallery-grid{grid-template-columns:repeat(3,1fr)}
   #step4 .package-grid{grid-template-columns:repeat(3,1fr)}
 }
@@ -444,8 +453,8 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
   #step2 .ripple-stage{width:clamp(180px,46vw,240px)}
   #step2 .step2-title{font-size:18px}
   #step2 .onb-stages{grid-template-columns:repeat(2,1fr);gap:8px}
-  #step2 .onb-parallel{padding:10px 14px 14px}
-  #step2 .onb-parallel-item{font-size:10.5px;padding:6px 10px}
+  .onb-parallel{padding:10px 14px 14px}
+  .onb-parallel-item{font-size:10.5px;padding:6px 10px}
   #step3 .onb-gallery-grid{grid-template-columns:repeat(2,1fr);gap:10px}
   #step3 .gallery-head .gallery-title{font-size:18px}
   #step3 .gallery-head .gallery-sub{font-size:11px}
@@ -737,9 +746,9 @@ body.step1-active #step4{display:none!important}
   <span id="greetingBrand2" style="display:none"></span>
 </section>
 
-<!-- ===== STEP 2: AI 生成演出 (dark + emerald ripples) ===== -->
+<!-- ===== STEP 2: AI 生成演出 (dark + 12 mist blobs, CC-22a-fix7 [1]) ===== -->
 <section class="onb-step dark-step" id="step2">
-  <div class="weir-bg-animation" aria-hidden="true">
+  <div class="step2-mist-bg" aria-hidden="true">
     <svg class="weir-bg-mesh" preserveAspectRatio="xMidYMid slice" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="step2Mesh" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -748,32 +757,24 @@ body.step1-active #step4{display:none!important}
       </defs>
       <rect width="100" height="100" fill="url(#step2Mesh)"/>
     </svg>
-    <div class="weir-bg-blob weir-bg-blob-1"></div>
-    <div class="weir-bg-blob weir-bg-blob-2"></div>
-    <div class="weir-bg-blob weir-bg-blob-3"></div>
-    <div class="weir-bg-blob weir-bg-blob-4 desktop-only"></div>
-    <div class="weir-bg-blob weir-bg-blob-5 desktop-only"></div>
+    <div class="step2-mist step2-mist-1"></div>
+    <div class="step2-mist step2-mist-2"></div>
+    <div class="step2-mist step2-mist-3"></div>
+    <div class="step2-mist step2-mist-4"></div>
+    <div class="step2-mist step2-mist-5"></div>
+    <div class="step2-mist step2-mist-6"></div>
+    <div class="step2-mist step2-mist-7"></div>
+    <div class="step2-mist step2-mist-8"></div>
+    <div class="step2-mist step2-mist-9"></div>
+    <div class="step2-mist step2-mist-10"></div>
+    <div class="step2-mist step2-mist-11"></div>
+    <div class="step2-mist step2-mist-12"></div>
   </div>
   <div class="dark-inner">
     <div class="onb-step2-stage">
-      <div class="ripple-stage" aria-hidden="true">
-        <span class="ripple r1"></span>
-        <span class="ripple r2"></span>
-        <span class="ripple r3"></span>
-        <span class="ripple r4"></span>
-        <span class="ink-blot"></span>
-      </div>
       <div class="step2-title" id="step2Typing"></div>
       <div class="step2-waiting" id="step2WaitingMsg"></div>
       <div class="onb-stages" id="stageCards"><!-- rendered by JS --></div>
-    </div>
-    <div class="onb-parallel">
-      <div class="onb-parallel-title">お待ちの間、他の設定も進められます</div>
-      <div class="onb-parallel-list">
-        <span class="onb-parallel-item">営業時間を設定する</span>
-        <span class="onb-parallel-item">決済を設定する（Stripe 連携）</span>
-        <span class="onb-parallel-item">メニューの詳細を追加する</span>
-      </div>
     </div>
   </div>
 </section>
@@ -792,7 +793,7 @@ body.step1-active #step4{display:none!important}
   </div>
   <div class="dark-inner">
     <div class="gallery-head">
-      <h1 class="gallery-title">どのテイストが <span id="step3BrandName">あなたのお店</span> さんに似合いますか？</h1>
+      <h1 class="gallery-title">どのテイストが <span id="step3BrandName">あなたのお店</span> さんに最も近いですか？</h1>
       <p class="gallery-sub">4 人の AI パートナーが、それぞれ 4 パターン用意しました。計 16 枚の中から、直感で 1 枚お選びください。</p>
     </div>
     <div class="onb-gallery-grid" id="galleryGrid">
@@ -826,20 +827,10 @@ body.step1-active #step4{display:none!important}
     <nav class="sub-nav" aria-label="Step 4 sub-progress">
       <span class="sub-dot" data-sub="1"></span>
       <span class="sub-dot" data-sub="2"></span>
-      <span class="sub-dot" data-sub="3"></span>
     </nav>
 
-    <!-- 4-1 完了宣言 -->
+    <!-- 4-1 5-point preview (hero page removed in CC-22a-fix7 [3]) -->
     <div class="sub-step" data-sub="1">
-      <div class="s4-hero">
-        <div class="hero-img" id="step4SelectedImg"><img src="" alt=""></div>
-        <div class="hero-line" id="reveal1" data-text="{brand} のための AI パートナーが決まりました。"></div>
-        <div class="hero-line small" id="reveal2" data-text="Weir があなたのお店の全体像を理解しました。"></div>
-      </div>
-    </div>
-
-    <!-- 4-2 5-point preview -->
-    <div class="sub-step" data-sub="2">
       <div class="s4-pkg-head">
         <h2 class="pkg-title">Weir が提供する、あなたのお店のための 5 つの価値</h2>
         <p class="pkg-sub">タイルをクリックすると実際の仕上がりが確認できます。これからも Weir は進化し続けます。</p>
@@ -847,10 +838,18 @@ body.step1-active #step4{display:none!important}
       <div class="package-grid" id="packageGrid">
         <!-- 5 cards rendered by startStep4 -->
       </div>
+      <div class="onb-parallel">
+        <div class="onb-parallel-title">今後やること</div>
+        <div class="onb-parallel-list">
+          <span class="onb-parallel-item">営業時間を設定する</span>
+          <span class="onb-parallel-item">決済を設定する（Stripe 連携）</span>
+          <span class="onb-parallel-item">メニューの詳細を追加する</span>
+        </div>
+      </div>
     </div>
 
-    <!-- 4-3 summary + CTA -->
-    <div class="sub-step" data-sub="3">
+    <!-- 4-2 summary + CTA -->
+    <div class="sub-step" data-sub="2">
       <div class="s4-summary">
         <h2 class="summary-title">Weir が理解した <span id="summaryBrand">あなたのお店</span></h2>
         <div class="summary-block" id="summaryBlock">
@@ -968,8 +967,10 @@ let state = {
 
 // ===== MOCK DATA SOURCE (replaced in CC-22b) =====
 // CC-22a-fix6 (D-214 / D-215): switched from Unsplash to local /assets/onboarding/step3/ webp set.
+// CC-22a-fix7 [4]: Step 4 5-value cards now use function-specific illustrations at /assets/onboarding/step4/.
 // CC-22b: replace these with Supabase Storage / API responses, delete this block.
 const STEP3_IMG = (tone, n) => `/assets/onboarding/step3/weir-${tone}-${n}.webp`;
+const STEP4_FEATURE_IMG = (id) => `/assets/onboarding/step4/weir-feature-${id}.webp`;
 const MOCK_DATA_SOURCE = {
   // 16 preview tiles: 4 tones x 4 cuisines. Each tile carries an internal model_name (D-196: never shown in UI).
   getPreviews: function() {
@@ -1028,35 +1029,35 @@ const MOCK_DATA_SOURCE = {
         type: 'POP',
         title: '店頭ポスター',
         hint: 'A4 印刷対応',
-        imgUrl: STEP3_IMG('warmth', 1)
+        imgUrl: STEP4_FEATURE_IMG('pop')
       },
       {
         id: 'sns',
         type: 'SNS',
         title: 'Instagram 投稿',
         hint: 'サイズは投稿タイプに応じて最適化',
-        imgUrl: STEP3_IMG('modern', 3)
+        imgUrl: STEP4_FEATURE_IMG('sns')
       },
       {
         id: 'review',
         type: 'レビュー返信',
         title: '★5 のお客様への返信',
         hint: '文例 + 編集可能',
-        imgUrl: STEP3_IMG('warmth', 4)
+        imgUrl: STEP4_FEATURE_IMG('review')
       },
       {
         id: 'report',
         type: '月次レポート',
         title: '今月のふり返り',
         hint: '売上分析 / 対策提示 / ソリューション提供',
-        imgUrl: STEP3_IMG('premium', 2)
+        imgUrl: STEP4_FEATURE_IMG('report')
       },
       {
         id: 'site',
         type: '自社サイト',
         title: 'ブランドサイト',
         hint: '雰囲気 / メッセージ / 個性',
-        imgUrl: STEP3_IMG('premium', 1)
+        imgUrl: STEP4_FEATURE_IMG('site')
       }
     ];
   },
@@ -1065,7 +1066,7 @@ const MOCK_DATA_SOURCE = {
   getPreviewPOP: function (brandName) {
     const brand = brandName || 'お店';
     return {
-      heroImg: STEP3_IMG('warmth', 1),
+      heroImg: STEP4_FEATURE_IMG('pop'),
       logoText: brand,
       catchphrase: '港町の、ちいさな台所',
       signatureDishes: [
@@ -1083,7 +1084,7 @@ const MOCK_DATA_SOURCE = {
       accountName: brand,
       accountHandle: '@' + (brand.replace(/\s+/g, '')).toLowerCase() + '_official',
       avatar: STEP3_IMG('premium', 1),
-      image: STEP3_IMG('modern', 3),
+      image: STEP4_FEATURE_IMG('sns'),
       caption: '本日の看板メニュー、ご用意いたしました。\n\n一皿ずつ丁寧に仕上げた今日の一品を、ぜひお店でお楽しみください。',
       hashtags: ['#' + brand.replace(/\s+/g, ''), '#本日のおすすめ', '#お料理', '#和食'],
       meta: ['Instagram', '自動ドラフト', '承認後に投稿']
@@ -1132,7 +1133,7 @@ const MOCK_DATA_SOURCE = {
   getPreviewSite: function (brandName) {
     const brand = brandName || 'お店';
     return {
-      heroImg: STEP3_IMG('modern', 3),
+      heroImg: STEP4_FEATURE_IMG('site'),
       brandName: brand,
       atmosphere: brand + ' では、港町の暮らしに寄り添うような、気取らない温かさと、確かな技を大切にしています。',
       ownerMessage: 'お客様の一日の締めくくりに、静かな安らぎを。本日も、お越しをお待ちしております。',
@@ -1818,7 +1819,6 @@ function renderGallery() {
     tile.style.animationDelay = (idx * 40) + 'ms';
     tile.innerHTML = '<img src="' + escH(p.imgUrl) + '" alt="" loading="lazy">'
       + '<div class="tone-label">'
-      +   '<span class="tl-tone">' + escH(p.toneLabel) + '</span>'
       +   '<span class="tl-cuisine">' + escH(p.cuisineLabel || '') + '</span>'
       + '</div>';
     tile.onclick = () => openPreviewModal(p.id);
@@ -1899,21 +1899,7 @@ function startStep4() {
   const sel = state.previews.find(p => p.id === state.selectedPreviewId);
   const brand = state.form.brandName || 'あなたのお店';
 
-  // 4-1 hero image + reveal lines
-  const heroImg = document.querySelector('#step4SelectedImg img');
-  if (sel && heroImg) heroImg.src = sel.imgUrl;
-  const reveal1 = document.getElementById('reveal1');
-  const reveal2 = document.getElementById('reveal2');
-  [reveal1, reveal2].forEach(el => {
-    if (!el) return;
-    el.classList.remove('visible');
-    el.textContent = (el.dataset.text || '').replace(/\{brand\}/g, brand);
-  });
-  const t1 = setTimeout(() => reveal1 && reveal1.classList.add('visible'), 300);
-  const t2 = setTimeout(() => reveal2 && reveal2.classList.add('visible'), 1400);
-  step4Timers.push(t1, t2);
-
-  // 4-2 render 5-point cards
+  // 4-1 render 5-point cards (hero page removed in CC-22a-fix7 [3])
   step4Package = MOCK_DATA_SOURCE.getConfirmationPackage(sel, brand);
   const grid = document.getElementById('packageGrid');
   grid.innerHTML = '';
@@ -1934,7 +1920,7 @@ function startStep4() {
     grid.appendChild(card);
   });
 
-  // 4-3 summary
+  // 4-2 summary
   const summary = MOCK_DATA_SOURCE.getBrandSummary(brand);
   const block = document.getElementById('summaryBlock');
   block.innerHTML = summary.map(s =>
@@ -1972,7 +1958,7 @@ function s4RenderSub() {
   const primaryLabel = document.getElementById('s4PrimaryLabel');
   const secondary = document.getElementById('s4Secondary');
   back.disabled = n === 1;
-  if (n === 3) {
+  if (n === 2) {
     primary.classList.remove('white');
     primaryLabel.textContent = '管理マスタで使ってみる';
     secondary.hidden = false;
@@ -1985,7 +1971,7 @@ function s4RenderSub() {
 }
 function s4Next() {
   const n = state.step4Sub || 1;
-  if (n < 3) { state.step4Sub = n + 1; s4RenderSub(); return; }
+  if (n < 2) { state.step4Sub = n + 1; s4RenderSub(); return; }
   // Final: enter admin with onboarded state
   exitToAdmin();
 }
@@ -2052,12 +2038,15 @@ function buildS4PopPreview(brand) {
   }).join('');
   const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
   return '<div class="pd-rich pd-pop">'
-    + '<div class="pop-hero"><img src="' + escH(d.heroImg) + '" alt=""></div>'
-    + '<div class="pop-foot">'
-    +   '<div class="pop-logo">' + escH(d.logoText) + '</div>'
-    +   '<div class="pop-catch">' + escH(d.catchphrase) + '</div>'
-    +   '<ul class="pop-dishes">' + dishes + '</ul>'
-    +   '<div class="pop-addr">' + escH(d.address) + '</div>'
+    + '<div class="pop-print-label">印刷範囲</div>'
+    + '<div class="pop-print-area">'
+    +   '<div class="pop-hero"><img src="' + escH(d.heroImg) + '" alt=""></div>'
+    +   '<div class="pop-foot">'
+    +     '<div class="pop-logo">' + escH(d.logoText) + '</div>'
+    +     '<div class="pop-catch">' + escH(d.catchphrase) + '</div>'
+    +     '<ul class="pop-dishes">' + dishes + '</ul>'
+    +     '<div class="pop-addr">' + escH(d.address) + '</div>'
+    +   '</div>'
     + '</div>'
     + '<div class="pd-meta">' + meta + '</div>'
     + '</div>';
