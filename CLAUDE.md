@@ -230,6 +230,9 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - LocalStorage キー `weir_onboarding_state_v1` で中断復帰対応。写真の dataUrl が 4MB を超えたら metadata のみ保存にフォールバック
 - Step 4 完了後:「後で選ぶ」→ `/weir-admin.html` へ遷移、「続いてプランを選ぶ」→ toast（CC-22d まで）
 - **CC-22b で削除要**: Mock 画像は `images.unsplash.com`（既存 CSP 許可済）から curated 21 枚 photo ID で供給。Supabase Storage 移行時に `MOCK_DATA_SOURCE.getPreviews/getConfirmationPackage` の URL を差し替える
+- **Step 1 は黒背景 + 白文字 + Red Hat Display**（CC-22a-fix2、2026-04-22）。viewport 全面（`body.step1-active` で `overflow:hidden` + 旧 `.onb-header` / Step 2-4 非表示）、縦スクロールなしの 9 画面 Typeform 方式。Step 2/3/4 も同じ方針で刷新予定
+- **Weir ブランドフォント**: Red Hat Display（英字）+ Noto Sans JP（日本語）。全 Weir UI で統一展開予定（D-204）。Google Fonts 経由、CSP は既存で許可済み
+- **Weir ロゴ（黒背景・横型）**: `/weir-header-black.png`（リポジトリ直下）。依頼文では `weir-horizontal-tight-black.png` と呼ばれることがあるが同一画像
 
 ---
 
