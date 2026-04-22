@@ -230,9 +230,14 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - LocalStorage キー `weir_onboarding_state_v1` で中断復帰対応。写真の dataUrl が 4MB を超えたら metadata のみ保存にフォールバック
 - Step 4 完了後:「後で選ぶ」→ `/weir-admin.html` へ遷移、「続いてプランを選ぶ」→ toast（CC-22d まで）
 - **CC-22b で削除要**: Mock 画像は `images.unsplash.com`（既存 CSP 許可済）から curated 21 枚 photo ID で供給。Supabase Storage 移行時に `MOCK_DATA_SOURCE.getPreviews/getConfirmationPackage` の URL を差し替える
-- **Step 1 は黒背景 + 白文字 + Red Hat Display**（CC-22a-fix2、2026-04-22）。viewport 全面（`body.step1-active` で `overflow:hidden` + 旧 `.onb-header` / Step 2-4 非表示）、縦スクロールなしの 9 画面 Typeform 方式。Step 2/3/4 も同じ方針で刷新予定
+- **Step 1 は黒背景 + 白文字 + Red Hat Display**（CC-22a-fix2、2026-04-22）。viewport 全面（`body.step1-active` で `overflow:hidden`）、縦スクロールなしの 9 画面 Typeform 方式。Step 2/3/4 も同じ方針で刷新予定
 - **Weir ブランドフォント**: Red Hat Display（英字）+ Noto Sans JP（日本語）。全 Weir UI で統一展開予定（D-204）。Google Fonts 経由、CSP は既存で許可済み
+- **Weir カラー体系**（D-205）: 黒 `#000000` / 白 `#FFFFFF` / エメラルド `#10B981`（active）+ `#059669`（done）。進捗ドット・アクセントは緑系、紫 `#6c5ce7` は非推奨
 - **Weir ロゴ（黒背景・横型）**: `/weir-header-black.png`（リポジトリ直下）。依頼文では `weir-horizontal-tight-black.png` と呼ばれることがあるが同一画像
+- **共通 `.onb-header` は全 Step で常時表示**（CC-22a-fix3、2026-04-22）。`body.step1-active` で非表示にする運用はやめた。Step 1 v2 は共通ヘッダー下から（`top:var(--header-h)`）開始
+- **`.onb-step` の `display` は CSS specificity 注意**: `#step1.step1-v2` は ID+class で `.onb-step.active` より勝つ。必ず `#step1.step1-v2{display:none}` + `#step1.step1-v2.active{display:block}` で ID セレクタ同士で決着（CC-22a-fix3 Q9 遷移バグ教訓）
+- **Step 1 背景アニメーション**: エメラルド blob 3 つ（filter:blur 100px）+ SVG mesh、`.bg-animation` レイヤー z-index:0、`.s1v2-app` z-index:1。`prefers-reduced-motion:reduce` で停止、モバイルでは blob サイズと blur 縮小
+- **セルフオンボーディング入口**（D-206）: 将来加盟店が自力で Weir を始める入口画面。動的背景は先進性演出の差別化要素として Step 1 〜 4 全体に展開予定
 
 ---
 
