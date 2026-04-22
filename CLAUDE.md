@@ -245,7 +245,9 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - **Step 4-3 最終 CTA**（D-208）: Primary = 「管理マスタで使ってみる」→ `/weir-admin.html`、Secondary = 「後で選ぶ」。「続いてプランを選ぶ」はオンボ完了後の別フロー（CC-22d 管轄）に譲渡
 - **`MOCK_DATA_SOURCE.getConfirmationPackage` のフィールド拡張**（CC-22a-fix4）: 既存の `id/type/narrative/title/imgUrl/contentText` に加え `hint`（4-2 カードの一言）、`previewText`（モーダル詳細文）、`meta`（3 タグ配列）を追加。CC-22b で実 API 接続時は各メソッドを差し替えるだけで互換
 - **`MOCK_DATA_SOURCE.getBrandSummary`**（CC-22a-fix4 新規）: 4-3 サマリ用 3 セクション（お店の個性 / ブランドボイス / お客様との距離感）
-- **Step 3 Unsplash 画像は内容確認必須**: photo ID 差替時は人物メインや業態不一致に注意（例: warmth-3「昔ながらの喫茶店」/ modern-1「スタイリッシュなバー」/ modern-3「デザインカフェ」は過去に不一致報告あり）。CC-22a-fix6 で `/public/assets/onboarding/step3/weir-{tone}-{N}.webp` への差替予定（Taisei が GPT 生成中）
+- **Step 3 画像は `/assets/onboarding/step3/weir-{tone}-{n}.webp`**（D-215、CC-22a-fix6）: 16 業態セット確定。配置はリポジトリ直下の `assets/` 配下（`public/` ではない — `outputDirectory:"."` 設定下で `public/` はルート配信されないため）。16 業態一覧と命名規則は `assets/onboarding/step3/README.md` 参照
+- **Weir アクセントカラー = 青 `#009DE1`**（D-214、CC-22a-fix6）: プログレスバー / ラベル / アクセントは全て `#009DE1`（dark variant `#0080B8`、light `#7DD3FC`、透明オーバーレイ `rgba(0,157,225,X)`）。旧 `#10B981` / `#059669` 系の緑は廃止、新規コードで使用禁止。ボタンは D-209 通り白（`#fff`）。iOS theme-color は `#000` 黒維持
+- **Unsplash 撤廃**（CC-22a-fix6）: `vercel.json` の CSP から `https://images.unsplash.com` を削除済み。onboarding + order-* ページの画像は全て `/assets/onboarding/step3/weir-*.webp` で統一。将来別用途で使う場合は別 Decision で CSP に戻す
 - **Weir プライマリボタン = 白**（D-209、CC-22a-fix5）: bg `#fff` / color `#000`。緑（emerald `#10B981`）はプログレスバー・ラベル・アクセントのみ、ボタンには絶対に使わない。Step 1 の `.primary-v2` / Step 3 の `.weir-btn-primary` / Step 4 の `.s4-primary` / モーダルの `.pd-btn-primary` は全て白系で統一
 - **AI / Weir の用語使い分け**（D-210、CC-22a-fix5）: 加盟店表示は基本「Weir」（製品名）。例外として Step 2 の演出メッセージは「AI パートナー」を維持（探索演出として直感的）。Step 4 の見出し / 締め / Step 3 の「迷ったら〜に選んでもらう」は全て「Weir」
 - **Step 1 質問切替**（CC-22a-fix5 教訓）: `qwrap.firstElementChild` だけ leave すると連続クリックで前画面が累積する。`Array.from(qwrap.children)` 全てに leave + `setTimeout(remove, 260)` で確実に削除する

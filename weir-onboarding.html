@@ -40,8 +40,8 @@ body{font-family:'Poppins','Noto Sans JP',sans-serif;color:var(--text);font-size
 .onb-header-logo img{height:24px;width:auto;object-fit:contain;display:block}
 .onb-header-progress{flex:1;display:flex;align-items:center;gap:8px;max-width:560px;margin:0 auto}
 .onb-step-dot{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .3s}
-.onb-step-dot.active{background:#10B981}
-.onb-step-dot.done{background:#059669}
+.onb-step-dot.active{background:#009DE1}
+.onb-step-dot.done{background:#0080B8}
 .onb-step-label{font-size:11px;color:#fff;font-weight:600;flex-shrink:0;min-width:52px;text-align:right;letter-spacing:.14em}
 .onb-header-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
 .onb-resume-hint{font-size:11px;color:rgba(255,255,255,.5)}
@@ -147,15 +147,15 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 /* ===== STEP 2: AI generation stage (monochrome + emerald ripples) ===== */
 #step2 .onb-step2-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px clamp(24px,5vw,60px);text-align:center;gap:22px;overflow:hidden}
 #step2 .step2-title{font:700 clamp(22px,2.6vw,32px)/1.35 inherit;letter-spacing:.005em;color:#fff;max-width:780px;min-height:36px}
-#step2 .step2-title .cursor{display:inline-block;width:2px;height:.9em;vertical-align:text-bottom;background:#10B981;margin-left:3px;animation:blink 1s step-end infinite}
+#step2 .step2-title .cursor{display:inline-block;width:2px;height:.9em;vertical-align:text-bottom;background:#009DE1;margin-left:3px;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 #step2 .step2-waiting{font:400 13px/1.7 inherit;color:rgba(255,255,255,.55);max-width:560px;min-height:44px;letter-spacing:.04em;white-space:pre-line;transition:opacity .5s}
 
 #step2 .ripple-stage{position:relative;width:clamp(240px,28vw,340px);aspect-ratio:1/1;display:grid;place-items:center}
-#step2 .ripple{position:absolute;inset:50% 50% 50% 50%;border-radius:50%;border:1px solid rgba(16,185,129,.55);transform:translate(-50%,-50%);animation:s2-ripple 3.6s cubic-bezier(.2,.7,.2,1) infinite;opacity:0}
-#step2 .ripple.r2{animation-delay:.9s;border-color:rgba(16,185,129,.45)}
-#step2 .ripple.r3{animation-delay:1.8s;border-color:rgba(16,185,129,.3)}
-#step2 .ripple.r4{animation-delay:2.7s;border-color:rgba(16,185,129,.2)}
+#step2 .ripple{position:absolute;inset:50% 50% 50% 50%;border-radius:50%;border:1px solid rgba(0,157,225,.55);transform:translate(-50%,-50%);animation:s2-ripple 3.6s cubic-bezier(.2,.7,.2,1) infinite;opacity:0}
+#step2 .ripple.r2{animation-delay:.9s;border-color:rgba(0,157,225,.45)}
+#step2 .ripple.r3{animation-delay:1.8s;border-color:rgba(0,157,225,.3)}
+#step2 .ripple.r4{animation-delay:2.7s;border-color:rgba(0,157,225,.2)}
 @keyframes s2-ripple{
   0%{width:12%;height:12%;opacity:.9;border-width:2px}
   80%{opacity:.15}
@@ -166,20 +166,20 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 
 #step2 .onb-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:760px;margin:0 auto}
 #step2 .onb-stage-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 14px;text-align:left;transition:all .5s cubic-bezier(.2,1,.3,1);opacity:.55;position:relative;overflow:hidden}
-#step2 .onb-stage-card::before{content:'';position:absolute;inset:auto 0 0 0;height:1px;background:linear-gradient(90deg,transparent,#10B981,transparent);opacity:0;transition:opacity .4s}
-#step2 .onb-stage-card.working{opacity:1;border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.05)}
+#step2 .onb-stage-card::before{content:'';position:absolute;inset:auto 0 0 0;height:1px;background:linear-gradient(90deg,transparent,#009DE1,transparent);opacity:0;transition:opacity .4s}
+#step2 .onb-stage-card.working{opacity:1;border-color:rgba(0,157,225,.5);background:rgba(0,157,225,.05)}
 #step2 .onb-stage-card.working::before{opacity:1;animation:s2-stageGlow 1.8s ease-in-out infinite}
-#step2 .onb-stage-card.done{opacity:1;border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.04)}
+#step2 .onb-stage-card.done{opacity:1;border-color:rgba(0,157,225,.4);background:rgba(0,157,225,.04)}
 #step2 .onb-stage-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 #step2 .onb-stage-num{font-size:9px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.16em}
 #step2 .onb-stage-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;transition:all .3s}
-#step2 .onb-stage-card.working .onb-stage-dot{background:#10B981;box-shadow:0 0 0 3px rgba(16,185,129,.2);animation:s2-dotPulse 1.4s ease-in-out infinite}
-#step2 .onb-stage-card.done .onb-stage-dot{background:#059669;box-shadow:0 0 0 2px rgba(16,185,129,.15);position:relative}
+#step2 .onb-stage-card.working .onb-stage-dot{background:#009DE1;box-shadow:0 0 0 3px rgba(0,157,225,.2);animation:s2-dotPulse 1.4s ease-in-out infinite}
+#step2 .onb-stage-card.done .onb-stage-dot{background:#0080B8;box-shadow:0 0 0 2px rgba(0,157,225,.15);position:relative}
 #step2 .onb-stage-card.done .onb-stage-dot::after{content:'';position:absolute;top:50%;left:50%;width:3px;height:1.5px;border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:translate(-50%,-70%) rotate(-45deg)}
 #step2 .onb-stage-name{font-size:12px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:2px}
 #step2 .onb-stage-desc{font-size:10.5px;color:rgba(255,255,255,.55);line-height:1.45}
 @keyframes s2-stageGlow{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
-@keyframes s2-dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,.2)}50%{box-shadow:0 0 0 6px rgba(16,185,129,.08)}}
+@keyframes s2-dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(0,157,225,.2)}50%{box-shadow:0 0 0 6px rgba(0,157,225,.08)}}
 
 #step2 .onb-parallel{flex-shrink:0;border-top:1px solid rgba(255,255,255,.06);padding:14px 32px 18px;background:rgba(0,0,0,.4)}
 #step2 .onb-parallel-title{font:600 11px/1 inherit;color:rgba(255,255,255,.6);margin-bottom:8px;letter-spacing:.14em;text-transform:uppercase;text-align:center}
@@ -194,7 +194,7 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 #step3 .onb-gallery-grid{flex:1;min-height:0;padding:10px clamp(20px,4vw,40px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,1fr);gap:10px;max-width:1200px;width:100%;margin:0 auto;overflow:hidden;box-sizing:border-box}
 #step3 .onb-preview-tile{position:relative;min-height:0;min-width:0;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .3s cubic-bezier(.2,1,.3,1);background:rgba(255,255,255,.04);opacity:0;transform:translateY(10px) scale(.98);animation:s3-tileIn .5s cubic-bezier(.2,1,.3,1) forwards}
 #step3 .onb-preview-tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.2,1,.3,1)}
-#step3 .onb-preview-tile:hover{transform:translateY(-2px);border-color:rgba(16,185,129,.5);box-shadow:0 8px 24px rgba(16,185,129,.2)}
+#step3 .onb-preview-tile:hover{transform:translateY(-2px);border-color:rgba(0,157,225,.5);box-shadow:0 8px 24px rgba(0,157,225,.2)}
 #step3 .onb-preview-tile:hover img{transform:scale(1.06)}
 #step3 .onb-preview-tile.selected{border-color:#fff;box-shadow:0 6px 24px rgba(255,255,255,.3)}
 #step3 .onb-preview-tile.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:s3-checkPop .35s cubic-bezier(.2,1.3,.4,1)}
@@ -236,14 +236,14 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 #step4 .dark-inner{padding:0}
 #step4 .sub-nav{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 24px 6px;font:600 10px/1 inherit;color:rgba(255,255,255,.4);letter-spacing:.22em;text-transform:uppercase}
 #step4 .sub-nav .sub-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s}
-#step4 .sub-nav .sub-dot.active{background:#10B981;box-shadow:0 0 0 3px rgba(16,185,129,.18)}
-#step4 .sub-nav .sub-dot.done{background:#059669}
+#step4 .sub-nav .sub-dot.active{background:#009DE1;box-shadow:0 0 0 3px rgba(0,157,225,.18)}
+#step4 .sub-nav .sub-dot.done{background:#0080B8}
 #step4 .sub-step{display:none;flex:1;min-height:0;overflow:hidden}
 #step4 .sub-step.active{display:flex;flex-direction:column}
 
 /* 4-1 完了宣言 */
 #step4 .s4-hero{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:20px clamp(24px,5vw,60px);text-align:center}
-#step4 .s4-hero .hero-img{width:clamp(140px,15vw,200px);aspect-ratio:1/1;border-radius:20px;overflow:hidden;border:1px solid rgba(16,185,129,.4);box-shadow:0 12px 40px rgba(16,185,129,.25),0 0 0 4px rgba(16,185,129,.1);animation:s4-heroIn 1s cubic-bezier(.2,1.2,.3,1) .1s both}
+#step4 .s4-hero .hero-img{width:clamp(140px,15vw,200px);aspect-ratio:1/1;border-radius:20px;overflow:hidden;border:1px solid rgba(0,157,225,.4);box-shadow:0 12px 40px rgba(0,157,225,.25),0 0 0 4px rgba(0,157,225,.1);animation:s4-heroIn 1s cubic-bezier(.2,1.2,.3,1) .1s both}
 #step4 .s4-hero .hero-img img{width:100%;height:100%;object-fit:cover;display:block}
 @keyframes s4-heroIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
 #step4 .s4-hero .hero-line{font:700 clamp(22px,2.6vw,32px)/1.4 inherit;color:#fff;letter-spacing:-.005em;opacity:0;transform:translateY(14px);transition:all .85s cubic-bezier(.2,1,.3,1);max-width:820px}
@@ -294,7 +294,7 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .s4-preview-modal .onb-modal{max-width:720px}
 .s4-preview-modal .preview-detail{padding:0}
 .s4-preview-modal .pd-header{padding:22px 26px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.s4-preview-modal .pd-type{font:600 10px/1 inherit;color:#10B981;letter-spacing:.22em;text-transform:uppercase;margin-bottom:6px}
+.s4-preview-modal .pd-type{font:600 10px/1 inherit;color:#009DE1;letter-spacing:.22em;text-transform:uppercase;margin-bottom:6px}
 .s4-preview-modal .pd-title{font:700 18px/1.35 inherit;color:#fff;letter-spacing:-.005em;margin:0}
 .s4-preview-modal .pd-media{background:#000;aspect-ratio:4/3;overflow:hidden}
 .s4-preview-modal .pd-media img{width:100%;height:100%;object-fit:cover;display:block}
@@ -304,19 +304,51 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .s4-preview-modal .pd-body .pd-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .s4-preview-modal .pd-body .pd-meta span{font:500 11px/1 inherit;padding:6px 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.7);letter-spacing:.04em}
 .s4-preview-modal .pd-actions{padding:16px 26px 22px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,.08)}
-.s4-preview-modal .pd-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;padding:11px 20px;font:500 12px/1 inherit;letter-spacing:.04em;cursor:pointer;transition:border-color .2s}
-.s4-preview-modal .pd-btn-ghost:hover{border-color:#fff}
-.s4-preview-modal .pd-btn-emerald,.pd-btn-primary{background:#fff;border:0;color:#000;padding:11px 22px;font:600 12px/1 inherit;letter-spacing:.06em;cursor:pointer;transition:background .2s}
-.s4-preview-modal .pd-btn-emerald:hover,.pd-btn-primary:hover{background:#f0f0f0}
-.s4-preview-modal .pd-btn-secondary{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 18px;font:500 12px/1 inherit;letter-spacing:.04em;cursor:pointer;transition:border-color .2s,background .2s}
-.s4-preview-modal .pd-btn-secondary:hover{border-color:#fff;background:rgba(255,255,255,.05)}
+/* Weir modal buttons (CC-22a-fix6): close=透明+白ボーダー / primary=白+黒 */
+.onb-modal .pd-btn-ghost,
+.onb-modal .pd-btn-secondary,
+.s4-preview-modal .pd-btn-ghost,
+.s4-preview-modal .pd-btn-secondary{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.25);
+  color:rgba(255,255,255,.85);
+  padding:10px 20px;
+  font:500 13px/1 'Noto Sans JP','Red Hat Display',sans-serif;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all .2s;
+  letter-spacing:.02em;
+}
+.onb-modal .pd-btn-ghost:hover,
+.onb-modal .pd-btn-secondary:hover,
+.s4-preview-modal .pd-btn-ghost:hover,
+.s4-preview-modal .pd-btn-secondary:hover{border-color:rgba(255,255,255,.5);color:#fff}
+.onb-modal .pd-btn-emerald,
+.onb-modal .pd-btn-primary,
+.s4-preview-modal .pd-btn-emerald,
+.s4-preview-modal .pd-btn-primary{
+  background:#fff;
+  border:1px solid #fff;
+  color:#000;
+  padding:10px 24px;
+  font:500 13px/1 'Noto Sans JP','Red Hat Display',sans-serif;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all .2s;
+  letter-spacing:.02em;
+}
+.onb-modal .pd-btn-emerald:hover,
+.onb-modal .pd-btn-primary:hover,
+.s4-preview-modal .pd-btn-emerald:hover,
+.s4-preview-modal .pd-btn-primary:hover{background:rgba(255,255,255,.9)}
 
 /* ===== Step 4 rich preview bodies ===== */
 .s4-preview-modal .pd-rich{padding:18px 24px 4px;display:flex;flex-direction:column;gap:14px}
 .s4-preview-modal .pd-rich .pd-meta{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px}
 .s4-preview-modal .pd-rich .pd-meta span{font:500 10.5px/1 inherit;padding:6px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:rgba(255,255,255,.7);letter-spacing:.04em}
-/* POP */
-.pd-pop .pop-hero{aspect-ratio:16/10;overflow:hidden;background:#111;border-radius:4px}
+/* POP (CC-22a-fix6 C-2: 白枠線で境界を明示) */
+.pd-pop,.weir-preview-pop{border:1px solid rgba(255,255,255,.15);border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
+.pd-pop .pop-hero{aspect-ratio:16/10;overflow:hidden;background:#111;border-radius:0}
 .pd-pop .pop-hero img{width:100%;height:100%;object-fit:cover;display:block}
 .pd-pop .pop-foot{background:#faf9f5;color:#1a1a1a;padding:18px 20px;border-radius:4px;display:flex;flex-direction:column;gap:10px;text-align:center;font-family:'Red Hat Display','Noto Sans JP',sans-serif}
 .pd-pop .pop-logo{font-weight:700;font-size:17px;letter-spacing:.08em}
@@ -345,18 +377,36 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .pd-review .rv-by{font-size:11.5px;color:rgba(255,255,255,.55)}
 .pd-review .rv-text{font-size:13px;line-height:1.75;color:#fff;letter-spacing:.02em;margin:0}
 .pd-review .rv-divider{font:600 10.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.18em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;margin-top:2px}
-/* Monthly */
-.pd-monthly .mo-cover{aspect-ratio:16/9;overflow:hidden;border-radius:4px;background:#111}
-.pd-monthly .mo-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.pd-monthly .mo-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pd-monthly .mo-metric{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;text-align:center}
-.pd-monthly .mo-metric .mo-label{font-size:10px;color:rgba(255,255,255,.55);letter-spacing:.14em;text-transform:uppercase}
-.pd-monthly .mo-metric .mo-value{font-size:15px;font-weight:700;color:#fff;margin:4px 0;letter-spacing:.01em}
-.pd-monthly .mo-metric .mo-delta{font-size:10.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
-.pd-monthly .mo-section h4{font:600 10.5px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px}
-.pd-monthly .mo-section p{font-size:13px;line-height:1.75;color:#fff;margin:0;letter-spacing:.02em}
-.pd-monthly .mo-menus{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;color:#fff}
-.pd-monthly .mo-closing{font-style:italic;font-size:13px;color:rgba(255,255,255,.7);letter-spacing:.02em;text-align:center;padding-top:4px}
+/* Monthly — CC-22a-fix6 C-3 hybrid layout (analysis-first, no cover photo) */
+.weir-preview-report{display:flex;flex-direction:column;gap:18px}
+.weir-preview-report .report-header{display:flex;flex-direction:column;gap:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.weir-preview-report .report-month{font:600 10.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;letter-spacing:.22em;color:rgba(255,255,255,.5);text-transform:uppercase}
+.weir-preview-report .report-title{font:700 22px/1.3 'Noto Sans JP','Red Hat Display',sans-serif;color:#fff;letter-spacing:-.005em;margin:2px 0 0}
+.weir-preview-report .report-summary{font:400 13px/1.75 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.72);letter-spacing:.02em;margin:4px 0 0}
+
+.weir-preview-report .report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.weir-preview-report .report-kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 12px;text-align:center}
+.weir-preview-report .report-kpi-label{font:500 10px/1 'Red Hat Display','Noto Sans JP',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.14em;text-transform:uppercase}
+.weir-preview-report .report-kpi-value{font:700 17px/1.1 'Red Hat Display','Noto Sans JP',sans-serif;color:#fff;margin:5px 0 3px;letter-spacing:.005em}
+.weir-preview-report .report-kpi-delta{font:500 10.5px/1 'Red Hat Display','Noto Sans JP',sans-serif;color:rgba(255,255,255,.6);letter-spacing:.04em}
+
+.weir-preview-report .report-mini-chart{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:12px 14px 14px}
+.weir-preview-report .report-chart-label{font:500 10.5px/1 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.12em;margin-bottom:10px}
+.weir-preview-report .report-chart-bars{display:flex;align-items:flex-end;gap:8px;height:80px}
+.weir-preview-report .report-chart-bar{flex:1;background:linear-gradient(to top,rgba(255,255,255,.45),rgba(255,255,255,.18));border-radius:2px 2px 0 0;min-height:6px}
+.weir-preview-report .report-chart-bar:last-child{background:linear-gradient(to top,#fff,rgba(255,255,255,.5))}
+
+.weir-preview-report .report-section-title{font:600 11px/1 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 10px}
+.weir-preview-report .report-factors{display:flex;flex-direction:column;gap:8px}
+.weir-preview-report .report-factor{display:flex;align-items:flex-start;gap:10px;font:400 13px/1.7 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.82);letter-spacing:.02em;padding:10px 14px;background:rgba(255,255,255,.02);border-left:2px solid rgba(255,255,255,.25);border-radius:0 4px 4px 0}
+.weir-preview-report .factor-arrow{color:#fff;font-weight:600;flex-shrink:0}
+
+.weir-preview-report .report-actions-block{display:flex;flex-direction:column;gap:10px}
+.weir-preview-report .report-action{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:6px}
+.weir-preview-report .report-action-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#fff;color:#000;font:700 13px/1 'Red Hat Display',sans-serif;display:grid;place-items:center}
+.weir-preview-report .report-action-content{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.weir-preview-report .report-action-title{font:600 13px/1.4 'Noto Sans JP','Red Hat Display',sans-serif;color:#fff;letter-spacing:.005em}
+.weir-preview-report .report-action-desc{font:400 11.5px/1.65 'Noto Sans JP','Red Hat Display',sans-serif;color:rgba(255,255,255,.6);letter-spacing:.02em}
 /* Site */
 .pd-site .site-hero{aspect-ratio:16/9;background-size:cover;background-position:center;border-radius:4px;display:flex;align-items:flex-end;padding:14px 18px;position:relative;overflow:hidden}
 .pd-site .site-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75),transparent 60%);pointer-events:none}
@@ -365,11 +415,16 @@ body.step4-active .onb-main{padding:0;max-width:none;margin:0}
 .pd-site .site-section h4{font:600 10.5px/1 inherit;color:rgba(255,255,255,.55);letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px}
 .pd-site .site-section p{font-size:13px;line-height:1.75;color:#fff;margin:0;letter-spacing:.02em}
 @media(max-width:720px){
-  .pd-monthly .mo-metrics{grid-template-columns:1fr}
+  .weir-preview-report .report-kpis{grid-template-columns:repeat(3,1fr);gap:6px}
+  .weir-preview-report .report-kpi{padding:8px 10px}
+  .weir-preview-report .report-kpi-value{font-size:15px}
+  .weir-preview-report .report-title{font-size:19px}
+  .weir-preview-report .report-chart-bars{height:60px}
+  .weir-preview-report .report-action{padding:10px 12px}
 }
 
 /* ===== SAMPLE MODAL (good/bad examples, kept for legacy compat) ===== */
-.sample-link{display:inline-block;font-size:11px;color:#10B981;cursor:pointer;font-weight:600;margin-left:6px;text-decoration:none}
+.sample-link{display:inline-block;font-size:11px;color:#009DE1;cursor:pointer;font-weight:600;margin-left:6px;text-decoration:none}
 .sample-link:hover{text-decoration:underline}
 
 /* ===== TOAST ===== */
@@ -433,8 +488,8 @@ body.step1-active #step4{display:none!important}
   --hair:rgba(255,255,255,.15);
   --hair-strong:rgba(255,255,255,.3);
   --hair-soft:rgba(255,255,255,.08);
-  --emerald:#10B981;
-  --emerald-dark:#059669;
+  --emerald:#009DE1;
+  --emerald-dark:#0080B8;
   --error:#ff6b6b;
   --sans:"Red Hat Display","Noto Sans JP","Helvetica Neue",Arial,sans-serif;
   --jp:"Noto Sans JP","Red Hat Display","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
@@ -454,18 +509,18 @@ body.step1-active #step4{display:none!important}
 .weir-bg-animation{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .weir-bg-mesh{position:absolute;inset:0;width:100%;height:100%;opacity:.5;animation:weir-mesh-pulse 30s ease-in-out infinite}
 .weir-bg-blob{position:absolute;border-radius:50%;filter:blur(100px);will-change:transform,opacity}
-.weir-bg-blob-1{width:520px;height:520px;top:-15%;left:-10%;background:rgba(16,185,129,.32);animation:weir-float 26s ease-in-out infinite}
+.weir-bg-blob-1{width:520px;height:520px;top:-15%;left:-10%;background:rgba(0,157,225,.32);animation:weir-float 26s ease-in-out infinite}
 .weir-bg-blob-2{width:420px;height:420px;bottom:-18%;right:-8%;background:rgba(255,255,255,.06);animation:weir-float 32s ease-in-out infinite -9s}
-.weir-bg-blob-3{width:360px;height:360px;top:35%;left:55%;background:rgba(16,185,129,.22);animation:weir-float 22s ease-in-out infinite -14s}
-.weir-bg-blob-4{width:280px;height:280px;top:12%;left:72%;background:rgba(16,185,129,.14);animation:weir-drift 28s ease-in-out infinite -6s}
+.weir-bg-blob-3{width:360px;height:360px;top:35%;left:55%;background:rgba(0,157,225,.22);animation:weir-float 22s ease-in-out infinite -14s}
+.weir-bg-blob-4{width:280px;height:280px;top:12%;left:72%;background:rgba(0,157,225,.14);animation:weir-drift 28s ease-in-out infinite -6s}
 .weir-bg-blob-5{width:300px;height:300px;bottom:20%;left:20%;background:rgba(255,255,255,.04);animation:weir-drift 24s ease-in-out infinite -18s}
 #step1.step1-v2 .bg-animation{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 #step1.step1-v2 .bg-mesh{position:absolute;inset:0;width:100%;height:100%;opacity:.5;animation:weir-mesh-pulse 30s ease-in-out infinite}
 #step1.step1-v2 .bg-blob{position:absolute;border-radius:50%;filter:blur(100px);will-change:transform,opacity}
-#step1.step1-v2 .bg-blob-1{width:520px;height:520px;top:-15%;left:-10%;background:rgba(16,185,129,.32);animation:weir-float 26s ease-in-out infinite}
+#step1.step1-v2 .bg-blob-1{width:520px;height:520px;top:-15%;left:-10%;background:rgba(0,157,225,.32);animation:weir-float 26s ease-in-out infinite}
 #step1.step1-v2 .bg-blob-2{width:420px;height:420px;bottom:-18%;right:-8%;background:rgba(255,255,255,.06);animation:weir-float 32s ease-in-out infinite -9s}
-#step1.step1-v2 .bg-blob-3{width:360px;height:360px;top:35%;left:55%;background:rgba(16,185,129,.22);animation:weir-float 22s ease-in-out infinite -14s}
-#step1.step1-v2 .bg-blob-4{width:280px;height:280px;top:12%;left:72%;background:rgba(16,185,129,.14);animation:weir-drift 28s ease-in-out infinite -6s}
+#step1.step1-v2 .bg-blob-3{width:360px;height:360px;top:35%;left:55%;background:rgba(0,157,225,.22);animation:weir-float 22s ease-in-out infinite -14s}
+#step1.step1-v2 .bg-blob-4{width:280px;height:280px;top:12%;left:72%;background:rgba(0,157,225,.14);animation:weir-drift 28s ease-in-out infinite -6s}
 #step1.step1-v2 .bg-blob-5{width:300px;height:300px;bottom:20%;left:20%;background:rgba(255,255,255,.04);animation:weir-drift 24s ease-in-out infinite -18s}
 @keyframes weir-float{
   0%,100%{transform:translate(0,0) scale(1)}
@@ -912,34 +967,34 @@ let state = {
 };
 
 // ===== MOCK DATA SOURCE (replaced in CC-22b) =====
-// Image URLs: Unsplash (curated restaurant/food/hospitality photos, all HEAD-verified 200 OK 2026-04-21)
-// CC-22b: replace .imgUrl with Supabase Storage paths, delete this block
-const UNSPLASH = (id) => `https://images.unsplash.com/${id}?w=800&q=80&auto=format&fit=crop`;
+// CC-22a-fix6 (D-214 / D-215): switched from Unsplash to local /assets/onboarding/step3/ webp set.
+// CC-22b: replace these with Supabase Storage / API responses, delete this block.
+const STEP3_IMG = (tone, n) => `/assets/onboarding/step3/weir-${tone}-${n}.webp`;
 const MOCK_DATA_SOURCE = {
   // 16 preview tiles: 4 tones x 4 cuisines. Each tile carries an internal model_name (D-196: never shown in UI).
   getPreviews: function() {
-    // [tone, cuisine, unsplashId, internalModel]
+    // [tone, cuisine, internalModel] — file is weir-{tone}-{patternIndex}.webp
     const tiles = [
-      // 温かみ: 居酒屋 / 和食 / 昔ながらの喫茶店 / ラーメン屋
-      ['warmth', '居酒屋の温かい店内',    'photo-1514326640560-7d063ef2aed5', 'Claude'],
-      ['warmth', '和食のお膳',            'photo-1540189549336-e6e99c3679fe', 'GPT'],
-      ['warmth', '昔ながらの喫茶店',       'photo-1554118811-1e0d58224f24', 'Gemini'],
-      ['warmth', '湯気立つラーメン',       'photo-1569718212165-3a8278d5f624', 'Grok'],
-      // モダン: バー / イタリアン / デザインカフェ / 寿司
-      ['modern',  'スタイリッシュなバー',  'photo-1470337458703-46ad1756a187', 'Claude'],
-      ['modern',  '現代的なイタリアン',    'photo-1565299624946-b28f40a0ae38', 'GPT'],
-      ['modern',  'デザインカフェ',        'photo-1501339847302-ac426a4a7cbb', 'Gemini'],
-      ['modern',  'ミニマルな寿司',        'photo-1534482421-64566f976cfa',   'Grok'],
-      // 高級感: 高級和食 / ファインダイニング / 高級寿司 / ワインバー
-      ['premium', '高級和食の器',          'photo-1580822184713-fc5400e7fe10', 'Claude'],
-      ['premium', 'ファインダイニング',     'photo-1526318896980-cf78c088247c', 'GPT'],
-      ['premium', '高級寿司カウンター',     'photo-1583394293214-28ded15ee548', 'Gemini'],
-      ['premium', 'ワインバー',            'photo-1510812431401-41d2bd2722f3', 'Grok'],
-      // カジュアル: 焼肉 / 定食 / カフェテラス / ビストロ
-      ['casual', '焼肉',                  'photo-1555939594-58d7cb561ad1', 'Claude'],
-      ['casual', '定食',                  'photo-1563245372-f21724e3856d', 'GPT'],
-      ['casual', 'カフェテラス',           'photo-1467003909585-2f8a72700288', 'Gemini'],
-      ['casual', 'ビストロ',              'photo-1445116572660-236099ec97a0', 'Grok']
+      // 温かみ: 居酒屋 / うどんそば / 町中華 / ラーメン
+      ['warmth',  '居酒屋',                'Claude'],
+      ['warmth',  'うどん・そば',          'GPT'],
+      ['warmth',  '町中華',                'Gemini'],
+      ['warmth',  'ラーメン',              'Grok'],
+      // モダン: モダンベーカリー / 親しみやすいイタリアン / デザインカフェ / グルメバーガー
+      ['modern',  'モダンベーカリー',      'Claude'],
+      ['modern',  '親しみやすいイタリアン','GPT'],
+      ['modern',  'デザインカフェ',        'Gemini'],
+      ['modern',  'グルメバーガー',        'Grok'],
+      // 高級: フレンチ / 町の寿司屋 / パティスリー / 懐石・割烹
+      ['premium', 'フレンチ',              'Claude'],
+      ['premium', '町の寿司屋',            'GPT'],
+      ['premium', 'パティスリー',          'Gemini'],
+      ['premium', '懐石・割烹',            'Grok'],
+      // カジュアル: スパイスカレー / 焼き鳥 / 定食・丼もの / エスニック
+      ['casual',  'スパイスカレー',        'Claude'],
+      ['casual',  '焼き鳥',                'GPT'],
+      ['casual',  '定食・丼もの',          'Gemini'],
+      ['casual',  'エスニック',            'Grok']
     ];
     const toneMeta = {
       warmth:  { label: '温かみ',     desc: '柔らかな光と温もりのあるトーンで、お店の人情味を表現します。' },
@@ -947,16 +1002,14 @@ const MOCK_DATA_SOURCE = {
       premium: { label: '高級感',     desc: '落ち着いた色調と上質な質感で、特別な時間を想起させます。' },
       casual:  { label: 'カジュアル', desc: '親しみやすく明るいトーンで、日常使いの心地よさを伝えます。' }
     };
-    // patternIndex is 1..4 within each tone
     const counter = { warmth: 0, modern: 0, premium: 0, casual: 0 };
-    return tiles.map(([tone, cuisine, photoId, model]) => {
+    return tiles.map(([tone, cuisine, model]) => {
       counter[tone] += 1;
       const seed = `weir-${tone}-${counter[tone]}`;
       return {
         id: seed,
         seed: seed,
-        imgUrl: UNSPLASH(photoId),
-        unsplashId: photoId, // for debugging
+        imgUrl: STEP3_IMG(tone, counter[tone]),
         tone: tone,
         toneLabel: toneMeta[tone].label,
         toneDesc: toneMeta[tone].desc,
@@ -975,44 +1028,44 @@ const MOCK_DATA_SOURCE = {
         type: 'POP',
         title: '店頭ポスター',
         hint: 'A4 印刷対応',
-        imgUrl: UNSPLASH('photo-1546069901-ba9599a7e63c')
+        imgUrl: STEP3_IMG('warmth', 1)
       },
       {
         id: 'sns',
         type: 'SNS',
         title: 'Instagram 投稿',
         hint: 'サイズは投稿タイプに応じて最適化',
-        imgUrl: UNSPLASH('photo-1555244162-803834f70033')
+        imgUrl: STEP3_IMG('modern', 3)
       },
       {
         id: 'review',
         type: 'レビュー返信',
         title: '★5 のお客様への返信',
         hint: '文例 + 編集可能',
-        imgUrl: UNSPLASH('photo-1528605248644-14dd04022da1')
+        imgUrl: STEP3_IMG('warmth', 4)
       },
       {
         id: 'report',
         type: '月次レポート',
         title: '今月のふり返り',
         hint: '売上分析 / 対策提示 / ソリューション提供',
-        imgUrl: UNSPLASH('photo-1517248135467-4c7edcad34c4')
+        imgUrl: STEP3_IMG('premium', 2)
       },
       {
         id: 'site',
         type: '自社サイト',
         title: 'ブランドサイト',
         hint: '雰囲気 / メッセージ / 個性',
-        imgUrl: UNSPLASH('photo-1555992336-fb0d29498b13')
+        imgUrl: STEP3_IMG('premium', 1)
       }
     ];
   },
 
-  // Per-card preview details (CC-22a-fix5). CC-22b: replace with real API.
+  // Per-card preview details (CC-22a-fix5 / CC-22a-fix6). CC-22b: replace with real API.
   getPreviewPOP: function (brandName) {
     const brand = brandName || 'お店';
     return {
-      heroImg: UNSPLASH('photo-1546069901-ba9599a7e63c'),
+      heroImg: STEP3_IMG('warmth', 1),
       logoText: brand,
       catchphrase: '港町の、ちいさな台所',
       signatureDishes: [
@@ -1029,8 +1082,8 @@ const MOCK_DATA_SOURCE = {
     return {
       accountName: brand,
       accountHandle: '@' + (brand.replace(/\s+/g, '')).toLowerCase() + '_official',
-      avatar: UNSPLASH('photo-1555992336-fb0d29498b13'),
-      image: UNSPLASH('photo-1555244162-803834f70033'),
+      avatar: STEP3_IMG('premium', 1),
+      image: STEP3_IMG('modern', 3),
       caption: '本日の看板メニュー、ご用意いたしました。\n\n一皿ずつ丁寧に仕上げた今日の一品を、ぜひお店でお楽しみください。',
       hashtags: ['#' + brand.replace(/\s+/g, ''), '#本日のおすすめ', '#お料理', '#和食'],
       meta: ['Instagram', '自動ドラフト', '承認後に投稿']
@@ -1046,18 +1099,32 @@ const MOCK_DATA_SOURCE = {
       meta: ['Google / 食べログ', '加筆可能', '送信前に確認']
     };
   },
+  // CC-22a-fix6: Monthly report redesigned to an analysis-first layout.
+  // coverImg removed — the UI no longer shows a venue photo.
   getPreviewMonthly: function (brandName) {
     const brand = brandName || 'お店';
     return {
-      coverImg: UNSPLASH('photo-1517248135467-4c7edcad34c4'),
-      metrics: [
-        { label: '客数', value: '1,247 名', delta: '前月比 +12%' },
-        { label: 'リピート率', value: '38%', delta: '前月比 +3pt' },
-        { label: '売上', value: '¥3,420,000', delta: '前月比 +8%' }
+      reportMonth: '2026 NOVEMBER',
+      headline: '今月の売上分析',
+      summary: '先月比で売上が 12% 増加しました。Weir が変動要因を分析し、次月の打ち手を提案します。',
+      kpis: [
+        { label: '売上',     value: '¥ 3.2M', delta: '↑ 12%' },
+        { label: '客数',     value: '1,247',  delta: '↑ 8%' },
+        { label: 'リピート', value: '38%',    delta: '↑ 2pt' }
       ],
-      topMenus: ['本日の刺身盛り', '炙り〆鯖', '本日の日本酒'],
-      analysis: '週末の客数増加傾向が継続。平日の新規獲得が課題。',
-      recommendation: '平日限定の小皿コース（¥2,500）を検討。SNS での平日推しも強化を。',
+      chartLabel: '週別客数推移（過去 7 週）',
+      // relative heights (0-100) for the mini chart
+      chartBars: [42, 55, 48, 60, 68, 72, 88],
+      factors: [
+        '金曜夜の客数が 28% 増加。SNS 投稿の効果と推測されます。',
+        '雨天日の売上が例年より 15% 高水準。テイクアウト利用が増加傾向。',
+        '20 代新規客のリピート率が先月比 +8 ポイント。'
+      ],
+      actions: [
+        { title: '金曜夜の SNS 投稿を強化',  desc: '当たっている流れに乗る。予約枠を増やす告知も検討。' },
+        { title: '雨天向けテイクアウト訴求', desc: '需要が顕在化。テイクアウトメニューの前面提示を。' },
+        { title: '20 代向け 2 回目来店施策', desc: '新規層が定着中。2 回目クーポンで習慣化を後押し。' }
+      ],
       closing: '来月も、' + brand + ' のお客様の笑顔のために。',
       meta: ['PDF / 2 枚', '月 1 回', 'データ + 物語']
     };
@@ -1065,7 +1132,7 @@ const MOCK_DATA_SOURCE = {
   getPreviewSite: function (brandName) {
     const brand = brandName || 'お店';
     return {
-      heroImg: UNSPLASH('photo-1555992336-fb0d29498b13'),
+      heroImg: STEP3_IMG('modern', 3),
       brandName: brand,
       atmosphere: brand + ' では、港町の暮らしに寄り添うような、気取らない温かさと、確かな技を大切にしています。',
       ownerMessage: 'お客様の一日の締めくくりに、静かな安らぎを。本日も、お越しをお待ちしております。',
@@ -2039,24 +2106,50 @@ function buildS4ReviewPreview() {
 }
 function buildS4MonthlyPreview(brand) {
   const d = MOCK_DATA_SOURCE.getPreviewMonthly(brand);
-  const metrics = d.metrics.map(function (m) {
-    return '<div class="mo-metric">'
-      + '<div class="mo-label">' + escH(m.label) + '</div>'
-      + '<div class="mo-value">' + escH(m.value) + '</div>'
-      + '<div class="mo-delta">' + escH(m.delta) + '</div>'
+  const kpis = d.kpis.map(function (k) {
+    return '<div class="report-kpi">'
+      + '<div class="report-kpi-label">' + escH(k.label) + '</div>'
+      + '<div class="report-kpi-value">' + escH(k.value) + '</div>'
+      + '<div class="report-kpi-delta">' + escH(k.delta) + '</div>'
       + '</div>';
   }).join('');
-  const menus = d.topMenus.map(function (x, i) {
-    return '<li>' + String(i+1) + '. ' + escH(x) + '</li>';
+  const max = d.chartBars.reduce(function (a, b) { return Math.max(a, b); }, 1);
+  const bars = d.chartBars.map(function (h) {
+    const pct = Math.max(6, Math.round(h / max * 100));
+    return '<span class="report-chart-bar" style="height:' + pct + '%"></span>';
+  }).join('');
+  const factors = d.factors.map(function (f) {
+    return '<div class="report-factor"><span class="factor-arrow">→</span>' + escH(f) + '</div>';
+  }).join('');
+  const actions = d.actions.map(function (a, i) {
+    return '<div class="report-action">'
+      + '<div class="report-action-num">' + String(i + 1) + '</div>'
+      + '<div class="report-action-content">'
+      +   '<div class="report-action-title">' + escH(a.title) + '</div>'
+      +   '<div class="report-action-desc">' + escH(a.desc) + '</div>'
+      + '</div>'
+      + '</div>';
   }).join('');
   const meta = (d.meta || []).map(function (m) { return '<span>' + escH(m) + '</span>'; }).join('');
-  return '<div class="pd-rich pd-monthly">'
-    + '<div class="mo-cover"><img src="' + escH(d.coverImg) + '" alt=""></div>'
-    + '<div class="mo-metrics">' + metrics + '</div>'
-    + '<div class="mo-section"><h4>人気メニュー TOP3</h4><ol class="mo-menus">' + menus + '</ol></div>'
-    + '<div class="mo-section"><h4>主要分析</h4><p>' + escH(d.analysis) + '</p></div>'
-    + '<div class="mo-section"><h4>対策提示</h4><p>' + escH(d.recommendation) + '</p></div>'
-    + '<div class="mo-closing">' + escH(d.closing) + '</div>'
+  return '<div class="pd-rich weir-preview-report">'
+    + '<div class="report-header">'
+    +   '<div class="report-month">' + escH(d.reportMonth) + '</div>'
+    +   '<h2 class="report-title">' + escH(d.headline) + '</h2>'
+    +   '<p class="report-summary">' + escH(d.summary) + '</p>'
+    + '</div>'
+    + '<div class="report-kpis">' + kpis + '</div>'
+    + '<div class="report-mini-chart">'
+    +   '<div class="report-chart-label">' + escH(d.chartLabel) + '</div>'
+    +   '<div class="report-chart-bars">' + bars + '</div>'
+    + '</div>'
+    + '<div class="report-factors">'
+    +   '<h3 class="report-section-title">変動要因（Weir の分析）</h3>'
+    +   factors
+    + '</div>'
+    + '<div class="report-actions-block">'
+    +   '<h3 class="report-section-title">今月のアクション</h3>'
+    +   actions
+    + '</div>'
     + '<div class="pd-meta">' + meta + '</div>'
     + '</div>';
 }
