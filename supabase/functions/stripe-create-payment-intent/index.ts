@@ -246,30 +246,107 @@ serve(async (req) => {
         }
       }
 
+      // CC-Option-Master-Stage2a Phase 3: サーバー側 option price_delta 検証
+      // 全 cart_items から option_id を収集し、options テーブルから price_delta を一括取得。
+      // クライアント送信 unit_price が「basePrice + Σ(server_price_delta)」と一致するか検証し、
+      // 改ざん（unit_price = basePrice + 10000 等）を拒否する。
+      // レガシー `item.options` / 新 `item.selected_options` 両方に対応。
+      const optionIdSet = new Set<string>()
+      for (const item of cart_items) {
+        const opts = Array.isArray(item.selected_options) ? item.selected_options : []
+        for (const opt of opts) {
+          if (opt && typeof opt.option_id === 'string') {
+            optionIdSet.add(opt.option_id)
+          }
+        }
+      }
+
+      let optionPriceMap: Record<string, number> = {}
+      if (optionIdSet.size > 0) {
+        const { data: optionRows } = await supabase
+          .from('options')
+          .select('option_id, price_delta')
+          .in('option_id', Array.from(optionIdSet))
+        if (optionRows) {
+          for (const row of optionRows) {
+            optionPriceMap[row.option_id] = row.price_delta || 0
+          }
+        }
+      }
+
       let subtotal = 0
       for (const item of cart_items) {
         const unitPrice = item.unit_price || 0
-        // クライアント送信価格がDB登録価格と一致するか検証
-        // トッピング/オプション付き注文: unit_price = base_price + toppings のため、
-        // オプションがある場合はベース価格以上であることを検証
         const validPrices = priceMap[item.product_id]
+
+        // Phase 2 新シェイプ: selected_options 配列（各要素に option_id / price_delta スナップショット）
+        // レガシー互換: item.options があれば hasOptions 扱い（ただし Phase 3 以降のサーバ検証には option_id 必須）
+        const selectedOptionsArr = Array.isArray(item.selected_options) ? item.selected_options : []
+        const hasSelectedOptions = selectedOptionsArr.length > 0
+        const hasLegacyOptions = !hasSelectedOptions && item.options && (
+          (Array.isArray(item.options) && item.options.length > 0) ||
+          (typeof item.options === 'object' && Object.keys(item.options).length > 0)
+        )
+
         if (validPrices && validPrices.length > 0) {
           const minBasePrice = Math.min(...validPrices)
-          const hasOptions = item.options && (
-            (Array.isArray(item.options) && item.options.length > 0) ||
-            (typeof item.options === 'object' && Object.keys(item.options).length > 0)
-          )
-          if (hasOptions) {
-            // トッピング付き: ベース価格以上であること
+
+          if (hasSelectedOptions) {
+            // 新シェイプ: サーバー側で price_delta を再集計
+            // server_delta は options テーブルから取得した値（クライアント snapshot の price_delta は参考値）
+            let serverDeltaSum = 0
+            let allOptionsResolved = true
+            for (const opt of selectedOptionsArr) {
+              if (!opt || typeof opt.option_id !== 'string') {
+                allOptionsResolved = false
+                break
+              }
+              if (!(opt.option_id in optionPriceMap)) {
+                // 存在しない option_id を送ってきた = 改ざんまたは master 削除済み
+                allOptionsResolved = false
+                break
+              }
+              serverDeltaSum += optionPriceMap[opt.option_id] || 0
+            }
+
+            if (!allOptionsResolved) {
+              console.error('Unknown option_id in selected_options:', {
+                product_id: item.product_id,
+                selected_options: selectedOptionsArr,
+              })
+              return new Response(
+                JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+
+            // 期待 unit_price = いずれかの size price + サーバー集計の price_delta 合計
+            // 複数 size（S/M/L 等）ある場合はどの size とも一致しないと NG
+            const acceptablePrices = validPrices.map(bp => bp + serverDeltaSum)
+            const withinTolerance = acceptablePrices.some(exp => Math.abs(unitPrice - exp) <= 1)
+            if (!withinTolerance) {
+              console.error('Price mismatch with options:', {
+                product_id: item.product_id,
+                client_price: unitPrice,
+                server_deltas_sum: serverDeltaSum,
+                acceptable_prices: acceptablePrices,
+              })
+              return new Response(
+                JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          } else if (hasLegacyOptions) {
+            // レガシー互換: option_id が無い古いペイロード。ベース価格以上のみ検証
             if (unitPrice < minBasePrice) {
-              console.error('Price below base:', { product_id: item.product_id, client_price: unitPrice, min_base: minBasePrice })
+              console.error('Price below base (legacy options):', { product_id: item.product_id, client_price: unitPrice, min_base: minBasePrice })
               return new Response(
                 JSON.stringify({ error: '商品価格が正しくありません。ページを更新してやり直してください。' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
               )
             }
           } else {
-            // トッピングなし: ベース価格と完全一致
+            // オプションなし: ベース価格と完全一致
             if (!validPrices.includes(unitPrice)) {
               console.error('Price mismatch:', { product_id: item.product_id, client_price: unitPrice, valid_prices: validPrices })
               return new Response(
@@ -486,8 +563,11 @@ serve(async (req) => {
         }
       }
 
-      // メタデータ
+      // メタデータ (CC-Option-Master-Stage2a Phase 3 / Taisei 確認3 準拠)
+      // Source of truth は DB (orders / order_items)。metadata は Stripe Dashboard 表示用の
+      // 最小限の識別情報のみ。cart 内容 / PII / selected_options 等は一切入れない。
       params['metadata[venue_id]'] = store_id
+      params['metadata[venue_name]'] = storeRow.name || ''
       params['metadata[order_type]'] = channel
       params['metadata[delivery_fee]'] = String(deliveryFee)
       params['metadata[service_fee]'] = String(serviceFee)
@@ -561,6 +641,8 @@ serve(async (req) => {
       }
 
       // 7. order_items テーブルに INSERT
+      // Phase 3: selected_options JSONB スナップショットも保存
+      // (docs/order_items_selected_options_schema.md 準拠)
       if (cart_items.length > 0) {
         const orderItems = cart_items.map((item: any) => ({
           order_id: orderRow.id,
@@ -569,11 +651,33 @@ serve(async (req) => {
           quantity: item.quantity || 1,
           unit_price: item.unit_price || 0,
           subtotal: (item.unit_price || 0) * (item.quantity || 1),
+          selected_options: Array.isArray(item.selected_options) ? item.selected_options : [],
         }))
         const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
         if (itemsErr) {
           console.error('order_items insert error:', itemsErr)
         }
+      }
+
+      // 7.5 Stripe PI の metadata に order_id (display_id) を追記
+      // 作成時点では display_id が未確定のため、INSERT 成功後に update。失敗しても注文は有効。
+      try {
+        const updateParams = new URLSearchParams()
+        updateParams.set('metadata[order_id]', orderRow.display_id || '')
+        const updRes = await fetch(`https://api.stripe.com/v1/payment_intents/${pi.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: updateParams,
+        })
+        if (!updRes.ok) {
+          const updErr = await updRes.text().catch(() => '')
+          console.warn('PaymentIntent metadata update failed (non-fatal):', updRes.status, updErr)
+        }
+      } catch (updErr) {
+        console.warn('PaymentIntent metadata update error (non-fatal):', updErr)
       }
 
       // 8. レスポンス返却
