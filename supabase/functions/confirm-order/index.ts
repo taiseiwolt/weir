@@ -1,11 +1,14 @@
-// Supabase Edge Function: 決済成功後の注文レコード作成 + メール送信
+// Supabase Edge Function: 決済成功後の注文遷移 + メール送信 + 副作用実行
 // POST /functions/v1/confirm-order
 //
-// PaymentIntent が succeeded であることを Stripe API で検証した上で、
-// orders + order_items テーブルにINSERTし、Thanksメールを送信する。
+// 前提: stripe-create-payment-intent が orders を pending INSERT 済み。
+// 本 EF は payment_intent 検証後に pending→paid 遷移を実行し、
+// 遷移が成立した場合のみメール / プッシュ / ポイント消費 / ランク昇格を走らせる
+// （2 回目以降の呼び出しでは didTransitionToPaid=false で副作用をスキップ、冪等）。
 //
-// ※ 旧フローでは create-payment-intent 時に pending で INSERT していたが、
-//   新フローでは決済完了後にここで初めて INSERT する。
+// 2026-04-23 Phase 3 (D-166): 旧 "new INSERT" fallback（metadata から
+// cart_items_json を復元して orders/order_items を INSERT する経路）は削除済み。
+// 到達不能かつ metadata 不整合の原因となっていた（git log 90 日で実行履歴無し）。
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -173,69 +176,68 @@ serve(async (req) => {
       // (2 回目以降の confirm-order 呼び出しでは既に paid のため updatedRows は空)
       const didTransitionToPaid = Array.isArray(updatedRows) && updatedRows.length > 0
 
-      // venue → brand_id を解決（ポイント / ランク処理で必要）
-      let brandId: string | null = null
-      let storeRow: { name?: string; brands?: { id?: string; name?: string } } | null = null
-      try {
-        const { data: venueRow } = await supabase
-          .from('venues')
-          .select('name, brands(id, name)')
-          .eq('id', existingOrder.venue_id ?? pi.metadata?.venue_id ?? pi.metadata?.store_id)
-          .single()
-        storeRow = venueRow as any
-        brandId = (venueRow as any)?.brands?.id ?? null
-      } catch (venueErr) {
-        console.warn('venue/brand lookup failed (non-fatal):', venueErr)
-      }
-
-      // メール送信（pending→paid遷移時のみ / 2 回目以降の呼び出しでは送らない）
+      // 以降のメール / プッシュ / ポイント / ランクは pending→paid 遷移時のみ実行
+      // 冪等性担保: 2 回目以降の confirm-order は updatedRows が空 → didTransitionToPaid=false
+      // これにより deduct_points が二重実行される事故を防ぐ。
       if (didTransitionToPaid) {
-       try {
-        const { data: orderDetail } = await supabase
-          .from('orders')
-          .select('customer_email, customer_name, order_type, total_amount, order_items(quantity, unit_price, products(name))')
-          .eq('id', existingOrder.id)
-          .single()
-
-        if (orderDetail?.customer_email) {
-          const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              type: 'confirmation',
-              to: orderDetail.customer_email,
-              order_id: existingOrder.display_id,
-              customer_name: orderDetail.customer_name || '',
-              store_name: storeRow?.name || '',
-              brand_name: storeRow?.brands?.name || '',
-              order_mode: orderDetail.order_type || 'takeout',
-              subtotal: orderDetail.total_amount || 0,
-              total: orderDetail.total_amount || 0,
-              tracking_token: existingOrder.tracking_token || '',
-              items: (orderDetail.order_items || []).map((i: any) => ({
-                name: i.products?.name || '商品',
-                qty: i.quantity || 1,
-                price: i.unit_price || 0,
-              })),
-            }),
-          })
-          if (!emailRes.ok) {
-            const errBody = await emailRes.text().catch(() => '')
-            console.error('send-order-email failed (existing order):', emailRes.status, errBody)
-          }
+        // venue → brand_id を解決（メール / ポイント / ランクで必要）
+        // 遷移成立時のみ引く（2 回目以降の呼び出しでは DB 往復を節約）
+        let brandId: string | null = null
+        let storeRow: { name?: string; brands?: { id?: string; name?: string } } | null = null
+        try {
+          const { data: venueRow } = await supabase
+            .from('venues')
+            .select('name, brands(id, name)')
+            .eq('id', existingOrder.venue_id ?? pi.metadata?.venue_id ?? pi.metadata?.store_id)
+            .single()
+          storeRow = venueRow as any
+          brandId = (venueRow as any)?.brands?.id ?? null
+        } catch (venueErr) {
+          console.warn('venue/brand lookup failed (non-fatal):', venueErr)
         }
-      } catch (emailErr) {
-        console.error('Order email error (existing order):', emailErr)
-      }
-      } // end if (didTransitionToPaid) — メール送信ブロック
 
-      // 以降の処理（push / points / rank）は pending→paid 遷移時のみ実行
-      // 冪等性担保: 2 回目以降の confirm-order は既に payment_status='paid' のため updatedRows が空 → didTransitionToPaid=false
-      // これにより deduct_points が二重実行されて残高が過剰に減る事故を防ぐ。
-      if (didTransitionToPaid) {
+        // 3. メール送信
+        try {
+          const { data: orderDetail } = await supabase
+            .from('orders')
+            .select('customer_email, customer_name, order_type, total_amount, order_items(quantity, unit_price, products(name))')
+            .eq('id', existingOrder.id)
+            .single()
+
+          if (orderDetail?.customer_email) {
+            const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+              body: JSON.stringify({
+                type: 'confirmation',
+                to: orderDetail.customer_email,
+                order_id: existingOrder.display_id,
+                customer_name: orderDetail.customer_name || '',
+                store_name: storeRow?.name || '',
+                brand_name: storeRow?.brands?.name || '',
+                order_mode: orderDetail.order_type || 'takeout',
+                subtotal: orderDetail.total_amount || 0,
+                total: orderDetail.total_amount || 0,
+                tracking_token: existingOrder.tracking_token || '',
+                items: (orderDetail.order_items || []).map((i: any) => ({
+                  name: i.products?.name || '商品',
+                  qty: i.quantity || 1,
+                  price: i.unit_price || 0,
+                })),
+              }),
+            })
+            if (!emailRes.ok) {
+              const errBody = await emailRes.text().catch(() => '')
+              console.error('send-order-email failed (existing order):', emailRes.status, errBody)
+            }
+          }
+        } catch (emailErr) {
+          console.error('Order email error (existing order):', emailErr)
+        }
+
         // 4. プッシュ通知送信（非同期、失敗しても注文は有効）
         try {
           await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
@@ -288,7 +290,7 @@ serve(async (req) => {
             console.error('Rank check error:', rankErr)
           }
         }
-      } // end if (didTransitionToPaid) — push / points / rank
+      } // end if (didTransitionToPaid) — email / push / points / rank
 
       return new Response(
         JSON.stringify({
