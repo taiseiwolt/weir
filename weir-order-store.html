@@ -854,6 +854,7 @@ img { max-width:100%; display:block; }
       <p class="product-modal-desc" id="prodDesc"></p>
       <div class="product-modal-price" id="prodPrice"></div>
       <div id="prodOptions"></div>
+      <div id="prodValidationMsg" style="display:none;color:var(--danger);font-size:13px;margin-top:8px"></div>
     </div>
     <div class="product-modal-footer">
       <div class="product-qty-ctrl">
@@ -1172,13 +1173,11 @@ async function loadFromSupabase() {
     }
 
     // 5. パターンに紐づく商品・カテゴリ・オプション一括取得
-    // CC-Option-Master-Stage2a Phase 1: option 関連は Stage 1 schema
-    //   (option_groups: group_id/name/selection_type/is_required,
-    //    options: option_id/name/price_delta/is_default/sort_order/is_available,
-    //    product_option_groups: is_required override)
-    // 選択 UI / 価格計算 / cart data shape は Phase 2 で本実装。
-    // 本 Phase 1 は schema 参照修正のみで、既存 render / addToCart を壊さないよう
-    // 既存 in-memory 形状 (og.id / og.title / og.type / og.required / c.price) に橋渡しする。
+    // CC-Option-Master-Stage2a Phase 2: Stage 1 schema をフロント内部形状として直接利用する。
+    //   option_groups: group_id / name / selection_type / is_required
+    //   options: option_id / name / price_delta / is_default / sort_order / is_available
+    //   product_option_groups: is_required override (NULL → option_groups.is_required)
+    // 選択 UI / 価格計算 / cart は Stage 1 shape に合わせて再実装（Phase 1 の橋渡しは撤去）。
     const { data: itemRows } = await sb
       .from('menu_pattern_items')
       .select(`
@@ -1225,40 +1224,33 @@ async function loadFromSupabase() {
       const sizes = (p.product_sizes || []).sort((a,b) => a.sort_order - b.sort_order);
       const defaultSize = sizes.find(s => s.name === 'default') || sizes[0];
       const basePrice = defaultSize ? defaultSize.price : 0;
+      const defaultSizeId = defaultSize ? defaultSize.id : null;
 
-      // オプション (Stage 1 schema)
-      //   group: option_groups.group_id / name / selection_type / is_required
-      //   choices: options.option_id / name / price_delta / is_default / sort_order / is_available
-      //   is_required: product_option_groups.is_required (NULL なら option_groups.is_required にフォールバック)
-      // 旧スキーマの counter / min_select / max_select は Stage 1 に存在しないため廃止。
-      // selection_type 'single' → 'radio' / 'multiple' → 'checkbox' に橋渡し (Phase 2 で型整理予定)。
-      const optGroups = (p.product_option_groups || [])
-        .sort((a,b) => a.sort_order - b.sort_order)
+      // オプション (Stage 1 schema 直接利用)
+      const optionGroups = (p.product_option_groups || [])
+        .slice()
+        .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0))
         .map(pg => {
           const og = pg.option_groups;
           if (!og) return null;
           const requiredEff = (pg.is_required === null || pg.is_required === undefined)
             ? !!og.is_required
             : !!pg.is_required;
-          const typeEff = og.selection_type === 'multiple' ? 'checkbox' : 'radio';
           const choices = (og.options || [])
             .filter(oi => oi.is_available !== false)
-            .sort((a,b) => a.sort_order - b.sort_order)
-            .map(oi => {
-              const priceDelta = typeof oi.price_delta === 'number' ? oi.price_delta : 0;
-              return {
-                id:      oi.option_id,
-                name:    priceDelta > 0 ? `${oi.name}（+¥${priceDelta}）` :
-                         priceDelta < 0 ? `${oi.name}（−¥${Math.abs(priceDelta)}）` : oi.name,
-                price:   priceDelta,
-                default: !!oi.is_default
-              };
-            });
+            .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map(oi => ({
+              option_id:   oi.option_id,
+              name:        oi.name,
+              price_delta: typeof oi.price_delta === 'number' ? oi.price_delta : 0,
+              is_default:  !!oi.is_default
+            }));
+          if (choices.length === 0) return null;
           return {
-            id:       og.group_id,
-            title:    og.name,
-            type:     typeEff,        // radio / checkbox (Stage 1 に counter なし)
-            required: requiredEff,
+            group_id:       og.group_id,
+            name:           og.name,
+            selection_type: og.selection_type === 'multiple' ? 'multiple' : 'single',
+            is_required:    requiredEff,
             choices
           };
         }).filter(Boolean);
@@ -1269,9 +1261,10 @@ async function loadFromSupabase() {
         name:    p.name,
         desc:    p.description || '',
         price:   basePrice,
+        sizeId:  defaultSizeId,
         img:     p.image_url || '',
         tags:    [],
-        options: optGroups.length > 0 ? optGroups : undefined
+        options: optionGroups.length > 0 ? optionGroups : undefined
       };
     }).filter(Boolean);
 
@@ -1444,12 +1437,16 @@ function restoreCartFromCheckout() {
     // Validate each item exists in ITEMS
     const validItems = restoredCart.filter(c => ITEMS.find(i => i.id === c.itemId));
     if(validItems.length > 0) {
-      cart = validItems.map(c => ({
-        itemId: c.itemId,
-        qty: c.qty || 1,
-        options: c.options || {},
-        unitPrice: c.unitPrice || (ITEMS.find(i => i.id === c.itemId)?.price || 0)
-      }));
+      cart = validItems.map(c => {
+        const menuItem = ITEMS.find(i => i.id === c.itemId);
+        return {
+          itemId: c.itemId,
+          qty: c.qty || 1,
+          unitPrice: c.unitPrice || (menuItem ? menuItem.price : 0),
+          sizeId: c.sizeId || (menuItem ? menuItem.sizeId : null) || null,
+          selected_options: Array.isArray(c.selected_options) ? c.selected_options : []
+        };
+      });
     }
 
     // Clear sessionStorage after restore
@@ -1710,12 +1707,37 @@ function clearSearch() {
 // ===================================================================
 // PRODUCT MODAL
 // ===================================================================
+// CC-Option-Master-Stage2a Phase 2: Stage 1 schema 直接処理。
+// prodOptionState shape:
+//   { [group_id]: { selection_type, is_required, selected: Set<option_id> } }
+function initOptionStateForProduct(item) {
+  const state = {};
+  if(!item.options) return state;
+  item.options.forEach(og => {
+    const selected = new Set();
+    if(og.selection_type === 'single') {
+      // single: デフォルト 1 件を採用（なければ未選択）
+      const def = og.choices.find(c => c.is_default);
+      if(def) selected.add(def.option_id);
+    } else {
+      // multiple: デフォルト全てを初期選択
+      og.choices.forEach(c => { if(c.is_default) selected.add(c.option_id); });
+    }
+    state[og.group_id] = {
+      selection_type: og.selection_type,
+      is_required: og.is_required,
+      selected
+    };
+  });
+  return state;
+}
+
 function openProduct(itemId) {
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   currentProduct = item;
   prodQty = 1;
-  prodOptionState = {};
+  prodOptionState = initOptionStateForProduct(item);
 
   document.getElementById('prodImg').src = item.img;
   document.getElementById('prodName').textContent = item.name;
@@ -1740,22 +1762,14 @@ function openProduct(itemId) {
   const optEl = document.getElementById('prodOptions');
   if(item.options && item.options.length > 0) {
     optEl.innerHTML = item.options.map(og => renderOptionGroup(og)).join('');
-    // Init state
-    item.options.forEach(og => {
-      if(og.type === 'radio') {
-        const def = og.choices.findIndex(c => c.default);
-        prodOptionState[og.id] = { type:'radio', selected: def >= 0 ? def : -1 };
-      } else if(og.type === 'checkbox') {
-        prodOptionState[og.id] = { type:'checkbox', selected: new Array(og.choices.length).fill(false) };
-      } else if(og.type === 'counter') {
-        prodOptionState[og.id] = { type:'counter', counts: new Array(og.choices.length).fill(og.min||0) };
-      }
-    });
-    // Apply defaults visually
     updateOptionUI();
   } else {
     optEl.innerHTML = '';
   }
+
+  // Validation message area
+  const msgEl = document.getElementById('prodValidationMsg');
+  if(msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
 
   document.getElementById('prodQty').textContent = prodQty;
   updateAddCartPrice();
@@ -1764,58 +1778,37 @@ function openProduct(itemId) {
 }
 
 function renderOptionGroup(og) {
-  const reqLabel = og.required
+  const reqLabel = og.is_required
     ? '<span class="option-group-required required">必須</span>'
     : '<span class="option-group-required optional">任意</span>';
-  let hint = '';
-  if(og.type === 'checkbox') {
-    const minT = og.min !== undefined ? og.min : 0;
-    const maxT = og.max !== undefined ? og.max : og.choices.length;
-    hint = `<div class="option-group-hint">${minT > 0 ? `最低${minT}つ選択` : ''}${minT > 0 && maxT < og.choices.length ? '・' : ''}${maxT < og.choices.length ? `最大${maxT}つまで` : ''}</div>`;
-  } else if(og.type === 'counter') {
-    hint = `<div class="option-group-hint">各アイテム 最大${og.max||99}個まで</div>`;
-  }
+  const hint = `<div class="option-group-hint">${escH(og.selection_type === 'single' ? '1 つ選択' : '複数選択可')}</div>`;
 
   let choicesHtml = '';
-  if(og.type === 'radio') {
-    choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-radio" data-group="${escH(og.id)}" data-idx="${ci}" onclick="selectRadio('${escH(og.id)}',${ci})">
+  if(og.selection_type === 'single') {
+    choicesHtml = og.choices.map((c) =>
+      `<div class="option-radio" data-group="${escH(og.group_id)}" data-option="${escH(c.option_id)}" onclick="selectRadio('${escH(og.group_id)}','${escH(c.option_id)}')">
         <div class="option-radio-left">
           <div class="option-radio-circle"></div>
           <span class="option-name">${escH(c.name)}</span>
         </div>
-        <span class="option-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : c.price < 0 ? '−¥'+Math.abs(c.price).toLocaleString() : ''}</span>
+        <span class="option-price">${c.price_delta > 0 ? '+¥'+c.price_delta.toLocaleString() : c.price_delta < 0 ? '−¥'+Math.abs(c.price_delta).toLocaleString() : ''}</span>
       </div>`
     ).join('');
-  } else if(og.type === 'checkbox') {
-    choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-checkbox" data-group="${escH(og.id)}" data-idx="${ci}" onclick="toggleCheckbox('${escH(og.id)}',${ci})">
+  } else {
+    choicesHtml = og.choices.map((c) =>
+      `<div class="option-checkbox" data-group="${escH(og.group_id)}" data-option="${escH(c.option_id)}" onclick="toggleCheckbox('${escH(og.group_id)}','${escH(c.option_id)}')">
         <div class="option-checkbox-left">
           <div class="option-checkbox-box">✓</div>
           <span class="option-name">${escH(c.name)}</span>
         </div>
-        <span class="option-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : c.price < 0 ? '−¥'+Math.abs(c.price).toLocaleString() : ''}</span>
-      </div>`
-    ).join('');
-  } else if(og.type === 'counter') {
-    choicesHtml = og.choices.map((c, ci) =>
-      `<div class="option-counter" data-group="${escH(og.id)}" data-idx="${ci}">
-        <div class="option-counter-left">
-          <span class="option-counter-name">${escH(c.name)}</span>
-          <span class="option-counter-price">${c.price > 0 ? '+¥'+c.price.toLocaleString() : '無料'}</span>
-        </div>
-        <div class="option-counter-ctrl">
-          <button onclick="changeCounter('${escH(og.id)}',${ci},-1)" id="cnt-minus-${escH(og.id)}-${ci}">−</button>
-          <span id="cnt-val-${escH(og.id)}-${ci}">0</span>
-          <button onclick="changeCounter('${escH(og.id)}',${ci},1)" id="cnt-plus-${escH(og.id)}-${ci}">+</button>
-        </div>
+        <span class="option-price">${c.price_delta > 0 ? '+¥'+c.price_delta.toLocaleString() : c.price_delta < 0 ? '−¥'+Math.abs(c.price_delta).toLocaleString() : ''}</span>
       </div>`
     ).join('');
   }
 
   return `<div class="option-group">
     <div class="option-group-header">
-      <span class="option-group-title">${escH(og.title)}</span>
+      <span class="option-group-title">${escH(og.name)}</span>
       ${reqLabel}
     </div>
     ${hint}
@@ -1823,36 +1816,22 @@ function renderOptionGroup(og) {
   </div>`;
 }
 
-function selectRadio(groupId, idx) {
-  prodOptionState[groupId].selected = idx;
+function selectRadio(groupId, optionId) {
+  const state = prodOptionState[groupId];
+  if(!state) return;
+  state.selected = new Set([optionId]);
   updateOptionUI();
   updateAddCartPrice();
 }
 
-function toggleCheckbox(groupId, idx) {
+function toggleCheckbox(groupId, optionId) {
   const state = prodOptionState[groupId];
-  const og = currentProduct.options.find(o => o.id === groupId);
-  const maxSel = og.max !== undefined ? og.max : og.choices.length;
-
-  if(state.selected[idx]) {
-    state.selected[idx] = false;
+  if(!state) return;
+  if(state.selected.has(optionId)) {
+    state.selected.delete(optionId);
   } else {
-    const count = state.selected.filter(Boolean).length;
-    if(count >= maxSel) return; // max reached
-    state.selected[idx] = true;
+    state.selected.add(optionId);
   }
-  updateOptionUI();
-  updateAddCartPrice();
-}
-
-function changeCounter(groupId, idx, delta) {
-  const state = prodOptionState[groupId];
-  const og = currentProduct.options.find(o => o.id === groupId);
-  const minVal = og.min !== undefined ? og.min : 0;
-  const maxVal = og.max !== undefined ? og.max : 99;
-  const newVal = state.counts[idx] + delta;
-  if(newVal < minVal || newVal > maxVal) return;
-  state.counts[idx] = newVal;
   updateOptionUI();
   updateAddCartPrice();
 }
@@ -1860,25 +1839,17 @@ function changeCounter(groupId, idx, delta) {
 function updateOptionUI() {
   if(!currentProduct || !currentProduct.options) return;
   currentProduct.options.forEach(og => {
-    const state = prodOptionState[og.id];
-    if(og.type === 'radio') {
-      document.querySelectorAll(`.option-radio[data-group="${og.id}"]`).forEach((el, i) => {
-        el.classList.toggle('selected', i === state.selected);
+    const state = prodOptionState[og.group_id];
+    if(!state) return;
+    if(og.selection_type === 'single') {
+      document.querySelectorAll(`.option-radio[data-group="${og.group_id}"]`).forEach(el => {
+        const oid = el.getAttribute('data-option');
+        el.classList.toggle('selected', state.selected.has(oid));
       });
-    } else if(og.type === 'checkbox') {
-      document.querySelectorAll(`.option-checkbox[data-group="${og.id}"]`).forEach((el, i) => {
-        el.classList.toggle('selected', state.selected[i]);
-      });
-    } else if(og.type === 'counter') {
-      state.counts.forEach((v, i) => {
-        const valEl = document.getElementById(`cnt-val-${og.id}-${i}`);
-        if(valEl) valEl.textContent = v;
-        const minBtn = document.getElementById(`cnt-minus-${og.id}-${i}`);
-        const maxBtn = document.getElementById(`cnt-plus-${og.id}-${i}`);
-        const minVal = og.min !== undefined ? og.min : 0;
-        const maxVal = og.max !== undefined ? og.max : 99;
-        if(minBtn) minBtn.disabled = v <= minVal;
-        if(maxBtn) maxBtn.disabled = v >= maxVal;
+    } else {
+      document.querySelectorAll(`.option-checkbox[data-group="${og.group_id}"]`).forEach(el => {
+        const oid = el.getAttribute('data-option');
+        el.classList.toggle('selected', state.selected.has(oid));
       });
     }
   });
@@ -1888,16 +1859,26 @@ function calcOptionPrice() {
   if(!currentProduct || !currentProduct.options) return 0;
   let extra = 0;
   currentProduct.options.forEach(og => {
-    const state = prodOptionState[og.id];
-    if(og.type === 'radio' && state.selected >= 0) {
-      extra += og.choices[state.selected].price || 0;
-    } else if(og.type === 'checkbox') {
-      state.selected.forEach((sel, i) => { if(sel) extra += og.choices[i].price || 0; });
-    } else if(og.type === 'counter') {
-      state.counts.forEach((cnt, i) => { extra += cnt * (og.choices[i].price || 0); });
-    }
+    const state = prodOptionState[og.group_id];
+    if(!state) return;
+    og.choices.forEach(c => {
+      if(state.selected.has(c.option_id)) extra += c.price_delta || 0;
+    });
   });
   return extra;
+}
+
+function validateRequiredOptions() {
+  // Returns { valid:boolean, missingGroupName:string|null }
+  if(!currentProduct || !currentProduct.options) return { valid:true, missingGroupName:null };
+  for(const og of currentProduct.options) {
+    if(!og.is_required) continue;
+    const state = prodOptionState[og.group_id];
+    if(!state || state.selected.size < 1) {
+      return { valid:false, missingGroupName: og.name };
+    }
+  }
+  return { valid:true, missingGroupName:null };
 }
 
 function updateAddCartPrice() {
@@ -1908,30 +1889,20 @@ function updateAddCartPrice() {
 
   // Validate required options and enable/disable button
   const btn = document.getElementById('btnAddCart');
-  const valid = validateRequiredOptions();
-  btn.disabled = !valid;
-}
+  const v = validateRequiredOptions();
+  btn.disabled = !v.valid;
 
-function validateRequiredOptions() {
-  if(!currentProduct || !currentProduct.options) return true;
-  for(const og of currentProduct.options) {
-    if(!og.required) continue;
-    const state = prodOptionState[og.id];
-    if(!state) return false;
-
-    if(og.type === 'radio') {
-      if(state.selected < 0) return false; // no selection
-    } else if(og.type === 'checkbox') {
-      const minSel = og.min !== undefined ? og.min : 1;
-      const count = state.selected.filter(Boolean).length;
-      if(count < minSel) return false; // not enough selected
-    } else if(og.type === 'counter') {
-      // required counter: total count must be >= 1
-      const total = state.counts.reduce((s,c) => s+c, 0);
-      if(total < 1) return false;
+  // Error message (D-83: dynamic group name from DB only)
+  const msgEl = document.getElementById('prodValidationMsg');
+  if(msgEl) {
+    if(v.valid) {
+      msgEl.textContent = '';
+      msgEl.style.display = 'none';
+    } else {
+      msgEl.textContent = (v.missingGroupName || '') + ' の選択は必須です';
+      msgEl.style.display = '';
     }
   }
-  return true;
 }
 
 function changeProdQty(delta) {
@@ -1943,19 +1914,60 @@ function changeProdQty(delta) {
 // ===================================================================
 // CART
 // ===================================================================
+// CC-Option-Master-Stage2a Phase 2: Stage 1 snapshot shape
+// cart item:
+//   {
+//     itemId, qty, unitPrice (= basePrice + Σ price_delta),
+//     sizeId,
+//     selected_options: [{ option_id, option_name, group_id, group_name, price_delta }]
+//   }
+
+function buildSelectedOptionsSnapshot(item, optionState) {
+  if(!item || !item.options) return [];
+  const snapshot = [];
+  item.options.forEach(og => {
+    const state = optionState[og.group_id];
+    if(!state) return;
+    og.choices.forEach(c => {
+      if(state.selected.has(c.option_id)) {
+        snapshot.push({
+          option_id:   c.option_id,
+          option_name: c.name,
+          group_id:    og.group_id,
+          group_name:  og.name,
+          price_delta: c.price_delta || 0
+        });
+      }
+    });
+  });
+  return snapshot;
+}
+
 function addToCart() {
   if(isStoreClosed) { alert('現在営業時間外です。営業時間内にご注文ください。'); return; }
   if(!currentProduct) return;
-  if(!validateRequiredOptions()) return; // block if required options not met
+  const v = validateRequiredOptions();
+  if(!v.valid) return; // block if required options not met
+
   const unitPrice = currentProduct.price + calcOptionPrice();
-  const optSnapshot = JSON.parse(JSON.stringify(prodOptionState));
+  const selectedOptions = buildSelectedOptionsSnapshot(currentProduct, prodOptionState);
+  const sig = JSON.stringify(selectedOptions);
 
   // Check if same item+options already in cart
-  const existIdx = cart.findIndex(c => c.itemId === currentProduct.id && JSON.stringify(c.options) === JSON.stringify(optSnapshot));
+  const existIdx = cart.findIndex(c =>
+    c.itemId === currentProduct.id &&
+    JSON.stringify(c.selected_options || []) === sig
+  );
   if(existIdx >= 0) {
     cart[existIdx].qty += prodQty;
   } else {
-    cart.push({ itemId:currentProduct.id, qty:prodQty, options:optSnapshot, unitPrice });
+    cart.push({
+      itemId: currentProduct.id,
+      qty: prodQty,
+      unitPrice,
+      sizeId: currentProduct.sizeId || null,
+      selected_options: selectedOptions
+    });
   }
 
   closeModalById('productModal');
@@ -1969,16 +1981,25 @@ function quickAdd(itemId) {
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   if(item.sale_status === 'sold_out') return;
-  // If item has options, open product modal instead
+  // If item has options (any required OR just has options), open product modal for selection
   if(item.options && item.options.length > 0) {
     openProduct(itemId);
     return;
   }
-  const existIdx = cart.findIndex(c => c.itemId === itemId && Object.keys(c.options).length === 0);
+  const existIdx = cart.findIndex(c =>
+    c.itemId === itemId &&
+    (!c.selected_options || c.selected_options.length === 0)
+  );
   if(existIdx >= 0) {
     cart[existIdx].qty++;
   } else {
-    cart.push({ itemId, qty:1, options:{}, unitPrice:item.price });
+    cart.push({
+      itemId,
+      qty: 1,
+      unitPrice: item.price,
+      sizeId: item.sizeId || null,
+      selected_options: []
+    });
   }
   updateCartUI();
   renderMenu(document.getElementById('searchInput').value || '');
@@ -2157,7 +2178,7 @@ function renderOrderItems() {
   el.innerHTML = cart.map((c, ci) => {
     const item = ITEMS.find(i => i.id === c.itemId);
     if(!item) return '';
-    const optText = buildOptionText(c, item);
+    const optText = buildOptionText(c);
     const tagHtml = item.tags.filter(t=>t!=='unavailable').map(t => {
       const labels = { popular:'人気', limited:'期間限定', recommend:'おすすめ', discount:'割引中' };
       return `<span class="tag tag-${escH(t)}" style="font-size:9px;padding:1px 4px;">${escH(labels[t]||t)}</span>`;
@@ -2180,21 +2201,21 @@ function renderOrderItems() {
   }).join('');
 }
 
-function buildOptionText(cartItem, menuItem) {
-  if(!menuItem.options) return '';
-  const parts = [];
-  menuItem.options.forEach(og => {
-    const state = cartItem.options[og.id];
-    if(!state) return;
-    if(state.type === 'radio' && state.selected >= 0) {
-      parts.push(og.choices[state.selected].name);
-    } else if(state.type === 'checkbox') {
-      state.selected.forEach((sel, i) => { if(sel) parts.push(og.choices[i].name); });
-    } else if(state.type === 'counter') {
-      state.counts.forEach((cnt, i) => { if(cnt > 0) parts.push(og.choices[i].name + '×' + cnt); });
-    }
+// CC-Option-Master-Stage2a Phase 2: selected_options snapshot から表示文字列を生成。
+// group ごとに束ねて「{group}: {option1}・{option2}」として表示、group 間は「 / 」区切り。
+function buildOptionText(cartItem) {
+  if(!cartItem || !Array.isArray(cartItem.selected_options) || cartItem.selected_options.length === 0) return '';
+  const byGroup = new Map();
+  cartItem.selected_options.forEach(o => {
+    const key = o.group_id;
+    if(!byGroup.has(key)) byGroup.set(key, { name: o.group_name, options: [] });
+    byGroup.get(key).options.push(o.option_name);
   });
-  return parts.join(', ');
+  const parts = [];
+  byGroup.forEach(g => {
+    parts.push(g.options.join('、'));
+  });
+  return parts.join(' / ');
 }
 
 function orderItemQty(cartIdx, delta) {
@@ -2514,12 +2535,15 @@ function goToCheckout() {
       const item = ITEMS.find(i => i.id === c.itemId);
       return {
         id: c.itemId,
+        itemId: c.itemId,
         name: item ? item.name : '',
         price: c.unitPrice,
+        unit_price: c.unitPrice,
         qty: c.qty,
+        sizeId: c.sizeId || (item ? item.sizeId : null) || null,
         img: item ? item.img : '',
-        optText: buildOptionText(c, item),
-        storeOptions: c.options
+        optText: buildOptionText(c),
+        selected_options: Array.isArray(c.selected_options) ? c.selected_options : []
       };
     }),
     subtotal: getCartTotal(),

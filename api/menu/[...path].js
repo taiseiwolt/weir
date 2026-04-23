@@ -76,6 +76,21 @@ async function handleProducts(req, res) {
   }
 }
 
+// CC-Option-Master-Stage2a Phase 2: Stage 1 options schema
+//   option_groups: group_id / name / selection_type / is_required / sort_order
+//   options:       option_id / name / price_delta / is_default / sort_order / is_available
+//   product_option_groups: is_required override (NULL → use option_groups.is_required)
+// 応答の product_option_groups をフロントが `products.product_option_groups` としてそのまま参照。
+const STAGE1_OPTION_SELECT = `
+  product_option_groups(
+    is_required, sort_order,
+    option_groups(
+      group_id, name, selection_type, is_required, sort_order,
+      options(option_id, name, price_delta, is_default, sort_order, is_available)
+    )
+  )
+`;
+
 async function getProductsByVenue(res, venueId) {
   const { data: pattern } = await supabase
     .from('menu_patterns')
@@ -96,13 +111,7 @@ async function getProductsByVenue(res, venueId) {
       products(
         id, name, price, image_url, description, product_flags,
         product_sizes(id, name, price),
-        product_option_groups(
-          id, sort_order,
-          option_groups(
-            id, name, is_required, max_select, min_select,
-            option_items(id, name, price_adjustment, sort_order)
-          )
-        )
+        ${STAGE1_OPTION_SELECT}
       )
     `)
     .eq('pattern_id', pattern.id)
@@ -122,15 +131,7 @@ async function getProductsByVenue(res, venueId) {
         category_id: item.categories?.id,
         category_name: item.categories?.name,
       };
-
-      if (product.product_option_groups) {
-        product.option_groups = product.product_option_groups
-          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-          .map(pog => pog.option_groups)
-          .filter(Boolean);
-        delete product.product_option_groups;
-      }
-
+      // product.product_option_groups はそのまま保持（Stage 1 スキーマ）。
       products.push(product);
     }
 
@@ -147,7 +148,7 @@ async function getProductsByVenue(res, venueId) {
 async function getProductsByBrand(res, brandId) {
   const [catResult, prodResult, sizeResult] = await Promise.all([
     supabase.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', brandId).order('sort_order'),
-    supabase.from('products').select('id, brand_id, category_id, name, description, price, image_url, product_flags, is_available, sort_order').eq('brand_id', brandId),
+    supabase.from('products').select(`id, brand_id, category_id, name, description, price, image_url, product_flags, is_available, sort_order, ${STAGE1_OPTION_SELECT}`).eq('brand_id', brandId),
     supabase.from('product_sizes').select('id, product_id, name, price, sort_order'),
   ]);
 
@@ -177,26 +178,13 @@ async function handleProductDetail(req, res, id) {
       .select(`
         id, brand_id, category_id, name, description, price, image_url, product_flags, is_available, sort_order,
         product_sizes(id, name, price, sort_order),
-        product_option_groups(
-          id, sort_order,
-          option_groups(
-            id, name, is_required, max_select, min_select,
-            option_items(id, name, price_adjustment, sort_order)
-          )
-        )
+        ${STAGE1_OPTION_SELECT}
       `)
       .eq('id', id)
       .single();
 
     if (dbError) return error(res, '商品が見つかりません', 404);
-
-    if (product.product_option_groups) {
-      product.option_groups = product.product_option_groups
-        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-        .map(pog => pog.option_groups)
-        .filter(Boolean);
-      delete product.product_option_groups;
-    }
+    // product.product_option_groups はそのまま保持（Stage 1 スキーマ）。
 
     return ok(res, product);
   } catch (e) {
