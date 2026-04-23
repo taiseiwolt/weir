@@ -256,6 +256,21 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - **Step 4-2 5 カードラベル**（CC-22a-fix5）: POP / SNS (サイズは投稿タイプに応じて最適化) / レビュー返信 / 月次レポート (売上分析 / 対策提示 / ソリューション提供) / 自社サイト (雰囲気 / メッセージ / 個性)。`profile` から `site` に id 変更
 - **Step 3 16 タイル**（CC-22a-fix5）: `grid-template-rows:repeat(4,1fr)` で grid 行を 4 等分、タイルは `aspect-ratio:auto` で自然フィット。footer は `display:grid; grid-template-columns:1fr auto 1fr` で 戻る / 中央リンク / プライマリ を整列
 
+### CC-22b-stage1 AI 生成基盤（2026-04-23）
+
+- **Stage 1 スコープ**: レビュー返信生成のみ（POP / SNS / 月次 / サイトは Stage 2+）。 Step 4 プレビューモーダルを Mock → 実データ化。48 件の業態別テンプレレビュー（`template_reviews`）を seed、Claude Sonnet 4.6 が加盟店ブランドボイスで返信を生成
+- **トリガー点は Step 3 → Step 4 の `confirmSelection()`**。plan 原文は「Step 2 終了時」「Q9 完了時」と書かれているが、cuisine_key が確定するのは Step 3 選択後のため、実装時点では後者のタイミングで妥協した
+- **匿名オンボに venue_id は存在しない**。`generation_jobs` は `venue_id / brand_id` を NULLABLE にし、`session_id` (localStorage `state.session.id`) で追跡する。`brand_snapshot jsonb` に brand_name / concept / cuisine_label を captured。 Stage 2+ で venue 作成時に UPDATE で紐付ける想定
+- **fire-and-forget パターン**: `start-generation` は `generation_jobs` INSERT 直後に 202 を返し、Background で `generation-worker` を invoke する。Supabase EF の `EdgeRuntime.waitUntil` で fetch を keep-alive、無い場合は単純な `.catch` (globalThis guard 済み)
+- **Realtime subscribe は `id=eq.${jobId}` フィルタ**。anon RLS は UUID の capability-base (`USING(true)`) を許容、PII を保存しないためこの設計で OK。Stage 2 で session_token ベースに引き締める
+- **Rate Limit は Postgres テーブル**: `rate_limits` に (venue / session / ip) × called_at で保持、start-generation で 1 分 window を COUNT。venue 3/分、session 3/分、IP 10/分。超過時は 429 + `status:'rate_limited'`
+- **エラーコード統一**: `rate_limited` / `timeout` / `no_template` / `claude_api_error` / `db_error` / `trigger_failed` / `results_empty` / `unknown_error`。フロントは `buildS4ReviewError(code)` でフレンドリーメッセージに置換
+- **プロンプトは `supabase/functions/generation-worker/prompt.ts` に分離**（Stage 1 MVP）。weir-ai-integration skill 規約では YAML 必須だが、Stage 1 は TS module で妥協、Stage 2+ で `prompts/review-reply.yaml` + 軸①② 注入に移行
+- **モデル ID は `claude-sonnet-4-6`**。既存 `generate-review-reply` EF の `claude-sonnet-4-20250514` は別体系（同期 / 3 バリアント）で、本 Stage 1 は非同期ジョブ方式の別系統。混同しない
+- **`venues_public` ビューには cuisine_key 未追加**: Stage 1 では venue を作らないため不要。Stage 2+ で venue 作成時に追加カラム + ビュー更新
+- **CSP 注意**: `sb.functions.invoke` は既存の Supabase CSP で許可済、新規設定不要。`wss://iikwusprydaogzeslgdz.supabase.co` も Realtime 用に既存許可済
+- **lint 通過**: `npm run lint` は console.log / 既知ブランド名ハードコードを検知。console.error は OK、seed の template_reviews は「お客様」汎用語のみ使用（D-83 違反なし）
+
 ---
 
 ## Agent Teams
