@@ -317,6 +317,20 @@
   }
 
   /* =============================================================
+     11b. buildVersionedImageFilename(baseName, ext) — versioned
+          image filename for CDN-friendly uploads.
+          Adds Date.now() suffix so each upload produces a new URL,
+          allowing cacheControl: '31536000' to safely apply.
+          Example: buildVersionedImageFilename('logo', 'png')
+                   → 'logo_1713868800000.png'
+     ============================================================= */
+  function buildVersionedImageFilename(baseName, ext) {
+    var safeBase = String(baseName || 'file').replace(/[^a-zA-Z0-9_-]/g, '_');
+    var safeExt = String(ext || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    return safeBase + '_' + Date.now() + '.' + safeExt;
+  }
+
+  /* =============================================================
      12. detectActivePage() — detect which page is active
      ============================================================= */
   function detectActivePage() {
@@ -1077,6 +1091,7 @@
     loadBrand: loadBrand,
     applyBrandCSS: applyBrandCSS,
     buildBrandPath: buildBrandPath,
+    buildVersionedImageFilename: buildVersionedImageFilename,
 
     // i18n
     I18N: I18N,

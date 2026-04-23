@@ -146,6 +146,7 @@ Requirements:
       .upload(fileName, bytes, {
         contentType: 'image/png',
         upsert: false,
+        cacheControl: '31536000',
       })
 
     if (uploadError) {

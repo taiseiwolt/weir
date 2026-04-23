@@ -8170,7 +8170,7 @@ async function saveAllChanges() {
     try {
       var logoBlob = await fetch(logoImg.src).then(function(r){return r.blob()});
       var logoPath = 'brands/' + BRAND_ID + '/logo_' + Date.now() + '.png';
-      var { data: logoData, error: logoErr } = await sb.storage.from('brand-assets').upload(logoPath, logoBlob, { upsert: true });
+      var { data: logoData, error: logoErr } = await sb.storage.from('brand-assets').upload(logoPath, logoBlob, { upsert: true, cacheControl: '31536000' });
       if (!logoErr && logoData) {
         var { data: urlData } = sb.storage.from('brand-assets').getPublicUrl(logoPath);
         if (urlData) updateData.logo_url = urlData.publicUrl;
@@ -8184,7 +8184,7 @@ async function saveAllChanges() {
     try {
       var favBlob = await fetch(faviconImg.src).then(function(r){return r.blob()});
       var favPath = 'brands/' + BRAND_ID + '/favicon_' + Date.now() + '.png';
-      var { data: favData, error: favErr } = await sb.storage.from('brand-assets').upload(favPath, favBlob, { upsert: true });
+      var { data: favData, error: favErr } = await sb.storage.from('brand-assets').upload(favPath, favBlob, { upsert: true, cacheControl: '31536000' });
       if (!favErr && favData) {
         var { data: favUrl } = sb.storage.from('brand-assets').getPublicUrl(favPath);
         if (favUrl) {

@@ -378,6 +378,7 @@ serve(async (req) => {
       .upload(fileName, pdfBlob, {
         contentType: 'application/pdf',
         upsert: true,
+        cacheControl: '31536000',
       })
 
     if (uploadErr) {
@@ -393,6 +394,7 @@ serve(async (req) => {
           .upload(fileName, pdfBlob, {
             contentType: 'application/pdf',
             upsert: true,
+            cacheControl: '31536000',
           })
         if (retryErr) {
           return jsonResponse({ error: 'PDF Storage アップロードに失敗しました' }, 500, corsHeaders)
