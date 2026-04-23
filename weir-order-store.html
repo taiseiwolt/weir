@@ -1172,6 +1172,13 @@ async function loadFromSupabase() {
     }
 
     // 5. パターンに紐づく商品・カテゴリ・オプション一括取得
+    // CC-Option-Master-Stage2a Phase 1: option 関連は Stage 1 schema
+    //   (option_groups: group_id/name/selection_type/is_required,
+    //    options: option_id/name/price_delta/is_default/sort_order/is_available,
+    //    product_option_groups: is_required override)
+    // 選択 UI / 価格計算 / cart data shape は Phase 2 で本実装。
+    // 本 Phase 1 は schema 参照修正のみで、既存 render / addToCart を壊さないよう
+    // 既存 in-memory 形状 (og.id / og.title / og.type / og.required / c.price) に橋渡しする。
     const { data: itemRows } = await sb
       .from('menu_pattern_items')
       .select(`
@@ -1182,9 +1189,10 @@ async function loadFromSupabase() {
           product_sizes(id, name, price, sort_order),
           product_option_groups(
             sort_order,
+            is_required,
             option_groups(
-              id, name, type, required, min_select, max_select,
-              option_items(id, name, price, is_default, sort_order)
+              group_id, name, selection_type, is_required,
+              options(option_id, name, price_delta, is_default, sort_order, is_available)
             )
           )
         )
@@ -1218,25 +1226,39 @@ async function loadFromSupabase() {
       const defaultSize = sizes.find(s => s.name === 'default') || sizes[0];
       const basePrice = defaultSize ? defaultSize.price : 0;
 
-      // オプション
+      // オプション (Stage 1 schema)
+      //   group: option_groups.group_id / name / selection_type / is_required
+      //   choices: options.option_id / name / price_delta / is_default / sort_order / is_available
+      //   is_required: product_option_groups.is_required (NULL なら option_groups.is_required にフォールバック)
+      // 旧スキーマの counter / min_select / max_select は Stage 1 に存在しないため廃止。
+      // selection_type 'single' → 'radio' / 'multiple' → 'checkbox' に橋渡し (Phase 2 で型整理予定)。
       const optGroups = (p.product_option_groups || [])
         .sort((a,b) => a.sort_order - b.sort_order)
         .map(pg => {
           const og = pg.option_groups;
           if (!og) return null;
-          const choices = (og.option_items || [])
+          const requiredEff = (pg.is_required === null || pg.is_required === undefined)
+            ? !!og.is_required
+            : !!pg.is_required;
+          const typeEff = og.selection_type === 'multiple' ? 'checkbox' : 'radio';
+          const choices = (og.options || [])
+            .filter(oi => oi.is_available !== false)
             .sort((a,b) => a.sort_order - b.sort_order)
-            .map(oi => ({
-              name:    oi.price > 0 ? `${oi.name}（+¥${oi.price}）` :
-                       oi.price < 0 ? `${oi.name}（−¥${Math.abs(oi.price)}）` : oi.name,
-              price:   oi.price,
-              default: oi.is_default
-            }));
+            .map(oi => {
+              const priceDelta = typeof oi.price_delta === 'number' ? oi.price_delta : 0;
+              return {
+                id:      oi.option_id,
+                name:    priceDelta > 0 ? `${oi.name}（+¥${priceDelta}）` :
+                         priceDelta < 0 ? `${oi.name}（−¥${Math.abs(priceDelta)}）` : oi.name,
+                price:   priceDelta,
+                default: !!oi.is_default
+              };
+            });
           return {
-            id:       og.id,
+            id:       og.group_id,
             title:    og.name,
-            type:     og.type,     // radio / checkbox / counter
-            required: og.required,
+            type:     typeEff,        // radio / checkbox (Stage 1 に counter なし)
+            required: requiredEff,
             choices
           };
         }).filter(Boolean);
