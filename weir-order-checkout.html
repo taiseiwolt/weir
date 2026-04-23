@@ -1228,8 +1228,8 @@ function selectTime(type, el) {
 // ===================================================================
 // CC-Option-Master-Stage2a Phase 2: selected_options snapshot から表示文字列を生成。
 // group ごとに束ねて option 名をまとめ、group 間は「 / 」、group 内は「、」区切り。
+// selected_options を source of truth として常に再構築（optText キャッシュに依存しない）。
 function buildCheckoutOptionText(item) {
-  if(item && typeof item.optText === 'string' && item.optText.length > 0) return item.optText;
   if(!item || !Array.isArray(item.selected_options) || item.selected_options.length === 0) return '';
   const byGroup = new Map();
   item.selected_options.forEach(o => {
@@ -1543,11 +1543,12 @@ function updatePriceSummary() {
 
   // 商品小計（オプション加算を除いた純粋な商品代金）
   document.getElementById('priceSubtotal').textContent = '¥' + productSubtotal.toLocaleString();
-  // オプション加算行（合計 > 0 のときのみ表示）
+  // オプション加算行（非ゼロのときのみ表示。負値は減算として表示し、productSubtotal + optionsTotal === subtotal 不変式を維持）
   const optionsRowEl = document.getElementById('priceOptionsRow');
-  if(optionsTotal > 0) {
+  if(optionsTotal !== 0) {
     if(optionsRowEl) optionsRowEl.style.display = '';
-    document.getElementById('priceOptions').textContent = '¥' + optionsTotal.toLocaleString();
+    const sign = optionsTotal < 0 ? '−' : '';
+    document.getElementById('priceOptions').textContent = '¥' + sign + Math.abs(optionsTotal).toLocaleString();
   } else if(optionsRowEl) {
     optionsRowEl.style.display = 'none';
   }
