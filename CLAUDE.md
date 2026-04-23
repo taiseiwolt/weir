@@ -271,6 +271,14 @@ Weirは日本の飲食店向けオールインワンSaaSプラットフォーム
 - **CSP 注意**: `sb.functions.invoke` は既存の Supabase CSP で許可済、新規設定不要。`wss://iikwusprydaogzeslgdz.supabase.co` も Realtime 用に既存許可済
 - **lint 通過**: `npm run lint` は console.log / 既知ブランド名ハードコードを検知。console.error は OK、seed の template_reviews は「お客様」汎用語のみ使用（D-83 違反なし）
 
+### E2E Playwright の Auth Gate / Sub-Step 回避（CC-Emoji-Phase2-and-E2E-Repair、2026-04-23）
+
+- **`weir-onboarding.html` は `proceedAfterAuth()` が走るまで `#loginOverlay` 表示 / `#onbHeader` + `#onbMain` は `style="display:none"` のまま**。匿名 E2E は `sb.auth.getSession()` が空で返るため `proceedAfterAuth()` が呼ばれず、`#step3.active` が付与されていても parent の inline style で hidden 判定される。テストは `page.evaluate` で `loginOverlay.style.display='none'` / `onbHeader.style.display='flex'` / `onbMain.style.display='block'` + `window.initOnboarding()` + `window.goToStep(3)` を手動実行する。CSS specificity の問題ではない
+- **Step 4 sub-step 構造は CC-22a-fix7 で 3 → 2 に集約された**。現行: sub-step 1 = `#packageGrid` の 5 cards / sub-step 2 = brand summary。旧テストの `confirmSelectionAndWaitStep4` は hero (旧 sub-1) → cards (旧 sub-2) 遷移を前提に `s4-primary` をクリックしていたが、現行ではこれが cards から summary への遷移となり cards が隠れる。`s4-primary` はクリックせず sub-step 1 の active を expect するのが正しい
+- **`window.goStep4Sub` は存在しない**。T5 の `page.evaluate` の `typeof === 'function'` ガード経由で無視されている（ノイズ）。sub-step 遷移は `s4Next()` / `s4Back()` or `state.step4Sub` 直接操作のみ
+- **anon の `sb.functions.invoke('start-generation', ...)` は 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` を返す**。publishable key (`sb_publishable_*`) は JWT ではないため、`verify_jwt=true`（デフォルト）の EF では gateway が弾く。解決策は `supabase functions deploy start-generation --no-verify-jwt` + `generation-worker --no-verify-jwt` の再デプロイ、または `supabase/config.toml` に `[functions.start-generation] verify_jwt = false` を記述。anonymous sign-in は Supabase dashboard で無効化されている（`anonymous_provider_disabled`）ため JWT 取得パスも使えない
+- **`npx playwright test e2e-*.spec.cjs` は BASE_URL デフォルト `https://xorder.co.jp`**。ローカル起動サーバではなく本番を叩くので deploy 未完のコードを検証できない。staging 環境が立ったら BASE_URL 切替
+
 ---
 
 ## Agent Teams

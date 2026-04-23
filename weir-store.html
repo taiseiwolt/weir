@@ -115,7 +115,7 @@ img,video{max-width:100%;display:block}
 .read-more-btn{color:var(--red);font-size:13px;margin-top:8px;cursor:pointer;display:inline-block;background:none;border:none;padding:0}
 .read-more-btn:hover{text-decoration:underline}
 .chef-card{display:flex;gap:14px;padding:14px;border:1px solid var(--border);border-radius:var(--radius);margin-top:16px}
-.chef-card-img-inner{width:90px;height:64px;background:linear-gradient(135deg,#2d1f0a,#8b6914);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0}
+.chef-card-img-inner{width:90px;height:64px;background:linear-gradient(135deg,#f5f5f5,#e8e8e8);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0}
 .chef-card-body{flex:1;font-size:13px;color:var(--text2);line-height:1.7}
 .chef-card-title{font-size:13px;font-weight:700;margin-bottom:5px;color:var(--text)}
 
@@ -171,7 +171,7 @@ img,video{max-width:100%;display:block}
 .menu-cat-label .recommended-tag{font-size:10px;color:var(--gold);border:1px solid var(--gold);padding:1px 5px;border-radius:3px;font-weight:700}
 .menu-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px dashed var(--border)}
 .menu-item:last-child{border-bottom:none}
-.menu-item-img{width:64px;height:48px;border-radius:4px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#2d1f0a,#8b6914);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;position:relative}
+.menu-item-img{width:64px;height:48px;border-radius:4px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#f5f5f5,#e8e8e8);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;position:relative}
 .menu-item-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .menu-item-body{flex:1;min-width:0}
 .menu-item-recommended{font-size:10px;color:var(--gold);display:flex;align-items:center;gap:3px;margin-bottom:3px}
@@ -1019,7 +1019,7 @@ async function loadStoreFromSupabase() {
       var catProds = products.filter(function(p) { return p.category_id === c.id; });
       return { category: c.name, isCourse: false, items: catProds.map(function(p) {
         var sz = (sizes || []).filter(function(s) { return s.product_id === p.id; }).sort(function(a,b) { return a.sort_order - b.sort_order; });
-        return { name: p.name, price: sz.length > 0 ? sz[0].price : 0, priceUnit: '', outline: p.description || '', recommended: false, emoji: '🥩', bg: 'linear-gradient(135deg,#2d1f0a,#8b6914)' };
+        return { name: p.name, price: sz.length > 0 ? sz[0].price : 0, priceUnit: '', outline: p.description || '', recommended: false, emoji: '🍽️', bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)' };
       })};
     }).filter(function(c) { return c.items.length > 0; });
     if (newMenu.length > 0) MENU = newMenu;

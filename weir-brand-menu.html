@@ -764,7 +764,7 @@ async function loadMenuFromSupabase() {
         MENU_DATA = data.categories.map(function(c, ci) {
           var catProds = data.products.filter(function(p) { return p.category_id === c.id; });
           return {
-            id: c.id, labelKey: c.name, icon: '🥩', order: c.sort_order || ci + 1,
+            id: c.id, labelKey: c.name, icon: '🍽️', order: c.sort_order || ci + 1,
             items: catProds.map(function(p) {
               var sz = (p.product_sizes || []).sort(function(a,b) { return (a.sort_order||0) - (b.sort_order||0); });
               var price = sz.length > 0 ? sz[0].price : (p.price || 0);
@@ -785,7 +785,7 @@ async function loadMenuFromSupabase() {
   MENU_DATA = cats.map(function(c, ci) {
     var catProducts = products.filter(function(p) { return p.category_id === c.id; });
     return {
-      id: c.id, labelKey: c.name, icon: '🥩', order: c.sort_order || ci + 1,
+      id: c.id, labelKey: c.name, icon: '🍽️', order: c.sort_order || ci + 1,
       items: catProducts.map(function(p) {
         var sz = (sizes || []).filter(function(s) { return s.product_id === p.id; }).sort(function(a,b) { return a.sort_order - b.sort_order; });
         var price = sz.length > 0 ? sz[0].price : 0;

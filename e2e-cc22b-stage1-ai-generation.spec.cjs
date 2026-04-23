@@ -65,8 +65,17 @@ async function seedOnboardingStateForStep3(page) {
 async function navigateToStep3(page) {
   await seedOnboardingStateForStep3(page);
   await page.goto(ONBOARDING_URL, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT });
-  // loadStateFromLocalStorage は DOMContentLoaded 前に走る想定だが、安全のため手動で step 遷移を叩く。
+  // weir-onboarding.html は proceedAfterAuth() が走るまで #loginOverlay/#onbHeader/#onbMain を
+  // inline style:display:none のままにしている。E2E は匿名で走るため auth gate をバイパスし、
+  // 手動で init + step 遷移を叩く。
   await page.evaluate(() => {
+    const overlay = document.getElementById('loginOverlay');
+    const header  = document.getElementById('onbHeader');
+    const main    = document.getElementById('onbMain');
+    if (overlay) overlay.style.display = 'none';
+    if (header)  header.style.display  = 'flex';
+    if (main)    main.style.display    = 'block';
+    if (typeof window.initOnboarding === 'function') window.initOnboarding();
     if (typeof window.goToStep === 'function') window.goToStep(3);
   });
   await expect(page.locator('#step3.active')).toBeVisible({ timeout: PAGE_TIMEOUT });
@@ -84,12 +93,10 @@ async function selectTileByCuisineKey(page, cuisineKey) {
 async function confirmSelectionAndWaitStep4(page) {
   await page.click('#step3NextBtn');
   await expect(page.locator('#step4.active')).toBeVisible({ timeout: PAGE_TIMEOUT });
-  // Step 4-1 から Step 4-2 へ進む (hero reveal → 5 cards)
-  // 自動遷移するかボタンで遷移するかはタイミング次第のため、どちらにも対応。
-  const goButton = page.locator('#step4 button.s4-primary:visible').first();
-  if (await goButton.isVisible().catch(() => false)) {
-    await goButton.click({ timeout: 5000 }).catch(() => {});
-  }
+  // CC-22a-fix7 以降、Step 4 は 2 sub-step (1=5カード / 2=summary) に集約された。
+  // startStep4() が state.step4Sub=1 をセットするため、デフォルトで cards が表示される。
+  // s4-primary を押すと sub-step 2 (summary) に遷移してしまい cards が隠れるためクリックしない。
+  await expect(page.locator('#step4 .sub-step[data-sub="1"].active')).toBeVisible({ timeout: 5000 });
 }
 
 async function openReviewCardAndWaitForResult(page) {
