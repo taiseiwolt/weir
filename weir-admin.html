@@ -120,6 +120,7 @@
   <div class="nav-item" data-page="brands" onclick="goTo('brands')"><span class="icon">🏷️</span><span class="label">ブランド管理</span></div>
   <div class="nav-item" data-page="stores" onclick="goTo('stores')"><span class="icon">🏪</span><span class="label">店舗管理</span></div>
   <div class="nav-item" data-page="menus" onclick="goTo('menus')"><span class="icon">🍽️</span><span class="label">メニュー管理</span></div>
+  <div class="nav-item" data-page="options" onclick="goTo('options')"><span class="icon">🧩</span><span class="label">オプション管理</span></div>
   <div class="nav-item" data-page="users" onclick="goTo('users')"><span class="icon">👤</span><span class="label">ユーザー管理</span></div>
   <div class="nav-item" data-page="orders" onclick="goTo('orders')"><span class="icon">🛒</span><span class="label">注文管理</span></div>
   <div class="nav-item" data-page="system" onclick="goTo('system')"><span class="icon">⚙️</span><span class="label">システム設定</span></div>
@@ -582,6 +583,7 @@ function renderPage(){
   else if(v.type==='brands')el.innerHTML=renderBrandsList();
   else if(v.type==='stores')el.innerHTML=renderStoresList();
   else if(v.type==='menus'){el.innerHTML=renderMenusPage();initMenusPage();}
+  else if(v.type==='options'){el.innerHTML=renderOptionsPage();initOptionsPage();}
   else if(v.type==='users'){el.innerHTML=renderUsers();checkUnverifiedCount();loadUsersData().then(function(){renderMembersList();renderGuestsList();});}
   else if(v.type==='orders'){el.innerHTML=renderOrdersPage();initOrdersPage();}
   else if(v.type==='system'){el.innerHTML=renderSystem();initSystemSettings();}
@@ -924,26 +926,42 @@ async function menusLoadBrand(brandId,brandDisplayId,brandName,highlightVenueId)
   menusState.selectedPatternId=null;
   menusState.products=[];
   menusState.productSizesMap={};
+  menusState.optionGroups=[];
+  menusState.pogByProduct={};
   var result=document.getElementById('menusResult');
   if(result){result.style.display='';result.innerHTML='<div class="card"><div class="empty-state">読み込み中...</div></div>';}
   try{
     var token=await getToken();
-    var [vRes,cRes,mpRes]=await Promise.all([
+    var [vRes,cRes,mpRes,ogRes]=await Promise.all([
       sb.from('venues').select('id,display_id,name,menu_pattern_id').eq('brand_id',brandId).order('name'),
       sb.from('categories').select('*').eq('brand_id',brandId).order('sort_order').order('name'),
       fetch('/api/admin/menu-patterns?brand_id='+encodeURIComponent(brandId),{headers:{'Authorization':'Bearer '+token}})
-        .then(async function(r){var j=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return{data:j.data||[]};})
+        .then(async function(r){var j=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return{data:j.data||[]};}),
+      sb.from('option_groups').select('*').eq('brand_id',brandId).order('sort_order').order('name')
     ]);
     if(vRes.error)throw vRes.error;
     if(cRes.error)throw cRes.error;
+    if(ogRes.error)throw ogRes.error;
     menusState.venues=vRes.data||[];
     menusState.patterns=mpRes.data||[];
     menusState.categories=cRes.data||[];
+    menusState.optionGroups=ogRes.data||[];
+    if(menusState.optionGroups.length>0){
+      var ogIds=menusState.optionGroups.map(function(g){return g.group_id;});
+      var pogRes=await sb.from('product_option_groups').select('*').in('group_id',ogIds);
+      if(pogRes.error)throw pogRes.error;
+      (pogRes.data||[]).forEach(function(p){
+        if(!menusState.pogByProduct[p.product_id])menusState.pogByProduct[p.product_id]=[];
+        menusState.pogByProduct[p.product_id].push(p);
+      });
+    }
   }catch(e){
     showToast('❌ 読み込みエラー: '+(e.message||e));
     menusState.venues=[];
     menusState.patterns=[];
     menusState.categories=[];
+    menusState.optionGroups=[];
+    menusState.pogByProduct={};
   }
   menusRenderResultPanes();
 }
@@ -1319,6 +1337,9 @@ function _renderMenusProductModal(product){
         '<div id="menusProdSizes"></div>'+
         '<button type="button" class="btn-outline btn-sm" style="margin-top:8px" onclick="menusAddSizeRow()">＋ サイズを追加</button>'+
       '</div>'+
+      '<div class="form-group full"><label>オプショングループ <span style="font-size:10px;color:var(--text-light);font-weight:400">（任意。例: 味付け / トッピング / サイズバリエーション）</span></label>'+
+        _renderMenusProductOgSection(product)+
+      '</div>'+
     '</div>'+
     '<div class="btn-group">'+
       '<button class="btn btn-primary" onclick="menusSaveProduct('+(isEdit?('\''+product.id+'\''):'null')+')">保存</button>'+
@@ -1326,6 +1347,39 @@ function _renderMenusProductModal(product){
     '</div>'
   ,true);
   if(sizes.length){sizes.forEach(function(s){menusAddSizeRow(s.name,s.price);});}
+}
+
+function _renderMenusProductOgSection(product){
+  var groups=menusState.optionGroups||[];
+  if(!groups.length){
+    return '<div style="font-size:11px;color:var(--text-light);padding:12px;background:#f5f6fa;border-radius:6px;line-height:1.6">このブランドにはオプショングループが登録されていません。<br>サイドバーの「🧩 オプション管理」から作成できます。</div>';
+  }
+  var isEdit=!!product;
+  var currentPog=(isEdit&&product.id&&menusState.pogByProduct&&menusState.pogByProduct[product.id])||[];
+  var currentPogMap={};
+  currentPog.forEach(function(p){currentPogMap[p.group_id]=p;});
+  return '<div id="menusProdOgList" style="display:flex;flex-direction:column;gap:6px">'+
+    groups.map(function(g){
+      var pog=currentPogMap[g.group_id];
+      var checked=!!pog;
+      var isReqVal=(pog&&pog.is_required!=null)?(pog.is_required?'true':'false'):'';
+      var selTypeLabel=g.selection_type==='single'?'単一':'複数';
+      var defaultReq=g.is_required?'必須':'任意';
+      var availNote=g.is_available?'':' <span style="color:var(--danger);font-size:10px">[利用不可]</span>';
+      return '<div class="menusProdOgRow" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fafafe">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0">'+
+          '<input type="checkbox" class="menusProdOgCheck" data-group-id="'+escHtml(g.group_id)+'"'+(checked?' checked':'')+'>'+
+          '<span style="font-weight:700">'+escHtml(g.name||'')+'</span>'+availNote+
+          '<span style="font-size:10px;color:var(--text-light)">('+selTypeLabel+' / デフォ: '+defaultReq+')</span>'+
+        '</label>'+
+        '<select class="menusProdOgReqSel" data-group-id="'+escHtml(g.group_id)+'" style="padding:4px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:#fff">'+
+          '<option value=""'+(isReqVal===''?' selected':'')+'>デフォルト使用</option>'+
+          '<option value="true"'+(isReqVal==='true'?' selected':'')+'>必須（上書き）</option>'+
+          '<option value="false"'+(isReqVal==='false'?' selected':'')+'>任意（上書き）</option>'+
+        '</select>'+
+      '</div>';
+    }).join('')+
+  '</div>';
 }
 
 function menusAddSizeRow(sizeName,sizePrice){
@@ -1468,6 +1522,8 @@ async function menusSaveProduct(productId){
     var sizePayload=sizes.map(function(s){return {product_id:savedProductId,name:s.name,price:s.price,sort_order:s.sort_order};});
     var si=await sb.from('product_sizes').insert(sizePayload);
     if(si.error)throw si.error;
+    // Save product_option_groups (CC-Option-Master-Stage1)
+    await _menusSaveProductOptionGroups(savedProductId);
     closeModal();
     showToast(productId?'✅ 商品を更新しました':'✅ 商品を追加しました');
     if(menusState.selectedPatternId){
@@ -1475,6 +1531,38 @@ async function menusSaveProduct(productId){
     }
   }catch(e){
     showToast('❌ '+(productId?'更新':'保存')+'に失敗しました: '+(e.message||e));
+  }
+}
+
+async function _menusSaveProductOptionGroups(productId){
+  var rows=document.querySelectorAll('.menusProdOgRow');
+  if(!rows||!rows.length)return;
+  var selections=[];
+  rows.forEach(function(row){
+    var cb=row.querySelector('.menusProdOgCheck');
+    if(!cb||!cb.checked)return;
+    var gid=cb.dataset.groupId;
+    if(!gid)return;
+    var reqSel=row.querySelector('.menusProdOgReqSel');
+    var reqVal=reqSel?reqSel.value:'';
+    var isReq=reqVal==='true'?true:(reqVal==='false'?false:null);
+    selections.push({group_id:gid,is_required:isReq});
+  });
+  var del=await sb.from('product_option_groups').delete().eq('product_id',productId);
+  if(del.error)throw del.error;
+  if(selections.length>0){
+    var payload=selections.map(function(s,i){return {product_id:productId,group_id:s.group_id,sort_order:i,is_required:s.is_required};});
+    var ins=await sb.from('product_option_groups').insert(payload);
+    if(ins.error)throw ins.error;
+  }
+  // Refresh menusState.pogByProduct for this product
+  if(!menusState.pogByProduct)menusState.pogByProduct={};
+  if(selections.length>0){
+    var refetch=await sb.from('product_option_groups').select('*').eq('product_id',productId);
+    if(refetch.error)throw refetch.error;
+    menusState.pogByProduct[productId]=refetch.data||[];
+  }else{
+    delete menusState.pogByProduct[productId];
   }
 }
 
@@ -1493,6 +1581,485 @@ async function deleteMenusProduct(productId){
     menusState.products=menusState.products.filter(function(x){return x.id!==productId;});
     delete menusState.productSizesMap[productId];
     menusRenderProductList();
+  }catch(e){
+    showToast('❌ 削除に失敗しました: '+(e.message||e));
+  }
+}
+
+// =====================================================================
+// OPTIONS MANAGEMENT (CC-Option-Master-Stage1 / D-242 β)
+// =====================================================================
+var optionsState={brandId:null,brandDisplayId:null,brandName:null,groups:[],optionsByGroup:{},selectedGroupId:null,products:[],pogByProduct:{}};
+
+function renderOptionsPage(){
+  return '<div class="page-title">オプション管理</div>'+
+    '<div class="page-subtitle">商品オプション（味付け / トッピング / サイズ等）をブランド単位で管理</div>'+
+    '<div class="card" style="margin-bottom:12px">'+
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+        '<input type="text" id="optionsSearchInput" placeholder="display_id を入力" style="flex:1;min-width:240px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-family:monospace;font-size:13px" onkeydown="if(event.key===\'Enter\')optionsSearch()">'+
+        '<button class="btn btn-primary" onclick="optionsSearch()">🔍 検索</button>'+
+        '<button class="btn btn-secondary" onclick="downloadBulkTemplate(false,\'menu_full\')">📋 テンプレートDL</button>'+
+        '<button class="btn btn-secondary" onclick="goToMenuBulk()">インポート</button>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--text-light);margin-top:8px">例: CRP-a1b2c3d（法人）/ BRD-a1b2c3d（ブランド）/ STR-a1b2c3d（店舗）</div>'+
+    '</div>'+
+    '<div id="optionsResult" style="display:none"></div>';
+}
+
+function initOptionsPage(){
+  optionsState={brandId:null,brandDisplayId:null,brandName:null,groups:[],optionsByGroup:{},selectedGroupId:null,products:[],pogByProduct:{}};
+  var input=document.getElementById('optionsSearchInput');
+  if(input)setTimeout(function(){input.focus();},50);
+}
+
+async function optionsSearch(){
+  var inputEl=document.getElementById('optionsSearchInput');
+  var raw=((inputEl&&inputEl.value)||'').trim();
+  if(!raw){showToast('⚠️ display_idを入力してください');return;}
+  var prefix=raw.toUpperCase().split('-')[0];
+  try{
+    if(prefix==='MRC'||prefix==='CRP'){
+      var mRes=await sb.from('merchants').select('id,display_id,name').eq('display_id',raw).maybeSingle();
+      if(mRes.error)throw mRes.error;
+      if(!mRes.data){showToast('⚠️ 該当する法人が見つかりません');return;}
+      var bRes=await sb.from('brands').select('id,display_id,name,merchant_id').eq('merchant_id',mRes.data.id).order('name');
+      if(bRes.error)throw bRes.error;
+      var brands=bRes.data||[];
+      if(brands.length===0){showToast('⚠️ この法人に紐づくブランドがありません');return;}
+      if(brands.length===1){await optionsLoadBrand(brands[0].id,brands[0].display_id,brands[0].name);return;}
+      optionsShowBrandSelect(mRes.data,brands);
+      return;
+    }
+    if(prefix==='BRD'){
+      var brRes=await sb.from('brands').select('id,display_id,name').eq('display_id',raw).maybeSingle();
+      if(brRes.error)throw brRes.error;
+      if(!brRes.data){showToast('⚠️ 該当するブランドが見つかりません');return;}
+      await optionsLoadBrand(brRes.data.id,brRes.data.display_id,brRes.data.name);
+      return;
+    }
+    if(prefix==='STR'||prefix==='VEN'){
+      var vRes=await sb.from('venues').select('id,display_id,name,brand_id').eq('display_id',raw).maybeSingle();
+      if(vRes.error)throw vRes.error;
+      if(!vRes.data){showToast('⚠️ 該当する店舗が見つかりません');return;}
+      var brRes2=await sb.from('brands').select('id,display_id,name').eq('id',vRes.data.brand_id).maybeSingle();
+      if(brRes2.error)throw brRes2.error;
+      if(!brRes2.data){showToast('⚠️ 店舗のブランド情報が取得できません');return;}
+      await optionsLoadBrand(brRes2.data.id,brRes2.data.display_id,brRes2.data.name);
+      return;
+    }
+    showToast('⚠️ 有効なdisplay_idを入力してください（CRP- / BRD- / STR-）');
+  }catch(e){
+    showToast('❌ 検索エラー: '+(e.message||e));
+  }
+}
+
+function optionsShowBrandSelect(merchant,brands){
+  var result=document.getElementById('optionsResult');
+  if(!result)return;
+  var html='<div class="card"><div class="card-title">'+escHtml(merchant.name||'')+' に紐づくブランドを選択</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    brands.map(function(b){
+      var safeName=(b.name||'').replace(/'/g,"\\'");
+      return '<button class="btn-outline" style="text-align:left;padding:12px 14px" onclick="optionsLoadBrand(\''+b.id+'\',\''+escHtml(b.display_id||'')+'\',\''+escHtml(safeName)+'\')">'+
+        '<div style="font-weight:700">'+escHtml(b.name||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--text-light);font-family:monospace">'+escHtml(b.display_id||'')+'</div>'+
+      '</button>';
+    }).join('')+
+    '</div></div>';
+  result.style.display='';
+  result.innerHTML=html;
+}
+
+async function optionsLoadBrand(brandId,brandDisplayId,brandName){
+  optionsState.brandId=brandId;
+  optionsState.brandDisplayId=brandDisplayId;
+  optionsState.brandName=brandName;
+  optionsState.groups=[];
+  optionsState.optionsByGroup={};
+  optionsState.products=[];
+  optionsState.pogByProduct={};
+  optionsState.selectedGroupId=null;
+  var result=document.getElementById('optionsResult');
+  if(result){result.style.display='';result.innerHTML='<div class="card"><div class="empty-state">読み込み中...</div></div>';}
+  try{
+    var res=await Promise.all([
+      sb.from('option_groups').select('*').eq('brand_id',brandId).order('sort_order').order('name'),
+      sb.from('products').select('id,display_id,name').eq('brand_id',brandId).order('name')
+    ]);
+    if(res[0].error)throw res[0].error;
+    if(res[1].error)throw res[1].error;
+    optionsState.groups=res[0].data||[];
+    optionsState.products=res[1].data||[];
+    if(optionsState.groups.length>0){
+      var groupIds=optionsState.groups.map(function(g){return g.group_id;});
+      var oRes=await sb.from('options').select('*').in('group_id',groupIds).order('sort_order').order('name');
+      if(oRes.error)throw oRes.error;
+      (oRes.data||[]).forEach(function(o){
+        if(!optionsState.optionsByGroup[o.group_id])optionsState.optionsByGroup[o.group_id]=[];
+        optionsState.optionsByGroup[o.group_id].push(o);
+      });
+      var pogRes=await sb.from('product_option_groups').select('*').in('group_id',groupIds);
+      if(pogRes.error)throw pogRes.error;
+      (pogRes.data||[]).forEach(function(pog){
+        if(!optionsState.pogByProduct[pog.product_id])optionsState.pogByProduct[pog.product_id]=[];
+        optionsState.pogByProduct[pog.product_id].push(pog);
+      });
+    }
+  }catch(e){
+    showToast('❌ 読み込みエラー: '+(e.message||e));
+  }
+  optionsRenderResult();
+}
+
+function _optionsCountTotal(){
+  var total=0;
+  for(var k in optionsState.optionsByGroup)total+=optionsState.optionsByGroup[k].length;
+  return total;
+}
+
+function optionsRenderResult(){
+  var result=document.getElementById('optionsResult');
+  if(!result)return;
+  var brandInfoHtml=
+    '<div class="card" style="margin-bottom:12px">'+
+      '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:200px">'+
+          '<div style="font-size:16px;font-weight:700">'+escHtml(optionsState.brandName||'')+'</div>'+
+          '<div style="font-size:11px;color:var(--text-light);font-family:monospace">'+escHtml(optionsState.brandDisplayId||'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:20px;font-size:12px;flex-wrap:wrap">'+
+          '<div><span style="color:var(--text-light)">グループ数:</span> <strong>'+optionsState.groups.length+'</strong></div>'+
+          '<div><span style="color:var(--text-light)">選択肢総数:</span> <strong>'+_optionsCountTotal()+'</strong></div>'+
+          '<div><span style="color:var(--text-light)">商品連携:</span> <strong>'+Object.keys(optionsState.pogByProduct).length+'</strong></div>'+
+          '<div><span style="color:var(--text-light)">商品総数:</span> <strong>'+optionsState.products.length+'</strong></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  var groupsHtml=
+    '<div class="card">'+
+      '<div class="card-title">📋 オプショングループ一覧'+
+        '<span class="ct-right"><button class="btn btn-primary btn-sm" onclick="openOptionsAddGroupModal()">＋ グループ新規作成</button></span>'+
+      '</div>'+
+      '<div id="optionsGroupList"></div>'+
+    '</div>';
+  result.style.display='';
+  result.innerHTML=brandInfoHtml+groupsHtml;
+  optionsRenderGroupList();
+}
+
+function optionsRenderGroupList(){
+  var el=document.getElementById('optionsGroupList');
+  if(!el)return;
+  if(!optionsState.groups.length){
+    el.innerHTML='<div class="empty-state">まだオプショングループがありません<br><span style="font-size:11px">右上の「＋ グループ新規作成」から追加してください</span></div>';
+    return;
+  }
+  el.innerHTML=
+    '<div style="overflow-x:auto"><table class="data-table" style="width:100%">'+
+      '<thead><tr>'+
+        '<th>グループ名</th>'+
+        '<th>選択タイプ</th>'+
+        '<th style="text-align:center">必須</th>'+
+        '<th style="text-align:center">利用可</th>'+
+        '<th style="text-align:center">選択肢数</th>'+
+        '<th style="text-align:center">商品連携</th>'+
+        '<th class="r">並び順</th>'+
+        '<th class="r">操作</th>'+
+      '</tr></thead>'+
+      '<tbody>'+
+      optionsState.groups.map(function(g){
+        var opts=optionsState.optionsByGroup[g.group_id]||[];
+        var pogCount=0;
+        for(var pid in optionsState.pogByProduct){
+          if(optionsState.pogByProduct[pid].some(function(pog){return pog.group_id===g.group_id;}))pogCount++;
+        }
+        var selTypeLabel=g.selection_type==='single'?'単一（ラジオ）':'複数（チェック）';
+        var rowStyle='cursor:pointer';
+        if(!g.is_available)rowStyle+=';opacity:.55';
+        return '<tr style="'+rowStyle+'" onclick="openOptionsGroupDetailModal(\''+g.group_id+'\')">'+
+          '<td><div style="font-weight:700">'+escHtml(g.name||'')+'</div><div style="font-size:10px;color:var(--text-light);font-family:monospace">'+escHtml(g.display_id||'')+'</div></td>'+
+          '<td>'+selTypeLabel+'</td>'+
+          '<td style="text-align:center">'+(g.is_required?'<span style="color:var(--danger);font-weight:700">必須</span>':'<span style="color:var(--text-light)">任意</span>')+'</td>'+
+          '<td style="text-align:center">'+(g.is_available?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--danger)">✕</span>')+'</td>'+
+          '<td style="text-align:center">'+opts.length+'</td>'+
+          '<td style="text-align:center">'+pogCount+'</td>'+
+          '<td class="r">'+g.sort_order+'</td>'+
+          '<td class="r" onclick="event.stopPropagation()">'+
+            '<button class="btn-outline btn-sm" title="編集" onclick="openOptionsEditGroupModal(\''+g.group_id+'\')">✏️</button> '+
+            '<button class="btn-outline btn-sm" title="削除" onclick="deleteOptionsGroup(\''+g.group_id+'\')">🗑️</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody>'+
+    '</table></div>';
+}
+
+function openOptionsAddGroupModal(){
+  if(!optionsState.brandId){showToast('⚠️ ブランドを選択してください');return;}
+  _renderOptionsGroupModal(null);
+}
+
+function openOptionsEditGroupModal(groupId){
+  var g=optionsState.groups.find(function(x){return x.group_id===groupId;});
+  if(!g){showToast('⚠️ グループが見つかりません');return;}
+  _renderOptionsGroupModal(g);
+}
+
+function _renderOptionsGroupModal(group){
+  var isEdit=!!group;
+  var title=isEdit?'オプショングループ編集':'オプショングループ新規作成';
+  var gName=isEdit?(group.name||''):'';
+  var selType=isEdit?(group.selection_type||'single'):'single';
+  var isReq=isEdit?!!group.is_required:false;
+  var isAvail=isEdit?!!group.is_available:true;
+  var sortOrder=isEdit?(group.sort_order||0):(optionsState.groups.reduce(function(m,x){return Math.max(m,x.sort_order||0);},0)+1);
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>'+title+'</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group full"><label>グループ名 <span style="color:var(--danger)">*</span></label><input type="text" id="optGrpName" value="'+escHtml(gName)+'" placeholder="例: 味付け / トッピング / サイズ"></div>'+
+      '<div class="form-group"><label>選択タイプ <span style="color:var(--danger)">*</span></label>'+
+        '<select id="optGrpSelType" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">'+
+          '<option value="single"'+(selType==='single'?' selected':'')+'>単一選択（ラジオ）</option>'+
+          '<option value="multiple"'+(selType==='multiple'?' selected':'')+'>複数選択（チェック）</option>'+
+        '</select>'+
+      '</div>'+
+      '<div class="form-group"><label>並び順</label><input type="number" id="optGrpSort" value="'+sortOrder+'" min="0"></div>'+
+      '<div class="form-group full">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="optGrpIsReq"'+(isReq?' checked':'')+'> <span>必須選択（顧客は 1 つ以上必ず選択が必要）</span></label>'+
+      '</div>'+
+      '<div class="form-group full">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="optGrpIsAvail"'+(isAvail?' checked':'')+'> <span>利用可（OFFにすると注文 UI に表示されない）</span></label>'+
+      '</div>'+
+    '</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-primary" onclick="optionsSaveGroup('+(isEdit?('\''+group.group_id+'\''):'null')+')">保存</button>'+
+      '<button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>'+
+    '</div>'
+  );
+}
+
+async function optionsSaveGroup(groupId){
+  if(!optionsState.brandId){showToast('⚠️ ブランドを選択してください');return;}
+  var name=((document.getElementById('optGrpName')||{}).value||'').trim();
+  var selType=(document.getElementById('optGrpSelType')||{}).value||'single';
+  var sortOrder=parseInt((document.getElementById('optGrpSort')||{}).value,10);
+  var isReq=!!(document.getElementById('optGrpIsReq')||{}).checked;
+  var isAvail=!!(document.getElementById('optGrpIsAvail')||{}).checked;
+  if(!name){showToast('⚠️ グループ名は必須です');return;}
+  if(isNaN(sortOrder)||sortOrder<0)sortOrder=0;
+  if(selType!=='single'&&selType!=='multiple'){showToast('⚠️ 選択タイプが不正です');return;}
+  try{
+    var payload={
+      brand_id:optionsState.brandId,
+      name:name,
+      selection_type:selType,
+      is_required:isReq,
+      is_available:isAvail,
+      sort_order:sortOrder
+    };
+    if(groupId){
+      var u=await sb.from('option_groups').update(payload).eq('group_id',groupId).select().single();
+      if(u.error)throw u.error;
+      logAudit('update_option_group','option_groups',groupId,{name:name});
+      showToast('✅ グループを更新しました');
+    }else{
+      var ins=await sb.from('option_groups').insert(payload).select().single();
+      if(ins.error)throw ins.error;
+      logAudit('create_option_group','option_groups',ins.data.group_id,{name:name});
+      showToast('✅ グループを追加しました');
+    }
+    closeModal();
+    await optionsLoadBrand(optionsState.brandId,optionsState.brandDisplayId,optionsState.brandName);
+  }catch(e){
+    showToast('❌ '+(groupId?'更新':'保存')+'に失敗しました: '+(e.message||e));
+  }
+}
+
+async function deleteOptionsGroup(groupId){
+  var g=optionsState.groups.find(function(x){return x.group_id===groupId;});
+  if(!g){showToast('⚠️ グループが見つかりません');return;}
+  var opts=optionsState.optionsByGroup[groupId]||[];
+  var pogCount=0;
+  for(var pid in optionsState.pogByProduct){
+    if(optionsState.pogByProduct[pid].some(function(pog){return pog.group_id===groupId;}))pogCount++;
+  }
+  var msg='グループ「'+g.name+'」を削除します。\n';
+  if(opts.length>0)msg+='・選択肢 '+opts.length+' 件が一緒に削除されます。\n';
+  if(pogCount>0)msg+='・商品 '+pogCount+' 件との連携が解除されます。\n';
+  msg+='よろしいですか？';
+  if(!confirm(msg))return;
+  try{
+    var d=await sb.from('option_groups').delete().eq('group_id',groupId).select();
+    if(d.error)throw d.error;
+    if(!d.data||!d.data.length)throw new Error('削除権限がないか対象が見つかりません');
+    logAudit('delete_option_group','option_groups',groupId,{name:g.name});
+    showToast('✅ グループを削除しました');
+    await optionsLoadBrand(optionsState.brandId,optionsState.brandDisplayId,optionsState.brandName);
+  }catch(e){
+    showToast('❌ 削除に失敗しました: '+(e.message||e));
+  }
+}
+
+function openOptionsGroupDetailModal(groupId){
+  var g=optionsState.groups.find(function(x){return x.group_id===groupId;});
+  if(!g){showToast('⚠️ グループが見つかりません');return;}
+  optionsState.selectedGroupId=groupId;
+  _renderOptionsDetailModal(g);
+}
+
+function _renderOptionsDetailModal(group){
+  var opts=optionsState.optionsByGroup[group.group_id]||[];
+  var optsHtml;
+  if(opts.length===0){
+    optsHtml='<div class="empty-state">選択肢がまだありません<br><span style="font-size:11px">下の「＋ 選択肢追加」から追加してください</span></div>';
+  }else{
+    optsHtml=
+      '<div style="overflow-x:auto"><table class="data-table">'+
+        '<thead><tr>'+
+          '<th>選択肢名</th>'+
+          '<th class="r">価格差分</th>'+
+          '<th style="text-align:center">デフォルト</th>'+
+          '<th style="text-align:center">利用可</th>'+
+          '<th class="r">並び順</th>'+
+          '<th class="r">操作</th>'+
+        '</tr></thead>'+
+        '<tbody>'+
+        opts.map(function(o){
+          var priceLabel;
+          if(o.price_delta===0||o.price_delta==null){priceLabel='<span style="color:var(--text-light)">±0</span>';}
+          else if(o.price_delta>0){priceLabel='<span style="color:var(--success);font-weight:700">+¥'+o.price_delta.toLocaleString()+'</span>';}
+          else{priceLabel='<span style="color:var(--info);font-weight:700">-¥'+Math.abs(o.price_delta).toLocaleString()+'</span>';}
+          return '<tr>'+
+            '<td><div style="font-weight:700">'+escHtml(o.name||'')+'</div><div style="font-size:10px;color:var(--text-light);font-family:monospace">'+escHtml(o.display_id||'')+'</div></td>'+
+            '<td class="r">'+priceLabel+'</td>'+
+            '<td style="text-align:center">'+(o.is_default?'<span style="color:var(--accent);font-weight:700">✓</span>':'—')+'</td>'+
+            '<td style="text-align:center">'+(o.is_available?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--danger)">✕</span>')+'</td>'+
+            '<td class="r">'+o.sort_order+'</td>'+
+            '<td class="r">'+
+              '<button class="btn-outline btn-sm" title="編集" onclick="openOptionsEditOptionModal(\''+o.option_id+'\')">✏️</button> '+
+              '<button class="btn-outline btn-sm" title="削除" onclick="deleteOptionsOption(\''+o.option_id+'\')">🗑️</button>'+
+            '</td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody>'+
+      '</table></div>';
+  }
+  var selTypeLabel=group.selection_type==='single'?'単一（ラジオ）':'複数（チェック）';
+  var reqLabel=group.is_required?'<span style="color:var(--danger);font-weight:700">必須</span>':'<span style="color:var(--text-light)">任意</span>';
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>'+escHtml(group.name||'')+' <span style="font-size:12px;color:var(--text-light);font-weight:400">('+selTypeLabel+' / '+reqLabel+')</span></h3>'+
+    '<div style="margin-bottom:12px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="openOptionsAddOptionModal()">＋ 選択肢追加</button></div>'+
+    '<div id="optionsOptionList">'+optsHtml+'</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-secondary" onclick="closeModal()">閉じる</button>'+
+    '</div>'
+  ,true);
+}
+
+function openOptionsAddOptionModal(){
+  var groupId=optionsState.selectedGroupId;
+  if(!groupId){showToast('⚠️ グループを選択してください');return;}
+  _renderOptionModal(null,groupId);
+}
+
+function openOptionsEditOptionModal(optionId){
+  var groupId=optionsState.selectedGroupId;
+  var opts=optionsState.optionsByGroup[groupId]||[];
+  var o=opts.find(function(x){return x.option_id===optionId;});
+  if(!o){showToast('⚠️ 選択肢が見つかりません');return;}
+  _renderOptionModal(o,groupId);
+}
+
+function _renderOptionModal(option,groupId){
+  var isEdit=!!option;
+  var title=isEdit?'選択肢編集':'選択肢追加';
+  var oName=isEdit?(option.name||''):'';
+  var oPrice=isEdit?(option.price_delta==null?0:option.price_delta):0;
+  var isDef=isEdit?!!option.is_default:false;
+  var isAvail=isEdit?!!option.is_available:true;
+  var opts=optionsState.optionsByGroup[groupId]||[];
+  var sortOrder=isEdit?(option.sort_order||0):(opts.reduce(function(m,x){return Math.max(m,x.sort_order||0);},0)+1);
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>'+title+'</h3>'+
+    '<div class="form-grid">'+
+      '<div class="form-group full"><label>選択肢名 <span style="color:var(--danger)">*</span></label><input type="text" id="optName" value="'+escHtml(oName)+'" placeholder="例: タレ / 塩 / おろしポン酢 / エクストラチーズ"></div>'+
+      '<div class="form-group"><label>価格差分（円） <span style="font-size:10px;color:var(--text-light);font-weight:400">負値可（-100 等）</span></label><input type="number" id="optPrice" value="'+oPrice+'" placeholder="例: 150 / 0 / -100"></div>'+
+      '<div class="form-group"><label>並び順</label><input type="number" id="optSort" value="'+sortOrder+'" min="0"></div>'+
+      '<div class="form-group full">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="optIsDef"'+(isDef?' checked':'')+'> <span>デフォルト選択（注文 UI で最初から選択済み）</span></label>'+
+      '</div>'+
+      '<div class="form-group full">'+
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="optIsAvail"'+(isAvail?' checked':'')+'> <span>利用可（OFFにすると注文 UI に表示されない）</span></label>'+
+      '</div>'+
+    '</div>'+
+    '<div class="btn-group">'+
+      '<button class="btn btn-primary" onclick="optionsSaveOption('+(isEdit?('\''+option.option_id+'\''):'null')+')">保存</button>'+
+      '<button class="btn btn-secondary" onclick="_optionsBackToDetail()">キャンセル</button>'+
+    '</div>'
+  );
+}
+
+function _optionsBackToDetail(){
+  var g=optionsState.groups.find(function(x){return x.group_id===optionsState.selectedGroupId;});
+  if(g)_renderOptionsDetailModal(g);
+  else closeModal();
+}
+
+async function optionsSaveOption(optionId){
+  var groupId=optionsState.selectedGroupId;
+  if(!groupId){showToast('⚠️ グループを選択してください');return;}
+  var name=((document.getElementById('optName')||{}).value||'').trim();
+  var priceDelta=parseInt((document.getElementById('optPrice')||{}).value,10);
+  var sortOrder=parseInt((document.getElementById('optSort')||{}).value,10);
+  var isDef=!!(document.getElementById('optIsDef')||{}).checked;
+  var isAvail=!!(document.getElementById('optIsAvail')||{}).checked;
+  if(!name){showToast('⚠️ 選択肢名は必須です');return;}
+  if(isNaN(priceDelta))priceDelta=0;
+  if(isNaN(sortOrder)||sortOrder<0)sortOrder=0;
+  try{
+    var payload={
+      group_id:groupId,
+      name:name,
+      price_delta:priceDelta,
+      sort_order:sortOrder,
+      is_default:isDef,
+      is_available:isAvail
+    };
+    if(optionId){
+      var u=await sb.from('options').update(payload).eq('option_id',optionId).select().single();
+      if(u.error)throw u.error;
+      logAudit('update_option','options',optionId,{name:name});
+      showToast('✅ 選択肢を更新しました');
+    }else{
+      var ins=await sb.from('options').insert(payload).select().single();
+      if(ins.error)throw ins.error;
+      logAudit('create_option','options',ins.data.option_id,{name:name});
+      showToast('✅ 選択肢を追加しました');
+    }
+    await optionsLoadBrand(optionsState.brandId,optionsState.brandDisplayId,optionsState.brandName);
+    _optionsBackToDetail();
+  }catch(e){
+    showToast('❌ '+(optionId?'更新':'保存')+'に失敗しました: '+(e.message||e));
+  }
+}
+
+async function deleteOptionsOption(optionId){
+  var groupId=optionsState.selectedGroupId;
+  var opts=optionsState.optionsByGroup[groupId]||[];
+  var o=opts.find(function(x){return x.option_id===optionId;});
+  if(!o){showToast('⚠️ 選択肢が見つかりません');return;}
+  if(!confirm('選択肢「'+o.name+'」を削除します。よろしいですか？'))return;
+  try{
+    var d=await sb.from('options').delete().eq('option_id',optionId).select();
+    if(d.error)throw d.error;
+    if(!d.data||!d.data.length)throw new Error('削除権限がないか対象が見つかりません');
+    logAudit('delete_option','options',optionId,{name:o.name});
+    showToast('✅ 選択肢を削除しました');
+    await optionsLoadBrand(optionsState.brandId,optionsState.brandDisplayId,optionsState.brandName);
+    _optionsBackToDetail();
   }catch(e){
     showToast('❌ 削除に失敗しました: '+(e.message||e));
   }
@@ -5294,12 +5861,92 @@ const BULK_TEMPLATES={
           {col:7,list:'"ON,OFF"'},
         ],
         flagCommentCol:8,
+      },
+      {
+        name:'3_オプショングループ',
+        headers:['ブランドスラッグ*','グループ名*','選択タイプ*(single/multiple)','必須(ON/OFF)','並び順','利用可能(ON/OFF)'],
+        sample:[
+          ['sample-brand','味付け','single','ON','1','ON'],
+          ['sample-brand','トッピング','multiple','OFF','2','ON'],
+          ['sample-brand','サイズバリエーション','single','OFF','3','ON'],
+        ],
+        dvDefs:[
+          {col:2,list:'"single,multiple"'},
+          {col:3,list:'"ON,OFF"'},
+          {col:5,list:'"ON,OFF"'},
+        ],
+      },
+      {
+        name:'4_オプション選択肢',
+        headers:['ブランドスラッグ*','グループ名*','選択肢名*','価格差分(円)','デフォルト(ON/OFF)','並び順','利用可能(ON/OFF)'],
+        sample:[
+          ['sample-brand','味付け','タレ','0','ON','1','ON'],
+          ['sample-brand','味付け','塩','0','OFF','2','ON'],
+          ['sample-brand','味付け','おろしポン酢','50','OFF','3','ON'],
+          ['sample-brand','トッピング','エクストラチーズ','150','OFF','1','ON'],
+        ],
+        dvDefs:[
+          {col:4,list:'"ON,OFF"'},
+          {col:6,list:'"ON,OFF"'},
+        ],
+      },
+      {
+        name:'5_商品オプション連携',
+        headers:['ブランドスラッグ*','商品名*','グループ名*','並び順','必須上書き(空欄=デフォルト/ON/OFF)'],
+        sample:[
+          ['sample-brand','看板商品A','味付け','1',''],
+          ['sample-brand','看板商品A','トッピング','2','OFF'],
+          ['sample-brand','定番商品B','味付け','1','ON'],
+        ],
       }
+    ],
+  },
+  option_group:{
+    filename:'weir_option_group_template.xlsx',format:'xlsx',
+    headers:[
+      'ブランドスラッグ*','グループ名*','選択タイプ*(single/multiple)','必須(ON/OFF)','並び順','利用可能(ON/OFF)'
+    ],
+    keys:['brand_slug','name','selection_type','is_required','sort_order','is_available'],
+    sample:[
+      ['sample-brand','味付け','single','ON','1','ON'],
+      ['sample-brand','トッピング','multiple','OFF','2','ON'],
+    ],
+    dvDefs:[
+      {col:2,list:'"single,multiple"'},
+      {col:3,list:'"ON,OFF"'},
+      {col:5,list:'"ON,OFF"'},
+    ],
+  },
+  option:{
+    filename:'weir_option_template.xlsx',format:'xlsx',
+    headers:[
+      'ブランドスラッグ*','グループ名*','選択肢名*','価格差分(円)','デフォルト(ON/OFF)','並び順','利用可能(ON/OFF)'
+    ],
+    keys:['brand_slug','group_name','name','price_delta','is_default','sort_order','is_available'],
+    sample:[
+      ['sample-brand','味付け','タレ','0','ON','1','ON'],
+      ['sample-brand','味付け','塩','0','OFF','2','ON'],
+      ['sample-brand','味付け','おろしポン酢','50','OFF','3','ON'],
+    ],
+    dvDefs:[
+      {col:4,list:'"ON,OFF"'},
+      {col:6,list:'"ON,OFF"'},
+    ],
+  },
+  product_option_group:{
+    filename:'weir_product_option_group_template.xlsx',format:'xlsx',
+    headers:[
+      'ブランドスラッグ*','商品名*','グループ名*','並び順','必須上書き(空欄=デフォルト/ON/OFF)'
+    ],
+    keys:['brand_slug','product_name','group_name','sort_order','is_required'],
+    sample:[
+      ['sample-brand','看板商品A','味付け','1',''],
+      ['sample-brand','看板商品A','トッピング','2','OFF'],
     ],
   },
 };
 
-const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ',menu_full:'メニュー一括（カテゴリ＋商品）'};
+const BULK_TYPE_LABELS={corporation:'法人',brand:'ブランド',store:'店舗',menu_category:'メニューカテゴリ',menu_product:'メニュー商品',menu_size:'商品サイズ',menu_full:'メニュー一括（カテゴリ＋商品＋オプション）',option_group:'オプショングループ',option:'オプション選択肢',product_option_group:'商品オプション連携'};
 // State for the 3-step wizard
 let _bulkDbType=null;          // selected entity type
 let _bulkDbMode='upsert';      // 'upsert' (新規+修正) or 'delete'
@@ -5885,8 +6532,10 @@ function renderBulkStepIndicator(step){
 
 function renderBulkPage(){
   var opts='<option value="">-- 選択してください --</option>';
+  var MENU_LIKE_PREFIXES=['menu_','option_','option','product_option_group'];
   Object.keys(BULK_TEMPLATES).forEach(function(k){
-    if(k.indexOf('menu_')!==0)return;
+    var isMenuLike=(k.indexOf('menu_')===0)||(k==='option_group')||(k==='option')||(k==='product_option_group');
+    if(!isMenuLike)return;
     opts+='<option value="'+k+'"'+(_bulkDbType===k?' selected':'')+'>'+esc(BULK_TYPE_LABELS[k])+'</option>';
   });
   var header='<div style="margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="goTo(\'menus\')">← メニュー管理に戻る</button></div>'+
@@ -5925,7 +6574,8 @@ function renderBulkPage(){
         '</div>'+
         (_bulkDbType&&BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly?
           '<div style="font-size:11px;color:#8a5a00;background:#fff7e6;border:1px solid #f59f00;border-radius:6px;padding:8px;margin-top:10px">'+
-          '📄 このテンプレートはダウンロード専用です。<br>顧客から記入済みファイルを受け取ったら、<strong>「メニューカテゴリ」→ シート1</strong>、<strong>「メニュー商品」→ シート2</strong> に分けて個別にアップロードしてください（シート名は自動判別されます）。'+
+          '📄 このテンプレートはダウンロード専用です。<br>記入済みファイルを受け取ったら、以下の順序で種別を切り替えて個別にアップロードしてください（シート名は自動判別）：'+
+          '<br>① <strong>「メニューカテゴリ」</strong>（シート1） → ② <strong>「メニュー商品」</strong>（シート2） → ③ <strong>「オプショングループ」</strong>（シート3） → ④ <strong>「オプション選択肢」</strong>（シート4） → ⑤ <strong>「商品オプション連携」</strong>（シート5）'+
           '</div>':'')+
       '</div>'+
       '<div id="bulkDbUploadArea" style="display:'+(_bulkDbType&&!(BULK_TEMPLATES[_bulkDbType]&&BULK_TEMPLATES[_bulkDbType]._downloadOnly)?'':'none')+'">'+
@@ -6133,9 +6783,12 @@ function handleBulkFile(file){
       try{
         var wb=XLSX.read(e.target.result,{type:'array'});
         var sheetName=wb.SheetNames[0];
-        // Auto-detect sheet from combined menu_full template (2-sheet xlsx)
+        // Auto-detect sheet from combined menu_full template (5-sheet xlsx, CC-Option-Master-Stage1)
         if(type==='menu_product'&&wb.SheetNames.indexOf('2_メニュー商品')>=0){sheetName='2_メニュー商品';}
         else if(type==='menu_category'&&wb.SheetNames.indexOf('1_カテゴリ')>=0){sheetName='1_カテゴリ';}
+        else if(type==='option_group'&&wb.SheetNames.indexOf('3_オプショングループ')>=0){sheetName='3_オプショングループ';}
+        else if(type==='option'&&wb.SheetNames.indexOf('4_オプション選択肢')>=0){sheetName='4_オプション選択肢';}
+        else if(type==='product_option_group'&&wb.SheetNames.indexOf('5_商品オプション連携')>=0){sheetName='5_商品オプション連携';}
         var ws=wb.Sheets[sheetName];
         var rawRows=XLSX.utils.sheet_to_json(ws,{header:1});
         parsedToPreview(type,tmpl,rawRows);

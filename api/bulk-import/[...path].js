@@ -57,6 +57,33 @@ const TYPE_CONFIG = {
     resolveRefs: resolveSizeRefs,
     exportQuery: exportSizes,
   },
+  // CC-Option-Master-Stage1 (D-242 β) types
+  option_group: {
+    table: 'option_groups',
+    label: 'オプショングループ',
+    requiredFields: ['brand_slug', 'name', 'selection_type'],
+    upsertLookup: lookupOptionGroup,
+    resolveRefs: resolveOptionGroupRefs,
+    exportQuery: exportOptionGroups,
+    pkColumn: 'group_id',
+  },
+  option: {
+    table: 'options',
+    label: 'オプション選択肢',
+    requiredFields: ['brand_slug', 'group_name', 'name'],
+    upsertLookup: lookupOption,
+    resolveRefs: resolveOptionRefs,
+    exportQuery: exportOptions,
+    pkColumn: 'option_id',
+  },
+  product_option_group: {
+    table: 'product_option_groups',
+    label: '商品オプション連携',
+    requiredFields: ['brand_slug', 'product_name', 'group_name'],
+    upsertLookup: lookupProductOptionGroup,
+    resolveRefs: resolveProductOptionGroupRefs,
+    exportQuery: exportProductOptionGroups,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -224,6 +251,7 @@ async function handleExecute(req, res, auth) {
         }
 
         const existingId = existing.id;
+        const pkCol = config.pkColumn || 'id';
 
         if (type === 'menu_size') {
           // product_sizes uses composite key
@@ -241,7 +269,7 @@ async function handleExecute(req, res, auth) {
           const { error: upErr } = await supabase
             .from(config.table)
             .update(partial)
-            .eq('id', existingId);
+            .eq(pkCol, existingId);
           if (upErr) {
             errors.push({ data: row, message: upErr.message });
             skipped++;
@@ -362,10 +390,11 @@ async function handleDeleteExecute(req, res, auth) {
           continue;
         }
       } else {
+        const pkCol = config.pkColumn || 'id';
         const { error: delErr } = await supabase
           .from(config.table)
           .delete()
-          .eq('id', existing.id);
+          .eq(pkCol, existing.id);
         if (delErr) {
           errors.push({ data: row, message: delErr.message });
           skipped++;
@@ -605,6 +634,85 @@ async function resolveSizeRefs(row) {
   return { ...rest, product_id: product.id, name: label };
 }
 
+// ---------------------------------------------------------------------------
+// CC-Option-Master-Stage1 (D-242 β) resolvers
+// ---------------------------------------------------------------------------
+async function resolveOptionGroupRefs(row) {
+  const { brand_slug, selection_type, ...rest } = row;
+  const brandId = await resolveBrandSlug(brand_slug);
+  if (!brandId) return { _error: 'ブランドが見つかりません: ' + brand_slug };
+  if (selection_type !== 'single' && selection_type !== 'multiple') {
+    return { _error: '選択タイプは single / multiple のいずれかを指定してください（現: ' + selection_type + '）' };
+  }
+  return { ...rest, brand_id: brandId, selection_type };
+}
+
+async function resolveOptionRefs(row) {
+  const { brand_slug, group_name, price_delta, ...rest } = row;
+  const brandId = await resolveBrandSlug(brand_slug);
+  if (!brandId) return { _error: 'ブランドが見つかりません: ' + brand_slug };
+
+  const { data: group } = await supabase
+    .from('option_groups')
+    .select('group_id')
+    .eq('brand_id', brandId)
+    .eq('name', group_name)
+    .maybeSingle();
+  if (!group) return { _error: 'オプショングループが見つかりません: ' + group_name };
+
+  const out = { ...rest, group_id: group.group_id };
+
+  // price_delta: allow negative, empty → 0
+  if (price_delta === undefined || price_delta === '' || price_delta === null) {
+    out.price_delta = 0;
+  } else {
+    const parsed = parseInt(price_delta, 10);
+    if (isNaN(parsed)) {
+      return { _error: '価格差分は整数で指定してください（現: ' + price_delta + '）' };
+    }
+    out.price_delta = parsed;
+  }
+
+  return out;
+}
+
+async function resolveProductOptionGroupRefs(row) {
+  const { brand_slug, product_name, group_name, is_required, ...rest } = row;
+  const brandId = await resolveBrandSlug(brand_slug);
+  if (!brandId) return { _error: 'ブランドが見つかりません: ' + brand_slug };
+
+  const { data: product } = await supabase
+    .from('products')
+    .select('id')
+    .eq('brand_id', brandId)
+    .eq('name', product_name)
+    .maybeSingle();
+  if (!product) return { _error: '商品が見つかりません: ' + product_name };
+
+  const { data: group } = await supabase
+    .from('option_groups')
+    .select('group_id')
+    .eq('brand_id', brandId)
+    .eq('name', group_name)
+    .maybeSingle();
+  if (!group) return { _error: 'オプショングループが見つかりません: ' + group_name };
+
+  const out = { ...rest, product_id: product.id, group_id: group.group_id };
+
+  // is_required: empty/undefined → NULL (use group default), ON → true, OFF → false
+  if (is_required === '' || is_required === undefined || is_required === null) {
+    out.is_required = null;
+  } else if (is_required === true || is_required === 'ON' || is_required === 'true') {
+    out.is_required = true;
+  } else if (is_required === false || is_required === 'OFF' || is_required === 'false') {
+    out.is_required = false;
+  } else {
+    return { _error: '必須上書きは 空欄 / ON / OFF のいずれかで指定してください（現: ' + is_required + '）' };
+  }
+
+  return out;
+}
+
 async function resolveBrandSlug(slug) {
   const { data: brand } = await supabase
     .from('brands')
@@ -686,6 +794,37 @@ async function lookupSize(row) {
   return data;
 }
 
+// CC-Option-Master-Stage1 (D-242 β) lookups
+async function lookupOptionGroup(row) {
+  const { data } = await supabase
+    .from('option_groups')
+    .select('group_id')
+    .eq('brand_id', row.brand_id)
+    .eq('name', row.name)
+    .maybeSingle();
+  return data ? { id: data.group_id } : null;
+}
+
+async function lookupOption(row) {
+  const { data } = await supabase
+    .from('options')
+    .select('option_id')
+    .eq('group_id', row.group_id)
+    .eq('name', row.name)
+    .maybeSingle();
+  return data ? { id: data.option_id } : null;
+}
+
+async function lookupProductOptionGroup(row) {
+  const { data } = await supabase
+    .from('product_option_groups')
+    .select('id')
+    .eq('product_id', row.product_id)
+    .eq('group_id', row.group_id)
+    .maybeSingle();
+  return data;
+}
+
 // ---------------------------------------------------------------------------
 // Build DB payload — strip helper / non-column fields
 // ---------------------------------------------------------------------------
@@ -702,6 +841,7 @@ function buildPayload(type, resolved) {
   delete cleaned.category_name;
   delete cleaned.product_name;
   delete cleaned.label;
+  delete cleaned.group_name;
 
   switch (type) {
     case 'corporation':
@@ -734,6 +874,13 @@ function buildPayload(type, resolved) {
       ]);
     case 'menu_size':
       return pick(cleaned, ['product_id', 'name', 'price', 'sort_order']);
+    // CC-Option-Master-Stage1 (D-242 β)
+    case 'option_group':
+      return pick(cleaned, ['brand_id', 'name', 'selection_type', 'is_required', 'sort_order', 'is_available']);
+    case 'option':
+      return pick(cleaned, ['group_id', 'name', 'price_delta', 'is_default', 'sort_order', 'is_available']);
+    case 'product_option_group':
+      return pick(cleaned, ['product_id', 'group_id', 'sort_order', 'is_required']);
     default:
       return cleaned;
   }
@@ -873,5 +1020,59 @@ async function exportSizes() {
     label: s.name,
     price: s.price,
     sort_order: s.sort_order,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// CC-Option-Master-Stage1 (D-242 β) export queries
+// ---------------------------------------------------------------------------
+async function exportOptionGroups() {
+  const { data, error: err } = await supabase
+    .from('option_groups')
+    .select('group_id, name, selection_type, is_required, sort_order, is_available, brands(slug)')
+    .order('sort_order')
+    .limit(5000);
+  if (err) throw new Error(err.message);
+  return (data || []).map((g) => ({
+    brand_slug: g.brands?.slug || '',
+    name: g.name,
+    selection_type: g.selection_type,
+    is_required: g.is_required,
+    sort_order: g.sort_order,
+    is_available: g.is_available,
+  }));
+}
+
+async function exportOptions() {
+  const { data, error: err } = await supabase
+    .from('options')
+    .select('option_id, name, price_delta, is_default, sort_order, is_available, option_groups(name, brands(slug))')
+    .order('sort_order')
+    .limit(5000);
+  if (err) throw new Error(err.message);
+  return (data || []).map((o) => ({
+    brand_slug: o.option_groups?.brands?.slug || '',
+    group_name: o.option_groups?.name || '',
+    name: o.name,
+    price_delta: o.price_delta,
+    is_default: o.is_default,
+    sort_order: o.sort_order,
+    is_available: o.is_available,
+  }));
+}
+
+async function exportProductOptionGroups() {
+  const { data, error: err } = await supabase
+    .from('product_option_groups')
+    .select('id, sort_order, is_required, products(name, brands(slug)), option_groups(name)')
+    .order('sort_order')
+    .limit(5000);
+  if (err) throw new Error(err.message);
+  return (data || []).map((pog) => ({
+    brand_slug: pog.products?.brands?.slug || '',
+    product_name: pog.products?.name || '',
+    group_name: pog.option_groups?.name || '',
+    sort_order: pog.sort_order,
+    is_required: pog.is_required,
   }));
 }
