@@ -3933,7 +3933,7 @@ async function uploadStoreMedia(event,storeUuid,storeId){
   for(var f of files){
     var safe=f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
     var path=storeUuid+'/'+Date.now()+'_'+safe;
-    var{error}=await sb.storage.from('media').upload(path,f,{upsert:false});
+    var{error}=await sb.storage.from('media').upload(path,f,{upsert:false,cacheControl:'31536000'});
     if(error){showToast('❌ アップロード失敗: '+f.name);}else{ok++;}
   }
   if(ok>0){showToast('✅ '+ok+'件アップロードしました');logAudit('upload_store_media','venues',storeId,{count:ok});}
@@ -4766,10 +4766,10 @@ async function uploadBrandLogo(brandUuid,brandDisplayId,input){
   try{
     const ext=file.name.split('.').pop().toLowerCase();
     const path=brandUuid+'/logo/logo.'+ext;
-    const {error:upErr}=await sb.storage.from('media').upload(path,file,{upsert:true,contentType:file.type});
+    const {error:upErr}=await sb.storage.from('media').upload(path,file,{upsert:true,contentType:file.type,cacheControl:'31536000'});
     if(upErr)throw upErr;
     const {data}=sb.storage.from('media').getPublicUrl(path);
-    const logoUrl=data.publicUrl+'?t='+Date.now();
+    const logoUrl=data.publicUrl;
     const {error:dbErr}=await sb.from('brands').update({logo_url:logoUrl}).eq('id',brandUuid);
     if(dbErr)throw dbErr;
     const b=BRANDS.find(x=>x._uuid===brandUuid);if(b)b.logo_url=logoUrl;
@@ -4806,7 +4806,7 @@ async function handleHeroDrop(e,brandUuid,brandDisplayId){
       const ext=(file.name.split('.').pop()||'bin').toLowerCase();
       const fname=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
       const path=brandUuid+'/hero/'+fname;
-      const {error:upErr}=await sb.storage.from('media').upload(path,file,{contentType:file.type});
+      const {error:upErr}=await sb.storage.from('media').upload(path,file,{contentType:file.type,cacheControl:'31536000'});
       if(upErr)throw upErr;
       const {data}=sb.storage.from('media').getPublicUrl(path);
       const mediaType=file.type.startsWith('image/')?'image':'video';
@@ -8313,7 +8313,7 @@ async function uploadMatchedBulkImages(){
     if(!item)continue;
     var brandSlug=(item.brand_slug||'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
     var path=brandSlug+'/'+Date.now()+'_'+img.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    var up=await sb.storage.from(bucket).upload(path,img.file,{upsert:true,contentType:img.file.type});
+    var up=await sb.storage.from(bucket).upload(path,img.file,{upsert:true,contentType:img.file.type,cacheControl:'31536000'});
     if(up.error)throw new Error(up.error.message+'（bucket "'+bucket+'" 未作成の可能性）');
     var pub=sb.storage.from(bucket).getPublicUrl(path);
     img.publicUrl=pub.data.publicUrl;img.uploaded=true;
