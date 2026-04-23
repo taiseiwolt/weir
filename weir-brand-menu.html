@@ -659,8 +659,8 @@ function calcDiscount(price, discount) {
   if (discount.type==='percent') return Math.round(price * (1 - discount.rate/100));
   return null;
 }
-function buildTagsHtml(tags, discount) {
-  var all = tags ? tags.slice() : [];
+function buildTagsHtml(flags, discount) {
+  var all = flags ? flags.slice() : [];
   if (discount) all.unshift('sale');
   return all.map(function(k){ return '<span class="menu-tag tag-'+k+'">'+t('tag_'+k)+'</span>'; }).join('');
 }
@@ -685,7 +685,7 @@ function buildMenu() {
       mainHtml += '<div class="menu-card" onclick="openModal(\''+cat.id+'\','+idx+')">'
         +'<div class="menu-card-img" style="background:'+escH(item.bg)+'">'+escH(item.emoji)+'</div>'
         +'<div class="menu-card-body">'
-        +'<div class="menu-card-tags">'+buildTagsHtml(item.tags,item.discount)+'</div>'
+        +'<div class="menu-card-tags">'+buildTagsHtml(item.product_flags,item.discount)+'</div>'
         +'<div class="menu-card-name">'+escH(t(item.nameKey))+'</div>'
         +'<div class="menu-card-desc">'+escH(t(item.outlineKey))+'</div>'
         +'<div class="menu-card-price">'+buildPriceHtml(item)+'</div>'
@@ -707,7 +707,7 @@ function openModal(catId, idx) {
   document.getElementById('item-modal-inner').innerHTML =
     '<div class="item-modal-img" style="background:'+escH(item.bg)+'">'+escH(item.emoji)+'</div>'
     +'<div class="item-modal-body">'
-    +'<div class="item-modal-tags">'+buildTagsHtml(item.tags,item.discount)+'</div>'
+    +'<div class="item-modal-tags">'+buildTagsHtml(item.product_flags,item.discount)+'</div>'
     +'<div class="item-modal-name">'+escH(t(item.nameKey))+'</div>'
     +'<div class="item-modal-outline">'+escH(t(item.outlineKey))+'</div>'
     +'<div class="item-modal-desc"'+(t(item.detailKey)?'':' style="display:none"')+'>'+escH(t(item.detailKey))+'</div>'

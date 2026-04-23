@@ -545,7 +545,7 @@ async function resolveCategoryRefs(row) {
 }
 
 async function resolveProductRefs(row) {
-  const { brand_slug, category_name, menu_pattern_code, tags, ...rest } = row;
+  const { brand_slug, category_name, menu_pattern_code, product_flags, ...rest } = row;
   const brandId = await resolveBrandSlug(brand_slug);
   if (!brandId) return { _error: 'ブランドが見つかりません: ' + brand_slug };
 
@@ -571,19 +571,19 @@ async function resolveProductRefs(row) {
     out.menu_pattern_id = mp.id;
   }
 
-  // Product flags (D-47) — comma/pipe-separated string → string[] for products.tags
-  if (tags !== undefined && tags !== '') {
-    let tagList;
-    if (Array.isArray(tags)) {
-      tagList = tags;
+  // Product flags (D-47) — comma/pipe-separated string → string[] for products.product_flags
+  if (product_flags !== undefined && product_flags !== '') {
+    let flagList;
+    if (Array.isArray(product_flags)) {
+      flagList = product_flags;
     } else {
-      tagList = String(tags).split(/[,|、]/).map((s) => s.trim()).filter(Boolean);
+      flagList = String(product_flags).split(/[,|、]/).map((s) => s.trim()).filter(Boolean);
     }
-    const invalid = tagList.filter((t) => !PRODUCT_FLAGS.includes(t));
+    const invalid = flagList.filter((t) => !PRODUCT_FLAGS.includes(t));
     if (invalid.length > 0) {
       return { _error: '無効な商品フラグ: ' + invalid.join(', ') + '（許可: ' + PRODUCT_FLAGS.join('/') + '）' };
     }
-    out.tags = tagList;
+    out.product_flags = flagList;
   }
 
   return out;
@@ -730,7 +730,7 @@ function buildPayload(type, resolved) {
       return pick(cleaned, [
         'brand_id', 'category_id', 'name', 'description',
         'price', 'image_url', 'sort_order', 'is_available',
-        'menu_pattern_id', 'tags',
+        'menu_pattern_id', 'product_flags',
       ]);
     case 'menu_size':
       return pick(cleaned, ['product_id', 'name', 'price', 'sort_order']);
@@ -840,7 +840,7 @@ async function exportProducts() {
   const { data, error: err } = await supabase
     .from('products')
     .select(
-      'id, name, description, price, image_url, sort_order, is_available, tags, ' +
+      'id, name, description, price, image_url, sort_order, is_available, product_flags, ' +
       'brands(slug), categories(name), menu_patterns(code)'
     )
     .order('sort_order')
@@ -856,7 +856,7 @@ async function exportProducts() {
     sort_order: p.sort_order,
     is_available: p.is_available,
     menu_pattern_code: p.menu_patterns?.code || '',
-    tags: Array.isArray(p.tags) ? p.tags.join('|') : '',
+    product_flags: Array.isArray(p.product_flags) ? p.product_flags.join('|') : '',
   }));
 }
 
