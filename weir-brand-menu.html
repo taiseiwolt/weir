@@ -768,7 +768,7 @@ async function loadMenuFromSupabase() {
             items: catProds.map(function(p) {
               var sz = (p.product_sizes || []).sort(function(a,b) { return (a.sort_order||0) - (b.sort_order||0); });
               var price = sz.length > 0 ? sz[0].price : (p.price || 0);
-              return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🥩', bg: 'linear-gradient(135deg,#2d1f0a,#8b6914)', _directName: true };
+              return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🍽️', bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)', _directName: true };
             })
           };
         });
@@ -789,7 +789,7 @@ async function loadMenuFromSupabase() {
       items: catProducts.map(function(p) {
         var sz = (sizes || []).filter(function(s) { return s.product_id === p.id; }).sort(function(a,b) { return a.sort_order - b.sort_order; });
         var price = sz.length > 0 ? sz[0].price : 0;
-        return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🥩', bg: 'linear-gradient(135deg,#2d1f0a,#8b6914)', _directName: true };
+        return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🍽️', bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)', _directName: true };
       })
     };
   });
