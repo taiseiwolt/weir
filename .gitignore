@@ -8,3 +8,20 @@ node_modules
 .claude/context/index.md
 .claude/context/archive.md
 .claude/context/secrets.md
+
+# Supabase CLI temporary files
+supabase/.temp/
+supabase/.branches/
+
+# Build output
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
