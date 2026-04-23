@@ -1535,6 +1535,15 @@ content.innerHTML = `
   <div class="page-title">メニュー管理</div>
   <div class="page-subtitle">メニューパターンを作成し、商品を登録します</div>
 
+  <!-- 販売状況編集用の店舗セレクタ（D-61: 品切れは venue 単位） -->
+  <div id="mlVenueSelectorWrap" style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f5f6fa;border:1px solid var(--border);border-radius:8px">
+    <label for="mlVenueSelector" style="font-size:12px;font-weight:600;color:var(--text)">🏪 販売状況編集店舗:</label>
+    <select id="mlVenueSelector" onchange="mlOnVenueChange()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:200px;background:#fff">
+      <option value="">店舗を選択してください</option>
+    </select>
+    <span style="font-size:11px;color:var(--text-light)">※ 商品の販売状況はブランド共通 / オプションは店舗単位</span>
+  </div>
+
   <div id="mlTwoPane" style="display:grid;grid-template-columns:35% 1fr;gap:16px;align-items:flex-start;margin-top:8px">
     <!-- 左ペイン: パターン一覧 -->
     <div class="card" style="margin-bottom:0;padding:0">
@@ -5911,21 +5920,30 @@ async function loadAdminFromSupabase() {
           sizes: pSizes.map(s => ({name: s.name, price: s.price})), optionGroupIds: []
         };
       });
-      const {data: pogs} = await sb.from('product_option_groups').select('id, product_id, option_group_id');
-      if (pogs) { pogs.forEach(po => { const p = PRODUCTS.find(x => x.itemId === po.product_id); if (p) p.optionGroupIds.push(po.option_group_id); }); }
+      const {data: pogs} = await sb.from('product_option_groups').select('id, product_id, group_id');
+      if (pogs) { pogs.forEach(po => { const p = PRODUCTS.find(x => x.itemId === po.product_id); if (p) p.optionGroupIds.push(po.group_id); }); }
     }
 
-    // 5. Option Groups + Items (RLS: filtered by brand)
-    const {data: ogs, error: ogErr} = await sb.from('option_groups').select('id, brand_id, name, type, required, min_select, max_select');
+    // 5. Option Groups + Options (Stage 1 schema: option_groups.group_id / options.option_id / price_delta)
+    const {data: ogs, error: ogErr} = await sb.from('option_groups').select('group_id, brand_id, name, selection_type, is_required, sort_order, is_available');
     if (ogErr) errors.push('オプション: ' + ogErr.message);
-    const {data: ois} = await sb.from('option_items').select('id, option_group_id, name, price, is_default, sort_order');
+    const {data: ois} = await sb.from('options').select('option_id, group_id, name, price_delta, is_default, sort_order, is_available');
     if (ogs && ogs.length > 0) {
       OPTION_GROUPS = ogs.map(og => ({
-        id: og.id, name: og.name, type: og.type, required: og.required, min: og.min_select, max: og.max_select,
-        options: (ois || []).filter(oi => oi.option_group_id === og.id).sort((a,b) => a.sort_order - b.sort_order).map(oi => ({
-          id: oi.id, name: oi.name, price: oi.price, default: oi.is_default, tax: 'reduced'
+        id: og.group_id, name: og.name, selectionType: og.selection_type, isRequired: og.is_required, sortOrder: og.sort_order, isAvailable: og.is_available,
+        options: (ois || []).filter(oi => oi.group_id === og.group_id).sort((a,b) => a.sort_order - b.sort_order).map(oi => ({
+          id: oi.option_id, name: oi.name, priceDelta: oi.price_delta, default: oi.is_default, isAvailable: oi.is_available, tax: 'reduced'
         }))
       }));
+    }
+
+    // 5b. Option sale status (per-venue, all venues of brand)
+    if (STORES.length > 0) {
+      const _venueIds = STORES.map(function(s){ return s.id; });
+      const {data: oss} = await sb.from('option_sale_status').select('id, venue_id, option_id, status, updated_by, updated_at').in('venue_id', _venueIds);
+      OPTION_SALE_STATUS = oss || [];
+    } else {
+      OPTION_SALE_STATUS = [];
     }
 
     // 6. Menu Patterns
@@ -6095,6 +6113,13 @@ let PRODUCTS = [];
 
 // ===== OPTION GROUPS (populated from Supabase after login) =====
 let OPTION_GROUPS = [];
+
+// ===== OPTION SALE STATUS (per-venue, populated from Supabase after login) =====
+// Rows: {id, venue_id, option_id, status, updated_by, updated_at}
+let OPTION_SALE_STATUS = [];
+
+// ===== CURRENT_MENU_VENUE_ID (selected venue for menu management page; drives option status display/edit) =====
+let CURRENT_MENU_VENUE_ID = null;
 
 // ===== CATEGORIES (populated from Supabase after login) =====
 let CATEGORIES = [];
@@ -11179,7 +11204,12 @@ var mlState = {
   selectedPatternId: null,
   products: [],
   productSizesMap: {},
-  editingProductId: null
+  editingProductId: null,
+  // Stage 1 option master (CC-Option-Master-Stage2a Phase 4)
+  optionGroups: [],          // [{group_id, brand_id, name, selection_type, is_required, sort_order, is_available}]
+  options: [],               // [{option_id, group_id, name, price_delta, is_default, sort_order, is_available}]
+  productOptionGroups: [],   // [{product_id, group_id}] — links
+  optionSaleStatus: []       // [{id, venue_id, option_id, status, updated_by, updated_at}]
 };
 var mlImageData = null;
 
@@ -11190,9 +11220,79 @@ async function mlInitPage() {
   mlState.products = [];
   mlState.productSizesMap = {};
   mlState.editingProductId = null;
+  mlState.optionGroups = [];
+  mlState.options = [];
+  mlState.productOptionGroups = [];
+  mlState.optionSaleStatus = [];
   await mlLoadData();
   await mlLoadProducts();
+  await mlLoadOptionsAndStatus();
+  mlRenderVenueSelector();
   mlRenderPatterns();
+  mlRenderProducts();
+}
+
+// ===== Stage 2a Phase 4: load option master + per-venue sale status =====
+async function mlLoadOptionsAndStatus() {
+  mlState.optionGroups = [];
+  mlState.options = [];
+  mlState.productOptionGroups = [];
+  mlState.optionSaleStatus = [];
+  if (!BRAND_ID) return;
+  try {
+    var ogRes = await sb.from('option_groups').select('group_id,brand_id,name,selection_type,is_required,sort_order,is_available').eq('brand_id', BRAND_ID).order('sort_order');
+    if (ogRes.error) throw ogRes.error;
+    mlState.optionGroups = ogRes.data || [];
+    if (mlState.optionGroups.length) {
+      var groupIds = mlState.optionGroups.map(function(og){ return og.group_id; });
+      var [optRes, pogRes] = await Promise.all([
+        sb.from('options').select('option_id,group_id,name,price_delta,is_default,sort_order,is_available').in('group_id', groupIds).order('sort_order'),
+        sb.from('product_option_groups').select('product_id,group_id,sort_order,is_required').in('group_id', groupIds).order('sort_order')
+      ]);
+      if (optRes.error) throw optRes.error;
+      if (pogRes.error) throw pogRes.error;
+      mlState.options = optRes.data || [];
+      mlState.productOptionGroups = pogRes.data || [];
+    }
+    // Load option_sale_status for all venues in this brand
+    if ((mlState.venues || []).length && (mlState.options || []).length) {
+      var venueIds = mlState.venues.map(function(v){ return v.id; });
+      var ossRes = await sb.from('option_sale_status').select('id,venue_id,option_id,status,updated_by,updated_at').in('venue_id', venueIds);
+      if (ossRes.error) throw ossRes.error;
+      mlState.optionSaleStatus = ossRes.data || [];
+    }
+  } catch (e) {
+    console.error('mlLoadOptionsAndStatus error:', e);
+    showToast('❌ オプション情報の読込に失敗しました: ' + (e.message || e));
+  }
+}
+
+function mlRenderVenueSelector() {
+  var wrap = document.getElementById('mlVenueSelectorWrap');
+  var sel = document.getElementById('mlVenueSelector');
+  if (!sel) return;
+  var venues = mlState.venues || [];
+  // Hide the wrap when there are no venues in this brand
+  if (wrap) wrap.style.display = venues.length > 0 ? 'flex' : 'none';
+  // Keep selected venue across re-renders when possible
+  if (CURRENT_MENU_VENUE_ID && !venues.find(function(v){ return v.id === CURRENT_MENU_VENUE_ID; })) {
+    CURRENT_MENU_VENUE_ID = null;
+  }
+  if (!CURRENT_MENU_VENUE_ID && venues.length > 0) {
+    CURRENT_MENU_VENUE_ID = venues[0].id;
+  }
+  var opts = '<option value="">店舗を選択してください</option>';
+  venues.forEach(function(v){
+    var selected = (v.id === CURRENT_MENU_VENUE_ID) ? ' selected' : '';
+    opts += '<option value="'+escH(v.id)+'"'+selected+'>'+escH(v.name||'')+'</option>';
+  });
+  sel.innerHTML = opts;
+}
+
+function mlOnVenueChange() {
+  var sel = document.getElementById('mlVenueSelector');
+  if (!sel) return;
+  CURRENT_MENU_VENUE_ID = sel.value || null;
   mlRenderProducts();
 }
 
@@ -11300,6 +11400,7 @@ function mlRenderProducts() {
     el.innerHTML = '<div class="empty-state" style="padding:20px">商品がありません<br><span style="font-size:11px">右上の「＋商品追加」から追加してください</span></div>';
     return;
   }
+  // Colspan accounting: 商品ID/画像/商品名/カテゴリ/パターン/価格/販売状況/操作 = 8
   var html = '<table class="data-table" style="font-size:11px;white-space:nowrap">'+
     '<thead><tr>'+
       '<th style="width:110px">商品ID</th>'+
@@ -11308,6 +11409,7 @@ function mlRenderProducts() {
       '<th style="width:110px">カテゴリ</th>'+
       '<th style="width:140px">パターン</th>'+
       '<th style="width:90px">価格</th>'+
+      '<th style="width:130px">販売状況</th>'+
       '<th style="width:90px">操作</th>'+
     '</tr></thead><tbody>';
   mlState.products.forEach(function(p){
@@ -11338,6 +11440,15 @@ function mlRenderProducts() {
     } else {
       patternBadgeHtml = '<span title="未設定：MO画面には表示されません" style="display:inline-block;background:#f5f5f5;color:#aaa;font-size:10px;padding:2px 8px;border-radius:10px">未設定</span>';
     }
+    // 販売状況 (product.sale_status — global; allowed values per CHECK: on_sale, sold_out_today, discontinued, sold_out)
+    // Treat 'available' / legacy 'sold_out' tolerantly in display; write normalized on_sale/sold_out_today/discontinued.
+    var rawSaleStatus = p.sale_status || 'on_sale';
+    var selVal = (rawSaleStatus === 'available') ? 'on_sale' : (rawSaleStatus === 'sold_out' ? 'discontinued' : rawSaleStatus);
+    var prodStatusHtml = '<select onchange="updateProductSaleStatus(\''+p.id+'\', this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:#fff">'+
+      '<option value="on_sale"'+(selVal==='on_sale'?' selected':'')+'>販売中</option>'+
+      '<option value="sold_out_today"'+(selVal==='sold_out_today'?' selected':'')+'>本日売切</option>'+
+      '<option value="discontinued"'+(selVal==='discontinued'?' selected':'')+'>終売</option>'+
+    '</select>';
     html += '<tr>'+
       '<td><span style="font-family:Poppins,monospace;font-size:10px;color:#666;background:#f5f5f5;padding:1px 6px;border-radius:3px">'+escH(p.display_id||'')+'</span></td>'+
       '<td>'+imgHtml+'</td>'+
@@ -11345,14 +11456,116 @@ function mlRenderProducts() {
       '<td>'+escH(catName)+'</td>'+
       '<td>'+patternBadgeHtml+'</td>'+
       '<td>'+priceHtml+'</td>'+
+      '<td>'+prodStatusHtml+'</td>'+
       '<td>'+
         '<button class="btn btn-secondary btn-sm" style="font-size:10px;padding:3px 8px" onclick="mlOpenEditProductModal(\''+p.id+'\')">編集</button> '+
         '<button class="btn btn-sm" style="background:#ffebee;color:var(--accent);font-size:10px;padding:3px 8px" onclick="mlDeleteProduct(\''+p.id+'\')">削除</button>'+
       '</td>'+
     '</tr>';
+    // Nested option rows (one per option in each group linked to this product)
+    var linkedGroupIds = (mlState.productOptionGroups || []).filter(function(po){ return po.product_id === p.id; }).map(function(po){ return po.group_id; });
+    if (linkedGroupIds.length > 0) {
+      linkedGroupIds.forEach(function(gid){
+        var grp = (mlState.optionGroups || []).find(function(og){ return og.group_id === gid; });
+        if (!grp) return;
+        var grpOpts = (mlState.options || []).filter(function(o){ return o.group_id === gid; }).sort(function(a,b){ return (a.sort_order||0) - (b.sort_order||0); });
+        if (grpOpts.length === 0) return;
+        grpOpts.forEach(function(opt){
+          var optStatus = 'available';
+          if (CURRENT_MENU_VENUE_ID) {
+            var ossRow = (mlState.optionSaleStatus || []).find(function(s){ return s.venue_id === CURRENT_MENU_VENUE_ID && s.option_id === opt.option_id; });
+            if (ossRow) optStatus = ossRow.status || 'available';
+          }
+          var priceLabel = '';
+          if (opt.price_delta > 0) priceLabel = ' <span style="color:var(--text-light);font-size:10px">(+¥'+Number(opt.price_delta).toLocaleString()+')</span>';
+          else if (opt.price_delta < 0) priceLabel = ' <span style="color:var(--text-light);font-size:10px">(¥'+Number(opt.price_delta).toLocaleString()+')</span>';
+          var optDisabledAttr = CURRENT_MENU_VENUE_ID ? '' : ' disabled title="店舗を選択してください"';
+          var optStatusHtml = '<select onchange="updateOptionSaleStatus(\''+opt.option_id+'\', this.value)"'+optDisabledAttr+' style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:#fff">'+
+            '<option value="available"'+(optStatus==='available'?' selected':'')+'>販売中</option>'+
+            '<option value="sold_out_today"'+(optStatus==='sold_out_today'?' selected':'')+'>本日売切</option>'+
+            '<option value="discontinued"'+(optStatus==='discontinued'?' selected':'')+'>終売</option>'+
+          '</select>';
+          html += '<tr data-parent="'+escH(p.id)+'" class="option-row" style="background:#fafbfc">'+
+            '<td colspan="6" style="padding-left:20px;color:var(--text-light);font-size:11px">'+
+              '<span style="color:#bbb;margin-right:6px">└─</span>'+
+              '<span style="font-weight:500">'+escH(grp.name||'')+'</span>'+
+              '<span style="color:#bbb;margin:0 6px">›</span>'+
+              '<span>'+escH(opt.name||'')+'</span>'+
+              priceLabel+
+            '</td>'+
+            '<td>'+optStatusHtml+'</td>'+
+            '<td style="color:var(--text-light);font-size:10px">—</td>'+
+          '</tr>';
+        });
+      });
+    }
   });
   html += '</tbody></table>';
   el.innerHTML = html;
+}
+
+// ===== Stage 2a Phase 4: one-click product/option sale status UPSERT =====
+
+// Product sale_status is global (one row per product). CHECK constraint allows: on_sale / sold_out_today / discontinued / sold_out.
+async function updateProductSaleStatus(productId, newStatus) {
+  // Normalize per existing save pattern at line ~11596: 'available' → 'on_sale' (though the dropdown uses on_sale already, keep guard for safety)
+  if (newStatus === 'available') newStatus = 'on_sale';
+  try {
+    var { error } = await sb.from('products').update({
+      sale_status: newStatus,
+      updated_by: 'merchant'
+    }).eq('id', productId);
+    if (error) throw error;
+    // Update in-memory mlState.products and legacy PRODUCTS for downstream consistency
+    var mp = (mlState.products || []).find(function(x){ return x.id === productId; });
+    if (mp) mp.sale_status = newStatus;
+    var lp = (PRODUCTS || []).find(function(x){ return x.itemId === productId; });
+    if (lp) lp.saleStatus = newStatus;
+    showToast('✅ 商品ステータスを更新しました');
+  } catch (e) {
+    console.error('updateProductSaleStatus error:', e);
+    showToast('❌ ステータス更新に失敗しました: ' + (e.message || e));
+    // Revert UI to previous value by re-rendering
+    mlRenderProducts();
+  }
+}
+
+// Option sale_status is per-venue (UNIQUE on venue_id, option_id). CHECK allows: available / sold_out_today / discontinued.
+async function updateOptionSaleStatus(optionId, newStatus) {
+  if (!CURRENT_MENU_VENUE_ID) {
+    showToast('⚠️ 店舗を選択してください');
+    mlRenderProducts();
+    return;
+  }
+  try {
+    var { error } = await sb.from('option_sale_status').upsert({
+      venue_id: CURRENT_MENU_VENUE_ID,
+      option_id: optionId,
+      status: newStatus,
+      updated_by: 'merchant'
+    }, { onConflict: 'venue_id,option_id' });
+    if (error) throw error;
+    // Update in-memory state
+    var existing = (mlState.optionSaleStatus || []).find(function(s){ return s.venue_id === CURRENT_MENU_VENUE_ID && s.option_id === optionId; });
+    if (existing) {
+      existing.status = newStatus;
+      existing.updated_at = new Date().toISOString();
+      existing.updated_by = 'merchant';
+    } else {
+      mlState.optionSaleStatus.push({
+        venue_id: CURRENT_MENU_VENUE_ID,
+        option_id: optionId,
+        status: newStatus,
+        updated_by: 'merchant',
+        updated_at: new Date().toISOString()
+      });
+    }
+    showToast('✅ オプションステータスを更新しました');
+  } catch (e) {
+    console.error('updateOptionSaleStatus error:', e);
+    showToast('❌ オプションステータス更新に失敗しました: ' + (e.message || e));
+    mlRenderProducts();
+  }
 }
 
 // ===== Pattern CRUD =====
