@@ -697,6 +697,40 @@ function buildMenu() {
   document.getElementById('menu-content').innerHTML = mainHtml;
 }
 
+function buildOptionsInfoHtml(options) {
+  if (!options || options.length === 0) return '';
+  var groupsHtml = options.map(function(g) {
+    var requiredLabel = g.is_required
+      ? '<span style="font-size:10px;padding:2px 6px;border-radius:2px;background:#FEE;color:#C33">必須</span>'
+      : '<span style="font-size:10px;padding:2px 6px;border-radius:2px;background:#EEE;color:#666">任意</span>';
+    var selectionHint = g.selection_type === 'single' ? '1 つ選択' : '複数選択可';
+    var choicesHtml = (g.choices || []).map(function(c) {
+      var priceStr = '';
+      if (c.price_delta > 0) {
+        priceStr = '<span style="color:var(--brand-primary)">（+' + c.price_delta.toLocaleString() + '円）</span>';
+      } else if (c.price_delta < 0) {
+        priceStr = '<span style="color:#888">（−' + Math.abs(c.price_delta).toLocaleString() + '円）</span>';
+      }
+      var defaultBadge = c.is_default
+        ? '<span style="font-size:10px;padding:1px 4px;background:#E5F4FF;color:#0066CC;border-radius:2px;margin-left:4px">デフォルト</span>'
+        : '';
+      return '<li style="padding:2px 0">' + escH(c.name) + priceStr + defaultBadge + '</li>';
+    }).join('');
+    return '<div class="opt-group" style="margin-top:12px">'
+      + '<div class="opt-group-header" style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      + '<span class="opt-group-name" style="font-weight:600;font-size:13px">' + escH(g.name) + '</span>'
+      + requiredLabel
+      + '<span style="font-size:11px;color:var(--text3)">' + escH(selectionHint) + '</span>'
+      + '</div>'
+      + '<ul style="list-style:none;padding:0;margin:0;font-size:12px;color:var(--text2)">' + choicesHtml + '</ul>'
+      + '</div>';
+  }).join('');
+  return '<div class="item-modal-options">'
+    + '<h3 style="font-size:14px;font-weight:700;margin-top:16px;margin-bottom:8px">選択可能なオプション</h3>'
+    + groupsHtml
+    + '</div>';
+}
+
 function openModal(catId, idx) {
   var cat = MENU_DATA.find(function(c){return c.id===catId;});
   var item = cat.items[idx];
@@ -704,6 +738,7 @@ function openModal(catId, idx) {
   var allergens = item.allergens && item.allergens.length ? item.allergens.join('・') : t('allergen_none');
   var courseNote = item.isCourse
     ? '<p style="font-size:12px;color:var(--text3);margin-top:10px">'+t('reserve_note')+' <a href="javascript:void(0)" onclick="openResModal()" style="color:var(--brand-primary)">'+t('reserve_link')+'</a></p>' : '';
+  var optionsHtml = buildOptionsInfoHtml(item.options);
   document.getElementById('item-modal-inner').innerHTML =
     '<div class="item-modal-img" style="background:'+escH(item.bg)+'">'+escH(item.emoji)+'</div>'
     +'<div class="item-modal-body">'
@@ -713,6 +748,7 @@ function openModal(catId, idx) {
     +'<div class="item-modal-desc"'+(t(item.detailKey)?'':' style="display:none"')+'>'+escH(t(item.detailKey))+'</div>'
     +'<div class="item-modal-price">'+priceHtml+'</div>'
     +'<div class="item-modal-allergen"><strong>'+escH(t('allergen_label'))+'：</strong>'+escH(allergens)+'</div>'
+    +optionsHtml
     +courseNote+'</div>';
   document.getElementById('item-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -755,6 +791,45 @@ async function apiFetch(path) {
   return res.json();
 }
 
+// CC-Option-Master-Stage2a Phase 2:
+// Stage 1 schema options を products に埋め込み、openModal の info-only 表示に供給する。
+//   option_groups: group_id / name / selection_type / is_required
+//   options: option_id / name / price_delta / is_default / sort_order / is_available
+//   product_option_groups: is_required (NULL なら option_groups.is_required にフォールバック)
+function buildOptionGroupsFromRows(pogRows) {
+  if (!Array.isArray(pogRows)) return null;
+  var groups = pogRows.slice()
+    .sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+    .map(function(pog) {
+      var og = pog.option_groups;
+      if (!og) return null;
+      var requiredEff = (pog.is_required === null || pog.is_required === undefined)
+        ? !!og.is_required
+        : !!pog.is_required;
+      var choices = (og.options || [])
+        .filter(function(oi) { return oi.is_available !== false; })
+        .sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+        .map(function(oi) {
+          return {
+            option_id: oi.option_id,
+            name: oi.name,
+            price_delta: typeof oi.price_delta === 'number' ? oi.price_delta : 0,
+            is_default: !!oi.is_default
+          };
+        });
+      if (choices.length === 0) return null;
+      return {
+        group_id: og.group_id,
+        name: og.name,
+        selection_type: og.selection_type,
+        is_required: requiredEff,
+        choices: choices
+      };
+    })
+    .filter(Boolean);
+  return groups.length > 0 ? groups : null;
+}
+
 async function loadMenuFromSupabase() {
   // Try API first
   if (API_BASE) {
@@ -768,7 +843,19 @@ async function loadMenuFromSupabase() {
             items: catProds.map(function(p) {
               var sz = (p.product_sizes || []).sort(function(a,b) { return (a.sort_order||0) - (b.sort_order||0); });
               var price = sz.length > 0 ? sz[0].price : (p.price || 0);
-              return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🍽️', bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)', _directName: true };
+              var optionGroups = buildOptionGroupsFromRows(p.product_option_groups);
+              return {
+                nameKey: p.name,
+                outlineKey: p.description || '',
+                detailKey: '',
+                price: price,
+                tags: [],
+                allergens: [],
+                emoji: '🍽️',
+                bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)',
+                _directName: true,
+                options: optionGroups
+              };
             })
           };
         });
@@ -779,7 +866,7 @@ async function loadMenuFromSupabase() {
 
   // Supabase fallback
   var {data: cats} = await sb.from('categories').select('id, brand_id, name, sort_order').eq('brand_id', BRAND_ID).order('sort_order');
-  var {data: products} = await sb.from('products').select('id, brand_id, category_id, name, description, image_url, sale_status').eq('brand_id', BRAND_ID);
+  var {data: products} = await sb.from('products').select('id, brand_id, category_id, name, description, image_url, sale_status, product_option_groups(is_required, sort_order, option_groups(group_id, name, selection_type, is_required, sort_order, options(option_id, name, price_delta, is_default, sort_order, is_available)))').eq('brand_id', BRAND_ID);
   var {data: sizes} = await sb.from('product_sizes').select('id, product_id, name, price, sort_order');
   if (!cats || !cats.length || !products || !products.length) return;
   MENU_DATA = cats.map(function(c, ci) {
@@ -789,7 +876,19 @@ async function loadMenuFromSupabase() {
       items: catProducts.map(function(p) {
         var sz = (sizes || []).filter(function(s) { return s.product_id === p.id; }).sort(function(a,b) { return a.sort_order - b.sort_order; });
         var price = sz.length > 0 ? sz[0].price : 0;
-        return { nameKey: p.name, outlineKey: p.description || '', detailKey: '', price: price, tags: [], allergens: [], emoji: '🍽️', bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)', _directName: true };
+        var optionGroups = buildOptionGroupsFromRows(p.product_option_groups);
+        return {
+          nameKey: p.name,
+          outlineKey: p.description || '',
+          detailKey: '',
+          price: price,
+          tags: [],
+          allergens: [],
+          emoji: '🍽️',
+          bg: 'linear-gradient(135deg,#f5f5f5,#e8e8e8)',
+          _directName: true,
+          options: optionGroups
+        };
       })
     };
   });

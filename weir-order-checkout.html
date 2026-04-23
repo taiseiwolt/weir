@@ -702,6 +702,10 @@ select.form-input { appearance:none; background:url("data:image/svg+xml,%3Csvg x
         <span class="label" data-i18n="label_subtotal">税込商品代金</span>
         <span class="value" id="priceSubtotal">¥0</span>
       </div>
+      <div class="price-row" id="priceOptionsRow" style="display:none">
+        <span class="label">オプション加算</span>
+        <span class="value" id="priceOptions">¥0</span>
+      </div>
       <div class="price-row" id="priceDeliveryRow">
         <span class="label" data-i18n="label_delivery_fee">配達料</span>
         <span class="value" id="priceDelivery">¥0</span>
@@ -1222,14 +1226,32 @@ function selectTime(type, el) {
 // ===================================================================
 // ORDER ITEMS
 // ===================================================================
+// CC-Option-Master-Stage2a Phase 2: selected_options snapshot から表示文字列を生成。
+// group ごとに束ねて option 名をまとめ、group 間は「 / 」、group 内は「、」区切り。
+// selected_options を source of truth として常に再構築（optText キャッシュに依存しない）。
+function buildCheckoutOptionText(item) {
+  if(!item || !Array.isArray(item.selected_options) || item.selected_options.length === 0) return '';
+  const byGroup = new Map();
+  item.selected_options.forEach(o => {
+    const key = o.group_id || '_';
+    if(!byGroup.has(key)) byGroup.set(key, { name: o.group_name || '', options: [] });
+    byGroup.get(key).options.push(o.option_name || '');
+  });
+  const parts = [];
+  byGroup.forEach(g => { parts.push(g.options.join('、')); });
+  return parts.join(' / ');
+}
+
 function renderOrderItems() {
   const el = document.getElementById('orderItemsList');
-  el.innerHTML = CHECKOUT_DATA.cartItems.map((item, idx) => `
+  el.innerHTML = CHECKOUT_DATA.cartItems.map((item, idx) => {
+    const optText = buildCheckoutOptionText(item);
+    return `
     <div class="order-item">
       <img class="order-item-img" src="${escapeHtml(item.img || '')}" alt="">
       <div class="order-item-info">
         <div class="order-item-name">${escapeHtml(item.name)}</div>
-        ${item.optText ? `<div class="order-item-opts">${escapeHtml(item.optText)}</div>` : ''}
+        ${optText ? `<div class="order-item-opts">${escapeHtml(optText)}</div>` : ''}
       </div>
       <div class="order-item-price" id="itemPrice${idx}">¥${(item.price * item.qty).toLocaleString()}</div>
       <div class="order-item-qty-badge" id="qtyBadge${idx}" onclick="toggleQtyControls(${idx})">${item.qty}</div>
@@ -1239,8 +1261,8 @@ function renderOrderItems() {
         <button onclick="changeItemQty(${idx},1)">+</button>
         <button class="btn-delete" onclick="removeItem(${idx})">🗑</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function toggleQtyControls(idx) {
@@ -1462,6 +1484,17 @@ function showCouponApplied(coupon) {
 function updatePriceSummary() {
   const C = CHECKOUT_DATA;
   const subtotal = C.subtotal;
+  // CC-Option-Master-Stage2a Phase 2: オプション加算内訳を display 用に分離。
+  // subtotal = productSubtotal + optionsTotal。EF に送信する subtotal は従来通り（unit_price に delta 内包）。
+  let optionsTotal = 0;
+  (C.cartItems || []).forEach(item => {
+    if(Array.isArray(item.selected_options)) {
+      const perUnit = item.selected_options.reduce((s, o) => s + (o.price_delta || 0), 0);
+      optionsTotal += perUnit * (item.qty || 0);
+    }
+  });
+  const productSubtotal = subtotal - optionsTotal;
+
   var freeDeliveryMet = mode === 'delivery' && C.freeDeliveryThreshold > 0 && subtotal >= C.freeDeliveryThreshold;
   const delivery = (mode === 'delivery' && !freeDeliveryMet) ? C.deliveryFee : 0;
   const surcharge = C.surchargeAmount;
@@ -1508,7 +1541,17 @@ function updatePriceSummary() {
 
   const total = Math.max(0, subtotal + delivery + surcharge + serviceFee - couponDiscount - pointDiscount);
 
-  document.getElementById('priceSubtotal').textContent = '¥' + subtotal.toLocaleString();
+  // 商品小計（オプション加算を除いた純粋な商品代金）
+  document.getElementById('priceSubtotal').textContent = '¥' + productSubtotal.toLocaleString();
+  // オプション加算行（非ゼロのときのみ表示。負値は減算として表示し、productSubtotal + optionsTotal === subtotal 不変式を維持）
+  const optionsRowEl = document.getElementById('priceOptionsRow');
+  if(optionsTotal !== 0) {
+    if(optionsRowEl) optionsRowEl.style.display = '';
+    const sign = optionsTotal < 0 ? '−' : '';
+    document.getElementById('priceOptions').textContent = '¥' + sign + Math.abs(optionsTotal).toLocaleString();
+  } else if(optionsRowEl) {
+    optionsRowEl.style.display = 'none';
+  }
   document.getElementById('priceDelivery').textContent = '¥' + delivery.toLocaleString();
   if (serviceFee > 0) {
     document.getElementById('priceServiceFeeRow').style.display = '';
@@ -1548,10 +1591,11 @@ function updatePriceSummary() {
 // ===================================================================
 function goBackToMenu() {
   const storeCart = CHECKOUT_DATA.cartItems.map(item => ({
-    itemId: item.id,
+    itemId: item.itemId || item.id,
     qty: item.qty,
-    options: item.storeOptions || {},
-    unitPrice: item.price
+    unitPrice: item.unit_price || item.price,
+    sizeId: item.sizeId || null,
+    selected_options: Array.isArray(item.selected_options) ? item.selected_options : []
   }));
   try {
     sessionStorage.setItem('weir_cart_restore', JSON.stringify(storeCart));
@@ -2042,10 +2086,11 @@ async function placeOrder() {
         body: JSON.stringify({
           store_id: CHECKOUT_DATA.storeId,
           cart_items: (CHECKOUT_DATA.cartItems || []).map(item => ({
-            product_id: item.id || item.productId || null,
+            product_id: item.id || item.itemId || item.productId || null,
+            size_id: item.sizeId || null,
             quantity: item.qty || 1,
-            unit_price: item.price || 0,
-            options: item.storeOptions || item.options || null
+            unit_price: item.unit_price || item.price || 0,
+            selected_options: Array.isArray(item.selected_options) ? item.selected_options : []
           })),
           order_type: channel,
           guest_info: {
@@ -2306,9 +2351,10 @@ async function placeOrder() {
       if (CHECKOUT_DATA.cartItems && CHECKOUT_DATA.cartItems.length > 0) {
         const orderItems = CHECKOUT_DATA.cartItems.map(item => ({
           order_id: orderRow.id,
-          product_id: item.productId || null,
+          product_id: item.productId || item.itemId || item.id || null,
           quantity: item.qty || 1,
-          unit_price: item.price || 0,
+          unit_price: item.unit_price || item.price || 0,
+          selected_options: Array.isArray(item.selected_options) ? item.selected_options : []
         }));
         await sb.from('order_items').insert(orderItems);
       }

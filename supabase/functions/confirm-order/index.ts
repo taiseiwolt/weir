@@ -1,11 +1,14 @@
-// Supabase Edge Function: 決済成功後の注文レコード作成 + メール送信
+// Supabase Edge Function: 決済成功後の注文遷移 + メール送信 + 副作用実行
 // POST /functions/v1/confirm-order
 //
-// PaymentIntent が succeeded であることを Stripe API で検証した上で、
-// orders + order_items テーブルにINSERTし、Thanksメールを送信する。
+// 前提: stripe-create-payment-intent が orders を pending INSERT 済み。
+// 本 EF は payment_intent 検証後に pending→paid 遷移を実行し、
+// 遷移が成立した場合のみメール / プッシュ / ポイント消費 / ランク昇格を走らせる
+// （2 回目以降の呼び出しでは didTransitionToPaid=false で副作用をスキップ、冪等）。
 //
-// ※ 旧フローでは create-payment-intent 時に pending で INSERT していたが、
-//   新フローでは決済完了後にここで初めて INSERT する。
+// 2026-04-23 Phase 3 (D-166): 旧 "new INSERT" fallback（metadata から
+// cart_items_json を復元して orders/order_items を INSERT する経路）は削除済み。
+// 到達不能かつ metadata 不整合の原因となっていた（git log 90 日で実行履歴無し）。
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -133,10 +136,17 @@ serve(async (req) => {
       }
     }
 
-    // 3. 冪等性チェック: 同じ payment_intent_id で既に注文が存在する場合はスキップ
+    // 3. 冪等性チェック: 同じ payment_intent_id で既に注文が存在する場合
+    // CC-Option-Master-Stage2a Phase 3 (2026-04-23 D-166 修正):
+    // stripe-create-payment-intent が常に orders を INSERT してから PI.client_secret を返す設計のため、
+    // ここでは existingOrder が必ず見つかる前提。
+    // 以前存在した「metadata から cart_items_json を復元して INSERT する fallback」は
+    // metadata 不整合の原因となっていたため削除済み（git log 90 日で実行履歴無し確認）。
+    // member_id / venue_id / aiden_points_used / normal_points_used は existingOrder に含め、
+    // ポイント消費・ランク昇格はこのブランチで実行する。
     const { data: existingOrder } = await supabase
       .from('orders')
-      .select('id, display_id, tracking_token')
+      .select('id, display_id, tracking_token, member_id, venue_id, aiden_points_used, normal_points_used')
       .eq('payment_intent_id', payment_intent_id)
       .maybeSingle()
 
@@ -151,63 +161,136 @@ serve(async (req) => {
         updatePayload.card_fingerprint = cardFingerprint
       }
 
-      const { error: updateErr } = await supabase
+      const { data: updatedRows, error: updateErr } = await supabase
         .from('orders')
         .update(updatePayload)
         .eq('id', existingOrder.id)
         .eq('payment_status', 'pending') // pending の場合のみ更新（冪等性保証）
+        .select('id')
 
       if (updateErr) {
         console.warn('Order status update error:', updateErr)
       }
 
-      // メール送信（既存注文でもpending→paid遷移時は送信）
-      try {
-        const { data: storeRow } = await supabase
-          .from('venues')
-          .select('name, brands(name)')
-          .eq('id', pi.metadata?.venue_id ?? pi.metadata?.store_id)
-          .single()
+      // pending→paid に実際に遷移した場合のみ true
+      // (2 回目以降の confirm-order 呼び出しでは既に paid のため updatedRows は空)
+      const didTransitionToPaid = Array.isArray(updatedRows) && updatedRows.length > 0
 
-        const { data: orderDetail } = await supabase
-          .from('orders')
-          .select('customer_email, customer_name, order_type, total_amount, order_items(quantity, unit_price, products(name))')
-          .eq('id', existingOrder.id)
-          .single()
+      // 以降のメール / プッシュ / ポイント / ランクは pending→paid 遷移時のみ実行
+      // 冪等性担保: 2 回目以降の confirm-order は updatedRows が空 → didTransitionToPaid=false
+      // これにより deduct_points が二重実行される事故を防ぐ。
+      if (didTransitionToPaid) {
+        // venue → brand_id を解決（メール / ポイント / ランクで必要）
+        // 遷移成立時のみ引く（2 回目以降の呼び出しでは DB 往復を節約）
+        let brandId: string | null = null
+        let storeRow: { name?: string; brands?: { id?: string; name?: string } } | null = null
+        try {
+          const { data: venueRow } = await supabase
+            .from('venues')
+            .select('name, brands(id, name)')
+            .eq('id', existingOrder.venue_id ?? pi.metadata?.venue_id ?? pi.metadata?.store_id)
+            .single()
+          storeRow = venueRow as any
+          brandId = (venueRow as any)?.brands?.id ?? null
+        } catch (venueErr) {
+          console.warn('venue/brand lookup failed (non-fatal):', venueErr)
+        }
 
-        if (orderDetail?.customer_email) {
-          const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+        // 3. メール送信
+        try {
+          const { data: orderDetail } = await supabase
+            .from('orders')
+            .select('customer_email, customer_name, order_type, total_amount, order_items(quantity, unit_price, products(name))')
+            .eq('id', existingOrder.id)
+            .single()
+
+          if (orderDetail?.customer_email) {
+            const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+              body: JSON.stringify({
+                type: 'confirmation',
+                to: orderDetail.customer_email,
+                order_id: existingOrder.display_id,
+                customer_name: orderDetail.customer_name || '',
+                store_name: storeRow?.name || '',
+                brand_name: storeRow?.brands?.name || '',
+                order_mode: orderDetail.order_type || 'takeout',
+                subtotal: orderDetail.total_amount || 0,
+                total: orderDetail.total_amount || 0,
+                tracking_token: existingOrder.tracking_token || '',
+                items: (orderDetail.order_items || []).map((i: any) => ({
+                  name: i.products?.name || '商品',
+                  qty: i.quantity || 1,
+                  price: i.unit_price || 0,
+                })),
+              }),
+            })
+            if (!emailRes.ok) {
+              const errBody = await emailRes.text().catch(() => '')
+              console.error('send-order-email failed (existing order):', emailRes.status, errBody)
+            }
+          }
+        } catch (emailErr) {
+          console.error('Order email error (existing order):', emailErr)
+        }
+
+        // 4. プッシュ通知送信（非同期、失敗しても注文は有効）
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
             },
             body: JSON.stringify({
-              type: 'confirmation',
-              to: orderDetail.customer_email,
-              order_id: existingOrder.display_id,
-              customer_name: orderDetail.customer_name || '',
-              store_name: storeRow?.name || '',
-              brand_name: (storeRow as any)?.brands?.name || '',
-              order_mode: orderDetail.order_type || 'takeout',
-              subtotal: orderDetail.total_amount || 0,
-              total: orderDetail.total_amount || 0,
-              tracking_token: existingOrder.tracking_token || '',
-              items: (orderDetail.order_items || []).map((i: any) => ({
-                name: i.products?.name || '商品',
-                qty: i.quantity || 1,
-                price: i.unit_price || 0,
-              })),
+              order_id: existingOrder.id,
+              store_id: existingOrder.venue_id ?? pi.metadata?.venue_id ?? pi.metadata?.store_id,
+              display_id: existingOrder.display_id,
+              total_amount: pi.amount,
+              order_type: pi.metadata?.order_type || 'takeout',
             }),
           })
-          if (!emailRes.ok) {
-            const errBody = await emailRes.text().catch(() => '')
-            console.error('send-order-email failed (existing order):', emailRes.status, errBody)
+        } catch (pushErr) {
+          console.error('Push notification error:', pushErr)
+        }
+
+        // 5. ポイント消費（IR-08: サーバーサイド原子的処理）
+        // CC-Option-Master-Stage2a Phase 3: 旧 dead fallback 内で実行されていた処理を本ブランチに移動。
+        const aidenPts = parseInt(String(existingOrder.aiden_points_used ?? 0), 10) || 0
+        const normalPts = parseInt(String(existingOrder.normal_points_used ?? 0), 10) || 0
+        const pointsUsed = aidenPts + normalPts
+        if (existingOrder.member_id && pointsUsed > 0) {
+          try {
+            const { data: ptResult } = await supabase.rpc('deduct_points', {
+              p_member_id: existingOrder.member_id,
+              p_brand_id: brandId,
+              p_amount: pointsUsed,
+              p_order_id: existingOrder.id,
+            })
+            if (ptResult && !ptResult.success && ptResult.error === 'insufficient_balance') {
+              console.warn('Point deduction failed: insufficient balance', ptResult)
+            }
+          } catch (ptErr) {
+            console.error('Point deduction error:', ptErr)
           }
         }
-      } catch (emailErr) {
-        console.error('Order email error (existing order):', emailErr)
-      }
+
+        // 6. ランク自動昇格チェック（G-03）
+        if (existingOrder.member_id && brandId) {
+          try {
+            await supabase.rpc('check_and_upgrade_rank', {
+              p_member_id: existingOrder.member_id,
+              p_brand_id: brandId,
+            })
+          } catch (rankErr) {
+            console.error('Rank check error:', rankErr)
+          }
+        }
+      } // end if (didTransitionToPaid) — email / push / points / rank
 
       return new Response(
         JSON.stringify({
@@ -220,176 +303,27 @@ serve(async (req) => {
       )
     }
 
-    // 3. metadata からカート情報を復元
-    const meta = pi.metadata || {}
-    const cartItems = meta.cart_items_json ? JSON.parse(meta.cart_items_json) : []
-    const deliveryAddress = meta.delivery_address_json ? JSON.parse(meta.delivery_address_json) : null
-
-    const guestInfo = {
-      first_name: meta.guest_first_name || '',
-      last_name: meta.guest_last_name || '',
-      email: meta.guest_email || '',
-      phone: meta.guest_phone || '',
-    }
-
-    // 4. orders テーブルに INSERT（ここで初めてDBに注文レコードが作られる）
-    const orderPayload = {
-      venue_id: meta.venue_id ?? meta.store_id,
-      order_type: meta.order_type || 'takeout',
-      tracking_status: 'placed',
-      payment_status: 'paid',
-      total_amount: pi.amount,
-      delivery_fee: parseInt(meta.delivery_fee) || 0,
-      service_fee: parseInt(meta.service_fee) || 0,
-      surcharge_amount: parseInt(meta.surcharge_amount) || 0,
-      payment_intent_id: pi.id,
-      customer_name: guestInfo.last_name && guestInfo.first_name
-        ? `${guestInfo.last_name} ${guestInfo.first_name}`
-        : (guestInfo.last_name || guestInfo.first_name || null),
-      customer_email: guestInfo.email || null,
-      customer_phone: guestInfo.phone || null,
-      estimated_minutes: parseInt(meta.estimated_minutes) || 30,
-      delivery_address: deliveryAddress
-        ? `${deliveryAddress.prefecture || ''}${deliveryAddress.city || ''}${deliveryAddress.address || ''}${deliveryAddress.building ? ' ' + deliveryAddress.building : ''}`
-        : null,
-      aiden_points_used: parseInt(meta.aiden_points_used) || 0,
-      normal_points_used: parseInt(meta.normal_points_used) || 0,
-      member_id: meta.member_id || null,
-      channel: 'aiden',
-      card_fingerprint: cardFingerprint,
-    }
-
-    const { data: orderRow, error: orderErr } = await supabase
-      .from('orders')
-      .insert(orderPayload)
-      .select('id, display_id, tracking_token')
-      .single()
-
-    if (orderErr) {
-      console.error('Order insert error:', orderErr)
-      return new Response(
-        JSON.stringify({ error: '注文の作成に失敗しました: ' + orderErr.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // 5. order_items テーブルに INSERT
-    if (cartItems.length > 0) {
-      const orderItems = cartItems.map((item: any) => ({
-        order_id: orderRow.id,
-        product_id: item.pid || null,
-        size_id: item.sid || null,
-        quantity: item.q || 1,
-        unit_price: item.up || 0,
-        subtotal: (item.up || 0) * (item.q || 1),
-      }))
-      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
-      if (itemsErr) {
-        console.error('Order items insert error:', itemsErr)
-      }
-    }
-
-    // 6. Thanksメール送信（非同期、失敗しても注文は有効）
-    try {
-      // 店舗名 + ブランド名を取得
-      const { data: storeRow } = await supabase
-        .from('venues')
-        .select('name, brands(name)')
-        .eq('id', meta.venue_id ?? meta.store_id)
-        .single()
-
-      const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-order-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          type: 'confirmation',
-          to: guestInfo.email,
-          order_id: orderRow.display_id,
-          customer_name: `${guestInfo.last_name} ${guestInfo.first_name}`.trim(),
-          store_name: storeRow?.name || '',
-          brand_name: (storeRow as any)?.brands?.name || '',
-          order_mode: meta.order_type || 'takeout',
-          subtotal: pi.amount,
-          total: pi.amount,
-          tracking_token: orderRow.tracking_token || '',
-          items: cartItems.map((i: any) => ({
-            name: i.pn || '商品',
-            qty: i.q || 1,
-            price: i.up || 0,
-          })),
-        }),
-      })
-      if (!emailRes.ok) {
-        const errBody = await emailRes.text().catch(() => '')
-        console.error('send-order-email failed (new order):', emailRes.status, errBody)
-      }
-    } catch (emailErr) {
-      console.error('Order email error (new order):', emailErr)
-    }
-
-    // 7. プッシュ通知送信（非同期、失敗しても注文は有効）
-    try {
-      await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          order_id: orderRow.id,
-          store_id: meta.venue_id ?? meta.store_id,
-          display_id: orderRow.display_id,
-          total_amount: pi.amount,
-          order_type: meta.order_type || 'takeout',
-        }),
-      })
-    } catch (pushErr) {
-      console.error('Push notification error:', pushErr)
-    }
-
-    // 8. ポイント消費（IR-08: サーバーサイド原子的処理）
-    const pointsUsed = (parseInt(meta.aiden_points_used) || 0) + (parseInt(meta.normal_points_used) || 0)
-    if (meta.member_id && pointsUsed > 0) {
-      try {
-        const { data: ptResult } = await supabase.rpc('deduct_points', {
-          p_member_id: meta.member_id,
-          p_brand_id: meta.brand_id || null,
-          p_amount: pointsUsed,
-          p_order_id: orderRow.id,
-        })
-        if (ptResult && !ptResult.success && ptResult.error === 'insufficient_balance') {
-          console.warn('Point deduction failed: insufficient balance', ptResult)
-        }
-      } catch (ptErr) {
-        console.error('Point deduction error:', ptErr)
-      }
-    }
-
-    // 9. ランク自動昇格チェック（G-03）
-    if (meta.member_id && meta.brand_id) {
-      try {
-        // total_spend を更新
-        await supabase.rpc('check_and_upgrade_rank', {
-          p_member_id: meta.member_id,
-          p_brand_id: meta.brand_id,
-        })
-      } catch (rankErr) {
-        console.error('Rank check error:', rankErr)
-      }
-    }
-
-    // 10. レスポンス
+    // existingOrder が見つからない = 到達不能ケース
+    // CC-Option-Master-Stage2a Phase 3 (2026-04-23 D-166 修正):
+    // stripe-create-payment-intent が常に orders を INSERT する設計のため、
+    // existingOrder が null になるケースは到達不能。
+    // 旧 fallback (cart_items_json を metadata から復元して INSERT) は
+    // metadata 不整合の原因となっていたため削除 (git log 90日確認済み、main branch では
+    // この分岐が実行された履歴なし)。
+    // もし将来 stripe-create-payment-intent が INSERT 前に PI 作成する設計になったら
+    // この fallback を再実装すること。
+    console.error('ORDER_NOT_FOUND_AFTER_PAYMENT:', {
+      payment_intent_id,
+      pi_status: pi.status,
+      pi_amount: pi.amount,
+    })
     return new Response(
       JSON.stringify({
-        success: true,
-        order_id: orderRow.id,
-        display_id: orderRow.display_id,
-        tracking_token: orderRow.tracking_token,
+        error: '注文レコードが見つかりません。決済情報は正常ですが、注文処理に不整合があります。サポートにお問い合わせください。',
+        error_code: 'ORDER_NOT_FOUND_AFTER_PAYMENT',
+        payment_intent_id: payment_intent_id,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
     console.error('confirm-order error:', err)
