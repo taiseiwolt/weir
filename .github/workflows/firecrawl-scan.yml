@@ -1,0 +1,47 @@
+# GHA-05: Firecrawl post-deploy scan
+# Runs after any successful Vercel production deployment. Scans the
+# 居酒屋潮 (izakaya-ushio) brand pages for:
+#   - 404 / 5xx
+#   - JS console errors
+#   - placeholder text ("サンプル", "TODO", etc.) residue (D-83)
+#
+# Cost: ~2-5 minutes per run + Firecrawl API usage.
+name: firecrawl-scan
+
+on:
+  deployment_status: {}
+
+jobs:
+  scan:
+    # Only run on successful Production deployments, not Preview.
+    if: |
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Firecrawl scan script
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+        run: node .github/scripts/firecrawl-scan.js
+
+      - name: Email notification on failure
+        if: failure()
+        uses: ./.github/actions/notify-email
+        with:
+          subject: '[Weir GHA] Firecrawl post-deploy scan FAILED'
+          body: |
+            Firecrawl post-deploy scan detected issues on production.
+            居酒屋潮 の主要ページで 404 / JS エラー / placeholder 残存のいずれかを検知。
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}

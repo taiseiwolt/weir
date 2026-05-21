@@ -1,0 +1,65 @@
+# GHA-08: shared email notifier (composite action)
+# Usage (from any workflow step):
+#   - uses: ./.github/actions/notify-email
+#     with:
+#       subject: '[Weir GHA] ...'
+#       body: 'multi-line body ok'
+#     env:
+#       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+#       EMAIL_FROM:    ${{ secrets.EMAIL_FROM }}
+#       EMAIL_TO:      ${{ secrets.EMAIL_TO }}
+#
+# Why composite (not `workflow_call` reusable workflow):
+#   Step-level use is cleaner than promoting notification into its own job.
+#   Each workflow can fire a notification inline without paying the job
+#   startup cost.
+name: notify-email
+description: Send email via Resend API
+
+inputs:
+  subject:
+    description: Email subject line
+    required: true
+  body:
+    description: Email body (plain text, rendered as <pre>)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate secrets are present
+      shell: bash
+      run: |
+        if [ -z "${RESEND_API_KEY:-}" ] || [ -z "${EMAIL_FROM:-}" ] || [ -z "${EMAIL_TO:-}" ]; then
+          echo "::error::RESEND_API_KEY / EMAIL_FROM / EMAIL_TO must be set in the calling step's env" >&2
+          exit 1
+        fi
+
+    - name: Send email via Resend
+      shell: bash
+      env:
+        SUBJECT: ${{ inputs.subject }}
+        BODY: ${{ inputs.body }}
+      run: |
+        # Build JSON with jq to guarantee correct escaping for multi-line bodies.
+        PAYLOAD=$(jq -n \
+          --arg from    "$EMAIL_FROM" \
+          --arg to      "$EMAIL_TO" \
+          --arg subject "$SUBJECT" \
+          --arg html    "<pre>$BODY</pre>" \
+          '{from: $from, to: [$to], subject: $subject, html: $html}')
+
+        HTTP_CODE=$(curl -sS -o /tmp/resend.out -w '%{http_code}' \
+          -X POST https://api.resend.com/emails \
+          -H "Authorization: Bearer $RESEND_API_KEY" \
+          -H 'Content-Type: application/json' \
+          -d "$PAYLOAD")
+
+        echo "Resend status: $HTTP_CODE"
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          echo "Email sent."
+        else
+          echo "::error::Resend API returned $HTTP_CODE"
+          cat /tmp/resend.out
+          exit 1
+        fi
